@@ -1142,11 +1142,37 @@
     flex-wrap: wrap;
     padding: 18px;
   }
+  .next-school-event.announcement-slide {
+    position: relative;
+    display: block;
+    min-height: 0;
+    padding: 16px;
+  }
+  .announcement-slide .next-school-event-icon {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 40px;
+    height: 40px;
+  }
+  .announcement-slide > div > small {
+    display: block;
+    min-height: 40px;
+    padding: 2px 0 0 52px;
+    line-height: 1.45;
+    letter-spacing: 0.5px;
+  }
   .next-school-event h2 {
-    font-size: 20px;
+    font-size: clamp(20px, 6vw, 24px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .announcement-slide .announcement-summary {
+    font-size: 14px;
+    line-height: 1.5;
   }
   .next-school-event > button {
-    margin-left: 70px;
+    margin: 14px 0 0;
   }
   .school-announcement-list {
     grid-template-columns: 1fr;
