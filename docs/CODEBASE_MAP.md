@@ -1,12 +1,18 @@
 # Codebase map
 
-- `src/App.jsx` — student workspace shell, collapsible sidebar and My Classes workspace group, dashboard overview/news switch with teacher updates, school announcements, automatically rotating three-slide featured announcement carousel, local navigation and academic calendar, dashboard month review of academic events and assessment deadlines, weekly academic-event summary and focused calendar agenda, search, task category filter, class tabs, classwork filters, material detail, timed question flow, submission, and result review.
-- `src/icons.jsx` — small local SVG icon set used by navigation and action controls (no icon package dependency).
-- `src/data.js` — fictional classes, student roster, assessment due dates, mock academic calendar events, materials, and course question banks.
-- `src/App.css` — dashboard and academic calendar with event-type and class-colored month markers, aligned dashboard news heading, responsive featured announcement carousel, mobile notification popover gutters, collapsible sidebar with class-card cover colors and symbol badges, task/classwork lists, class stream, material list, and roster styles.
-- `src/Details.css` — responsive workspace shell, mobile navigation drawer, narrow-screen class/resource layouts, full-width mobile Tasks status filter, compact calendar event markers, assessment/material detail, quiz, result, and submit dialog styles.
-- `public/*-banner.jpg` — generated announcement artwork for featured exam, school event, and campus break slides.
-- `src/index.css` — global tokens, reset, Poppins/system sans typography, visible focus, and minimum control hit areas.
-- Typography in `src/App.css` and `src/Details.css` keeps text at 12px or larger; class tiles emphasize course symbols as large visual shortcuts. This is an implementation floor, not a claim of WCAG conformance.
-- `docs/PROJECT_BRIEF.md` — goals, scope, boundaries, and acceptance.
-- `docs/ARCHITECTURE.md` — state/data flow and privacy limits.
+## Active three-role prototype
+
+- `src/main.jsx` — routes `/student`, `/instructor`, and `/admin` to each role workspace.
+- `src/roles/student/StudentWorkspace.jsx` — mounts the existing student dashboard without changing its layout or navigation.
+- `src/roles/shared/RoleWorkspace.jsx` / `.css` — shared responsive Instructor/Admin shell, collapsible sidebar, mobile drawer, and role switching.
+- `src/components/shared/` — reusable avatar, breadcrumbs, global search, and notifications used by Student, Instructor, and Admin.
+- `src/roles/shared/lmsData.js` / `storage.js` — ERD-shaped fictional records and browser-local shared state.
+- `src/roles/admin/Admin.jsx` — setup overview and management for users, subjects, classrooms, and enrollments.
+- `src/roles/instructor/Instructor.jsx` / `InstructorClassroom.jsx` — assigned-class sidebar dropdown, year filters, Student-style classroom tabs, per-class grading, and category settings; `InstructorAcademicCalendar.jsx` and `InstructorDashboardNews.jsx` provide the Overview calendar and announcements views.
+- `src/App.jsx`, `src/App.css`, `src/Details.css`, `src/data.js` — existing Student dashboard and its assessment/material flows; role-created classrooms, exams, materials, and instructor announcements appear in Student class streams.
+- `docs/PROJECT_BRIEF.md` / `docs/ARCHITECTURE.md` — experience requirements, data flow, ERD mapping, and boundaries.
+- `docs/lms-erd.png` — supplied LMS database schema reference.
+
+## Earlier student-only prototype
+
+- `src/App.jsx`, `src/data.js`, `src/App.css`, `src/Details.css`, and `public/*-banner.jpg` remain from the earlier, richer GClass student prototype. They are not imported by the active `src/main.jsx` entry point. The role prototype reuses its Poppins/soft-green/card visual direction and the local SVG icon set.

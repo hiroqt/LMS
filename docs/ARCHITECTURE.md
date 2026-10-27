@@ -1,13 +1,21 @@
 # Architecture and data flow
 
-The app is a static Vite + React single-page prototype. `src/data.js` owns the sample courses, students, materials, assessments, and question sets. `src/App.jsx` owns the small view state machine and student interactions. `src/App.css`, `src/Details.css`, and `src/index.css` provide the responsive classroom UI.
+The app is a React and Vite frontend. `src/main.jsx` selects `/student`, `/instructor`, or `/admin`. `src/roles/student/StudentWorkspace.jsx` keeps the existing `src/App.jsx` dashboard as the visual and interaction reference. `src/roles/shared/RoleWorkspace.jsx` and its CSS provide the responsive Instructor/Admin shell, sidebar, mobile drawer, and role switching. `src/roles/shared/lmsData.js` seeds ERD-shaped demo records, while `storage.js` shares them through browser localStorage. `src/roles/instructor/Instructor.jsx` and `src/roles/admin/Admin.jsx` implement the other role workspaces.
 
-There is no API layer. A localStorage adapter in the app loads and saves only quiz answers and completed assessment IDs. If browser storage is unavailable, the current session still works in memory. Reset demo data removes the prototype's storage key.
+The shared model follows the ERD: users, subjects, classrooms, enrollments, modules, materials, activities, activity submissions, exams, and exam submissions. Exam questions and their options are nested within each exam; answer and per-question-grade maps are nested within each submission. IDs link classroom records to their subjects, instructor, modules, and students. Materials and gradebook settings extend the supplied ERD for prototype needs.
 
-## Interaction flow
+## Supplied ERD
 
-Home → Calendar, Tasks, or class → Stream / Classwork / Materials / People → assessment or material detail → timed questions → result. Calendar groups mock term dates, school events, and assessment deadlines by month and links assessment entries to details; replace the fictional schedule with official dates before real student use. Tasks groups assessment dates into upcoming, missing (past due and not completed), and done (submitted). The sidebar and breadcrumb controls return to earlier views. Assessment questions each receive an independent 60-second countdown; time remaining and answers are kept per question while navigating.
+![LMS database schema ERD](lms-erd.png)
 
-## Data and privacy
+This is the schema reference supplied for the prototype. The frontend model adapts it for browser-local demonstration data.
 
-All people, class names, dates, and assessment content are fictional. Nothing leaves the browser. localStorage is scoped to this browser profile and is not a substitute for a secure student system.
+Role setup, content, enrollments, and grades are stored under `tmcc-lms-roles-v1` in localStorage. Student assessment answers and completion continue to use the existing `gclass-student-workspace-v1` key. Student loads active enrolled classrooms and instructor-created exams, assignments, and materials from the role store when its page loads. Instructor review reads completed student attempts and assignment filename/comments, then saves grades and feedback to the role store. Multiple open tabs can overwrite role-store changes; this is a demonstration rather than shared multi-user storage.
+
+The current role UI is an initial connected prototype: exam authoring supports a single multiple-choice question, and assignment attachments store a filename and comment only. Essay grading, other question types, exam-wide timers and attempt/review policies, full enrollment editing, and a student roster picker remain outside this implementation slice even though the ERD and flow documents describe them.
+
+## Boundaries
+
+No backend, authentication, authorization, upload service, or cross-device synchronization exists. The role picker is not a security boundary. Attachment selection stores a filename only, not the file contents. Answers and correct answers are present in the browser, so review settings and timers cannot prevent inspection or cheating. No real student data should be used.
+
+Enumeration uses case-insensitive, order-independent exact matching; matching uses case-insensitive exact text in the corresponding order. Essays await manual grading. Gradebook values use the latest activity submission and the highest or latest graded exam attempt as configured. Category averages use graded items only, so an overall is illustrative and does not account for missing work. An overall is shown only after each non-zero weighted category has a grade.

@@ -1729,3 +1729,72 @@
   gap: 8px;
   margin-top: 18px;
 }
+.teacher-feedback {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #dcebe3;
+  border-radius: 12px;
+  background: #f5faf7;
+  display: grid;
+  gap: 5px;
+}
+.teacher-feedback span {
+  color: #6b9d87;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.teacher-feedback strong {
+  color: #2d745d;
+  font-size: 13px;
+}
+.teacher-feedback p {
+  margin: 0;
+  color: #65756c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.activity-submit-form {
+  margin-top: 18px;
+  padding: 17px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dcebe3;
+  border-radius: 13px;
+  background: #f7fbf8;
+}
+.activity-submit-form h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.activity-submit-form p {
+  margin: -7px 0 0;
+  color: #78867f;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.activity-submit-form label {
+  display: grid;
+  gap: 6px;
+  color: #65756c;
+  font-size: 10px;
+  font-weight: 600;
+}
+.activity-submit-form input,
+.activity-submit-form textarea {
+  width: 100%;
+  border: 1px solid #e0e9e4;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #33443b;
+  font: 11px Poppins, sans-serif;
+}
+.activity-submit-form textarea {
+  resize: vertical;
+}
+.activity-submit-form .button-primary {
+  justify-self: start;
+}
+.shared-announcement-message{white-space:pre-wrap;overflow-wrap:anywhere}
