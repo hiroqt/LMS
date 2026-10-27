@@ -32,10 +32,41 @@ export default function RoleWorkspace({ role, user, sections, page, onNavigate, 
     </aside>
     {drawer && <button className="role-backdrop" aria-label="Close navigation" onClick={() => setDrawer(false)} />}
     <div className="role-main">
-      <header className="role-topbar">
+      <header className={`role-topbar ${role === "admin" ? "is-admin" : ""}`}>
         <button className="role-mobile-menu" type="button" aria-label={drawer ? "Close menu" : "Open menu"} onClick={() => setDrawer((value) => !value)}>{drawer ? <X size={19} /> : <Menu size={19} />}</button>
         <div className="role-top-left"><Breadcrumbs current={page} onHome={() => onNavigate(sections[0])} className="role-location" /></div>
-        <div className="role-top-actions"><GlobalSearch value={query} onChange={setQuery} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} label={`Search ${role} workspace`} placeholder="Search workspace..." className="role-global-search" onSelect={(item) => { setQuery(""); setSearchOpen(false); item.onSelect?.(); }} /><NotificationMenu open={notificationsOpen} onToggle={() => setNotificationsOpen((value) => !value)} items={notifications} title={role === "instructor" ? "Needs your attention" : "Setup updates"} onSelect={(item) => { setNotificationsOpen(false); onNotificationSelect?.(item); }} /><div className="role-user"><Avatar name={`${user.firstName} ${user.lastName}`} tone={1} small /><span><strong>{user.firstName} {user.lastName}</strong><small>{role} · Demo</small></span><label className="role-switch">Switch role<select aria-label="Switch workspace" value={role} onChange={(event) => { window.location.href = `/${event.target.value}`; }}><option value="student">Student</option><option value="instructor">Instructor</option><option value="admin">Admin</option></select></label></div></div>
+        {role === "admin" ? (
+          <>
+            <div className="role-top-switch">
+              <label className="role-switch">
+                Switch role
+                <select aria-label="Switch workspace" value={role} onChange={(event) => { window.location.href = `/${event.target.value}`; }}>
+                  <option value="student">Student</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+            </div>
+            <div className="role-top-actions">
+              <GlobalSearch value={query} onChange={setQuery} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} label={`Search ${role} workspace`} placeholder="Search workspace..." className="role-global-search" onSelect={(item) => { setQuery(""); setSearchOpen(false); item.onSelect?.(); }} />
+              <NotificationMenu open={notificationsOpen} onToggle={() => setNotificationsOpen((value) => !value)} items={notifications} title="Setup updates" onSelect={(item) => { setNotificationsOpen(false); onNotificationSelect?.(item); }} />
+              <div className="role-user">
+                <Avatar name={`${user.firstName} ${user.lastName}`} tone={1} small />
+                <span><strong>{user.firstName} {user.lastName}</strong><small>{role} · Demo</small></span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="role-top-actions">
+            <GlobalSearch value={query} onChange={setQuery} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} label={`Search ${role} workspace`} placeholder="Search workspace..." className="role-global-search" onSelect={(item) => { setQuery(""); setSearchOpen(false); item.onSelect?.(); }} />
+            <NotificationMenu open={notificationsOpen} onToggle={() => setNotificationsOpen((value) => !value)} items={notifications} title={role === "instructor" ? "Needs your attention" : "Setup updates"} onSelect={(item) => { setNotificationsOpen(false); onNotificationSelect?.(item); }} />
+            <div className="role-user">
+              <Avatar name={`${user.firstName} ${user.lastName}`} tone={1} small />
+              <span><strong>{user.firstName} {user.lastName}</strong><small>{role} · Demo</small></span>
+              <label className="role-switch">Switch role<select aria-label="Switch workspace" value={role} onChange={(event) => { window.location.href = `/${event.target.value}`; }}><option value="student">Student</option><option value="instructor">Instructor</option><option value="admin">Admin</option></select></label>
+            </div>
+          </div>
+        )}
       </header>
       {searchOpen && query && <button aria-label="Close search" className="role-search-dismiss" type="button" onClick={() => setSearchOpen(false)} />}
       <main className="role-content">{showHeading && <div className="role-page-heading"><div><span className="eyebrow">{role.toUpperCase()} WORKSPACE</span><h1>{title}</h1><p>{subtitle}</p></div><span className="role-date">Fall 2026 <i>·</i> TMCC</span></div>}{children}</main>
