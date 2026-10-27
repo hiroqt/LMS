@@ -3,7 +3,6 @@ import {
   AlarmClock,
   ArrowLeft,
   ArrowRight,
-  Bell,
   BookOpen,
   CalendarDays,
   Check,
@@ -34,6 +33,11 @@ import {
   questionsByAssessment,
   students,
 } from "./data";
+import { readRoleData, saveRoleData } from "./roles/shared/storage";
+import Avatar from "./components/shared/Avatar";
+import Breadcrumbs from "./components/shared/Breadcrumbs";
+import GlobalSearch from "./components/shared/GlobalSearch";
+import NotificationMenu from "./components/shared/NotificationMenu";
 import "./App.css";
 import "./Details.css";
 
@@ -57,21 +61,6 @@ const readProgress = () => {
     return { answers: {}, completed: [] };
   }
 };
-
-function Avatar({ name, tone = 0, small = false }) {
-  return (
-    <span
-      className={`avatar tone-${tone % 6} ${small ? "avatar-small" : ""}`}
-      aria-hidden="true"
-    >
-      {name
-        .split(" ")
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join("")}
-    </span>
-  );
-}
 
 function App() {
   const [page, setPage] = useState("today");
@@ -98,8 +87,13 @@ function App() {
   const [timers, setTimers] = useState([]);
   const [reviewed, setReviewed] = useState([]);
   const [progress, setProgress] = useState(readProgress);
+  const roleData = readRoleData();
+  const [, setRoleDataRefresh] = useState(0);
+  const activityCompleted = (roleData?.activitySubmissions || []).filter((item) => item.studentId === "s0").map((item) => item.activityId);
+  const completedWork = [...new Set([...progress.completed, ...activityCompleted])];
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [now, setNow] = useState(Date.now);
+  const [, setActivityRefresh] = useState(0);
 
   const course = courses.find((item) => item.id === courseId) || courses[0];
   const assessment =
@@ -117,6 +111,16 @@ function App() {
       /* Keep working in memory when storage is unavailable. */
     }
   }, [progress]);
+
+  useEffect(() => {
+    const refreshRoleData = () => setRoleDataRefresh((current) => current + 1);
+    window.addEventListener("tmcc-lms-data", refreshRoleData);
+    window.addEventListener("storage", refreshRoleData);
+    return () => {
+      window.removeEventListener("tmcc-lms-data", refreshRoleData);
+      window.removeEventListener("storage", refreshRoleData);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -168,6 +172,10 @@ function App() {
       item.courseId === courseId &&
       `${item.title} ${item.kind}`.toLowerCase().includes(filter.toLowerCase()),
   );
+  const classAnnouncements = (roleData?.announcements || []).filter((item) => item.classroomId === courseId && item.status !== "inactive").map((item) => {
+    const author = roleData.users?.find((user) => user.id === item.instructorId);
+    return { ...item, author: author ? `${author.firstName} ${author.lastName}` : course.teacher };
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const classmates = students.filter((item) =>
     `${item.name} ${item.email}`
       .toLowerCase()
@@ -225,6 +233,14 @@ function App() {
     setConfirmSubmit(false);
     setPage("result");
   }
+  function submitActivity({ fileName, comment }) {
+    const roleData = readRoleData();
+    if (!roleData || !assessment?.kind) return;
+    const submission = { id: `activity-submission-${assessment.id}-s0`, activityId: assessment.id, classroomId: assessment.courseId, studentId: "s0", submissionText: comment.trim(), fileAttachmentUrl: fileName.trim(), status: "submitted", submittedAt: new Date().toISOString(), grade: null, feedback: "" };
+    saveRoleData({ ...roleData, activitySubmissions: [...(roleData.activitySubmissions || []).filter((item) => !(item.activityId === assessment.id && item.studentId === "s0")), submission] });
+    setActivityRefresh((value) => value + 1);
+    setProgress((current) => ({ ...current, completed: [...new Set([...current.completed, assessment.id])] }));
+  }
   function nextQuestion() {
     if (questionIndex < questionSet.length - 1)
       setQuestionIndex((index) => index + 1);
@@ -265,15 +281,19 @@ function App() {
   }
 
   const savedAnswers = progress.answers[assessmentId] || {};
+  const activitySubmission = roleData?.activitySubmissions?.find((item) => item.activityId === assessmentId && item.studentId === "s0");
   const score = questionSet.reduce(
     (total, item, index) =>
       total + (savedAnswers[index] === item.correct ? 1 : 0),
     0,
   );
+  const instructorGrade = roleData?.examSubmissions?.find(
+    (item) => item.examId === assessmentId && item.studentId === "s0" && item.status === "graded",
+  );
   const dueSoon = assessments
     .filter(
       (item) =>
-        !progress.completed.includes(item.id) &&
+        !completedWork.includes(item.id) &&
         new Date(item.dueAt).getTime() >= now,
     )
     .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt))
@@ -282,7 +302,7 @@ function App() {
   const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
   const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
   const dueThisWeekCount = assessments.filter((item) =>
-    !progress.completed.includes(item.id) &&
+    !completedWork.includes(item.id) &&
     new Date(item.dueAt).getTime() >= now &&
     new Date(item.dueAt) < weekEnd,
   ).length;
@@ -413,13 +433,7 @@ function App() {
             <span className="mobile-wordmark">
               TMCC LMS<span className="brand-dot">.</span>
             </span>
-            <div className="crumb">
-              <button type="button" onClick={() => setPage("today")}>
-                Workspace
-              </button>
-              <ChevronRight size={14} />
-              <strong>
-                {page === "today"
+            <Breadcrumbs className="crumb" onHome={() => setPage("today")} current={page === "today"
                   ? "Today"
                   : page === "class"
                     ? course.name
@@ -433,51 +447,10 @@ function App() {
                           ? "Learning material"
                           : page === "quiz"
                             ? "Assessment"
-                            : "Your result"}
-              </strong>
-            </div>
+                          : "Your result"} />
           </div>
           <div className="top-actions">
-            <div className="search-wrap">
-              <Search size={16} />
-              <input
-                value={search}
-                aria-label="Search classes, work, and materials"
-                placeholder="Search classes, work..."
-                onFocus={() => setSearchOpen(true)}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setSearchOpen(true);
-                }}
-              />
-              {search && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => setSearch("")}
-                >
-                  <X size={14} />
-                </button>
-              )}
-              {searchOpen && search && (
-                <div className="search-results">
-                  {results.length ? (
-                    results.map((item) => (
-                      <button
-                        type="button"
-                        key={`${item.kind}-${item.id}`}
-                        onClick={() => chooseSearchResult(item)}
-                      >
-                        <small>{item.kind}</small>
-                        <strong>{item.title}</strong>
-                      </button>
-                    ))
-                  ) : (
-                    <span className="search-empty">No matches found</span>
-                  )}
-                </div>
-              )}
-            </div>
+            <GlobalSearch value={search} onChange={setSearch} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} onSelect={chooseSearchResult} label="Search classes, work, and materials" placeholder="Search classes, work..." />
             <button
               className="top-icon"
               type="button"
@@ -492,40 +465,7 @@ function App() {
             >
               <CalendarDays size={18} />
             </button>
-            <div className="popover-holder">
-              <button
-                className="top-icon"
-                type="button"
-                aria-label="Notifications"
-                onClick={() =>
-                  setMenu(menu === "notifications" ? "" : "notifications")
-                }
-              >
-                <Bell size={18} />
-                <i />
-              </button>
-              {menu === "notifications" && (
-                <div className="popover notification-menu">
-                  <strong>Coming up</strong>
-                  {dueSoon.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setMenu("");
-                        openAssessment(item.id);
-                      }}
-                    >
-                      <Clock3 size={15} />
-                      <span>
-                        {item.title}
-                        <small>{formatDueDate(item.dueAt)}</small>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <NotificationMenu open={menu === "notifications"} onToggle={() => setMenu(menu === "notifications" ? "" : "notifications")} items={dueSoon.map((item) => ({ id: item.id, title: item.title, detail: formatDueDate(item.dueAt) }))} title="Coming up" onSelect={(item) => { setMenu(""); openAssessment(item.id); }} />
             <div className="popover-holder">
               <button
                 className="profile-button"
@@ -542,7 +482,7 @@ function App() {
                     <Avatar name="Alex Rivera" tone={1} />
                     <span>
                       <strong>Alex Rivera</strong>
-                      <small>Grade 10 · Student</small>
+                      <small>BS Information Technology · Student</small>
                     </span>
                   </div>
                   <button type="button" onClick={resetDemo}>
@@ -583,7 +523,7 @@ function App() {
               }}
               dueThisWeekCount={dueThisWeekCount}
               dueSoon={dueSoon}
-              completed={progress.completed}
+              completed={completedWork}
               weekSchoolEventItems={weekSchoolEventItems}
               assessments={assessments}
               academicEvents={academicEvents}
@@ -598,7 +538,7 @@ function App() {
           {page === "tasks" && (
             <TasksPage
               assessments={assessments}
-              completed={progress.completed}
+              completed={completedWork}
               now={now}
               weekEnd={weekEnd}
               category={taskCategory}
@@ -610,7 +550,7 @@ function App() {
             <CalendarPage
               assessments={assessments}
               academicEvents={academicEvents}
-              completed={progress.completed}
+              completed={completedWork}
               now={now}
               month={calendarMonth}
               onMonthChange={setCalendarMonth}
@@ -631,10 +571,11 @@ function App() {
               assessments={filteredAssessments}
               allAssessments={classAssessments}
               materials={classMaterials}
+              announcements={classAnnouncements}
               students={classmates}
               peopleSearch={peopleSearch}
               setPeopleSearch={setPeopleSearch}
-              completed={progress.completed}
+              completed={completedWork}
               onAssessment={openAssessment}
               onMaterial={openMaterial}
               onMyClasses={() => setPage("today")}
@@ -644,7 +585,10 @@ function App() {
             <AssessmentPage
               assessment={assessment}
               course={course}
-              completed={progress.completed.includes(assessmentId)}
+              now={now}
+              completed={completedWork.includes(assessmentId) || Boolean(activitySubmission)}
+              activitySubmission={activitySubmission}
+              onSubmitActivity={submitActivity}
               onBack={() => openClass(courseId, "Classwork")}
               onCourseBreadcrumb={() => openClass(courseId, "Classwork")}
               onStart={() => startQuiz()}
@@ -687,6 +631,7 @@ function App() {
               questions={questionSet}
               answers={savedAnswers}
               score={score}
+              instructorGrade={instructorGrade}
               onBack={() => openClass(courseId, "Classwork")}
               onRetake={() => startQuiz()}
             />
@@ -1051,10 +996,11 @@ function TodayPage({ onClass, onAssessment, onMaterial, onDueThisWeek, onAssessm
           </div>
           <button
             className="link-button"
-            onClick={() => onClass(courses[0].id)}
+            onClick={() => courses[0] && onClass(courses[0].id)}
+            disabled={!courses.length}
             type="button"
           >
-            Open Biology <ArrowRight size={15} />
+            Open {courses[0]?.name || "a class"} <ArrowRight size={15} />
           </button>
         </div>
         <div className="class-grid">
@@ -1338,6 +1284,7 @@ function ClassPage({
   assessments: shownAssessments,
   allAssessments,
   materials: shownMaterials,
+  announcements,
   students: shownStudents,
   peopleSearch,
   setPeopleSearch,
@@ -1412,6 +1359,7 @@ function ClassPage({
       {tab === "Stream" && (
         <Stream
           course={course}
+          announcements={announcements}
           onClasswork={() => setTab("Classwork")}
           onMaterial={onMaterial}
         />
@@ -1451,12 +1399,16 @@ function ClassPage({
   );
 }
 
-function Stream({ course, onClasswork, onMaterial }) {
+function Stream({ course, announcements, onClasswork, onMaterial }) {
   const resource = materials.find((item) => item.courseId === course.id);
   return (
     <div className="stream-layout">
       <div className="stream-main">
-        <article className="announcement">
+        {announcements.length ? announcements.map((item) => <article className="announcement" key={item.id}>
+          <div className="announcement-head"><Avatar name={item.author} tone={2} /><span><strong>{item.author}</strong><small>Class announcement · {formatDueDate(item.createdAt)}</small></span><MoreHorizontal size={19} /></div>
+          <div className="announcement-body"><small>ANNOUNCEMENT · {course.subject.toUpperCase()}</small><h2>{item.title}</h2><p className="shared-announcement-message">{item.message}</p></div>
+          <div className="announcement-footer"><span>{course.section}</span><span>Shared with this class</span></div>
+        </article>) : <article className="announcement">
           <div className="announcement-head">
             <Avatar name={course.teacher} tone={2} />
             <span>
@@ -1482,7 +1434,7 @@ function Stream({ course, onClasswork, onMaterial }) {
             <span>💬 &nbsp;3 comments</span>
             <span>Comments are read-only in this demo</span>
           </div>
-        </article>
+        </article>}
         <article className="stream-update">
           <span className="update-icon">
             <FileText size={17} />
@@ -1851,11 +1803,19 @@ function PeopleTab({ course, students: roster, query, setQuery }) {
 function AssessmentPage({
   assessment,
   course,
+  now,
   completed,
+  activitySubmission,
   onBack,
   onCourseBreadcrumb,
   onStart,
+  onSubmitActivity,
 }) {
+  const [fileName, setFileName] = useState("");
+  const [comment, setComment] = useState("");
+  const isActivity = assessment.kind === "activity";
+  const isLate = assessment.dueAt && new Date(assessment.dueAt).getTime() < now;
+  const isClosed = isActivity && isLate && !assessment.allowLate;
   const TypeIcon =
     assessment.type === "Exam"
       ? GraduationCap
@@ -1902,12 +1862,9 @@ function AssessmentPage({
             </span>
             <strong>Instructions</strong>
             <p>{assessment.instructions}</p>
-            <p>
-              Choose the best answer for every question. You may revisit
-              questions before submitting.
-            </p>
+            <p>{isActivity ? "Attach the filename for your work and leave a note for your instructor. This demo stores the filename only." : "Choose the best answer for every question. You may revisit questions before submitting."}</p>
           </div>
-          <div className="detail-note">
+          {!isActivity && <div className="detail-note">
             <span>
               <AlarmClock size={16} />
             </span>
@@ -1918,14 +1875,16 @@ function AssessmentPage({
                 review other questions.
               </small>
             </span>
-          </div>
-          {completed && (
+          </div>}
+          {completed && !isActivity && (
             <div className="complete-note">
               <Check size={15} />
               You have submitted this assessment. You can view your result or
               practice again.
             </div>
           )}
+          {activitySubmission && <div className="complete-note"><Check size={15} />Submitted · {activitySubmission.grade === null ? "Waiting for instructor review" : `${activitySubmission.grade} / ${assessment.points} points`}{activitySubmission.feedback && <span> · {activitySubmission.feedback}</span>}</div>}
+          {isActivity && (!completed || assessment.allowResubmission) && <form className="activity-submit-form" onSubmit={(event) => { event.preventDefault(); onSubmitActivity({ fileName, comment }); setFileName(""); setComment(""); }}><h2>{activitySubmission ? "Submit a new version" : "Turn in your work"}</h2><p>{isClosed ? "The due date has passed and late submissions are turned off." : "Use the filename of the document you prepared for this classroom."}</p><label>Attachment filename<input value={fileName} onChange={(event) => setFileName(event.target.value)} placeholder="research-notes.pdf" required disabled={isClosed} /></label><label>Comment for instructor<textarea value={comment} onChange={(event) => setComment(event.target.value)} rows="3" placeholder="Add a note about your work" disabled={isClosed} /></label><button className="button-primary" type="submit" disabled={isClosed}>{activitySubmission ? "Resubmit work" : "Submit work"}<ArrowRight size={15} /></button></form>}
         </article>
         <aside className="assessment-summary">
           <div className="summary-head">
@@ -1945,10 +1904,10 @@ function AssessmentPage({
           </div>
           <div className="detail-facts">
             {[
-              ["Questions", assessment.questionCount, ListChecks],
-              ["Time limit", assessment.timeLimit, Clock3],
+              [isActivity ? "Submission" : "Questions", isActivity ? "File + comment" : assessment.questionCount, ListChecks],
+              ["Time limit", isActivity ? "—" : assessment.timeLimit, Clock3],
               ["Points", `${assessment.points} pts`, ClipboardCheck],
-              ["Due date", assessment.due, CalendarDays],
+              ["Due date", assessment.due || formatDueDate(assessment.dueAt), CalendarDays],
             ].map(([label, value, Icon]) => (
               <div key={label}>
                 <span>
@@ -1968,14 +1927,14 @@ function AssessmentPage({
               <i style={{ width: completed ? "100%" : "0%" }} />
             </div>
           </div>
-          <button
+          {!isActivity && <button
             className="button-primary start-button"
             type="button"
             onClick={onStart}
           >
             {completed ? "Practice again" : "Start assessment"}
             <ArrowRight size={16} />
-          </button>
+          </button>}
           <small className="summary-safe">
             <ShieldCheck size={13} />
             Your answers save as you go
@@ -2282,6 +2241,7 @@ function ResultPage({
   questions,
   answers,
   score,
+  instructorGrade,
   onBack,
   onRetake,
 }) {
@@ -2320,6 +2280,7 @@ function ResultPage({
             </p>
           </span>
         </div>
+        {instructorGrade && <div className="teacher-feedback"><span>Instructor feedback</span><strong>{instructorGrade.totalScore} / {assessment.points} points</strong>{instructorGrade.feedback && <p>{instructorGrade.feedback}</p>}</div>}
         <div className="answer-review">
           <div>
             <strong>Answer review</strong>
