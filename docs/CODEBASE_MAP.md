@@ -7,7 +7,7 @@
 - `src/roles/shared/RoleWorkspace.jsx` / `.css` — shared responsive Instructor/Admin shell, collapsible sidebar, mobile drawer, and role switching.
 - `src/components/shared/` — reusable avatar, breadcrumbs, global search, and notifications used by Student, Instructor, and Admin.
 - `src/roles/shared/lmsData.js` / `storage.js` — ERD-shaped fictional records and browser-local shared state.
-- `src/roles/admin/Admin.jsx` — setup overview and management for users, subjects, classrooms, and enrollments.
+- `src/roles/admin/Admin.jsx`, `AdminDirectory.jsx`, `AdminOverview.jsx`, `AdminReports.jsx`, `adminDashboardData.js`, `pagination.js`, and `adminDashboard.css` — student-inspired Admin shell, priority bento dashboard with interactive animated activity charts and readable date labels, labeled dashboard-only previews, completion pie chart, sidebar CSV reports, and searchable/filterable/paginated directory management.
 - `src/roles/instructor/Instructor.jsx` / `InstructorClassroom.jsx` — assigned-class sidebar dropdown, year filters, Student-style classroom tabs, per-class grading, and category settings; `InstructorAcademicCalendar.jsx` and `InstructorDashboardNews.jsx` provide the Overview calendar and announcements views.
 - `src/App.jsx`, `src/App.css`, `src/Details.css`, `src/data.js` — existing Student dashboard and its assessment/material flows; role-created classrooms, exams, materials, and instructor announcements appear in Student class streams.
 - `docs/PROJECT_BRIEF.md` / `docs/ARCHITECTURE.md` — experience requirements, data flow, ERD mapping, and boundaries.
