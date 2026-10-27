@@ -2,30 +2,25 @@
 
 ## Goal
 
-Create a responsive, interactive React prototype for a student-facing classroom workspace, using the existing GClass student workspace concept as the reference.
+Demonstrate a fictional college Information Technology LMS to developers and school management through connected student, instructor, and admin workspaces. Open each role directly without sign-in. The frontend uses the supplied ERD as a starting point, with additions for materials and gradebook settings.
 
-## Student outcomes
+## Role outcomes
 
-- See current classes and work that is due soon from one home screen.
-- Review assessment due dates and separate upcoming, missing, and completed work from a Tasks page.
-- Browse dated academic activities in a month-based Calendar view from the workspace sidebar.
-- Open a class to view its stream, classwork, learning materials, and student roster.
-- Understand each class's section and student count, and search named students.
-- Find assessments grouped as Quiz, Long Quiz, or Exam.
-- Start an assessment, answer one question at a time, see a per-question countdown, navigate questions, submit, and view a result.
+- Admin: manage users, subjects, classrooms, instructor assignments, and enrollments. Referenced records are deactivated instead of deleted.
+- Instructor: manage assigned classrooms, enrollment, modules, materials, announcements, activities, and exams; configure attempts, timers, review, and gradebook weights; grade submissions and essays with feedback.
+- Student: browse enrolled classrooms and coursework, read instructor announcements, join with a code, submit an attachment filename with a comment, take exams, review attempts, and see grades. Resubmission and late work follow instructor settings.
 
-## Scope and boundaries
+## Experience goals
 
-- Student role only; fictional local sample data.
-- No backend, authentication, network persistence, or real classroom records.
-- Interactions and completion state persist in the current browser via localStorage.
-- Desktop-first layout that adapts to tablet and mobile widths.
-- Calendar mock data includes term milestones, school events, and assessment due dates; replace it with official dates before real student use.
-- Assessment timer is real in the running prototype. Each question has its own one-minute budget; unanswered questions advance automatically when time expires.
+- Keep the existing Student dashboard unchanged as the visual reference. Apply its Poppins typography, soft green surfaces, and rounded cards to the Instructor and Admin workspaces, which share a responsive shell with a collapsible desktop sidebar, mobile navigation drawer, and role/user switching.
+- Keep each role's dashboard focused on its primary job: the existing Student experience, instructor submissions awaiting review, and admin setup and enrollment.
+- Keep the role-specific task flows understandable from overview through completion, with the supplied ERD as the data relationship reference.
 
-## Acceptance
+## Boundaries and acceptance
 
-- Home, Calendar (month navigation, scheduled dates, and links to assessment details), Tasks (with dated upcoming, missing, and done assessments), class detail tabs, categorized classwork, materials, people/roster, assessment details, timed question navigation, submission, and result views all work from the UI.
-- Quiz answers and completion state survive refresh in the same browser.
-- The app can be installed and started using README commands and can produce a static Vite build.
-- No service credentials or external data are needed.
+- Frontend-only React/Vite, fictional college data, no accounts, real uploads, backend, or cross-device persistence.
+- Role data and submissions persist in the current browser; no reset control.
+- Exams support multiple choice, true/false, essay, enumeration, and matching. Essays need instructor grading; remaining types use simple local automatic grading. Both exam-wide and per-question timers can be disabled or configured; retry and correct-answer visibility settings are configurable.
+- Gradebook category weights and passing threshold are instructor-configurable. The illustrative overall uses graded work only.
+- Document Student, Instructor, and Admin journeys in matching role flow documents and standalone SVG charts.
+- Validate with lint/build and visual role journeys at desktop and mobile widths. Browser-local data and client-side policies are not suitable for real classroom use.
