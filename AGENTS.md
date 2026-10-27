@@ -20,10 +20,13 @@ Use the existing React function-component and hooks patterns. Keep components an
 
 ## Dashboard Design and Typography
 
-- Treat the existing Student dashboard in `src/App.jsx` and `src/App.css` as the visual reference for other roles. Preserve its Poppins font stack (`src/index.css`), soft green surfaces, rounded cards, and restrained accent colors.
-- Match the Student dashboard's type scale by purpose: page and welcome headings about 28px on desktop, section headings about 17px, card titles about 13px, and body copy about 12px. Keep metadata readable at roughly 10–11px; reserve smaller type for brief uppercase labels or decorative details only.
-- Do not shrink text to fit denser role dashboards. Adjust wrapping, spacing, or responsive layout first, and check desktop and mobile sizes against the Student reference.
-- Keep the same font family, weight, color contrast, and text hierarchy across Student, Instructor, and Admin screens. Change the student reference only when the user explicitly requests it.
+- Treat the Student dashboard in `src/App.jsx` and `src/App.css` as the visual source for every role. Use one system across Student, Instructor, and Admin: Poppins, warm white canvas, soft green surfaces, rounded cards, restrained accent colors, and consistent spacing, type scale, focus rings, and button heights.
+- Keep Instructor and Admin navigation in the shared `RoleWorkspace` shell. Do not add role-specific sidebar treatments; active state, brand, navigation height, collapse behavior, and mobile drawer must look and behave alike.
+- Match the Student type scale by purpose: page and welcome headings about 28px on desktop, section headings about 17px, card titles about 13px, body copy about 12px, and readable metadata about 10–11px. Reserve smaller type for brief uppercase labels only.
+- Keep dashboards calm and scannable: one clear page heading, a focused hero, simple metric cards with one useful supporting line, and consistent panel spacing. Remove duplicate headings and decorative status badges that repeat nearby information.
+- Keep management screens on one directory pattern: page heading and prominent primary action first; search and clearly labeled filters together in a standalone toolbar; records in a padded, rounded card; pagination directly below the records. Use filters that correspond to real record fields and reset to page one when the search or filters change.
+- Make primary actions and filter controls at least 42px high. On narrow screens, stack actions and filters, keep tables horizontally scrollable, preserve row/action spacing, and verify the navigation drawer and all controls remain usable.
+- Do not shrink text to fit dense role screens. Adjust wrapping, spacing, or responsive layout first. Keep the Student reference unchanged unless the user explicitly asks to change it.
 
 ## Testing Guidelines
 

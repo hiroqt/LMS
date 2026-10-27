@@ -14,6 +14,7 @@ const readStudentProgress = () => {
   try { return JSON.parse(localStorage.getItem("gclass-student-workspace-v1") || "{}"); }
   catch { return {}; }
 };
+const timestamp = () => new Date().toISOString();
 
 export default function Instructor() {
   const [data, update] = useLmsData();
@@ -77,30 +78,30 @@ export default function Instructor() {
   function createClass(event) {
     event.preventDefault();
     const id = `classroom-${crypto.randomUUID()}`;
-    const classroom = { id, subjectId: newClass.subjectId, instructorId: instructor.id, section: newClass.section.trim(), yearLevel: Number(newClass.yearLevel), term: "Fall 2026", enrollmentCode: `TMCC-${id.slice(-8).toUpperCase()}`, status: "active" };
+    const classroom = { id, subjectId: newClass.subjectId, instructorId: instructor.id, section: newClass.section.trim(), yearLevel: Number(newClass.yearLevel), term: "Fall 2026", enrollmentCode: `TMCC-${id.slice(-8).toUpperCase()}`, status: "active", createdAt: timestamp() };
     update((current) => ({ ...current, classrooms: [...current.classrooms, classroom], modules: [...current.modules, { id: `module-${crypto.randomUUID()}`, classroomId: id, title: "Unit 1 · Foundations", order: 1 }], gradebookSettings: { ...current.gradebookSettings, [id]: { activityWeight: 40, examWeight: 60, passingScore: 60 } } }));
     setClassroomId(id); setYearLevelFilter("all"); setPage("Classes"); setClassTab("Stream"); setFormType(""); setNewClass({ subjectId: "", yearLevel: "1", section: "" });
   }
   function create(event) {
     event.preventDefault(); setError("");
     if (!selected) return;
-    if (formType === "material") update((current) => ({ ...current, materials: [...current.materials, { id: `material-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), kind: form.kind || "Study guide", description: form.description.trim(), status: "active" }] }));
-    if (formType === "activity") update((current) => ({ ...current, activities: [...current.activities, { id: `activity-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : "", maxScore: Number(form.points) || 10, allowLate: form.allowLate === true, allowResubmission: form.allowResubmission === true, status: "active" }] }));
+    if (formType === "material") update((current) => ({ ...current, materials: [...current.materials, { id: `material-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), kind: form.kind || "Study guide", description: form.description.trim(), status: "active", createdAt: timestamp() }] }));
+    if (formType === "activity") update((current) => ({ ...current, activities: [...current.activities, { id: `activity-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : "", maxScore: Number(form.points) || 10, allowLate: form.allowLate === true, allowResubmission: form.allowResubmission === true, status: "active", createdAt: timestamp() }] }));
     if (formType === "exam") {
       const rawDate = form.dueAt ? new Date(form.dueAt).toISOString() : "";
-      update((current) => ({ ...current, exams: [...current.exams, { id: `exam-${crypto.randomUUID()}`, classroomId: selected.id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: rawDate, totalMarks: Number(form.points) || 10, timeLimitMinutes: Number(form.timeLimit) || 0, attempts: 1, status: "active", questions: [{ prompt: form.prompt.trim(), options: form.type === "true_false" ? ["True", "False"] : [form.option1, form.option2, form.option3, form.option4].filter(Boolean), correctIndex: form.type === "true_false" ? Number(form.correctIndex) : Number(form.correctIndex), points: Number(form.points) || 10 }] }] }));
+      update((current) => ({ ...current, exams: [...current.exams, { id: `exam-${crypto.randomUUID()}`, classroomId: selected.id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: rawDate, totalMarks: Number(form.points) || 10, timeLimitMinutes: Number(form.timeLimit) || 0, attempts: 1, status: "active", createdAt: timestamp(), questions: [{ prompt: form.prompt.trim(), options: form.type === "true_false" ? ["True", "False"] : [form.option1, form.option2, form.option3, form.option4].filter(Boolean), correctIndex: form.type === "true_false" ? Number(form.correctIndex) : Number(form.correctIndex), points: Number(form.points) || 10 }] }] }));
     }
     setFormType("");
   }
   function publishAnnouncement({ title: announcementTitle, message }) {
-    update((current) => ({ ...current, announcements: [...(current.announcements || []), { id: `announcement-${crypto.randomUUID()}`, classroomId: selected.id, instructorId: instructor.id, title: announcementTitle.trim(), message: message.trim(), createdAt: new Date().toISOString(), status: "active" }] }));
+    update((current) => ({ ...current, announcements: [...(current.announcements || []), { id: `announcement-${crypto.randomUUID()}`, classroomId: selected.id, instructorId: instructor.id, title: announcementTitle.trim(), message: message.trim(), createdAt: timestamp(), status: "active" }] }));
   }
   function saveGrade(event) {
     event.preventDefault();
     const item = submissions.find((submission) => submission.id === gradeId);
     if (!item || grade === "" || Number(grade) < 0 || Number(grade) > item.exam.totalMarks) return setError(`Enter a score from 0 to ${item?.exam.totalMarks ?? "the maximum"}.`);
-    if (item.kind === "activity") update((current) => ({ ...current, activitySubmissions: current.activitySubmissions.map((record) => record.id === item.id ? { ...record, grade: Number(grade), feedback: feedback.trim(), status: "graded", gradedAt: new Date().toISOString() } : record) }));
-    else update((current) => ({ ...current, examSubmissions: [...current.examSubmissions.filter((record) => !(record.examId === item.id && record.studentId === item.student.id)), { id: item.existing?.id || `submission-${crypto.randomUUID()}`, examId: item.id, classroomId: item.exam.classroomId, studentId: item.student.id, status: "graded", totalScore: Number(grade), feedback: feedback.trim(), answers: item.answers, submittedAt: new Date().toISOString(), gradedAt: new Date().toISOString() }] }));
+    if (item.kind === "activity") update((current) => ({ ...current, activitySubmissions: current.activitySubmissions.map((record) => record.id === item.id ? { ...record, grade: Number(grade), feedback: feedback.trim(), status: "graded", gradedAt: timestamp() } : record) }));
+    else update((current) => ({ ...current, examSubmissions: [...current.examSubmissions.filter((record) => !(record.examId === item.id && record.studentId === item.student.id)), { id: item.existing?.id || `submission-${crypto.randomUUID()}`, examId: item.id, classroomId: item.exam.classroomId, studentId: item.student.id, status: "graded", totalScore: Number(grade), feedback: feedback.trim(), answers: item.answers, submittedAt: item.existing?.submittedAt || timestamp(), gradedAt: timestamp() }] }));
     setGradeId(""); setGrade(""); setFeedback(""); setError("");
   }
   function setSetting(key, value) {

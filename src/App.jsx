@@ -34,6 +34,7 @@ import {
   students,
 } from "./data";
 import { readRoleData, saveRoleData } from "./roles/shared/storage";
+import { createInitialData } from "./roles/shared/lmsData";
 import Avatar from "./components/shared/Avatar";
 import Breadcrumbs from "./components/shared/Breadcrumbs";
 import GlobalSearch from "./components/shared/GlobalSearch";
@@ -226,6 +227,20 @@ function App() {
     setPage("quiz");
   }
   function submit() {
+    const roleData = readRoleData() || createInitialData();
+    const existing = (roleData.examSubmissions || []).find((item) => item.examId === assessmentId && item.studentId === "s0");
+    if (existing?.status !== "graded" && (roleData.exams || []).some((item) => item.id === assessmentId && item.status !== "inactive")) {
+      const submission = {
+        id: existing?.id || `exam-submission-${assessmentId}-s0`,
+        examId: assessmentId,
+        classroomId: assessment.courseId,
+        studentId: "s0",
+        status: "submitted",
+        answers: savedAnswers,
+        submittedAt: new Date().toISOString(),
+      };
+      saveRoleData({ ...roleData, examSubmissions: [...(roleData.examSubmissions || []).filter((item) => item.id !== existing?.id), submission] });
+    }
     setProgress((current) => ({
       ...current,
       completed: [...new Set([...current.completed, assessmentId])],

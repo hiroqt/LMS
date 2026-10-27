@@ -6,7 +6,7 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 ## Role outcomes
 
-- Admin: manage users, subjects, classrooms, instructor assignments, and enrollments. Referenced records are deactivated instead of deleted.
+- Admin: manage users, subjects, classrooms, instructor assignments, and enrollments. Referenced records are deactivated instead of deleted. The overview summarizes total students and faculty, active course sections and users, weekly course/student/system activity, and submission completion analytics. A Reports sidebar page exports available records as CSV.
 - Instructor: manage assigned classrooms, enrollment, modules, materials, announcements, activities, and exams; configure attempts, timers, review, and gradebook weights; grade submissions and essays with feedback.
 - Student: browse enrolled classrooms and coursework, read instructor announcements, join with a code, submit an attachment filename with a comment, take exams, review attempts, and see grades. Resubmission and late work follow instructor settings.
 
@@ -14,6 +14,7 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 - Keep the existing Student dashboard unchanged as the visual reference. Apply its Poppins typography, soft green surfaces, and rounded cards to the Instructor and Admin workspaces, which share a responsive shell with a collapsible desktop sidebar, mobile navigation drawer, and role/user switching.
 - Keep each role's dashboard focused on its primary job: the existing Student experience, instructor submissions awaiting review, and admin setup and enrollment.
+- Derive Admin activity and completion summaries from timestamped browser-local LMS records. Keep chart preview values dashboard-only and label them when the selected scope has no matching timestamps; keep the activity feed distinct from an audit log.
 - Keep the role-specific task flows understandable from overview through completion, with the supplied ERD as the data relationship reference.
 
 ## Boundaries and acceptance

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Search, X } from "../../icons";
+import { paginateRecords } from "./pagination";
 
 export default function AdminDirectory({
   page,
@@ -12,12 +13,31 @@ export default function AdminDirectory({
   notice,
   setNotice,
 }) {
-  const [query, setQuery] = useState("");
+  const [searchSelection, setSearchSelection] = useState({ page: "", value: "" });
+  const query = searchSelection.page === page ? searchSelection.value : "";
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [classroomFilter, setClassroomFilter] = useState("all");
+  const [subjectFilter, setSubjectFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
   const [activeItem, setActiveItem] = useState(null);
+  const [pageSelection, setPageSelection] = useState({ page: "", number: 1 });
+  const pageNumber = pageSelection.page === page ? pageSelection.number : 1;
+  const pageSize = 8;
+
+  function setPageNumber(number) {
+    setPageSelection({ page, number });
+  }
+
+  function setQuery(value) {
+    setSearchSelection({ page, value });
+  }
+
+  function updateFilter(setter, value) {
+    setter(value);
+    setPageNumber(1);
+  }
 
   // Filtered rows
   const rows = useMemo(() => {
@@ -38,12 +58,10 @@ export default function AdminDirectory({
 
     if (page === "Subjects") {
       return data.subjects.filter((item) => {
-        return (
-          !term ||
-          `${item.code} ${item.title} ${item.description || ""}`
-            .toLowerCase()
-            .includes(term)
-        );
+        const matchesTerm = !term || `${item.code} ${item.title} ${item.description || ""}`.toLowerCase().includes(term);
+        const inUse = data.classrooms.some((classroom) => classroom.subjectId === item.id);
+        const matchesUsage = subjectFilter === "all" || (subjectFilter === "in-use" ? inUse : !inUse);
+        return matchesTerm && matchesUsage;
       });
     }
 
@@ -62,7 +80,8 @@ export default function AdminDirectory({
           yearFilter === "all" || String(item.yearLevel) === String(yearFilter);
         const matchesStatus =
           statusFilter === "all" || item.status === statusFilter;
-        return matchesTerm && matchesYear && matchesStatus;
+        const matchesAssignment = assignmentFilter === "all" || (assignmentFilter === "assigned" ? Boolean(item.instructorId) : !item.instructorId);
+        return matchesTerm && matchesYear && matchesStatus && matchesAssignment;
       });
     }
 
@@ -92,7 +111,26 @@ export default function AdminDirectory({
     statusFilter,
     yearFilter,
     classroomFilter,
+    subjectFilter,
+    assignmentFilter,
   ]);
+
+  const pagination = paginateRecords(rows, pageNumber, pageSize);
+  const hasActiveFilters = Boolean(query) ||
+    (page === "Users" && (roleFilter !== "all" || statusFilter !== "all")) ||
+    (page === "Subjects" && subjectFilter !== "all") ||
+    (page === "Classrooms" && (yearFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all")) ||
+    (page === "Enrollments" && (classroomFilter !== "all" || statusFilter !== "all"));
+
+  function clearFilters() {
+    updateFilter(setQuery, "");
+    updateFilter(setRoleFilter, "all");
+    updateFilter(setStatusFilter, "all");
+    updateFilter(setYearFilter, "all");
+    updateFilter(setClassroomFilter, "all");
+    updateFilter(setSubjectFilter, "all");
+    updateFilter(setAssignmentFilter, "all");
+  }
 
   function handleSave(event) {
     event.preventDefault();
@@ -117,6 +155,7 @@ export default function AdminDirectory({
             email,
             role: form.role || "student",
             status: "active",
+            createdAt: new Date().toISOString(),
           },
         ],
       }));
@@ -137,6 +176,7 @@ export default function AdminDirectory({
             code,
             title: (form.title || "").trim(),
             description: (form.description || "").trim(),
+            createdAt: new Date().toISOString(),
           },
         ],
       }));
@@ -164,6 +204,7 @@ export default function AdminDirectory({
             term: (form.term || "Fall 2026").trim(),
             enrollmentCode,
             status: "active",
+            createdAt: new Date().toISOString(),
           },
         ],
         modules: [
@@ -199,6 +240,7 @@ export default function AdminDirectory({
             classroomId: form.classroomId,
             studentId: form.studentId,
             status: "active",
+            createdAt: new Date().toISOString(),
           },
         ],
       }));
@@ -212,7 +254,7 @@ export default function AdminDirectory({
     update((current) => ({
       ...current,
       [kind]: current[kind].map((record) =>
-        record.id === item.id ? { ...record, status: nextStatus } : record
+        record.id === item.id ? { ...record, status: nextStatus, statusChangedAt: new Date().toISOString() } : record
       ),
     }));
     if (activeItem?.id === item.id) {
@@ -230,18 +272,12 @@ export default function AdminDirectory({
   }
 
   return (
-    <section className="role-panel">
-      {/* Directory Heading */}
-      <div className="role-panel-head">
-        <div>
-          <h2>{page} Management</h2>
-          <p>
-            {rows.length} {rows.length === 1 ? "record" : "records"} found · All changes reflect in the shared demo environment.
-          </p>
-        </div>
+    <section className="admin-directory">
+      <div className="admin-directory-heading">
+        <p>{rows.length} {rows.length === 1 ? "record" : "records"} found <span>· All changes reflect in the shared demo environment.</span></p>
         <button
           type="button"
-          className="role-primary"
+          className="role-primary admin-add-button"
           onClick={() => {
             setForm({});
             setNotice("");
@@ -252,53 +288,38 @@ export default function AdminDirectory({
         </button>
       </div>
 
-      {/* Directory Filter & Search Bar */}
       <div className="admin-filter-bar">
+        <label className="role-search">
+          <Search size={16} />
+          <input
+            aria-label={`Search ${page.toLowerCase()}`}
+            placeholder={`Search ${page.toLowerCase()}...`}
+            value={query}
+            onChange={(e) => updateFilter(setQuery, e.target.value)}
+          />
+        </label>
         {page === "Users" && (
-          <div className="admin-role-pills">
-            {["all", "student", "instructor", "admin"].map((role) => (
-              <button
-                key={role}
-                type="button"
-                className={`admin-role-pill ${roleFilter === role ? "active" : ""}`}
-                onClick={() => setRoleFilter(role)}
-              >
-                {role === "all" ? "All roles" : role.charAt(0).toUpperCase() + role.slice(1) + "s"}
-              </button>
-            ))}
-          </div>
+          <label className="admin-filter-control"><span>Role</span><select value={roleFilter} onChange={(e) => updateFilter(setRoleFilter, e.target.value)}>
+            <option value="all">All roles</option><option value="student">Students</option><option value="instructor">Instructors</option><option value="admin">Admins</option>
+          </select></label>
         )}
-
+        {page === "Subjects" && (
+          <label className="admin-filter-control"><span>Classroom use</span><select value={subjectFilter} onChange={(e) => updateFilter(setSubjectFilter, e.target.value)}>
+            <option value="all">All subjects</option><option value="in-use">In use</option><option value="unused">No classrooms</option>
+          </select></label>
+        )}
         {page === "Classrooms" && (
-          <div className="admin-role-pills">
-            {["all", "1", "2", "3", "4"].map((year) => (
-              <button
-                key={year}
-                type="button"
-                className={`admin-role-pill ${yearFilter === year ? "active" : ""}`}
-                onClick={() => setYearFilter(year)}
-              >
-                {year === "all" ? "All Years" : `Year ${year}`}
-              </button>
-            ))}
-          </div>
+          <>
+            <label className="admin-filter-control"><span>Year</span><select value={yearFilter} onChange={(e) => updateFilter(setYearFilter, e.target.value)}>
+              <option value="all">All years</option>{[1, 2, 3, 4].map((year) => <option key={year} value={String(year)}>Year {year}</option>)}
+            </select></label>
+            <label className="admin-filter-control"><span>Instructor assignment</span><select value={assignmentFilter} onChange={(e) => updateFilter(setAssignmentFilter, e.target.value)}>
+              <option value="all">All assignments</option><option value="assigned">Assigned</option><option value="unassigned">Unassigned</option>
+            </select></label>
+          </>
         )}
-
         {page === "Enrollments" && (
-          <div className="admin-role-pills">
-            <select
-              style={{
-                height: "32px",
-                border: "1px solid #d9e6e0",
-                borderRadius: "8px",
-                padding: "0 8px",
-                fontSize: "11px",
-                background: "#fff",
-                color: "#35473e",
-              }}
-              value={classroomFilter}
-              onChange={(e) => setClassroomFilter(e.target.value)}
-            >
+          <label className="admin-filter-control admin-classroom-filter"><span>Classroom</span><select value={classroomFilter} onChange={(e) => updateFilter(setClassroomFilter, e.target.value)}>
               <option value="all">All Classrooms</option>
               {data.classrooms.map((room) => {
                 const sub = data.subjects.find((s) => s.id === room.subjectId);
@@ -308,33 +329,14 @@ export default function AdminDirectory({
                   </option>
                 );
               })}
-            </select>
-          </div>
+          </select></label>
         )}
-
         {page !== "Subjects" && (
-          <div className="admin-role-pills">
-            {["all", "active", "inactive"].map((status) => (
-              <button
-                key={status}
-                type="button"
-                className={`admin-role-pill ${statusFilter === status ? "active" : ""}`}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status === "all" ? "All status" : status.charAt(0).toUpperCase() + status.slice(1)}
-              </button>
-            ))}
-          </div>
+          <label className="admin-filter-control"><span>Status</span><select value={statusFilter} onChange={(e) => updateFilter(setStatusFilter, e.target.value)}>
+            <option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option>
+          </select></label>
         )}
-
-        <label className="role-search">
-          <Search size={14} />
-          <input
-            placeholder={`Search ${page.toLowerCase()}...`}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </label>
+        {hasActiveFilters && <button type="button" className="admin-clear-filters" onClick={clearFilters}>Clear filters</button>}
       </div>
 
       {/* Creation Modal / Form */}
@@ -584,7 +586,7 @@ export default function AdminDirectory({
         </form>
       )}
 
-      {/* Directory Table */}
+      <div className="admin-record-card">
       {!rows.length ? (
         <div className="role-empty">
           <strong>No {page.toLowerCase()} found</strong>
@@ -635,7 +637,7 @@ export default function AdminDirectory({
               </tr>
             </thead>
             <tbody>
-              {rows.map((item) => {
+              {pagination.records.map((item) => {
                 if (page === "Users") {
                   return (
                     <tr key={item.id}>
@@ -828,6 +830,15 @@ export default function AdminDirectory({
           </table>
         </div>
       )}
+      {rows.length > 0 && <nav className="admin-pagination" aria-label={`${page} pages`}>
+        <span>Showing {(pagination.page - 1) * pageSize + 1}–{Math.min(pagination.page * pageSize, rows.length)} of {rows.length}</span>
+        <div>
+          <button type="button" onClick={() => setPageNumber(pagination.page - 1)} disabled={pagination.page === 1}>Previous</button>
+          {pagination.pageNumbers.map((number) => <button type="button" key={number} className={number === pagination.page ? "active" : ""} aria-current={number === pagination.page ? "page" : undefined} aria-label={`Page ${number}`} onClick={() => setPageNumber(number)}>{number}</button>)}
+          <button type="button" onClick={() => setPageNumber(pagination.page + 1)} disabled={pagination.page === pagination.pageCount}>Next</button>
+        </div>
+      </nav>}
+      </div>
 
       {/* Detail Slide-out Modal */}
       {activeItem && (

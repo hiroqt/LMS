@@ -5,10 +5,11 @@ import { createInitialData } from "../shared/lmsData";
 import { saveRoleData } from "../shared/storage";
 import AdminOverview from "./AdminOverview";
 import AdminDirectory from "./AdminDirectory";
+import AdminReports from "./AdminReports";
 import "./adminDashboard.css";
 import "../shared/rolePages.css";
 
-const sections = ["Overview", "Users", "Subjects", "Classrooms", "Enrollments"];
+const sections = ["Overview", "Users", "Subjects", "Classrooms", "Enrollments", "Reports"];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
 
 export default function Admin() {
@@ -45,16 +46,11 @@ export default function Admin() {
     }
   }
 
-  const heading =
-    page === "Overview"
-      ? [
-          "TMCC Academic Administration",
-          "Oversee people, curriculum offerings, classrooms, and student enrollments.",
-        ]
-      : [
-          `${page} Management`,
-          `Review, filter, and maintain ${page.toLowerCase()} records in the shared demo environment.`,
-        ];
+  const heading = page === "Overview"
+    ? ["TMCC Academic Administration", "Oversee people, curriculum offerings, classrooms, and student enrollments."]
+    : page === "Reports"
+      ? ["Reports", "Export shared LMS records as CSV files."]
+      : [`${page} Management`, `Review, filter, and maintain ${page.toLowerCase()} records in the shared demo environment.`];
 
   const searchItems = [
     ...(data.users || []).map((item) => ({
@@ -111,6 +107,7 @@ export default function Admin() {
       }}
       title={heading[0]}
       subtitle={heading[1]}
+      showHeading={page !== "Overview"}
       searchItems={searchItems}
       notifications={notifications}
       onNotificationSelect={() => setPage("Classrooms")}
@@ -125,6 +122,8 @@ export default function Admin() {
           onOpenCreate={openCreateFor}
           onResetDemo={handleResetDemo}
         />
+      ) : page === "Reports" ? (
+        <AdminReports data={data} />
       ) : (
         <AdminDirectory
           page={page}

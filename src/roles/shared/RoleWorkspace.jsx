@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, GraduationCap, LayoutDashboard, ListChecks, Menu, ShieldCheck, UsersRound, X } from "../../icons";
+import { BookOpen, ChevronLeft, ChevronRight, FileText, GraduationCap, LayoutDashboard, ListChecks, Menu, ShieldCheck, UsersRound, X } from "../../icons";
 import Avatar from "../../components/shared/Avatar";
 import Breadcrumbs from "../../components/shared/Breadcrumbs";
 import GlobalSearch from "../../components/shared/GlobalSearch";
 import NotificationMenu from "../../components/shared/NotificationMenu";
 import "./RoleWorkspace.css";
 
-const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks };
+const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText };
 
 export default function RoleWorkspace({ role, user, sections, page, onNavigate, title, subtitle, searchItems = [], notifications = [], onNotificationSelect, showHeading = true, classrooms = [], selectedClassId, onClassSelect, onCreateClass, children }) {
   const [collapsed, setCollapsed] = useState(false);
