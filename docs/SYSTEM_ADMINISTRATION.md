@@ -6,7 +6,14 @@ Give the Admin role one sidebar group for system setup, access-profile previews,
 
 ## Navigation and pages
 
-Keep Overview as its own Admin destination. Add an expandable System Administration group with these pages:
+Keep Overview as its own Admin destination. Add an expandable System Administration group with independently expandable categories. Start with the categories closed, open the selected page's category automatically, and allow multiple categories to remain open:
+
+- System Setup: System Configuration and Academic Term Configuration.
+- People & Access: User Management and Role Management.
+- Courses: Course Management and Enrollments.
+- Oversight: Audit Logs and System Reports.
+
+The destinations are:
 
 - System Configuration: institution display name, browser-local timezone, current/default academic term, in-app alert preferences, and a display-only scheduled-job card. The backup action creates a full browser-local snapshot and offers JSON download.
 - Academic Term Configuration: planned, current, and archived terms with start/end dates. The migrated term has optional dates; new terms require dates. Exactly one term is current. Making a term current changes the default for new classrooms and leaves existing classroom assignments unchanged.

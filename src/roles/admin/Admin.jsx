@@ -16,8 +16,15 @@ import "./adminSystem.css";
 import "../shared/rolePages.css";
 
 const sections = ["Overview"];
-const adminPages = ["System Configuration", "Academic Term Configuration", "User Management", "Role Management", "Course Management", "Audit Logs", "System Reports", "Enrollments"];
-const navigationGroups = [{ label: "System Administration", items: adminPages }];
+const navigationGroups = [{
+  label: "System Administration",
+  groups: [
+    { label: "System Setup", items: ["System Configuration", "Academic Term Configuration"] },
+    { label: "People & Access", items: ["User Management", "Role Management"] },
+    { label: "Courses", items: ["Course Management", "Enrollments"] },
+    { label: "Oversight", items: ["Audit Logs", "System Reports"] },
+  ],
+}];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
 
 export default function Admin() {

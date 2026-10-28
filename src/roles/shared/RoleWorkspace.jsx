@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, LayoutDashboard, ListChecks, Menu, Settings, ShieldCheck, UsersRound, X } from "../../icons";
 import Avatar from "../../components/shared/Avatar";
 import Breadcrumbs from "../../components/shared/Breadcrumbs";
@@ -7,6 +7,7 @@ import NotificationMenu from "../../components/shared/NotificationMenu";
 import "./RoleWorkspace.css";
 
 const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText, "System Configuration": Settings, "Academic Term Configuration": CalendarDays, "User Management": UsersRound, "Role Management": ShieldCheck, "Course Management": BookOpen, "Audit Logs": ClipboardCheck, "System Reports": FileText };
+const categoryIcons = { "System Setup": Settings, "People & Access": UsersRound, Courses: BookOpen, Oversight: ClipboardCheck };
 
 export default function RoleWorkspace({ role, user, sections, navigationGroups = [], page, onNavigate, title, subtitle, searchItems = [], notifications = [], onNotificationSelect, showHeading = true, classrooms = [], selectedClassId, onClassSelect, onCreateClass, children }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -17,6 +18,12 @@ export default function RoleWorkspace({ role, user, sections, navigationGroups =
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const results = useMemo(() => { const term = query.trim().toLowerCase(); return term ? searchItems.filter((item) => `${item.kind} ${item.title}`.toLowerCase().includes(term)).slice(0, 6) : []; }, [query, searchItems]);
+  // A route selected elsewhere in the workspace should reveal its sidebar category.
+  useEffect(() => {
+    const selectedGroup = navigationGroups.flatMap((group) => group.groups || []).find((group) => group.items.includes(page));
+    // oxlint-disable-next-line react/set-state-in-effect
+    if (selectedGroup) setExpandedGroups((current) => ({ ...current, [selectedGroup.label]: true }));
+  }, [navigationGroups, page]);
   const navButton = (item) => {
       const Icon = icons[item] || LayoutDashboard;
       return <button type="button" className={page === item ? "active" : ""} key={item} onClick={() => { onNavigate(item); setDrawer(false); }}><Icon size={18} /><span>{item}</span></button>;
@@ -24,8 +31,14 @@ export default function RoleWorkspace({ role, user, sections, navigationGroups =
   const navigation = <nav className="role-nav" aria-label={`${role} navigation`}>
     {sections.map(navButton)}
     {navigationGroups.map((group) => <section className="role-nav-group" key={group.label}>
-      <button type="button" className={`role-nav-group-toggle ${group.items.includes(page) ? "active" : ""}`} aria-expanded={Boolean(expandedGroups[group.label])} onClick={() => setExpandedGroups((current) => ({ ...current, [group.label]: !current[group.label] }))}><ShieldCheck size={18} /><span>{group.label}</span><ChevronRight className={expandedGroups[group.label] ? "expanded" : ""} size={15} /></button>
-      {expandedGroups[group.label] && <div className="role-nav-group-items">{group.items.map(navButton)}</div>}
+      <button type="button" className={`role-nav-group-toggle ${group.groups.some((category) => category.items.includes(page)) ? "active" : ""}`} aria-expanded={Boolean(expandedGroups[group.label])} onClick={() => setExpandedGroups((current) => ({ ...current, [group.label]: !current[group.label] }))}><ShieldCheck size={18} /><span>{group.label}</span><ChevronRight className={expandedGroups[group.label] ? "expanded" : ""} size={15} /></button>
+      {expandedGroups[group.label] && <div className="role-nav-group-items">{group.groups.map((category) => {
+        const CategoryIcon = categoryIcons[category.label] || LayoutDashboard;
+        return <section className="role-nav-category" key={category.label}>
+          <button type="button" className={`role-nav-category-toggle ${category.items.includes(page) ? "active" : ""}`} aria-expanded={Boolean(expandedGroups[category.label])} onClick={() => setExpandedGroups((current) => ({ ...current, [category.label]: !current[category.label] }))}><CategoryIcon size={16} /><span>{category.label}</span><ChevronRight className={expandedGroups[category.label] ? "expanded" : ""} size={14} /></button>
+          {expandedGroups[category.label] && <div className="role-nav-category-items">{category.items.map(navButton)}</div>}
+        </section>;
+      })}</div>}
     </section>)}
   </nav>;
   return <div className={`role-shell ${collapsed ? "is-collapsed" : ""}`}>
