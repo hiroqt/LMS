@@ -1,5 +1,6 @@
 import { assessments, courses, questionsByAssessment, students, materials } from "../../data.js";
 import { readRoleData, saveRoleData } from "./storage.js";
+import { initializeSystemAdministration } from "./systemAdministrationData.js";
 
 const id = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -19,7 +20,7 @@ export function createInitialData() {
   const modules = classrooms.map((room, index) => ({ id: `module-${index + 1}`, classroomId: room.id, title: "Unit 1 · Foundations", order: 1 }));
   const materialRecords = materials.map((material) => ({ id: material.id, moduleId: modules[courses.findIndex((course) => course.id === material.courseId)]?.id, title: material.title, kind: material.kind, description: material.summary, status: "active" })).filter((item) => item.moduleId);
   const exams = assessments.map((exam) => ({ id: exam.id, classroomId: exam.courseId, moduleId: modules[courses.findIndex((course) => course.id === exam.courseId)]?.id, title: exam.title, instructions: exam.instructions, dueAt: exam.dueAt, totalMarks: exam.points, timeLimitMinutes: Number.parseInt(exam.timeLimit, 10) || 0, attempts: 1, status: "active", questions: (questionsByAssessment[exam.id] || []).map((question) => ({ prompt: question.prompt, options: question.options, correctIndex: question.correct, points: question.points })) }));
-  return { users, subjects, classrooms, enrollments, modules, materials: materialRecords, announcements: [], activities: [], activitySubmissions: [], exams, examSubmissions: [], gradebookSettings: Object.fromEntries(classrooms.map((room) => [room.id, { activityWeight: 40, examWeight: 60, passingScore: 60 }])) };
+  return initializeSystemAdministration({ users, subjects, classrooms, enrollments, modules, materials: materialRecords, announcements: [], activities: [], activitySubmissions: [], exams, examSubmissions: [], gradebookSettings: Object.fromEntries(classrooms.map((room) => [room.id, { activityWeight: 40, examWeight: 60, passingScore: 60 }])) });
 }
 
 export function loadLmsData() {
@@ -30,14 +31,14 @@ export function loadLmsData() {
     const latest = defaults.find((item) => item.id === record.id);
     return latest ? { ...record, ...Object.fromEntries(fields.map((field) => [field, latest[field]])) } : record;
   });
-  const updated = {
+  const updated = initializeSystemAdministration({
     ...data,
     announcements: data.announcements || [],
     subjects: syncSeedFields(data.subjects, seed.subjects, ["code", "title", "description"]),
     classrooms: syncSeedFields(data.classrooms, seed.classrooms, ["section", "yearLevel", "term", "enrollmentCode"]),
     materials: syncSeedFields(data.materials, seed.materials, ["title", "kind", "description"]),
     exams: syncSeedFields(data.exams, seed.exams, ["title", "instructions"]),
-  };
+  });
   if (JSON.stringify(updated) !== JSON.stringify(data)) saveRoleData(updated);
   return updated;
 }

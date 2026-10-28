@@ -1,4 +1,5 @@
 export const LMS_STORAGE_KEY = "tmcc-lms-roles-v1";
+export const LMS_BACKUP_STORAGE_KEY = "tmcc-lms-system-backup-v1";
 
 export function readRoleData() {
   try {
@@ -12,6 +13,23 @@ export function saveRoleData(data) {
   try {
     localStorage.setItem(LMS_STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new Event("tmcc-lms-data"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function readSystemBackup() {
+  try {
+    return JSON.parse(localStorage.getItem(LMS_BACKUP_STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+export function saveSystemBackup(snapshot) {
+  try {
+    localStorage.setItem(LMS_BACKUP_STORAGE_KEY, JSON.stringify(snapshot));
     return true;
   } catch {
     return false;

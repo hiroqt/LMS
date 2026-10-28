@@ -35,6 +35,7 @@ import {
 } from "./data";
 import { readRoleData, saveRoleData } from "./roles/shared/storage";
 import { createInitialData } from "./roles/shared/lmsData";
+import { appendAuditEvent } from "./roles/shared/systemAdministrationData";
 import Avatar from "./components/shared/Avatar";
 import Breadcrumbs from "./components/shared/Breadcrumbs";
 import GlobalSearch from "./components/shared/GlobalSearch";
@@ -239,7 +240,8 @@ function App() {
         answers: savedAnswers,
         submittedAt: new Date().toISOString(),
       };
-      saveRoleData({ ...roleData, examSubmissions: [...(roleData.examSubmissions || []).filter((item) => item.id !== existing?.id), submission] });
+      const updated = { ...roleData, examSubmissions: [...(roleData.examSubmissions || []).filter((item) => item.id !== existing?.id), submission] };
+      saveRoleData(appendAuditEvent(updated, { actorId: "s0", actorName: "Alex Rivera", actorRole: "student", category: "activity", action: "submitted", target: "Assessment", targetId: assessmentId, summary: assessment.title }, new Date(submission.submittedAt)));
     }
     setProgress((current) => ({
       ...current,
@@ -252,7 +254,8 @@ function App() {
     const roleData = readRoleData();
     if (!roleData || !assessment?.kind) return;
     const submission = { id: `activity-submission-${assessment.id}-s0`, activityId: assessment.id, classroomId: assessment.courseId, studentId: "s0", submissionText: comment.trim(), fileAttachmentUrl: fileName.trim(), status: "submitted", submittedAt: new Date().toISOString(), grade: null, feedback: "" };
-    saveRoleData({ ...roleData, activitySubmissions: [...(roleData.activitySubmissions || []).filter((item) => !(item.activityId === assessment.id && item.studentId === "s0")), submission] });
+    const updated = { ...roleData, activitySubmissions: [...(roleData.activitySubmissions || []).filter((item) => !(item.activityId === assessment.id && item.studentId === "s0")), submission] };
+    saveRoleData(appendAuditEvent(updated, { actorId: "s0", actorName: "Alex Rivera", actorRole: "student", category: "activity", action: "submitted", target: "Assignment", targetId: assessment.id, summary: assessment.title }, new Date(submission.submittedAt)));
     setActivityRefresh((value) => value + 1);
     setProgress((current) => ({ ...current, completed: [...new Set([...current.completed, assessment.id])] }));
   }

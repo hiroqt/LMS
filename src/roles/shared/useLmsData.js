@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadLmsData, persistLmsData } from "./lmsData";
+import { appendAuditEvent } from "./systemAdministrationData";
 
 export function useLmsData() {
   const [data, setData] = useState(loadLmsData);
@@ -16,11 +17,12 @@ export function useLmsData() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
-  function update(change) {
+  function update(change, auditEvent) {
     const next = typeof change === "function" ? change(current.current) : change;
-    current.current = next;
-    persistLmsData(next);
-    setData(next);
+    const updated = auditEvent ? appendAuditEvent(next, auditEvent) : next;
+    current.current = updated;
+    persistLmsData(updated);
+    setData(updated);
   }
   return [data, update];
 }

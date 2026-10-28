@@ -6,7 +6,7 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 ## Role outcomes
 
-- Admin: manage users, subjects, classrooms, instructor assignments, and enrollments. Referenced records are deactivated instead of deleted. The overview summarizes total students and faculty, active course sections and users, weekly course/student/system activity, and submission completion analytics. A Reports sidebar page exports available records as CSV.
+- Admin: monitor total students and faculty, active course sections and users, shared weekly activity, and learning outcomes. Manage users, subjects, classrooms, and enrollments through paginated directories. The System Administration sidebar group contains local settings, academic terms, a non-enforced role matrix, metadata-only audit history, and CSV reports. Admin can create/download a browser-local backup; Reset Demo saves a snapshot before restoring seed data.
 - Instructor: manage assigned classrooms, enrollment, modules, materials, announcements, activities, and exams; configure attempts, timers, review, and gradebook weights; grade submissions and essays with feedback.
 - Student: browse enrolled classrooms and coursework, read instructor announcements, join with a code, submit an attachment filename with a comment, take exams, review attempts, and see grades. Resubmission and late work follow instructor settings.
 
@@ -20,7 +20,7 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 ## Boundaries and acceptance
 
 - Frontend-only React/Vite, fictional college data, no accounts, real uploads, backend, or cross-device persistence.
-- Role data and submissions persist in the current browser; no reset control.
+- Role data and submissions persist in the current browser. Admin Reset Demo restores seed records after saving a separate local snapshot.
 - Exams support multiple choice, true/false, essay, enumeration, and matching. Essays need instructor grading; remaining types use simple local automatic grading. Both exam-wide and per-question timers can be disabled or configured; retry and correct-answer visibility settings are configurable.
 - Gradebook category weights and passing threshold are instructor-configurable. The illustrative overall uses graded work only.
 - Document Student, Instructor, and Admin journeys in matching role flow documents and standalone SVG charts.
