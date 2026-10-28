@@ -7,13 +7,12 @@ import NotificationMenu from "../../components/shared/NotificationMenu";
 import "./RoleWorkspace.css";
 
 const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText, "System Configuration": Settings, "Academic Term Configuration": CalendarDays, "User Management": UsersRound, "Role Management": ShieldCheck, "Course Management": BookOpen, "Audit Logs": ClipboardCheck, "System Reports": FileText };
-const categoryIcons = { "System Setup": Settings, "People & Access": UsersRound, Courses: BookOpen, Oversight: ClipboardCheck };
+const categoryIcons = { "People & Access": UsersRound, Courses: BookOpen, Oversight: ClipboardCheck };
 
 export default function RoleWorkspace({ role, user, sections, navigationGroups = [], page, onNavigate, title, subtitle, searchItems = [], notifications = [], onNotificationSelect, showHeading = true, classrooms = [], selectedClassId, onClassSelect, onCreateClass, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [classesExpanded, setClassesExpanded] = useState(true);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -23,9 +22,7 @@ export default function RoleWorkspace({ role, user, sections, navigationGroups =
   useEffect(() => {
     const selectedGroup = navigationGroups.flatMap((group) => group.groups || []).find((group) => group.items.includes(page));
     // oxlint-disable-next-line react/set-state-in-effect
-    if (selectedGroup) setSettingsExpanded(true);
-    // oxlint-disable-next-line react/set-state-in-effect
-    if (selectedGroup) setExpandedGroups((current) => ({ ...current, [selectedGroup.label]: true }));
+    if (selectedGroup?.items.length > 1) setExpandedGroups((current) => ({ ...current, [selectedGroup.label]: true }));
   }, [navigationGroups, page]);
   const navButton = (item) => {
       const Icon = icons[item] || LayoutDashboard;
@@ -33,20 +30,19 @@ export default function RoleWorkspace({ role, user, sections, navigationGroups =
   };
   const navigation = <nav className="role-nav" aria-label={`${role} navigation`}>
     {sections.map(navButton)}
-  </nav>;
-  const settingsNavigation = navigationGroups.map((group) => <section className="role-settings-menu" key={group.label}>
-    <button type="button" className={`role-settings-toggle ${group.groups.some((category) => category.items.includes(page)) ? "active" : ""}`} aria-expanded={settingsExpanded} onClick={() => setSettingsExpanded((expanded) => !expanded)}><Settings size={17} /><span>Admin Settings</span><ChevronRight className={settingsExpanded ? "expanded" : ""} size={15} /></button>
-    {settingsExpanded && <div className="role-settings-categories">{group.groups.map((category) => {
+    {navigationGroups.flatMap((group) => group.groups || []).map((category) => {
       const CategoryIcon = categoryIcons[category.label] || LayoutDashboard;
+      if (category.items.length === 1) return <section className="role-nav-category is-single" key={category.label}>
+        <div className="role-nav-category-label"><CategoryIcon size={16} /><span>{category.label}</span></div>
+        <div className="role-nav-category-items">{category.items.map(navButton)}</div>
+      </section>;
       return <section className="role-nav-category" key={category.label}>
         <button type="button" className={`role-nav-category-toggle ${category.items.includes(page) ? "active" : ""}`} aria-expanded={Boolean(expandedGroups[category.label])} onClick={() => setExpandedGroups((current) => ({ ...current, [category.label]: !current[category.label] }))}><CategoryIcon size={16} /><span>{category.label}</span><ChevronRight className={expandedGroups[category.label] ? "expanded" : ""} size={14} /></button>
-        {expandedGroups[category.label] && <div className="role-nav-category-items">{category.items.map((item) => {
-          const Icon = icons[item] || LayoutDashboard;
-          return <button type="button" className={`role-settings-page ${page === item ? "active" : ""}`} key={item} onClick={() => { onNavigate(item); setDrawer(false); }}><Icon size={16} /><span>{item}</span></button>;
-        })}</div>}
+        {expandedGroups[category.label] && <div className="role-nav-category-items">{category.items.map(navButton)}</div>}
       </section>;
-    })}</div>}
-  </section>);
+    })}
+  </nav>;
+  const settingsNavigation = navigationGroups.length > 0 && <button type="button" className={`role-settings-link ${page === "System Configuration" ? "active" : ""}`} onClick={() => { onNavigate("System Configuration"); setDrawer(false); }}><Settings size={16} /><span>Settings</span></button>;
   return <div className={`role-shell ${collapsed ? "is-collapsed" : ""}`}>
     <aside className={`role-sidebar ${drawer ? "is-open" : ""}`}>
       <a className="role-brand" href="/student"><span className="role-brand-mark"><GraduationCap size={21} /></span><span>TMCC LMS<i>.</i></span></a>

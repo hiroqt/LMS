@@ -6,12 +6,11 @@ Give the Admin role one sidebar group for system setup, access-profile previews,
 
 ## Navigation and pages
 
-Keep Overview in the main Admin navigation. Place an expandable Admin Settings entry at the bottom of the sidebar, after the Admin workspace label. Its categories are independently expandable. Start with the settings menu closed, open it and the selected page's category automatically, and allow multiple categories to remain open:
+Keep Overview and Academic Term Configuration as direct Admin navigation links. Show Oversight, People & Access, and Courses as categories. Only categories with multiple destinations expand; show a single destination directly. Start multi-page categories closed and automatically open the selected destination's category, while allowing multiple categories to remain open. Keep sublinks large enough to read. Place a separate Settings link at the bottom of the sidebar, after the Admin workspace label; it opens System Configuration.
 
-- System Setup: System Configuration and Academic Term Configuration.
+- Oversight: Audit Logs and System Reports.
 - People & Access: User Management and Role Management.
 - Courses: Course Management and Enrollments.
-- Oversight: Audit Logs and System Reports.
 
 The destinations are:
 
@@ -30,7 +29,7 @@ Persist system settings, academic terms, role permissions, and audit events in t
 
 ## Acceptance
 
-- The Admin sidebar keeps Overview separate and provides the seven requested System Administration destinations plus the existing Enrollments directory in an expandable group.
+- The Admin sidebar keeps Overview and Academic Term Configuration as direct links, shows the three multi-page categories in the main navigation, and places Settings below the Admin workspace footer.
 - Existing Users, Subjects, Classrooms, and CSV report actions remain available from their new destinations.
 - Current-term selection updates the default for new classrooms without changing existing classroom terms.
 - Settings and permissions survive navigation and reload through browser storage; permission values are visibly identified as non-enforced demo settings.

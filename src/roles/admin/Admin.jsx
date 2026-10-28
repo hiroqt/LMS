@@ -15,14 +15,13 @@ import "./adminDashboard.css";
 import "./adminSystem.css";
 import "../shared/rolePages.css";
 
-const sections = ["Overview"];
+const sections = ["Overview", "Academic Term Configuration"];
 const navigationGroups = [{
-  label: "System Administration",
+  label: "Admin",
   groups: [
-    { label: "System Setup", items: ["System Configuration", "Academic Term Configuration"] },
+    { label: "Oversight", items: ["Audit Logs", "System Reports"] },
     { label: "People & Access", items: ["User Management", "Role Management"] },
     { label: "Courses", items: ["Course Management", "Enrollments"] },
-    { label: "Oversight", items: ["Audit Logs", "System Reports"] },
   ],
 }];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
