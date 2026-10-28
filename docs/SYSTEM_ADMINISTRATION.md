@@ -6,7 +6,7 @@ Give the Admin role one sidebar group for system setup, access-profile previews,
 
 ## Navigation and pages
 
-Keep Overview as its own Admin destination. Add an expandable System Administration group with independently expandable categories. Start with the categories closed, open the selected page's category automatically, and allow multiple categories to remain open:
+Keep Overview in the main Admin navigation. Place an expandable Admin Settings entry at the bottom of the sidebar, after the Admin workspace label. Its categories are independently expandable. Start with the settings menu closed, open it and the selected page's category automatically, and allow multiple categories to remain open:
 
 - System Setup: System Configuration and Academic Term Configuration.
 - People & Access: User Management and Role Management.
