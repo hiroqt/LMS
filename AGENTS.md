@@ -25,8 +25,17 @@ Use the existing React function-component and hooks patterns. Keep components an
 - Match the Student type scale by purpose: page and welcome headings about 28px on desktop, section headings about 17px, card titles about 13px, body copy about 12px, and readable metadata about 10–11px. Reserve smaller type for brief uppercase labels only.
 - Keep dashboards calm and scannable: one clear page heading, a focused hero, simple metric cards with one useful supporting line, and consistent panel spacing. Remove duplicate headings and decorative status badges that repeat nearby information.
 - Keep management screens on one directory pattern: page heading and prominent primary action first; search and clearly labeled filters together in a standalone toolbar; records in a padded, rounded card; pagination directly below the records. Use filters that correspond to real record fields and reset to page one when the search or filters change.
+- Use the same sidebar group, navigation row height, active state, collapse behavior, and mobile drawer across Instructor and Admin. Admin keeps Overview separate and places administration destinations in an expandable System Administration group; use tabs when a destination combines related directories.
 - Make primary actions and filter controls at least 42px high. On narrow screens, stack actions and filters, keep tables horizontally scrollable, preserve row/action spacing, and verify the navigation drawer and all controls remain usable.
 - Do not shrink text to fit dense role screens. Adjust wrapping, spacing, or responsive layout first. Keep the Student reference unchanged unless the user explicitly asks to change it.
+
+## Admin System Administration boundaries
+
+- Keep system settings, academic terms, the demo role matrix, and audit records in the shared browser-local LMS data. These are prototype controls, not institution-wide services.
+- The role matrix is display-only and must not be presented as enforced authorization. The scheduled-backup card is a mock; only an explicit Create backup or Reset Demo action writes a snapshot.
+- Keep audit records metadata-only: actor, role, category, action, target, timestamp, and short summary. Never copy answers, submission text, comments, or feedback into logs. Do not invent timestamps or historical actors.
+- Before Reset Demo clears active LMS data, persist a full snapshot in the separate backup key. Abort reset if storing the snapshot fails.
+- Keep audit pagination visible at all result counts, including an empty or single-page result. Keep filters together above the table and make the table horizontally scrollable on narrow screens.
 
 ## Testing Guidelines
 
