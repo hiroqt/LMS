@@ -21,6 +21,8 @@ export default function Instructor() {
   const instructors = data.users.filter((item) => item.role === "instructor" && item.status === "active");
   const [instructorId, setInstructorId] = useState(instructors[0]?.id || "");
   const instructor = instructors.find((item) => item.id === instructorId) || instructors[0] || { firstName: "Demo", lastName: "Instructor" };
+  const currentTermName = data.systemAdministration?.terms.find((term) => term.id === data.systemAdministration.settings.currentTermId)?.name || "Fall 2026";
+  const audit = (category, action, target, targetId, summary) => ({ actorId: instructor.id, actorName: `${instructor.firstName} ${instructor.lastName}`, actorRole: "instructor", category, action, target, targetId, summary });
   const [page, setPage] = useState("Overview");
   const [classroomId, setClassroomId] = useState("");
   const [formType, setFormType] = useState("");
@@ -78,34 +80,42 @@ export default function Instructor() {
   function createClass(event) {
     event.preventDefault();
     const id = `classroom-${crypto.randomUUID()}`;
-    const classroom = { id, subjectId: newClass.subjectId, instructorId: instructor.id, section: newClass.section.trim(), yearLevel: Number(newClass.yearLevel), term: "Fall 2026", enrollmentCode: `TMCC-${id.slice(-8).toUpperCase()}`, status: "active", createdAt: timestamp() };
-    update((current) => ({ ...current, classrooms: [...current.classrooms, classroom], modules: [...current.modules, { id: `module-${crypto.randomUUID()}`, classroomId: id, title: "Unit 1 · Foundations", order: 1 }], gradebookSettings: { ...current.gradebookSettings, [id]: { activityWeight: 40, examWeight: 60, passingScore: 60 } } }));
+    const classroom = { id, subjectId: newClass.subjectId, instructorId: instructor.id, section: newClass.section.trim(), yearLevel: Number(newClass.yearLevel), term: currentTermName, enrollmentCode: `TMCC-${id.slice(-8).toUpperCase()}`, status: "active", createdAt: timestamp() };
+    update((current) => ({ ...current, classrooms: [...current.classrooms, classroom], modules: [...current.modules, { id: `module-${crypto.randomUUID()}`, classroomId: id, title: "Unit 1 · Foundations", order: 1 }], gradebookSettings: { ...current.gradebookSettings, [id]: { activityWeight: 40, examWeight: 60, passingScore: 60 } } }), audit("courses", "created", "Classroom", id, `${classroom.section} · ${classroom.term}`));
     setClassroomId(id); setYearLevelFilter("all"); setPage("Classes"); setClassTab("Stream"); setFormType(""); setNewClass({ subjectId: "", yearLevel: "1", section: "" });
   }
   function create(event) {
     event.preventDefault(); setError("");
     if (!selected) return;
-    if (formType === "material") update((current) => ({ ...current, materials: [...current.materials, { id: `material-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), kind: form.kind || "Study guide", description: form.description.trim(), status: "active", createdAt: timestamp() }] }));
-    if (formType === "activity") update((current) => ({ ...current, activities: [...current.activities, { id: `activity-${crypto.randomUUID()}`, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : "", maxScore: Number(form.points) || 10, allowLate: form.allowLate === true, allowResubmission: form.allowResubmission === true, status: "active", createdAt: timestamp() }] }));
+    if (formType === "material") {
+      const id = `material-${crypto.randomUUID()}`;
+      update((current) => ({ ...current, materials: [...current.materials, { id, moduleId: form.moduleId, title: form.title.trim(), kind: form.kind || "Study guide", description: form.description.trim(), status: "active", createdAt: timestamp() }] }), audit("courses", "published", "Material", id, form.title.trim()));
+    }
+    if (formType === "activity") {
+      const id = `activity-${crypto.randomUUID()}`;
+      update((current) => ({ ...current, activities: [...current.activities, { id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : "", maxScore: Number(form.points) || 10, allowLate: form.allowLate === true, allowResubmission: form.allowResubmission === true, status: "active", createdAt: timestamp() }] }), audit("courses", "published", "Coursework", id, form.title.trim()));
+    }
     if (formType === "exam") {
       const rawDate = form.dueAt ? new Date(form.dueAt).toISOString() : "";
-      update((current) => ({ ...current, exams: [...current.exams, { id: `exam-${crypto.randomUUID()}`, classroomId: selected.id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: rawDate, totalMarks: Number(form.points) || 10, timeLimitMinutes: Number(form.timeLimit) || 0, attempts: 1, status: "active", createdAt: timestamp(), questions: [{ prompt: form.prompt.trim(), options: form.type === "true_false" ? ["True", "False"] : [form.option1, form.option2, form.option3, form.option4].filter(Boolean), correctIndex: form.type === "true_false" ? Number(form.correctIndex) : Number(form.correctIndex), points: Number(form.points) || 10 }] }] }));
+      const id = `exam-${crypto.randomUUID()}`;
+      update((current) => ({ ...current, exams: [...current.exams, { id, classroomId: selected.id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: rawDate, totalMarks: Number(form.points) || 10, timeLimitMinutes: Number(form.timeLimit) || 0, attempts: 1, status: "active", createdAt: timestamp(), questions: [{ prompt: form.prompt.trim(), options: form.type === "true_false" ? ["True", "False"] : [form.option1, form.option2, form.option3, form.option4].filter(Boolean), correctIndex: Number(form.correctIndex), points: Number(form.points) || 10 }] }] }), audit("courses", "published", "Assessment", id, form.title.trim()));
     }
     setFormType("");
   }
   function publishAnnouncement({ title: announcementTitle, message }) {
-    update((current) => ({ ...current, announcements: [...(current.announcements || []), { id: `announcement-${crypto.randomUUID()}`, classroomId: selected.id, instructorId: instructor.id, title: announcementTitle.trim(), message: message.trim(), createdAt: timestamp(), status: "active" }] }));
+    const id = `announcement-${crypto.randomUUID()}`;
+    update((current) => ({ ...current, announcements: [...(current.announcements || []), { id, classroomId: selected.id, instructorId: instructor.id, title: announcementTitle.trim(), message: message.trim(), createdAt: timestamp(), status: "active" }] }), audit("courses", "published", "Announcement", id, announcementTitle.trim()));
   }
   function saveGrade(event) {
     event.preventDefault();
     const item = submissions.find((submission) => submission.id === gradeId);
     if (!item || grade === "" || Number(grade) < 0 || Number(grade) > item.exam.totalMarks) return setError(`Enter a score from 0 to ${item?.exam.totalMarks ?? "the maximum"}.`);
-    if (item.kind === "activity") update((current) => ({ ...current, activitySubmissions: current.activitySubmissions.map((record) => record.id === item.id ? { ...record, grade: Number(grade), feedback: feedback.trim(), status: "graded", gradedAt: timestamp() } : record) }));
-    else update((current) => ({ ...current, examSubmissions: [...current.examSubmissions.filter((record) => !(record.examId === item.id && record.studentId === item.student.id)), { id: item.existing?.id || `submission-${crypto.randomUUID()}`, examId: item.id, classroomId: item.exam.classroomId, studentId: item.student.id, status: "graded", totalScore: Number(grade), feedback: feedback.trim(), answers: item.answers, submittedAt: item.existing?.submittedAt || timestamp(), gradedAt: timestamp() }] }));
+    if (item.kind === "activity") update((current) => ({ ...current, activitySubmissions: current.activitySubmissions.map((record) => record.id === item.id ? { ...record, grade: Number(grade), feedback: feedback.trim(), status: "graded", gradedAt: timestamp(), gradedBy: instructor.id } : record) }), audit("activity", "graded", "Assignment", item.id, `${item.student?.firstName || "Student"} ${item.student?.lastName || ""} · ${item.exam.title}`));
+    else update((current) => ({ ...current, examSubmissions: [...current.examSubmissions.filter((record) => !(record.examId === item.id && record.studentId === item.student.id)), { id: item.existing?.id || `submission-${crypto.randomUUID()}`, examId: item.id, classroomId: item.exam.classroomId, studentId: item.student.id, status: "graded", totalScore: Number(grade), feedback: feedback.trim(), answers: item.answers, submittedAt: item.existing?.submittedAt || timestamp(), gradedAt: timestamp(), gradedBy: instructor.id }] }), audit("activity", "graded", "Assessment", item.id, `${item.student?.firstName || "Student"} ${item.student?.lastName || ""} · ${item.exam.title}`));
     setGradeId(""); setGrade(""); setFeedback(""); setError("");
   }
   function setSetting(key, value) {
-    update((current) => ({ ...current, gradebookSettings: { ...current.gradebookSettings, [selected.id]: { ...(current.gradebookSettings[selected.id] || { activityWeight: 40, examWeight: 60, passingScore: 60 }), [key]: Number(value) } } }));
+    update((current) => ({ ...current, gradebookSettings: { ...current.gradebookSettings, [selected.id]: { ...(current.gradebookSettings[selected.id] || { activityWeight: 40, examWeight: 60, passingScore: 60 }), [key]: Number(value) } } }), audit("courses", "updated", "Gradebook settings", selected.id, `${key} updated`));
   }
   function openReviewQueue(item = submissions[0]) {
     const room = classrooms.find((entry) => entry.id === item?.exam.classroomId) || selected;

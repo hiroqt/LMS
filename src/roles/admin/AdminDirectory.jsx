@@ -25,6 +25,8 @@ export default function AdminDirectory({
   const [pageSelection, setPageSelection] = useState({ page: "", number: 1 });
   const pageNumber = pageSelection.page === page ? pageSelection.number : 1;
   const pageSize = 8;
+  const currentTermName = data.systemAdministration?.terms.find((term) => term.id === data.systemAdministration.settings.currentTermId)?.name || "Fall 2026";
+  const classroomTerms = data.systemAdministration?.terms.filter((term) => term.status !== "archived") || [];
 
   function setPageNumber(number) {
     setPageSelection({ page, number });
@@ -144,12 +146,13 @@ export default function AdminDirectory({
       }
       const [firstName, ...last] = (form.name || "").trim().split(/\s+/);
       if (!firstName) return setNotice("Please enter a first and last name.");
+      const userId = `user-${crypto.randomUUID()}`;
       update((current) => ({
         ...current,
         users: [
           ...current.users,
           {
-            id: `user-${crypto.randomUUID()}`,
+            id: userId,
             firstName,
             lastName: last.join(" ") || "User",
             email,
@@ -158,7 +161,7 @@ export default function AdminDirectory({
             createdAt: new Date().toISOString(),
           },
         ],
-      }));
+      }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: "users", action: "created", target: "User", targetId: userId, summary: `${firstName} ${last.join(" ")} · ${form.role || "student"}` });
     } else if (page === "Subjects") {
       const code = form.code?.trim().toUpperCase();
       if (!code) return setNotice("Subject code is required.");
@@ -167,19 +170,20 @@ export default function AdminDirectory({
       ) {
         return setNotice("That subject code already exists in catalog.");
       }
+      const subjectId = `subject-${crypto.randomUUID()}`;
       update((current) => ({
         ...current,
         subjects: [
           ...current.subjects,
           {
-            id: `subject-${crypto.randomUUID()}`,
+            id: subjectId,
             code,
             title: (form.title || "").trim(),
             description: (form.description || "").trim(),
             createdAt: new Date().toISOString(),
           },
         ],
-      }));
+      }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: "courses", action: "created", target: "Subject", targetId: subjectId, summary: `${code} · ${(form.title || "").trim()}` });
     } else if (page === "Classrooms") {
       const enrollmentCode = form.enrollmentCode?.trim().toUpperCase();
       if (!enrollmentCode) return setNotice("Enrollment code is required.");
@@ -201,7 +205,7 @@ export default function AdminDirectory({
             instructorId: form.instructorId || "",
             section: (form.section || "Section A").trim(),
             yearLevel: Number(form.yearLevel) || 1,
-            term: (form.term || "Fall 2026").trim(),
+            term: (form.term || currentTermName).trim(),
             enrollmentCode,
             status: "active",
             createdAt: new Date().toISOString(),
@@ -216,7 +220,7 @@ export default function AdminDirectory({
             order: 1,
           },
         ],
-      }));
+      }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: "courses", action: "created", target: "Classroom", targetId: classroomId, summary: `${form.section || "Section A"} · ${form.term || "Fall 2026"}` });
     } else {
       // Enrollments
       if (!form.classroomId || !form.studentId) {
@@ -231,19 +235,20 @@ export default function AdminDirectory({
       if (exists) {
         return setNotice("Student is already enrolled in this classroom.");
       }
+      const enrollmentId = `enrollment-${crypto.randomUUID()}`;
       update((current) => ({
         ...current,
         enrollments: [
           ...current.enrollments,
           {
-            id: `enrollment-${crypto.randomUUID()}`,
+            id: enrollmentId,
             classroomId: form.classroomId,
             studentId: form.studentId,
             status: "active",
             createdAt: new Date().toISOString(),
           },
         ],
-      }));
+      }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: "courses", action: "enrolled", target: "Enrollment", targetId: enrollmentId, summary: "Student enrolled in classroom" });
     }
 
     setFormOpen(false);
@@ -256,7 +261,7 @@ export default function AdminDirectory({
       [kind]: current[kind].map((record) =>
         record.id === item.id ? { ...record, status: nextStatus, statusChangedAt: new Date().toISOString() } : record
       ),
-    }));
+    }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: kind === "users" ? "users" : "courses", action: nextStatus === "inactive" ? "deactivated" : "activated", target: kind, targetId: item.id, summary: `Status changed to ${nextStatus}` });
     if (activeItem?.id === item.id) {
       setActiveItem((curr) => (curr ? { ...curr, status: nextStatus } : null));
     }
@@ -267,7 +272,7 @@ export default function AdminDirectory({
     update((current) => ({
       ...current,
       [kind]: current[kind].filter((record) => record.id !== id),
-    }));
+    }), { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admin", category: kind === "users" ? "users" : "courses", action: "deleted", target: kind, targetId: id, summary: "Record permanently deleted" });
     setActiveItem(null);
   }
 
@@ -500,11 +505,9 @@ export default function AdminDirectory({
               </label>
               <label className="role-field">
                 <span>Term</span>
-                <input
-                  placeholder="Fall 2026"
-                  value={form.term || "Fall 2026"}
-                  onChange={(e) => setForm({ ...form, term: e.target.value })}
-                />
+                <select value={form.term || currentTermName} onChange={(e) => setForm({ ...form, term: e.target.value })}>
+                  {(classroomTerms.length ? classroomTerms : [{ id: "current-term", name: currentTermName }]).map((term) => <option key={term.id} value={term.name}>{term.name}{term.status === "current" ? " · Current" : " · Planned"}</option>)}
+                </select>
               </label>
               <label className="role-field">
                 <span>Enrollment Code · required</span>
