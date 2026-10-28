@@ -1,26 +1,32 @@
 import { useMemo, useState } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, FileText, GraduationCap, LayoutDashboard, ListChecks, Menu, ShieldCheck, UsersRound, X } from "../../icons";
+import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, LayoutDashboard, ListChecks, Menu, Settings, ShieldCheck, UsersRound, X } from "../../icons";
 import Avatar from "../../components/shared/Avatar";
 import Breadcrumbs from "../../components/shared/Breadcrumbs";
 import GlobalSearch from "../../components/shared/GlobalSearch";
 import NotificationMenu from "../../components/shared/NotificationMenu";
 import "./RoleWorkspace.css";
 
-const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText };
+const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText, "System Configuration": Settings, "Academic Term Configuration": CalendarDays, "User Management": UsersRound, "Role Management": ShieldCheck, "Course Management": BookOpen, "Audit Logs": ClipboardCheck, "System Reports": FileText };
 
-export default function RoleWorkspace({ role, user, sections, page, onNavigate, title, subtitle, searchItems = [], notifications = [], onNotificationSelect, showHeading = true, classrooms = [], selectedClassId, onClassSelect, onCreateClass, children }) {
+export default function RoleWorkspace({ role, user, sections, navigationGroups = [], page, onNavigate, title, subtitle, searchItems = [], notifications = [], onNotificationSelect, showHeading = true, classrooms = [], selectedClassId, onClassSelect, onCreateClass, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [classesExpanded, setClassesExpanded] = useState(true);
+  const [expandedGroups, setExpandedGroups] = useState({ "System Administration": true });
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const results = useMemo(() => { const term = query.trim().toLowerCase(); return term ? searchItems.filter((item) => `${item.kind} ${item.title}`.toLowerCase().includes(term)).slice(0, 6) : []; }, [query, searchItems]);
-  const navigation = <nav className="role-nav" aria-label={`${role} navigation`}>
-    {sections.map((item) => {
+  const navButton = (item) => {
       const Icon = icons[item] || LayoutDashboard;
       return <button type="button" className={page === item ? "active" : ""} key={item} onClick={() => { onNavigate(item); setDrawer(false); }}><Icon size={18} /><span>{item}</span></button>;
-    })}
+  };
+  const navigation = <nav className="role-nav" aria-label={`${role} navigation`}>
+    {sections.map(navButton)}
+    {navigationGroups.map((group) => <section className="role-nav-group" key={group.label}>
+      <button type="button" className={`role-nav-group-toggle ${group.items.includes(page) ? "active" : ""}`} aria-expanded={Boolean(expandedGroups[group.label])} onClick={() => setExpandedGroups((current) => ({ ...current, [group.label]: !current[group.label] }))}><ShieldCheck size={18} /><span>{group.label}</span><ChevronRight className={expandedGroups[group.label] ? "expanded" : ""} size={15} /></button>
+      {expandedGroups[group.label] && <div className="role-nav-group-items">{group.items.map(navButton)}</div>}
+    </section>)}
   </nav>;
   return <div className={`role-shell ${collapsed ? "is-collapsed" : ""}`}>
     <aside className={`role-sidebar ${drawer ? "is-open" : ""}`}>
