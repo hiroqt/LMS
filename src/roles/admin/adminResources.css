@@ -67,6 +67,10 @@
   font-weight: 600;
 }
 
+.admin-record-card {
+  min-height: 280px;
+}
+
 /* Learning Resource Action Button Hover States */
 .admin-record-card .role-row-action.action-download:hover {
   background: #eaf5ef;

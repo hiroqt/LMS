@@ -408,7 +408,7 @@ All educational rights reserved.
   }
 
   return (
-    <section className="admin-directory">
+    <>
       {/* Tab Switcher identical to Course Management tabs */}
       <div
         className="admin-course-tabs"
@@ -432,6 +432,8 @@ All educational rights reserved.
           </button>
         ))}
       </div>
+
+      <section className="admin-directory">
 
       {/* Directory Heading Toolbar identical to Course Management / Enrollments */}
       <div className="admin-directory-heading">
@@ -741,7 +743,6 @@ All educational rights reserved.
                             type="button"
                             className="role-row-action action-link"
                             onClick={() => {
-                              setSelectedSubjectId(unit.subjectId);
                               setUploadForm((prev) => ({
                                 ...prev,
                                 subjectId: unit.subjectId,
@@ -1245,6 +1246,7 @@ All educational rights reserved.
           </div>
         </div>
       )}
-    </section>
+      </section>
+    </>
   );
 }
