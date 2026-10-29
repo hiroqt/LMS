@@ -234,3 +234,47 @@
   .admin-pie-content>.admin-chart-source { grid-column: 1; grid-row: 4; }
   .admin-learning-chart { min-height: 0; }
 }
+
+/* Admin overview follows the reference hierarchy while retaining the LMS palette. */
+.admin-hero { margin-top: 0; padding: 22px 24px; }
+.admin-hero h2 { font-size: clamp(26px, 3vw, 34px); letter-spacing: -1px; }
+.admin-hero-content { align-items: center; }
+.admin-hero-kicker { letter-spacing: 1px; }
+.admin-stat-card { position: relative; min-height: 146px; overflow: hidden; padding: 18px 20px; }
+.admin-stat-top,.admin-stat-card>strong,.admin-stat-meta { position: relative; z-index: 1; }
+.admin-stat-card>strong { max-width: 65%; }
+.admin-stat-meta { max-width: 70%; line-height: 1.5; }
+.admin-metric-art { position: absolute; right: 7px; bottom: 7px; width: 108px; color: #58a388; pointer-events: none; }
+.admin-stat-card:nth-child(2) .admin-metric-art { color: #d5a75d; }
+.admin-stat-card:nth-child(3) .admin-metric-art { color: #6683b0; }
+.admin-stat-card:nth-child(4) .admin-metric-art { color: #8771a7; }
+.admin-insights-grid { align-items: stretch; }
+.admin-course-panel { grid-column: span 12; }
+.admin-course-panel .admin-chart-wrap { max-width: none; }
+.admin-student-panel,.admin-system-panel,.admin-learning-panel { grid-column: span 4; }
+.admin-learning-chart { min-height: 0; }
+.admin-pie-content { grid-template-columns: minmax(0,1fr) minmax(90px,.8fr); grid-template-rows: auto auto auto; align-items: center; gap: 8px; }
+.admin-pie-chart { grid-row: 1; width: min(100%,160px); }
+.admin-pie-legend { grid-row: 1; gap: 7px; }
+.admin-pie-legend>span { padding: 7px 8px; font-size: 11px; }
+.admin-pie-legend strong { font-size: 12px; }
+.admin-pie-tooltip { grid-column: 2; grid-row: 2; min-height: 38px; padding: 7px 9px; font-size: 11px; }
+.admin-pie-content>.admin-chart-source { grid-column: 1/-1; grid-row: 3; }
+@media(max-width:960px) {
+  .admin-course-panel,.admin-student-panel,.admin-system-panel,.admin-learning-panel { grid-column: 1; }
+}
+@media(max-width:700px) {
+  .admin-hero { padding: 18px; }
+  .admin-stat-card { min-height: 132px; padding: 14px; }
+  .admin-stat-card>strong { max-width: 70%; font-size: 25px; }
+  .admin-stat-meta { max-width: 72%; }
+  .admin-metric-art { width: 88px; right: 2px; bottom: 3px; }
+}
+@media(max-width:480px) {
+  .admin-pie-content { grid-template-columns: minmax(0,1.1fr) minmax(96px,.9fr); grid-template-rows: auto auto auto; gap: 8px; }
+  .admin-pie-chart { grid-column: 1; grid-row: 1; width: min(100%,120px); }
+  .admin-pie-legend { grid-column: 2; grid-row: 1; }
+  .admin-pie-tooltip { grid-column: 1/-1; grid-row: 2; }
+  .admin-pie-tooltip:not(.is-visible) { display: none; }
+  .admin-pie-content>.admin-chart-source { grid-column: 1/-1; grid-row: 3; }
+}

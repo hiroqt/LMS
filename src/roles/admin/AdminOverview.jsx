@@ -42,10 +42,10 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
   }, []);
 
   const cards = [
-    { label: "Total Students", value: model.metrics.totalStudents, note: `${activeStudents} active · ${model.metrics.totalStudents - activeStudents} inactive`, icon: <UsersRound size={17} /> },
-    { label: "Total Faculty", value: model.metrics.totalFaculty, note: `${activeFaculty} active · ${model.metrics.totalFaculty - activeFaculty} inactive`, icon: <GraduationCap size={17} /> },
-  { label: "Active Courses", value: model.metrics.activeCourses, note: `Active class sections across ${model.metrics.totalSubjects} subjects`, icon: <BookOpen size={17} /> },
-    { label: "Active Users", value: model.metrics.activeUsers, note: `of ${(data.users || []).length} user accounts`, icon: <UsersRound size={17} /> },
+    { label: "Total Students", value: model.metrics.totalStudents, note: `${activeStudents} active · ${model.metrics.totalStudents - activeStudents} inactive`, icon: <UsersRound size={17} />, art: "students" },
+    { label: "Total Faculty", value: model.metrics.totalFaculty, note: `${activeFaculty} active · ${model.metrics.totalFaculty - activeFaculty} inactive`, icon: <GraduationCap size={17} />, art: "faculty" },
+    { label: "Active Courses", value: model.metrics.activeCourses, note: `Active class sections across ${model.metrics.totalSubjects} subjects`, icon: <BookOpen size={17} />, art: "courses" },
+    { label: "Active Users", value: model.metrics.activeUsers, note: `of ${(data.users || []).length} user accounts`, icon: <UsersRound size={17} />, art: "users" },
   ];
 
   return (
@@ -53,13 +53,13 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
       <section className="admin-hero">
         <div className="admin-hero-content">
           <div>
-            <span className="admin-hero-kicker"><i /> TMCC Administrative Console</span>
-            <h2>Administrator Dashboard</h2>
-            <p>Monitor courses, student learning, and system activity across the browser-based LMS demo.</p>
+            <span className="admin-hero-kicker">ADMINISTRATIVE OVERVIEW</span>
+            <h2>Academic overview</h2>
+            <p>People, courses, and learning activity across the current reporting scope.</p>
           </div>
           <div className="admin-term-badge">
             <strong>{selectedTerm === "all" ? "All academic terms" : selectedTerm}</strong>
-            <small>Dashboard reporting scope</small>
+            <small>Current reporting scope</small>
           </div>
         </div>
 
@@ -77,6 +77,7 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           <div className="admin-stat-top"><span>{card.label}</span><div className="admin-stat-icon">{card.icon}</div></div>
           <strong>{card.value}</strong>
           <div className="admin-stat-meta">{card.note}</div>
+          <AdminMetricArt variant={card.art} />
         </article>)}
       </div>
 
@@ -93,18 +94,6 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
       </div>
 
       <div className="admin-insights-grid">
-        <section className="role-panel admin-insight-panel admin-learning-panel">
-          <PanelHeading title="Total Students" detail="Illustrative demo breakdown by sex" />
-          <StudentDemographicsChart total={model.metrics.totalStudents} loading={chartsLoading} />
-          <button type="button" className="role-link-button" onClick={() => onNavigate("Users")}>View students →</button>
-        </section>
-
-        <section className="role-panel admin-insight-panel admin-student-panel">
-          <PanelHeading title="Student Activity" detail="Weekly activity" count={model.events.students.length} />
-          <WeeklyChart weeks={model.weeklyActivity.students} sample={[2, 4, 3, 6, 5, 7, 6, 10]} loading={chartsLoading} label="Student activity" variant="bar" />
-          <EventList events={model.events.students.slice(0, 3)} compact />
-        </section>
-
         <section className="role-panel admin-insight-panel admin-course-panel">
           <PanelHeading title="Course Activity" detail="Weekly activity" count={model.events.course.length} />
           <WeeklyChart weeks={model.weeklyActivity.course} sample={[3, 5, 4, 7, 5, 8, 6, 9]} loading={chartsLoading} label="Course activity" variant="area" />
@@ -118,6 +107,18 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           <EventList events={model.events.system.slice(0, 3)} />
           <p className="admin-insight-note">This is a recent activity summary, not an audit log.</p>
         </section>
+
+        <section className="role-panel admin-insight-panel admin-student-panel">
+          <PanelHeading title="Student Activity" detail="Weekly activity" count={model.events.students.length} />
+          <WeeklyChart weeks={model.weeklyActivity.students} sample={[2, 4, 3, 6, 5, 7, 6, 10]} loading={chartsLoading} label="Student activity" variant="bar" />
+          <EventList events={model.events.students.slice(0, 3)} compact />
+        </section>
+
+        <section className="role-panel admin-insight-panel admin-learning-panel">
+          <PanelHeading title="Total Students" detail="Illustrative demo breakdown by sex" />
+          <StudentDemographicsChart total={model.metrics.totalStudents} loading={chartsLoading} />
+          <button type="button" className="role-link-button" onClick={() => onNavigate("Users")}>View students →</button>
+        </section>
       </div>
     </div>
   );
@@ -125,6 +126,31 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
 
 function PanelHeading({ title, detail, count }) {
   return <div className="role-panel-head"><div><h2>{title}</h2><p>{detail}</p></div>{count !== undefined && <span className="role-soft-tag">{count} records</span>}</div>;
+}
+
+function AdminMetricArt({ variant }) {
+  return <svg className="admin-metric-art" viewBox="0 0 120 78" aria-hidden="true" focusable="false">
+    {variant === "students" && <g fill="currentColor">
+      <circle cx="60" cy="22" r="11" opacity=".65" /><path d="M39 65c1-15 8-23 21-23s20 8 21 23H39Z" opacity=".35" />
+      <circle cx="27" cy="33" r="8" opacity=".42" /><path d="M12 66c1-12 6-19 15-19 5 0 9 2 12 6-3 4-5 8-6 13H12Z" opacity=".24" />
+      <circle cx="93" cy="33" r="8" opacity=".42" /><path d="M87 53c3-4 7-6 12-6 9 0 14 7 15 19H87c-1-5-3-9-6-13Z" opacity=".24" />
+    </g>}
+    {variant === "faculty" && <g fill="currentColor">
+      <path d="m60 8 48 18-48 18-48-18L60 8Z" opacity=".38" /><path d="M34 35v16c14 12 38 12 52 0V35L60 45 34 35Z" opacity=".22" />
+      <circle cx="60" cy="43" r="10" opacity=".72" /><path d="M38 73c1-14 8-22 22-22s21 8 22 22H38Z" opacity=".38" />
+      <path d="M105 28v22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity=".7" />
+    </g>}
+    {variant === "courses" && <g fill="currentColor" stroke="currentColor" strokeLinejoin="round">
+      <path d="M13 19c17-6 33-3 47 7v43C46 59 30 57 13 64V19Z" opacity=".28" />
+      <path d="M107 19c-17-6-33-3-47 7v43c14-10 30-12 47-5V19Z" opacity=".42" />
+      <path d="M60 26v43M23 31c9-2 18 0 26 4M23 42c9-2 18 0 26 4M97 31c-9-2-18 0-26 4M97 42c-9-2-18 0-26 4" fill="none" strokeWidth="3" strokeLinecap="round" opacity=".74" />
+    </g>}
+    {variant === "users" && <g fill="currentColor">
+      <circle cx="60" cy="25" r="11" opacity=".68" /><circle cx="27" cy="35" r="9" opacity=".42" /><circle cx="93" cy="35" r="9" opacity=".42" />
+      <path d="M39 67c1-15 8-23 21-23s20 8 21 23H39Z" opacity=".38" /><path d="M8 68c1-13 7-20 19-20 7 0 12 3 15 9-2 4-3 8-3 11H8Zm75 0c0-3-1-7-3-11 3-6 8-9 15-9 12 0 18 7 19 20H83Z" opacity=".24" />
+      <path d="M38 17 48 22M82 22l10-5M38 53l9 3M73 56l9-3" fill="none" stroke="currentColor" strokeWidth="2" opacity=".45" />
+    </g>}
+  </svg>;
 }
 
 function EventList({ events, compact = false }) {

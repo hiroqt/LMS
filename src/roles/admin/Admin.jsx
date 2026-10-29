@@ -85,24 +85,24 @@ export default function Admin() {
     ...(data.users || []).map((item) => ({
       id: item.id,
       kind: "Person",
-      title: `${item.firstName} ${item.lastName} (${item.role})`,
+      title: `${[item.firstName, item.lastName].filter(Boolean).join(" ") || item.name || item.fullName || "Unnamed user"} (${item.role})`,
       onSelect: () => setPage("User Management"),
     })),
     ...(data.subjects || []).map((item) => ({
       id: item.id,
       kind: "Subject",
-      title: `${item.code} · ${item.title}`,
+      title: `${item.code || "Subject"} · ${item.title || item.name || "Untitled"}`,
       onSelect: () => { setPage("Course Management"); setCourseTab("Subjects"); },
     })),
-    ...(data.classrooms || []).map((item) => ({
-      id: item.id,
-      kind: "Classroom",
-      title: `${
-        (data.subjects || []).find((s) => s.id === item.subjectId)?.title ||
-        "Classroom"
-      } · ${item.section}`,
-      onSelect: () => { setPage("Course Management"); setCourseTab("Classrooms"); },
-    })),
+    ...(data.classrooms || []).map((item) => {
+      const subject = (data.subjects || []).find((entry) => entry.id === item.subjectId);
+      return {
+        id: item.id,
+        kind: "Classroom",
+        title: `${subject?.title || subject?.name || "Classroom"} · ${item.section || item.name || item.id}`,
+        onSelect: () => { setPage("Course Management"); setCourseTab("Classrooms"); },
+      };
+    }),
   ];
 
   const preferences = data.systemAdministration.settings.notifications;
@@ -128,6 +128,7 @@ export default function Admin() {
       title={heading[0]}
       subtitle={heading[1]}
       showHeading={page !== "Overview"}
+      searchInSidebar
       searchItems={searchItems}
       notifications={notifications}
       onNotificationSelect={(item) => { if (item.category === "users") setPage("User Management"); else if (item.category === "activity") setPage("Audit Logs"); else { setPage("Course Management"); setCourseTab("Classrooms"); } }}
