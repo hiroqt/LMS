@@ -25,6 +25,13 @@ const shapes = {
   ShieldCheck: <><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" /><path d="m9 12 2 2 4-4" /></>,
   UsersRound: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-7a4 4 0 0 1 0 8m2 3a4 4 0 0 1 4 4v2" /></>,
   X: <path d="m18 6-12 12M6 6l12 12" />,
+  Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>,
+  Upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>,
+  ExternalLink: <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></>,
+  Folder: <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />,
+  Plus: <path d="M5 12h14M12 5v14" />,
+  Eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>,
+  Archive: <><rect x="2" y="3" width="20" height="5" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" /></>,
 };
 
 export function Icon({ name, size = 16, ...props }) {
@@ -55,3 +62,10 @@ export const Settings = (props) => <Icon name="Settings" {...props} />;
 export const ShieldCheck = (props) => <Icon name="ShieldCheck" {...props} />;
 export const UsersRound = (props) => <Icon name="UsersRound" {...props} />;
 export const X = (props) => <Icon name="X" {...props} />;
+export const Download = (props) => <Icon name="Download" {...props} />;
+export const Upload = (props) => <Icon name="Upload" {...props} />;
+export const ExternalLink = (props) => <Icon name="ExternalLink" {...props} />;
+export const Folder = (props) => <Icon name="Folder" {...props} />;
+export const Plus = (props) => <Icon name="Plus" {...props} />;
+export const Eye = (props) => <Icon name="Eye" {...props} />;
+export const Archive = (props) => <Icon name="Archive" {...props} />;
