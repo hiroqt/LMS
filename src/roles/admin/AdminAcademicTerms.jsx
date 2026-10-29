@@ -5,10 +5,10 @@ const actor = { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admi
 
 export default function AdminAcademicTerms({ data, update }) {
   const terms = data.systemAdministration.terms;
-  const editingTerm = terms.find((term) => term.id === editingId);
   const [form, setForm] = useState({ name: "", startDate: "", endDate: "" });
   const [editingId, setEditingId] = useState("");
   const [notice, setNotice] = useState("");
+  const editingTerm = terms.find((term) => term.id === editingId);
 
   function saveTerm(event) {
     event.preventDefault();
