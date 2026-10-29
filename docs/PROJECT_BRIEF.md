@@ -12,7 +12,7 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 ## Experience goals
 
-- Keep the existing Student dashboard unchanged as the visual reference. Apply its Poppins typography, soft green surfaces, and rounded cards to the Instructor and Admin workspaces, which share a responsive shell with a collapsible desktop sidebar, mobile navigation drawer, and role/user switching.
+- Keep the existing Student dashboard unchanged. Apply its Poppins typography, soft green surfaces, and rounded cards to the Instructor and Admin workspaces, which share a responsive shell with a collapsible desktop sidebar, mobile navigation drawer, and role/user switching. Admin follows the dashboard reference pattern recorded in `.agents/skills/admin-dashboard-design/SKILL.md` for layout only; retain the LMS palette and TMCC identity.
 - Keep each role's dashboard focused on its primary job: the existing Student experience, instructor submissions awaiting review, and admin setup and enrollment.
 - Derive Admin activity and completion summaries from timestamped browser-local LMS records. Keep chart preview values dashboard-only and label them when the selected scope has no matching timestamps; keep the activity feed distinct from an audit log.
 - Keep the role-specific task flows understandable from overview through completion, with the supplied ERD as the data relationship reference.
