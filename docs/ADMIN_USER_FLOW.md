@@ -1,141 +1,91 @@
 # Admin user flow
 
-This flow describes the comprehensive administrative workspace in the TMCC LMS prototype. Open **Admin** from the top-bar role selector or navigate directly to `/admin`; there is no sign-in screen. All records are browser-local mock data synchronized across the Student, Instructor, and Admin workspaces.
+This flow documents the complete Admin journey in the TMCC LMS prototype: open the workspace, review the dashboard, configure the institution and academic term, manage people and courses, inspect audit history and reports, back up or reset demo data, and then return to Admin or leave the workspace. The workspace has no sign-in or authorization step. All records are fictional and browser-local.
 
-**Standalone flowchart:** [Open the admin flow SVG](flowcharts/tmcc-admin-user-flow.svg).
+The Mermaid diagram below is the editable end-to-end Admin flow.
 
 ```mermaid
 flowchart TD
-    START([Open /admin or Switch to Admin]) --> SHELL[Admin Workspace Shell]
-    SHELL --> TOP[Top Bar: Breadcrumbs, Global Search, Notifications, Role Switcher]
-    SHELL --> SIDEBAR[Sidebar Navigation: Overview, Users, Subjects, Classrooms, Enrollments]
-    
-    TOP -->|Global search select| DIRECTORY
-    TOP -->|Notification select| CL_NAV[Navigate to Classrooms]
-    TOP -->|Switch role| OTHER_ROLE[Switch to Student or Instructor]
-    
-    SIDEBAR -->|Overview| OVERVIEW[Admin Operations Dashboard]
-    SIDEBAR -->|Users| USERS_DIR[Users Directory]
-    SIDEBAR -->|Subjects| SUBJ_DIR[Subjects Directory]
-    SIDEBAR -->|Classrooms| CLASS_DIR[Classrooms Directory]
-    SIDEBAR -->|Enrollments| ENROLL_DIR[Enrollments Directory]
-    
-    subgraph OVERVIEW_FLOW["Overview Dashboard View"]
-      OVERVIEW --> HERO["Hero Header: Fall 2026 Term Status"]
-      HERO --> QA{Choose Quick Action}
-      QA -->|+ Add Person| F_USER[Open New User Form]
-      QA -->|+ New Subject| F_SUBJ[Open New Subject Form]
-      QA -->|+ Create Classroom| F_CLASS[Open New Classroom Form]
-      QA -->|+ Enroll Student| F_ENROLL[Open New Enrollment Form]
-      QA -->|Reset Demo Data| RESET_CONF{Confirm Reset?}
-      RESET_CONF -->|Yes| SEED[Restore Seed Data to localStorage]
-      RESET_CONF -->|No| OVERVIEW
+    START([Open /admin or switch to Admin]) --> SHELL[Admin workspace shell]
+    SHELL --> OVERVIEW[Overview: student and faculty totals; active courses and users; learning analytics; student, course, and system activity; date filter]
+    OVERVIEW --> ROUTE{Choose a page or dashboard action}
 
-      OVERVIEW --> KPIS["KPI Cards: Active Community, Catalog, Enrollments, Alerts"]
-      OVERVIEW --> CHECKLIST["Provisioning Checklist: 4 Setup Steps & Readiness %"]
-      CHECKLIST -->|Click step 01-04| DIRECTORY
-      OVERVIEW --> DISTRIB["Year Level Distribution: Year 1-4 Class Counts"]
-      OVERVIEW --> WORKLOAD["Faculty Workload: Assigned Classes per Instructor"]
-      WORKLOAD -->|View all faculty| USERS_DIR
-      OVERVIEW --> ACTIVITY["Live System Activity: Real-Time Audit Log"]
-    end
+    ROUTE -->|Footer Settings| SETTINGS[System Configuration from sidebar footer]
+    SETTINGS --> CONFIG[Set institution name, timezone, current term, and in-app alerts]
+    SETTINGS --> BACKUP{Create backup or reset demo?}
+    BACKUP -->|Create backup| SNAPSHOT[Save full browser-local snapshot]
+    SNAPSHOT --> DOWNLOAD[Optionally download JSON]
+    BACKUP -->|Reset demo| RESET{Confirm reset?}
+    RESET -->|No| SETTINGS
+    RESET -->|Yes| SNAPSHOT_RESET[Save and retain pre-reset snapshot]
+    SNAPSHOT_RESET --> SEED[Restore initial demo records]
+    SETTINGS -. scheduled backup card is display-only .-> CRON[No background job runs]
 
-    subgraph DIRECTORY_FLOW["Directory & Records Management"]
-      DIRECTORY[Management Directory View]
-      USERS_DIR --> DIRECTORY
-      SUBJ_DIR --> DIRECTORY
-      CLASS_DIR --> DIRECTORY
-      ENROLL_DIR --> DIRECTORY
+    ROUTE -->|Academic Term Configuration direct link| TERMS[Create or edit a term; set current; archive]
+    TERMS --> TERM_RULES[Validate required fields and dates; one current term]
+    TERM_RULES -->|Valid| TERMS_SAVE[Save term settings locally; existing classroom terms stay unchanged]
+    TERM_RULES -->|Invalid| TERM_ERROR[Show validation; keep editing]
+    TERM_ERROR --> TERMS
 
-      DIRECTORY --> FILTER_BAR[Filter & Search Bar]
-      FILTER_BAR -->|Role Pills: All / Student / Instructor / Admin| FILTER_APPLY[Filter Table Rows]
-      FILTER_BAR -->|Year Pills: All / Year 1-4| FILTER_APPLY
-      FILTER_BAR -->|Classroom Dropdown Selector| FILTER_APPLY
-      FILTER_BAR -->|Status Pills: All / Active / Inactive| FILTER_APPLY
-      FILTER_BAR -->|Search input| FILTER_APPLY
-      FILTER_APPLY --> TABLE[Interactive Records Table]
+    ROUTE -->|People & access| PEOPLE{Choose User Management or Role Management}
+    PEOPLE -->|Users| USERS[Search, filter, paginate; add, edit, activate, or deactivate a user]
+    USERS --> USER_VALIDATE{Required fields and unique email valid?}
+    USER_VALIDATE -->|No| USER_ERROR[Show validation; keep editing]
+    USER_ERROR --> USERS
+    USER_VALIDATE -->|Yes| USER_SAVE[Save user change]
+    PEOPLE -->|Roles| ROLES[Edit Student, Instructor, and Admin module/action matrix]
+    ROLES --> ROLE_SAVE[Save visual demo permissions; navigation remains unenforced]
 
-      TABLE -->|+ Add Record Button| OPEN_FORM[Open Creation Form]
-      TABLE -->|Click record title / code| DETAIL_MODAL[Open Record Detail Modal]
-      TABLE -->|Row Action: Deactivate / Activate| TOGGLE_STATUS[Toggle Active / Inactive Status]
-      TABLE -->|Row Action: Delete unused subject| DELETE_REC[Permanently Delete Subject]
+    ROUTE -->|Courses| COURSE{Choose Course Management or Enrollments}
+    COURSE -->|Course Management| COURSE_TAB{Choose tab}
+    COURSE_TAB -->|Subjects| SUBJECTS[Search, filter, paginate; add, edit, activate, or delete an unused subject]
+    COURSE_TAB -->|Classrooms| CLASSROOMS[Search, filter, paginate; add, edit, activate, or deactivate a classroom]
+    COURSE -->|Enrollments| ENROLL[Search, filter, paginate; add or update a student enrollment]
+    SUBJECTS --> COURSE_VALIDATE{Fields, unique values, and links valid?}
+    CLASSROOMS --> COURSE_VALIDATE
+    ENROLL --> COURSE_VALIDATE
+    COURSE_VALIDATE -->|No| COURSE_ERROR[Show validation; keep editing]
+    COURSE_ERROR --> COURSE_TAB
+    COURSE_VALIDATE -->|Yes| COURSE_SAVE[Save course or enrollment change]
 
-      DETAIL_MODAL --> VIEW_DETAILS[Inspect Profile, Enrolled Classes, Taught Sections, or Classroom Rosters]
-      VIEW_DETAILS -->|Close| TABLE
-    end
+    ROUTE -->|Oversight| OVERSIGHT{Choose Audit Logs or System Reports}
+    OVERSIGHT -->|Audit Logs| AUDIT[Review timestamped changes across roles; filter; paginate; export CSV]
+    OVERSIGHT -->|System Reports| REPORTS[Export users, courses, rosters, submissions/grades, terms, role matrix, or audit CSV]
 
-    subgraph FORM_FLOW["Validation & Persistence"]
-      F_USER --> OPEN_FORM
-      F_SUBJ --> OPEN_FORM
-      F_CLASS --> OPEN_FORM
-      F_ENROLL --> OPEN_FORM
-
-      OPEN_FORM --> SUBMIT[Submit Form]
-      SUBMIT --> VALIDATE{Validate Inputs}
-      VALIDATE -->|Empty required fields| ERR[Display error: Field required]
-      VALIDATE -->|Duplicate email or code| ERR
-      VALIDATE -->|Student already enrolled in class| ERR
-      ERR --> OPEN_FORM
-
-      VALIDATE -->|Valid| SAVE_DATA[Save Record to Shared State]
-      TOGGLE_STATUS --> SAVE_DATA
-      DELETE_REC --> SAVE_DATA
-      SEED --> SAVE_DATA
-
-      SAVE_DATA --> SYNC[(Local Storage: tmcc-lms-roles-v1)]
-      SYNC --> EVENT[Dispatch tmcc-lms-data Event]
-      EVENT --> NOTIFY[Instructor and Student Workspaces Read Live Updates]
-    end
+    CONFIG --> SHARED[(Shared browser-local LMS data)]
+    TERMS_SAVE --> SHARED
+    USER_SAVE --> SHARED
+    ROLE_SAVE --> SHARED
+    COURSE_SAVE --> SHARED
+    SEED --> SHARED
+    SHARED --> AUDIT_EVENT[Append metadata-only audit event for meaningful data changes]
+    SHARED --> ROLE_SYNC[Updated records become visible in Student and Instructor workspaces]
+    SHARED -->|Read current records| AUDIT
+    SHARED -->|Read export records| REPORTS
+    SHARED -->|Snapshot source| SNAPSHOT
+    AUDIT_EVENT --> CONTINUE{Continue Admin work?}
+    ROLE_SYNC --> CONTINUE
+    AUDIT --> CONTINUE
+    REPORTS --> CONTINUE
+    DOWNLOAD --> CONTINUE
+    TERMS_SAVE --> CONTINUE
+    ROLE_SAVE --> CONTINUE
+    COURSE_SAVE --> CONTINUE
+    CONTINUE -->|Yes| OVERVIEW
+    CONTINUE -->|No: switch role or leave| END([End Admin session])
 ```
 
-## How to read this flow
+## Flow stages
 
-### 1. Operations Overview (`AdminOverview.jsx`)
-- **Hero Header & Quick Actions:** Displays current academic cycle status (`Fall 2026 Term · Active Academic Cycle`) and direct action buttons to quickly create people, subjects, classrooms, or enrollments, as well as a one-click demo data reset.
-- **KPI Metrics:**
-  - **Active Community:** Total active accounts with student and instructor counts.
-  * **Catalog Offerings:** Accredited subject count and active class sections.
-  * **Total Enrollments:** Roster count across active sections.
-  * **Operational Alerts:** Highlights empty classrooms or unassigned instructors.
-- **Academic Provisioning Checklist:** 4-step configuration progress (`Users` → `Subjects` → `Classrooms` → `Enrollments`) displaying completion percentage and direct jump links.
-- **Classroom Distribution by Year Level:** Visual bar chart showing active class density across Year 1, Year 2, Year 3, and Year 4.
-- **Faculty Workload:** Real-time table displaying course sections assigned per instructor.
-- **Live System Activity:** Audit log reflecting user counts, active classrooms, and enrollment sync.
+1. **Enter and orient:** Admin opens `/admin` or switches into the Admin workspace. Overview presents the shared-data counts, learning analytics, weekly student/course/system activity, recent event feed, and date range controls. Dashboard actions can open the matching creation form.
+2. **Configure the system:** Admin updates browser-local institution defaults and alert preferences, manages academic terms, or creates/downloads a full JSON snapshot. The scheduled-backup panel is a display-only mock; it does not run while the browser is closed or in the background. Reset requires confirmation, saves a pre-reset snapshot, and then restores the initial demo records.
+3. **Manage people and access:** User Management supports search, role/status filtering, pagination, and user create/edit/activate/deactivate. Role Management edits a local visual permission matrix only; it does not enforce access.
+4. **Manage courses:** Course Management has Subjects and Classrooms tabs; Enrollments is its own page. These directories support their available search/filter/pagination and existing create/edit/status actions. Form validation blocks invalid links and duplicate values. Referenced records are deactivated when needed to preserve history; unused subjects may be deleted.
+5. **Review and report:** Audit Logs show timestamped change metadata across roles with filters, pagination, and CSV export. System Reports export the available shared records as CSV. Audit summaries do not include answers, submission text, comments, or feedback.
+6. **Persist and finish:** Meaningful changes are stored under the shared browser-local LMS data and append metadata-only audit events. Student and Instructor workspaces read the same updated records. Admin can return to Overview for another task or switch roles/leave the workspace.
 
-### 2. Directory & Records Management (`AdminDirectory.jsx`)
-- **Users Directory:** Search and filter by role (`Students`, `Instructors`, `Admins`) and status (`Active`, `Inactive`). Clicking a user opens a modal displaying their profile, enrolled courses (for students), or assigned courses (for instructors).
-- **Subjects Directory:** Academic catalog view with subject codes, titles, descriptions, and linked class section counts. Unreferenced subjects can be deleted; active subjects in use are protected.
-- **Classrooms Directory:** Filter by Year Level (`Year 1` to `Year 4`) and status. Displays enrollment codes, assigned instructors, and enrolled student totals. Clicking a classroom opens its detail modal with the full student roster.
-- **Enrollments Directory:** Filter by classroom selector and status. Displays enrolled students, sections, and terms.
-- **Status Toggling:** Allows switching records between `active` and `inactive` states dynamically.
+## Prototype boundary
 
-### 3. Data Integrity & Validation
-- **Users:** Requires full name and unique email address.
-- **Subjects:** Requires unique uppercase subject code and title.
-- **Classrooms:** Requires subject selection, section name, and unique enrollment code. Generates starter syllabus module automatically.
-- **Enrollments:** Requires classroom and student selection; blocks duplicate active enrollments.
-- **Referenced Deactivation:** Records referenced by coursework, submissions, or classes are soft-deactivated to preserve history rather than deleted.
+The role selector is not authentication. Data, settings, terms, role-matrix values, audit history, and backups stay in this browser; there is no server sync, enforced permission system, external integration, automatic scheduled job, or off-device backup unless the downloaded JSON is saved elsewhere. Audit history is reset with demo data after its pre-reset snapshot is saved.
 
-### 4. Cross-Role Reactivity & Storage
-All actions persist to `localStorage` under `tmcc-lms-roles-v1` and trigger the `tmcc-lms-data` event via `useLmsData()`. Created subjects and classrooms immediately become available to instructors in `/instructor` and enrolled classes become visible to students in `/student`.
-
----
-
-Implementation references:
-- [Admin workspace shell](../src/roles/admin/Admin.jsx)
-- [Admin overview dashboard](../src/roles/admin/AdminOverview.jsx)
-- [Admin directory & modals](../src/roles/admin/AdminDirectory.jsx)
-- [Admin styling](../src/roles/admin/adminDashboard.css)
-- [Shared role data and seeds](../src/roles/shared/lmsData.js)
-- [Local storage driver](../src/roles/shared/storage.js)
-
----
-
-Implementation references:
-- [Admin workspace shell](../src/roles/admin/Admin.jsx)
-- [Admin overview dashboard](../src/roles/admin/AdminOverview.jsx)
-- [Admin directory & modals](../src/roles/admin/AdminDirectory.jsx)
-- [Admin styling](../src/roles/admin/adminDashboard.css)
-- [Shared role data and seeds](../src/roles/shared/lmsData.js)
-- [Local storage driver](../src/roles/shared/storage.js)
-
+Implementation references: [Admin workspace](../src/roles/admin/Admin.jsx), [Admin sidebar shell](../src/roles/shared/RoleWorkspace.jsx), [shared Admin data and audit/backup seam](../src/roles/shared/systemAdministrationData.js), [Admin directory](../src/roles/admin/AdminDirectory.jsx), and [storage](../src/roles/shared/storage.js).
