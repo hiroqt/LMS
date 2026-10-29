@@ -12,6 +12,7 @@ const modules = [
   ["academicTerms", "Academic Terms"],
   ["users", "Users"],
   ["courses", "Courses"],
+  ["learningResources", "Learning Resources"],
   ["reports", "Reports"],
   ["auditLogs", "Audit Logs"],
 ];

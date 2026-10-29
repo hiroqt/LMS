@@ -12,6 +12,7 @@ import {
   CircleHelp,
   ClipboardCheck,
   Clock3,
+  Download,
   FileText,
   GraduationCap,
   LayoutDashboard,
@@ -2049,6 +2050,26 @@ function MaterialPage({ material, course, reviewed, onBack, onReviewed }) {
               <small>Reading time</small>
               <strong>{material.readTime}</strong>
             </div>
+            <button
+              type="button"
+              className="button-primary"
+              style={{ marginTop: 16, width: "100%", justifyContent: "center", gap: 8 }}
+              onClick={() => {
+                const fn = `${material.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf`;
+                const blob = new Blob([`TMCC LEARNING MATERIAL\nTitle: ${material.title}\nCourse: ${course.name}\n\nSummary:\n${material.summary}\n\nLearning Goal:\n${material.goal}\n\nKey Ideas:\n${material.points.join("\n")}`], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fn;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download size={15} />
+              Download material (.pdf)
+            </button>
           </aside>
         </div>
       </div>
