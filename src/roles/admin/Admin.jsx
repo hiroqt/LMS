@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Plus } from "../../icons";
 import RoleWorkspace from "../shared/RoleWorkspace";
 import { useLmsData } from "../shared/useLmsData";
 import { createInitialData } from "../shared/lmsData";
@@ -27,7 +28,7 @@ const navigationGroups = [{
 }];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
 
-export default function Admin() {
+export default function Admin({ onNavigateRole }) {
   const [data, update] = useLmsData();
   const [page, setPage] = useState("Overview");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
@@ -133,6 +134,7 @@ export default function Admin() {
       searchItems={searchItems}
       notifications={notifications}
       onNotificationSelect={(item) => { if (item.category === "users") setPage("User Management"); else if (item.category === "activity") setPage("Audit Logs"); else { setPage("Course Management"); setCourseTab("Classrooms"); } }}
+      onNavigateRole={onNavigateRole}
     >
       {page === "Overview" ? (
         <AdminOverview
@@ -149,7 +151,7 @@ export default function Admin() {
       ) : page === "System Reports" ? (
         <AdminReports data={data} />
       ) : page === "System Configuration" ? (
-        <><AdminSystemConfiguration data={data} update={update} /><p className="admin-system-boundary" role="status">{systemNotice}</p></>
+        <><AdminSystemConfiguration data={data} update={update} onResetDemo={handleResetDemo} /><p className="admin-system-boundary" role="status">{systemNotice}</p></>
       ) : page === "Academic Term Configuration" ? (
         <AdminAcademicTerms data={data} update={update} />
       ) : page === "Role Management" ? (
@@ -158,7 +160,39 @@ export default function Admin() {
         <AdminAuditLogs data={data} />
       ) : (
         <>
-        {page === "Course Management" && <div className="admin-course-tabs" role="tablist" aria-label="Course management sections">{["Subjects", "Classrooms"].map((tab) => <button type="button" role="tab" aria-selected={courseTab === tab} className={courseTab === tab ? "selected" : ""} key={tab} onClick={() => { setCourseTab(tab); setFormOpen(false); }}>{tab}</button>)}</div>}
+        {page === "Course Management" && (
+          <div className="admin-course-tabs-header">
+            <div className="admin-course-tabs" role="tablist" aria-label="Course management sections">
+              {["Subjects", "Classrooms"].map((tab) => (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={courseTab === tab}
+                  className={courseTab === tab ? "selected" : ""}
+                  key={tab}
+                  onClick={() => {
+                    setCourseTab(tab);
+                    setFormOpen(false);
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="role-primary admin-primary-action"
+              onClick={() => {
+                setForm({});
+                setNotice("");
+                setFormOpen(true);
+              }}
+            >
+              <Plus size={18} />
+              Add {courseTab === "Subjects" ? "subject" : "classroom"}
+            </button>
+          </div>
+        )}
         <AdminDirectory
           page={directoryPage}
           initialRoleFilter={directoryPage === "Users" ? userRoleFilter : "all"}
@@ -170,6 +204,7 @@ export default function Admin() {
           setForm={setForm}
           notice={notice}
           setNotice={setNotice}
+          hideAction={page === "Course Management"}
         />
         </>
       )}

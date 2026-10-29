@@ -58,7 +58,7 @@ export default function AdminAcademicTerms({ data, update }) {
       <label className="role-field"><span>Term name</span><input required maxLength={60} placeholder="e.g. Spring 2027" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
       <label className="role-field"><span>Start date</span><input required={!editingId || Boolean(editingTerm?.startDate)} type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></label>
       <label className="role-field"><span>End date</span><input required={!editingId || Boolean(editingTerm?.endDate)} type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></label>
-      <div className="role-form-actions"><button type="button" className="role-secondary" onClick={() => { setEditingId(""); setForm({ name: "", startDate: "", endDate: "" }); }}>Clear</button><button className="role-primary" type="submit">{editingId ? "Save term" : "Add term"}</button></div>
+      <div className="role-form-actions"><button type="button" className="role-secondary" onClick={() => { setEditingId(""); setForm({ name: "", startDate: "", endDate: "" }); }}>Clear</button><button className="role-primary admin-primary-action" type="submit">{editingId ? "Save term" : "Add term"}</button></div>
       {notice && <p className="admin-settings-notice" role="status">{notice}</p>}
     </form>
     <div className="admin-record-card admin-term-table"><div className="role-table-wrap"><table className="role-table"><thead><tr><th>Academic term</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead><tbody>

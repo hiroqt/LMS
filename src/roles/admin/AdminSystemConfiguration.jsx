@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Settings } from "../../icons";
 import { createBackupSnapshot, setCurrentAcademicTerm } from "../shared/systemAdministrationData";
 import { readSystemBackup, saveSystemBackup } from "../shared/storage";
 
@@ -20,7 +21,7 @@ function downloadBackup(snapshot) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export default function AdminSystemConfiguration({ data, update }) {
+export default function AdminSystemConfiguration({ data, update, onResetDemo }) {
   const system = data.systemAdministration;
   const [settings, setSettings] = useState(system.settings);
   const [notice, setNotice] = useState("");
@@ -67,7 +68,11 @@ export default function AdminSystemConfiguration({ data, update }) {
 
     <div className="admin-system-card-grid">
       <article className="admin-system-card"><div className="admin-system-card-head"><div><span className="admin-system-kicker">DEMO JOB</span><h2>Scheduled backup</h2></div><span className="role-soft-tag">Display only</span></div><dl><div><dt>Schedule</dt><dd>Daily · 02:00 {settings.timeZone}</dd></div><div><dt>Last run</dt><dd>Not scheduled</dd></div><div><dt>Next run</dt><dd>Not scheduled</dd></div></dl><p>This cron-job preview does not run automatically or in the background.</p></article>
-      <article className="admin-system-card"><div className="admin-system-card-head"><div><span className="admin-system-kicker">BROWSER STORAGE</span><h2>Data backup</h2></div><span className="role-soft-tag">Local only</span></div><p>{backup ? `Latest snapshot · ${new Date(backup.createdAt).toLocaleString()}` : "No backup has been created yet."}</p><div className="admin-system-card-actions"><button type="button" className="role-primary" onClick={createBackup}>Create backup</button><button type="button" className="role-secondary" disabled={!backup} onClick={() => downloadBackup(backup)}>Download JSON</button></div><small>Reset Demo creates and keeps a snapshot before clearing active data. Download a copy because browser storage can be cleared.</small></article>
+      <article className="admin-system-card"><div className="admin-system-card-head"><div><span className="admin-system-kicker">BROWSER STORAGE</span><h2>Data backup</h2></div><span className="role-soft-tag">Local only</span></div><p>{backup ? `Latest snapshot · ${new Date(backup.createdAt).toLocaleString()}` : "No backup has been created yet."}</p><div className="admin-system-card-actions"><button type="button" className="role-primary" onClick={createBackup}>Create backup</button><button type="button" className="role-secondary" disabled={!backup} onClick={() => downloadBackup(backup)}>Download JSON</button>{onResetDemo && (
+          <button type="button" className="admin-reset-demo-btn" onClick={onResetDemo} title="Reset browser demo data to seed defaults">
+            <Settings size={14} /> Reset Demo Data
+          </button>
+        )}</div><small>Reset Demo creates and keeps a snapshot before clearing active data. Download a copy because browser storage can be cleared.</small></article>
     </div>
     <p className="admin-system-boundary">Current term: {currentTerm}. Settings and snapshots remain in this browser; they are not institution-wide services.</p>
   </section>;

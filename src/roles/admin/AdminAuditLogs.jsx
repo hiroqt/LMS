@@ -30,7 +30,7 @@ export default function AdminAuditLogs({ data }) {
   }
 
   return <section className="admin-audit-page">
-    <div className="admin-directory-heading"><p>Activity history <span>· Metadata only, stored in this browser</span></p><button type="button" className="role-primary" onClick={exportCsv}>Export audit CSV</button></div>
+    <div className="admin-directory-heading"><p>Activity history <span>· Metadata only, stored in this browser</span></p><button type="button" className="role-primary admin-primary-action" onClick={exportCsv}>Export audit CSV</button></div>
     <div className="admin-audit-filters" aria-label="Filter audit log">
       <label>Category<select value={filters.category} onChange={(event) => updateFilter("category", event.target.value)}><option value="all">All categories</option><option value="settings">Settings</option><option value="terms">Academic terms</option><option value="roles">Roles</option><option value="users">Users</option><option value="courses">Courses</option><option value="activity">Learning activity</option></select></label>
       <label>Actor role<select value={filters.role} onChange={(event) => updateFilter("role", event.target.value)}><option value="all">All roles</option><option value="admin">Admin</option><option value="instructor">Instructor</option><option value="student">Student</option><option value="unknown">Not recorded</option></select></label>

@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   ArrowRight,
+  CalendarDays,
+  ChevronDown,
+  CircleHelp,
+  Clock3,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
@@ -68,7 +72,13 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           </div>
         </div>
 
-
+        <div className="admin-quick-actions" aria-label="Administrative actions">
+          <button type="button" className="admin-action-btn primary" onClick={() => onOpenCreate("Users")}><UsersRound size={16} /> + Add Person</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Subjects")} title="Create a new subject"><BookOpen size={16} /> + Create Subject</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Classrooms")}><LayoutDashboard size={16} /> + Create Classroom</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Enrollments")}><ListChecks size={16} /> + Enroll Student</button>
+          <button type="button" className="admin-action-btn danger" onClick={onResetDemo} title="Reset browser demo data to seed defaults"><Settings size={16} /> Reset Demo Data</button>
+        </div>
       </section>
 
       <div className="role-stat-grid admin-kpi-grid">
@@ -81,14 +91,50 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
       </div>
 
       <div className="admin-insights-toolbar">
-        <p>Activity and completion data uses timestamped records available in this demo.</p>
-        <div>
-          <label>Academic term<select aria-label="Filter by academic term" value={selectedTerm} onChange={(event) => setTerm(event.target.value)}>
-            <option value="all">All terms</option>{terms.map((item) => <option value={item} key={item}>{item}</option>)}
-          </select></label>
-          <label>Date range<select aria-label="Filter by date range" value={range} onChange={(event) => setRange(event.target.value)}>
-            {ranges.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-          </select></label>
+        <div className="admin-insights-toolbar-intro">
+          <h3>Activity & Analytics</h3>
+          <p>
+            <CircleHelp size={14} aria-hidden="true" />
+            Activity and completion data uses timestamped records available in this demo.
+          </p>
+        </div>
+        <div className="admin-insights-controls" role="group" aria-label="Activity scope filters">
+          <div className="admin-filter-group">
+            <label htmlFor="admin-term-select" className="admin-filter-label">
+              Academic term
+            </label>
+            <div className="admin-select-wrapper">
+              <CalendarDays size={15} className="admin-select-icon-left" aria-hidden="true" />
+              <select
+                id="admin-term-select"
+                aria-label="Filter by academic term"
+                value={selectedTerm}
+                onChange={(event) => setTerm(event.target.value)}
+              >
+                <option value="all">All terms</option>
+                {terms.map((item) => <option value={item} key={item}>{item}</option>)}
+              </select>
+              <ChevronDown size={14} className="admin-select-caret" aria-hidden="true" />
+            </div>
+          </div>
+
+          <div className="admin-filter-group">
+            <label htmlFor="admin-range-select" className="admin-filter-label">
+              Date range
+            </label>
+            <div className="admin-select-wrapper">
+              <Clock3 size={15} className="admin-select-icon-left" aria-hidden="true" />
+              <select
+                id="admin-range-select"
+                aria-label="Filter by date range"
+                value={range}
+                onChange={(event) => setRange(event.target.value)}
+              >
+                {ranges.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+              </select>
+              <ChevronDown size={14} className="admin-select-caret" aria-hidden="true" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -143,16 +189,6 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           <button type="button" className="role-link-button" onClick={() => onNavigate("Users")}>View students →</button>
         </section>
       </div>
-      <section className="admin-overview-actions" aria-label="Workspace management">
-        <h2>Manage your workspace</h2>
-        <div className="admin-quick-actions" aria-label="Administrative actions">
-          <button type="button" className="admin-action-btn primary" onClick={() => onOpenCreate("Users")}><UsersRound size={14} /> + Add Person</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Subjects")}><BookOpen size={14} /> + New Subject</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Classrooms")}><LayoutDashboard size={14} /> + Create Classroom</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Enrollments")}><ListChecks size={14} /> + Enroll Student</button>
-          <button type="button" className="admin-action-btn danger" onClick={onResetDemo} title="Reset browser demo data to seed defaults"><Settings size={14} /> Reset Demo Data</button>
-        </div>
-      </section>
     </div>
   );
 }

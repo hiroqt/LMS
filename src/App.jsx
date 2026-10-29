@@ -65,7 +65,7 @@ const readProgress = () => {
   }
 };
 
-function App() {
+function App({ onNavigateRole, _currentRole = "student" }) {
   const [page, setPage] = useState("today");
   const [courseId, setCourseId] = useState("biology");
   const [tab, setTab] = useState("Stream");
@@ -428,6 +428,41 @@ function App() {
           </span>
           <ChevronRight size={15} />
         </div>
+        <div className="sidebar-role-switch" role="group" aria-label="Switch workspace role">
+          <span className="sidebar-role-label">WORKSPACE ROLE</span>
+          <div className="sidebar-role-buttons">
+            <button
+              type="button"
+              className="sidebar-role-btn active"
+              title="Current: Student workspace"
+              disabled
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              className="sidebar-role-btn"
+              onClick={() => {
+                setMobileMenu(false);
+                if (onNavigateRole) onNavigateRole("instructor");
+                else window.location.href = "/instructor";
+              }}
+            >
+              Instructor
+            </button>
+            <button
+              type="button"
+              className="sidebar-role-btn"
+              onClick={() => {
+                setMobileMenu(false);
+                if (onNavigateRole) onNavigateRole("admin");
+                else window.location.href = "/admin";
+              }}
+            >
+              Admin
+            </button>
+          </div>
+        </div>
         <div className="sidebar-bottom">
           <ShieldCheck size={14} />
           Student workspace
@@ -469,7 +504,7 @@ function App() {
                           : "Your result"} />
           </div>
           <div className="top-actions">
-            <GlobalSearch value={search} onChange={setSearch} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} onSelect={chooseSearchResult} label="Search classes, work, and materials" placeholder="Search classes, work..." />
+            <GlobalSearch className="role-global-search" value={search} onChange={setSearch} open={searchOpen} onOpen={() => setSearchOpen(true)} items={results} onSelect={chooseSearchResult} label="Search student workspace" placeholder="Search workspace..." />
             <button
               className="top-icon"
               type="button"
@@ -485,6 +520,7 @@ function App() {
               <CalendarDays size={18} />
             </button>
             <NotificationMenu open={menu === "notifications"} onToggle={() => setMenu(menu === "notifications" ? "" : "notifications")} items={dueSoon.map((item) => ({ id: item.id, title: item.title, detail: formatDueDate(item.dueAt) }))} title="Coming up" onSelect={(item) => { setMenu(""); openAssessment(item.id); }} />
+            <div className="role-user">
             <div className="popover-holder">
               <button
                 className="profile-button"
@@ -492,7 +528,7 @@ function App() {
                 onClick={() => setMenu(menu === "profile" ? "" : "profile")}
               >
                 <Avatar name="Alex Rivera" tone={1} small />
-                <span>Alex Rivera</span>
+                <span><strong>Alex Rivera</strong><small>student · Demo</small></span>
                 <ChevronDown size={14} />
               </button>
               {menu === "profile" && (
@@ -504,6 +540,41 @@ function App() {
                       <small>BS Information Technology · Student</small>
                     </span>
                   </div>
+                  <div className="profile-role-section" role="group" aria-label="Switch workspace">
+                    <span className="profile-role-title">Switch workspace</span>
+                    <button
+                      type="button"
+                      className="profile-role-link is-current"
+                      onClick={() => setMenu("")}
+                    >
+                      <LayoutDashboard size={15} />
+                      <span>Student workspace</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="profile-role-link"
+                      onClick={() => {
+                        setMenu("");
+                        if (onNavigateRole) onNavigateRole("instructor");
+                        else window.location.href = "/instructor";
+                      }}
+                    >
+                      <GraduationCap size={15} />
+                      <span>Instructor workspace</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="profile-role-link"
+                      onClick={() => {
+                        setMenu("");
+                        if (onNavigateRole) onNavigateRole("admin");
+                        else window.location.href = "/admin";
+                      }}
+                    >
+                      <ShieldCheck size={15} />
+                      <span>Admin workspace</span>
+                    </button>
+                  </div>
                   <button type="button" onClick={resetDemo}>
                     <Settings size={15} />
                     Reset demo data
@@ -512,13 +583,22 @@ function App() {
               )}
             </div>
           </div>
-        </header>
+        </div>
+      </header>
         {searchOpen && search && (
           <button
             aria-label="Close search"
             className="dismiss-search"
             type="button"
             onClick={() => setSearchOpen(false)}
+          />
+        )}
+        {menu === "profile" && (
+          <button
+            aria-label="Close profile menu"
+            className="dismiss-search"
+            type="button"
+            onClick={() => setMenu("")}
           />
         )}
         <main className="content">
