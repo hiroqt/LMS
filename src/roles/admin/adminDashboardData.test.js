@@ -95,3 +95,27 @@ test("CSV reports include roster rows and protect spreadsheet formulas", () => {
   assert.equal(buildReport(dataFixture(), "courses").rows[0][1], "IT101");
   assert.equal(serializeCsv([["Name", "Email"], ["=SUM(1,1)", "ari@example.test"], ["  +2", "quoted \"name\""]]), '"Name","Email"\r\n"\'=SUM(1,1)","ari@example.test"\r\n"\'  +2","quoted ""name"""');
 });
+
+
+test("recent activity falls back to labeled mock records without changing analytics", () => {
+  const model = buildAdminDashboard({}, { term: "First semester", range: "7d", now });
+  assert.equal(model.recentActivity.isSample, true);
+  assert.equal(model.recentActivity.records.length, 5);
+  for (const event of model.recentActivity.records) {
+    assert.ok(event.id.startsWith("sample-"));
+    assert.ok(new Date(event.date) <= now);
+    assert.ok(new Date(event.date) >= new Date(now.getTime() - 7 * 86400000));
+  }
+  assert.equal(model.events.system.length, 0);
+  assert.equal(model.weeklyActivity.system.reduce((sum, week) => sum + week.count, 0), 0);
+});
+
+test("recent activity prefers scoped LMS records and removes cross-feed duplicates", () => {
+  const model = buildAdminDashboard(dataFixture(), { term: "Fall 2026", range: "7d", now });
+  assert.equal(model.recentActivity.isSample, false);
+  assert.equal(model.recentActivity.records.length, 3);
+  assert.deepEqual(new Set(model.recentActivity.records.map((event) => event.title)), new Set(["Assignment submitted", "Assessment submitted", "Assessment graded"]));
+  assert.equal(model.recentActivity.records.some((event) => event.id?.startsWith("sample-")), false);
+  const dates = model.recentActivity.records.map((event) => new Date(event.date).getTime());
+  assert.deepEqual(dates, [...dates].sort((a, b) => b - a));
+});

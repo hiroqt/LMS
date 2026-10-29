@@ -15,13 +15,14 @@ import "./adminDashboard.css";
 import "./adminSystem.css";
 import "../shared/rolePages.css";
 
-const sections = ["Overview", "Academic Term Configuration"];
+const sections = ["Overview"];
 const navigationGroups = [{
   label: "Admin",
   groups: [
-    { label: "Oversight", items: ["Audit Logs", "System Reports"] },
-    { label: "People & Access", items: ["User Management", "Role Management"] },
     { label: "Courses", items: ["Course Management", "Enrollments"] },
+    { label: "People & Access", items: ["User Management", "Role Management"] },
+    { label: "Oversight", items: ["Audit Logs", "System Reports"] },
+    { label: "Academic Terms", items: ["Academic Term Configuration"] },
   ],
 }];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
@@ -29,6 +30,7 @@ const adminUser = { firstName: "Taylor", lastName: "Morgan" };
 export default function Admin() {
   const [data, update] = useLmsData();
   const [page, setPage] = useState("Overview");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState({});
@@ -128,7 +130,6 @@ export default function Admin() {
       title={heading[0]}
       subtitle={heading[1]}
       showHeading={page !== "Overview"}
-      searchInSidebar
       searchItems={searchItems}
       notifications={notifications}
       onNotificationSelect={(item) => { if (item.category === "users") setPage("User Management"); else if (item.category === "activity") setPage("Audit Logs"); else { setPage("Course Management"); setCourseTab("Classrooms"); } }}
@@ -136,9 +137,10 @@ export default function Admin() {
       {page === "Overview" ? (
         <AdminOverview
           data={data}
-          onNavigate={(target) => {
+          onNavigate={(target, roleFilter) => {
             setPage(target === "Users" ? "User Management" : target === "Classrooms" || target === "Subjects" ? "Course Management" : target === "Reports" ? "System Reports" : target);
             if (target === "Subjects" || target === "Classrooms") setCourseTab(target);
+            setUserRoleFilter(roleFilter || "all");
             setFormOpen(false);
           }}
           onOpenCreate={openCreateFor}
@@ -159,6 +161,7 @@ export default function Admin() {
         {page === "Course Management" && <div className="admin-course-tabs" role="tablist" aria-label="Course management sections">{["Subjects", "Classrooms"].map((tab) => <button type="button" role="tab" aria-selected={courseTab === tab} className={courseTab === tab ? "selected" : ""} key={tab} onClick={() => { setCourseTab(tab); setFormOpen(false); }}>{tab}</button>)}</div>}
         <AdminDirectory
           page={directoryPage}
+          initialRoleFilter={directoryPage === "Users" ? userRoleFilter : "all"}
           data={data}
           update={update}
           formOpen={formOpen}

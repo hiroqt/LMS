@@ -12,10 +12,11 @@ export default function AdminDirectory({
   setForm,
   notice,
   setNotice,
+  initialRoleFilter = "all",
 }) {
   const [searchSelection, setSearchSelection] = useState({ page: "", value: "" });
   const query = searchSelection.page === page ? searchSelection.value : "";
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState(initialRoleFilter);
   const [statusFilter, setStatusFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [classroomFilter, setClassroomFilter] = useState("all");
