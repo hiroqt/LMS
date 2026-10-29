@@ -1,3 +1,5 @@
+import { buildRecentWorkspaceActivity } from "./mockWorkspaceActivity.js";
+
 const list = (value) => Array.isArray(value) ? value : [];
 const active = (record) => record?.status === "active";
 
@@ -173,6 +175,7 @@ export function buildAdminDashboard(data, { term = "all", range = "term", now = 
     terms,
     metrics,
     events,
+    recentActivity: buildRecentWorkspaceActivity(events, { now, range }),
     weeklyActivity: {
       course: getWeeklyActivity(events.course, now),
       students: getWeeklyActivity(events.students, now),

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
+  ArrowRight,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
@@ -42,11 +43,15 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
   }, []);
 
   const cards = [
-    { label: "Total Students", value: model.metrics.totalStudents, note: `${activeStudents} active · ${model.metrics.totalStudents - activeStudents} inactive`, icon: <UsersRound size={17} />, art: "students" },
-    { label: "Total Faculty", value: model.metrics.totalFaculty, note: `${activeFaculty} active · ${model.metrics.totalFaculty - activeFaculty} inactive`, icon: <GraduationCap size={17} />, art: "faculty" },
-    { label: "Active Courses", value: model.metrics.activeCourses, note: `Active class sections across ${model.metrics.totalSubjects} subjects`, icon: <BookOpen size={17} />, art: "courses" },
-    { label: "Active Users", value: model.metrics.activeUsers, note: `of ${(data.users || []).length} user accounts`, icon: <UsersRound size={17} />, art: "users" },
+    { label: "Total Students", value: model.metrics.totalStudents, note: `${activeStudents} active · ${model.metrics.totalStudents - activeStudents} inactive`, action: "View students", target: "Users", role: "student", icon: <UsersRound size={19} /> },
+    { label: "Total Faculty", value: model.metrics.totalFaculty, note: `${activeFaculty} active · ${model.metrics.totalFaculty - activeFaculty} inactive`, action: "View faculty", target: "Users", role: "instructor", icon: <GraduationCap size={19} /> },
+    { label: "Active Courses", value: model.metrics.activeCourses, note: `Class sections across ${model.metrics.totalSubjects} subjects`, action: "View classrooms", target: "Classrooms", icon: <BookOpen size={19} /> },
+    { label: "Active Users", value: model.metrics.activeUsers, note: `of ${(data.users || []).length} user accounts`, action: "Manage users", target: "Users", icon: <UsersRound size={19} /> },
   ];
+
+  const scopedRooms = (data.classrooms || []).filter((room) => selectedTerm === "all" || room.term === selectedTerm);
+  const roomStatuses = [...new Set(["active", "inactive", ...scopedRooms.map((room) => room.status || "unspecified")])];
+  const { records: recentEvents, isSample: recentActivityIsSample } = model.recentActivity;
 
   return (
     <div className="admin-overview-container">
@@ -63,22 +68,16 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           </div>
         </div>
 
-        <div className="admin-quick-actions">
-          <button type="button" className="admin-action-btn primary" onClick={() => onOpenCreate("Users")}><UsersRound size={14} /> + Add Person</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Subjects")}><BookOpen size={14} /> + New Subject</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Classrooms")}><LayoutDashboard size={14} /> + Create Classroom</button>
-          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Enrollments")}><ListChecks size={14} /> + Enroll Student</button>
-          <button type="button" className="admin-action-btn danger" onClick={onResetDemo} title="Reset browser demo data to seed defaults"><Settings size={14} /> Reset Demo Data</button>
-        </div>
+
       </section>
 
       <div className="role-stat-grid admin-kpi-grid">
-        {cards.map((card) => <article className="admin-stat-card" key={card.label}>
-          <div className="admin-stat-top"><span>{card.label}</span><div className="admin-stat-icon">{card.icon}</div></div>
+        {cards.map((card) => <button type="button" className="admin-stat-card" key={card.label} onClick={() => onNavigate(card.target, card.role)} aria-label={`${card.label}: ${card.value}. ${card.action}`}>
+          <span className="admin-stat-top"><span>{card.label}</span><span className="admin-stat-icon">{card.icon}</span></span>
           <strong>{card.value}</strong>
-          <div className="admin-stat-meta">{card.note}</div>
-          <AdminMetricArt variant={card.art} />
-        </article>)}
+          <span className="admin-stat-meta">{card.note}</span>
+          <span className="admin-stat-action">{card.action}<ArrowRight size={15} aria-hidden="true" /></span>
+        </button>)}
       </div>
 
       <div className="admin-insights-toolbar">
@@ -97,8 +96,32 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
         <section className="role-panel admin-insight-panel admin-course-panel">
           <PanelHeading title="Course Activity" detail="Weekly activity" count={model.events.course.length} />
           <WeeklyChart weeks={model.weeklyActivity.course} sample={[3, 5, 4, 7, 5, 8, 6, 9]} loading={chartsLoading} label="Course activity" variant="area" />
-          <EventList events={model.events.course.slice(0, 3)} />
           <button type="button" className="role-link-button" onClick={() => onNavigate("Classrooms")}>View classrooms →</button>
+        </section>
+
+        <section className="role-panel admin-insight-panel admin-status-panel">
+          <PanelHeading title="Classroom status" detail="Selected academic term · all dates" />
+          <div className="admin-status-total"><strong>{scopedRooms.length}</strong><span>classroom sections</span></div>
+          <div className="admin-status-list">{roomStatuses.map((status) => {
+            const count = scopedRooms.filter((room) => (room.status || "unspecified") === status).length;
+            return <div className="admin-status-row" key={status}>
+              <div><span>{status}</span><strong>{count}</strong></div>
+              <meter min="0" max={Math.max(1, scopedRooms.length)} value={count} aria-label={`${status} classrooms: ${count} of ${scopedRooms.length}`} />
+            </div>;
+          })}</div>
+          <p className="admin-insight-note">Current browser-local records. Date filters apply to activity charts and recent activity.</p>
+          <button type="button" className="role-link-button" onClick={() => onNavigate("Classrooms")}>Manage classrooms →</button>
+        </section>
+
+        <section className="role-panel admin-recent-panel">
+          <PanelHeading title="Recent workspace activity" detail={recentActivityIsSample ? "Sample activity · fictional preview because this scope has no timestamped records" : "Latest records in the selected scope · not an audit log"} />
+          <div className="role-table-wrap"><table className="role-table">
+            <thead><tr><th scope="col">Activity</th><th scope="col">Details</th><th scope="col">Record type</th><th scope="col">Date</th></tr></thead>
+            <tbody>{recentEvents.length ? recentEvents.map((event, index) => <tr key={`${event.type}-${event.date}-${index}`}>
+              <td><strong>{event.title}</strong></td><td>{event.detail}</td><td><span className="role-soft-tag">{event.type}</span></td>
+              <td><time dateTime={event.date}>{new Date(event.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</time></td>
+            </tr>) : <tr><td colSpan="4">No timestamped activity in this scope. Create a record or select another reporting range.</td></tr>}</tbody>
+          </table></div>
         </section>
 
         <section className="role-panel admin-insight-panel admin-system-panel">
@@ -120,37 +143,22 @@ export default function AdminOverview({ data, onNavigate, onOpenCreate, onResetD
           <button type="button" className="role-link-button" onClick={() => onNavigate("Users")}>View students →</button>
         </section>
       </div>
+      <section className="admin-overview-actions" aria-label="Workspace management">
+        <h2>Manage your workspace</h2>
+        <div className="admin-quick-actions" aria-label="Administrative actions">
+          <button type="button" className="admin-action-btn primary" onClick={() => onOpenCreate("Users")}><UsersRound size={14} /> + Add Person</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Subjects")}><BookOpen size={14} /> + New Subject</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Classrooms")}><LayoutDashboard size={14} /> + Create Classroom</button>
+          <button type="button" className="admin-action-btn" onClick={() => onOpenCreate("Enrollments")}><ListChecks size={14} /> + Enroll Student</button>
+          <button type="button" className="admin-action-btn danger" onClick={onResetDemo} title="Reset browser demo data to seed defaults"><Settings size={14} /> Reset Demo Data</button>
+        </div>
+      </section>
     </div>
   );
 }
 
 function PanelHeading({ title, detail, count }) {
   return <div className="role-panel-head"><div><h2>{title}</h2><p>{detail}</p></div>{count !== undefined && <span className="role-soft-tag">{count} records</span>}</div>;
-}
-
-function AdminMetricArt({ variant }) {
-  return <svg className="admin-metric-art" viewBox="0 0 120 78" aria-hidden="true" focusable="false">
-    {variant === "students" && <g fill="currentColor">
-      <circle cx="60" cy="22" r="11" opacity=".65" /><path d="M39 65c1-15 8-23 21-23s20 8 21 23H39Z" opacity=".35" />
-      <circle cx="27" cy="33" r="8" opacity=".42" /><path d="M12 66c1-12 6-19 15-19 5 0 9 2 12 6-3 4-5 8-6 13H12Z" opacity=".24" />
-      <circle cx="93" cy="33" r="8" opacity=".42" /><path d="M87 53c3-4 7-6 12-6 9 0 14 7 15 19H87c-1-5-3-9-6-13Z" opacity=".24" />
-    </g>}
-    {variant === "faculty" && <g fill="currentColor">
-      <path d="m60 8 48 18-48 18-48-18L60 8Z" opacity=".38" /><path d="M34 35v16c14 12 38 12 52 0V35L60 45 34 35Z" opacity=".22" />
-      <circle cx="60" cy="43" r="10" opacity=".72" /><path d="M38 73c1-14 8-22 22-22s21 8 22 22H38Z" opacity=".38" />
-      <path d="M105 28v22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity=".7" />
-    </g>}
-    {variant === "courses" && <g fill="currentColor" stroke="currentColor" strokeLinejoin="round">
-      <path d="M13 19c17-6 33-3 47 7v43C46 59 30 57 13 64V19Z" opacity=".28" />
-      <path d="M107 19c-17-6-33-3-47 7v43c14-10 30-12 47-5V19Z" opacity=".42" />
-      <path d="M60 26v43M23 31c9-2 18 0 26 4M23 42c9-2 18 0 26 4M97 31c-9-2-18 0-26 4M97 42c-9-2-18 0-26 4" fill="none" strokeWidth="3" strokeLinecap="round" opacity=".74" />
-    </g>}
-    {variant === "users" && <g fill="currentColor">
-      <circle cx="60" cy="25" r="11" opacity=".68" /><circle cx="27" cy="35" r="9" opacity=".42" /><circle cx="93" cy="35" r="9" opacity=".42" />
-      <path d="M39 67c1-15 8-23 21-23s20 8 21 23H39Z" opacity=".38" /><path d="M8 68c1-13 7-20 19-20 7 0 12 3 15 9-2 4-3 8-3 11H8Zm75 0c0-3-1-7-3-11 3-6 8-9 15-9 12 0 18 7 19 20H83Z" opacity=".24" />
-      <path d="M38 17 48 22M82 22l10-5M38 53l9 3M73 56l9-3" fill="none" stroke="currentColor" strokeWidth="2" opacity=".45" />
-    </g>}
-  </svg>;
 }
 
 function EventList({ events, compact = false }) {
@@ -177,8 +185,9 @@ function WeeklyChart({ weeks, sample, loading, label, variant }) {
   return <div className="admin-chart-wrap" aria-busy={loading}>
     {loading ? <ChartLoading label={label} /> : <>
       <svg className={`admin-weekly-chart is-${variant}`} viewBox="0 0 960 480" role="group" aria-label={`${label} by week${hasEvents ? " from shared LMS events" : " sample preview because no timestamped events match this range"}`} onPointerMove={(event) => {
-        const bounds = event.currentTarget.getBoundingClientRect();
-        const x = (event.clientX - bounds.left) / bounds.width * 960;
+        const transform = event.currentTarget.getScreenCTM();
+        if (!transform) return;
+        const { x } = new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
         const nearest = Math.max(0, Math.min(points.length - 1, Math.round((x - 30) / 128.57)));
         setActiveIndex(nearest);
       }} onPointerLeave={() => setActiveIndex(null)}>
@@ -233,7 +242,7 @@ function StudentDemographicsChart({ total, loading }) {
         <div><strong>{total}</strong><span>students</span></div>
       </div>
       <div className="admin-pie-legend">{names.map((name, index) => <span key={name} tabIndex="0" role="button" aria-pressed={activeSegment === name} onPointerEnter={() => setActiveSegment(name)} onPointerLeave={() => setActiveSegment("")} onFocus={() => setActiveSegment(name)} onBlur={() => setActiveSegment("")}><i className={`segment-${index}`} />{name} <strong>{values[index]}</strong></span>)}</div>
-      <p className={`admin-pie-tooltip ${activeSegment ? "is-visible" : ""}`} role="status" aria-hidden={!activeSegment}>{activeSegment ? `${activeSegment} · ${values[names.indexOf(activeSegment)]} students · ${chartTotal ? Math.round(values[names.indexOf(activeSegment)] / chartTotal * 100) : 0}% (sample data)` : " "}</p>
+      <div className="admin-pie-tooltip-slot"><p className={`admin-pie-tooltip ${activeSegment ? "is-visible" : ""}`} role="status" aria-hidden={!activeSegment}>{activeSegment ? `${activeSegment} · ${values[names.indexOf(activeSegment)]} students · ${chartTotal ? Math.round(values[names.indexOf(activeSegment)] / chartTotal * 100) : 0}% (sample data)` : " "}</p></div>
       <p className="admin-chart-source">Illustrative sample only · sex is not stored in student records</p>
     </div>}
   </div>;
