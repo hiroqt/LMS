@@ -1,6 +1,11 @@
 import { useState } from "react";
 
 const roleNames = ["student", "instructor", "admin"];
+const roleDetails = {
+  student: "Learner access profile",
+  instructor: "Teaching staff access profile",
+  admin: "Administrator access profile",
+};
 const modules = [
   ["overview", "Overview"],
   ["systemConfiguration", "System Configuration"],
@@ -15,7 +20,9 @@ const actor = { actorId: "admin-1", actorName: "Taylor Morgan", actorRole: "admi
 
 export default function AdminRoleManagement({ data, update }) {
   const [permissions, setPermissions] = useState(data.systemAdministration.rolePermissions);
+  const [selectedRole, setSelectedRole] = useState("student");
   const [notice, setNotice] = useState("");
+  const enabledActions = modules.reduce((total, [module]) => total + actions.filter((action) => permissions[selectedRole]?.[module]?.[action]).length, 0);
 
   function change(role, module, action, checked) {
     setPermissions((current) => ({
@@ -37,9 +44,15 @@ export default function AdminRoleManagement({ data, update }) {
     <form onSubmit={save}>
       <div className="admin-role-matrix-card">
         <div className="admin-system-card-head"><div><span className="admin-system-kicker">BUILT-IN ROLES</span><h2>Module permissions</h2></div><span className="role-soft-tag">Preview only</span></div>
-        <p>These editable values demonstrate role profiles. The prototype does not enforce them.</p>
-        <div className="role-table-wrap"><table className="role-table admin-role-matrix"><thead><tr><th>Module</th><th>Role</th>{actions.map((action) => <th key={action}>{action}</th>)}</tr></thead><tbody>
-          {modules.flatMap(([module, label]) => roleNames.map((role) => <tr key={`${module}-${role}`}><td><strong>{label}</strong></td><td className="admin-role-name">{role}</td>{actions.map((action) => <td key={action}><input type="checkbox" aria-label={`${role} ${action} ${label}`} checked={Boolean(permissions[role]?.[module]?.[action])} onChange={(event) => change(role, module, action, event.target.checked)} /></td>)}</tr>))}
+        <p>Review and edit the demo action profile for one role at a time. These values do not restrict navigation or data.</p>
+        <div className="admin-role-matrix-toolbar">
+          <div className="admin-role-picker" role="group" aria-label="Select a role">
+            {roleNames.map((role) => <button type="button" key={role} aria-pressed={selectedRole === role} className={selectedRole === role ? "selected" : ""} onClick={() => setSelectedRole(role)}>{role}</button>)}
+          </div>
+          <div className="admin-role-summary"><strong>{selectedRole}</strong><span>{roleDetails[selectedRole]}</span><b>{enabledActions} of {modules.length * actions.length} enabled</b></div>
+        </div>
+        <div className="role-table-wrap"><table className="role-table admin-role-matrix" aria-label={`${selectedRole} module permissions`}><thead><tr><th scope="col">Module</th>{actions.map((action) => <th scope="col" key={action}>{action}</th>)}</tr></thead><tbody>
+          {modules.map(([module, label]) => <tr key={module}><th scope="row">{label}</th>{actions.map((action) => <td key={action}><label className="admin-permission-check"><input type="checkbox" aria-label={`${selectedRole} ${action} ${label}`} checked={Boolean(permissions[selectedRole]?.[module]?.[action])} onChange={(event) => change(selectedRole, module, action, event.target.checked)} /></label></td>)}</tr>)}
         </tbody></table></div>
         <div className="role-form-actions"><button className="role-primary" type="submit">Save permission matrix</button></div>
         {notice && <p className="admin-settings-notice" role="status">{notice}</p>}
