@@ -76,7 +76,23 @@ export default function Instructor() {
     data.examSubmissions.filter((item) => item.classroomId === selected.id && item.status === "graded"),
   ] : [[], []];
 
-  function openCreate(kind) { setFormType(kind); setClassTab("Create content"); setForm({ moduleId: data.modules.find((item) => item.classroomId === selected?.id)?.id || "", type: "multiple_choice", points: "10", correctIndex: "0" }); setError(""); }
+  function openCreate(kind) {
+    setFormType(kind);
+    setClassTab("Create content");
+    setForm({
+      moduleId: data.modules.find((item) => item.classroomId === selected?.id)?.id || "",
+      kind: "Study guide",
+      type: "multiple_choice",
+      points: "10",
+      correctIndex: "0",
+      title: "",
+      description: "",
+      fileName: "",
+      fileType: "pdf",
+      fileSize: "",
+    });
+    setError("");
+  }
   function createClass(event) {
     event.preventDefault();
     const id = `classroom-${crypto.randomUUID()}`;
@@ -89,7 +105,33 @@ export default function Instructor() {
     if (!selected) return;
     if (formType === "material") {
       const id = `material-${crypto.randomUUID()}`;
-      update((current) => ({ ...current, materials: [...current.materials, { id, moduleId: form.moduleId, title: form.title.trim(), kind: form.kind || "Study guide", description: form.description.trim(), status: "active", createdAt: timestamp() }] }), audit("courses", "published", "Material", id, form.title.trim()));
+      const ext = form.fileType || "pdf";
+      const cleanFileName = form.fileName || `${form.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_")}.${ext}`;
+      update((current) => ({
+        ...current,
+        materials: [
+          ...current.materials,
+          {
+            id,
+            moduleId: form.moduleId || data.modules.find((item) => item.classroomId === selected?.id)?.id,
+            classroomId: selected.id,
+            title: form.title.trim(),
+            kind: form.kind || "Study guide",
+            description: form.description?.trim() || "",
+            fileName: cleanFileName,
+            fileType: ext,
+            fileSize: form.fileSize || "1.8 MB",
+            uploadedBy: `${instructor.firstName} ${instructor.lastName}`,
+            uploadedAt: timestamp(),
+            downloads: 0,
+            status: "active",
+            createdAt: timestamp(),
+          },
+        ],
+      }), audit("courses", "published", "Material", id, form.title.trim()));
+      setFormType("");
+      setClassTab("Materials");
+      return;
     }
     if (formType === "activity") {
       const id = `activity-${crypto.randomUUID()}`;
@@ -101,6 +143,22 @@ export default function Instructor() {
       update((current) => ({ ...current, exams: [...current.exams, { id, classroomId: selected.id, moduleId: form.moduleId, title: form.title.trim(), instructions: form.instructions.trim(), dueAt: rawDate, totalMarks: Number(form.points) || 10, timeLimitMinutes: Number(form.timeLimit) || 0, attempts: 1, status: "active", createdAt: timestamp(), questions: [{ prompt: form.prompt.trim(), options: form.type === "true_false" ? ["True", "False"] : [form.option1, form.option2, form.option3, form.option4].filter(Boolean), correctIndex: Number(form.correctIndex), points: Number(form.points) || 10 }] }] }), audit("courses", "published", "Assessment", id, form.title.trim()));
     }
     setFormType("");
+  }
+  function deleteMaterial(id) {
+    if (!window.confirm("Are you sure you want to remove this learning material?")) return;
+    const item = data.materials.find((m) => m.id === id);
+    update((current) => ({
+      ...current,
+      materials: current.materials.filter((m) => m.id !== id),
+    }), audit("courses", "deleted", "Material", id, item?.title || "Class material"));
+  }
+  function toggleMaterialStatus(id) {
+    const item = data.materials.find((m) => m.id === id);
+    const nextStatus = item?.status === "archived" ? "active" : "archived";
+    update((current) => ({
+      ...current,
+      materials: current.materials.map((m) => m.id === id ? { ...m, status: nextStatus } : m),
+    }), audit("courses", "updated", "Material", id, `Status set to ${nextStatus}`));
   }
   function publishAnnouncement({ title: announcementTitle, message }) {
     const id = `announcement-${crypto.randomUUID()}`;
@@ -199,7 +257,7 @@ export default function Instructor() {
       {page === "Classes" && <>
         <YearLevelTabs levels={yearLevels} selected={yearLevelFilter} onSelect={filterYear} />
         <div className="instructor-class-tabs">{visibleClassrooms.map((room) => <button type="button" className={selected.id === room.id ? "selected" : ""} key={room.id} onClick={() => { setClassroomId(room.id); setClassTab("Stream"); setFormType(""); }}>{subjectOf(room)?.title}<small>Year {yearOf(room)} · {room.section}</small></button>)}</div>
-        <InstructorClassroom room={selected} subject={subjectOf(selected)} instructor={instructor} data={data} roomIndex={data.classrooms.findIndex((item) => item.id === selected.id)} students={classStudents} materials={classMaterials} announcements={classAnnouncements} onPublishAnnouncement={publishAnnouncement} activities={classActivities} exams={classExams} submissions={classSubmissions} gradeId={gradeId} grade={grade} setGrade={setGrade} feedback={feedback} setFeedback={setFeedback} onSelectSubmission={(item) => { setGradeId(item.id); setGrade(String(Math.round(item.correct / Math.max(item.questions.length, 1) * item.exam.totalMarks))); setFeedback(""); setError(""); }} onSaveGrade={saveGrade} tab={classTab} onTabChange={setClassTab} onBack={() => { setPage("Overview"); setClassTab("Stream"); setFormType(""); }} onCreate={openCreate} formType={formType} form={form} setForm={setForm} error={error} onSubmit={create} onCancel={() => setFormType("")} />
+        <InstructorClassroom room={selected} subject={subjectOf(selected)} instructor={instructor} data={data} roomIndex={data.classrooms.findIndex((item) => item.id === selected.id)} students={classStudents} materials={classMaterials} announcements={classAnnouncements} onPublishAnnouncement={publishAnnouncement} activities={classActivities} exams={classExams} submissions={classSubmissions} gradeId={gradeId} grade={grade} setGrade={setGrade} feedback={feedback} setFeedback={setFeedback} onSelectSubmission={(item) => { setGradeId(item.id); setGrade(String(Math.round(item.correct / Math.max(item.questions.length, 1) * item.exam.totalMarks))); setFeedback(""); setError(""); }} onSaveGrade={saveGrade} tab={classTab} onTabChange={setClassTab} onBack={() => { setPage("Overview"); setClassTab("Stream"); setFormType(""); }} onCreate={openCreate} formType={formType} form={form} setForm={setForm} error={error} onSubmit={create} onCancel={() => setFormType("")} onDeleteMaterial={deleteMaterial} onToggleMaterialStatus={toggleMaterialStatus} />
       </>}
       {page === "Gradebook" && <><div className="gradebook-class-picker"><label>Classroom<select value={selected.id} onChange={(event) => setClassroomId(event.target.value)}>{classrooms.map((room) => <option value={room.id} key={room.id}>{subjectOf(room)?.title} · {room.section}</option>)}</select></label><label>Activity weight<input type="number" min="0" max="100" value={data.gradebookSettings[selected.id]?.activityWeight ?? 40} onChange={(event) => setSetting("activityWeight", event.target.value)} /></label><label>Exam weight<input type="number" min="0" max="100" value={data.gradebookSettings[selected.id]?.examWeight ?? 60} onChange={(event) => setSetting("examWeight", event.target.value)} /></label><label>Passing score<input type="number" min="0" max="100" value={data.gradebookSettings[selected.id]?.passingScore ?? 60} onChange={(event) => setSetting("passingScore", event.target.value)} /></label></div><section className="role-panel"><div className="role-panel-head"><div><h2>{subjectOf(selected)?.title} · weighted progress</h2><p>Only graded work contributes to these illustrative averages.</p></div><span className="role-soft-tag">{activityAverage.length + examAverage.length} graded items</span></div><div className="role-table-wrap"><table className="role-table"><thead><tr><th>Category</th><th>Graded records</th><th>Average</th><th>Weight</th></tr></thead><tbody><tr><td><strong>Activities</strong></td><td>{activityAverage.length}</td><td>{average(activityAverage.map((item) => item.grade / item.maxScore * 100))}</td><td>{data.gradebookSettings[selected.id]?.activityWeight ?? 40}%</td></tr><tr><td><strong>Exams</strong></td><td>{examAverage.length}</td><td>{average(examAverage.map((item) => item.totalScore / (data.exams.find((exam) => exam.id === item.examId)?.totalMarks || 1) * 100))}</td><td>{data.gradebookSettings[selected.id]?.examWeight ?? 60}%</td></tr></tbody></table></div></section></>}
     </>}

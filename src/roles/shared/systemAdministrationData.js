@@ -2,7 +2,7 @@ import { paginateRecords } from "../admin/pagination.js";
 
 const list = (items) => Array.isArray(items) ? items : [];
 const roles = ["student", "instructor", "admin"];
-const modules = ["overview", "systemConfiguration", "academicTerms", "users", "courses", "learningResources", "reports", "auditLogs"];
+const modules = ["overview", "systemConfiguration", "academicTerms", "users", "courses", "reports", "auditLogs"];
 const actions = ["view", "create", "edit", "deactivate", "export"];
 
 function slug(value) {
@@ -10,7 +10,7 @@ function slug(value) {
 }
 
 function defaultRolePermissions() {
-  return Object.fromEntries(roles.map((role) => [role, Object.fromEntries(modules.map((module) => [module, Object.fromEntries(actions.map((action) => [action, role === "admin" || (role === "instructor" && ["courses", "learningResources"].includes(module) && ["view", "create", "edit"].includes(action)) || (role === "student" && ["courses", "learningResources"].includes(module) && action === "view") || (role !== "admin" && module === "overview" && action === "view")]))]))]));
+  return Object.fromEntries(roles.map((role) => [role, Object.fromEntries(modules.map((module) => [module, Object.fromEntries(actions.map((action) => [action, role === "admin" || (role === "instructor" && module === "courses" && ["view", "create", "edit"].includes(action)) || (role === "student" && module === "courses" && action === "view") || (role !== "admin" && module === "overview" && action === "view")]))]))]));
 }
 
 function makeHistoricalEvent({ id, actorId, actorName, actorRole, category, action, target, targetId, summary, timestamp }) {

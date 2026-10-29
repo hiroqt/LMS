@@ -11,7 +11,6 @@ import AdminSystemConfiguration from "./AdminSystemConfiguration";
 import AdminAcademicTerms from "./AdminAcademicTerms";
 import AdminRoleManagement from "./AdminRoleManagement";
 import AdminAuditLogs from "./AdminAuditLogs";
-import AdminLearningResources from "./AdminLearningResources";
 import "./adminDashboard.css";
 import "./adminSystem.css";
 import "../shared/rolePages.css";
@@ -22,7 +21,7 @@ const navigationGroups = [{
   groups: [
     { label: "Oversight", items: ["Audit Logs", "System Reports"] },
     { label: "People & Access", items: ["User Management", "Role Management"] },
-    { label: "Courses", items: ["Course Management", "Learning Resources", "Enrollments"] },
+    { label: "Courses", items: ["Course Management", "Enrollments"] },
   ],
 }];
 const adminUser = { firstName: "Taylor", lastName: "Morgan" };
@@ -80,8 +79,6 @@ export default function Admin() {
       ? ["System Reports", "Export shared LMS and administration records as CSV files."]
       : page === "Course Management"
         ? ["Course Management", "Manage subjects and classrooms used across the shared LMS."]
-        : page === "Learning Resources"
-          ? ["Learning Resource Management", "Oversee instructional materials, master repository, documents, and external links."]
         : [page, page === "System Configuration" ? "Set browser-local institution defaults, alerts, and backup options." : page === "Academic Term Configuration" ? "Manage academic terms and the default term for new classrooms." : page === "Role Management" ? "Review and edit the non-enforced demo permission matrix." : page === "Audit Logs" ? "Review timestamped data changes across roles." : page === "User Management" ? "Manage people and account access in the shared demo." : "Manage student enrollments in classrooms."];
 
   const searchItems = [
@@ -106,12 +103,6 @@ export default function Admin() {
         onSelect: () => { setPage("Course Management"); setCourseTab("Classrooms"); },
       };
     }),
-    ...(data.materials || []).map((item) => ({
-      id: item.id,
-      kind: "Resource",
-      title: `${item.title} (${item.kind || "Material"})`,
-      onSelect: () => setPage("Learning Resources"),
-    })),
   ];
 
   const preferences = data.systemAdministration.settings.notifications;
@@ -163,8 +154,6 @@ export default function Admin() {
         <AdminRoleManagement data={data} update={update} />
       ) : page === "Audit Logs" ? (
         <AdminAuditLogs data={data} />
-      ) : page === "Learning Resources" ? (
-        <AdminLearningResources data={data} update={update} />
       ) : (
         <>
         {page === "Course Management" && <div className="admin-course-tabs" role="tablist" aria-label="Course management sections">{["Subjects", "Classrooms"].map((tab) => <button type="button" role="tab" aria-selected={courseTab === tab} className={courseTab === tab ? "selected" : ""} key={tab} onClick={() => { setCourseTab(tab); setFormOpen(false); }}>{tab}</button>)}</div>}
