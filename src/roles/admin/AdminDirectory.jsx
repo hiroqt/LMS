@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Search, X } from "../../icons";
+import { Plus, Search, X } from "../../icons";
 import { paginateRecords } from "./pagination";
 
 export default function AdminDirectory({
@@ -13,6 +13,7 @@ export default function AdminDirectory({
   notice,
   setNotice,
   initialRoleFilter = "all",
+  hideAction = false,
 }) {
   const [searchSelection, setSearchSelection] = useState({ page: "", value: "" });
   const query = searchSelection.page === page ? searchSelection.value : "";
@@ -281,17 +282,20 @@ export default function AdminDirectory({
     <section className="admin-directory">
       <div className="admin-directory-heading">
         <p>{rows.length} {rows.length === 1 ? "record" : "records"} found <span>· All changes reflect in the shared demo environment.</span></p>
-        <button
-          type="button"
-          className="role-primary admin-add-button"
-          onClick={() => {
-            setForm({});
-            setNotice("");
-            setFormOpen(true);
-          }}
-        >
-          + Add {page === "Users" ? "person" : page === "Subjects" ? "subject" : page === "Classrooms" ? "classroom" : "enrollment"}
-        </button>
+        {!hideAction && (
+          <button
+            type="button"
+            className="role-primary admin-primary-action admin-add-button"
+            onClick={() => {
+              setForm({});
+              setNotice("");
+              setFormOpen(true);
+            }}
+          >
+            <Plus size={18} />
+            Add {page === "Users" ? "person" : page === "Subjects" ? "subject" : page === "Classrooms" ? "classroom" : "enrollment"}
+          </button>
+        )}
       </div>
 
       <div className="admin-filter-bar">

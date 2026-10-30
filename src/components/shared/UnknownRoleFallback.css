@@ -1,0 +1,165 @@
+.role-fallback-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f9f8;
+  padding: 24px;
+  font-family: Poppins, "Avenir Next", system-ui, sans-serif;
+  color: #26332f;
+}
+
+.role-fallback-card {
+  width: 100%;
+  max-width: 540px;
+  background: #ffffff;
+  border: 1px solid #e9efec;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(47, 74, 64, 0.055);
+  padding: 36px clamp(20px, 5vw, 40px);
+  text-align: center;
+}
+
+.role-fallback-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  margin-bottom: 20px;
+}
+
+.role-fallback-brand i {
+  color: #46aa87;
+  font-style: normal;
+}
+
+.role-fallback-brand .role-brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e8f5ef;
+  color: #347966;
+  display: grid;
+  place-items: center;
+}
+
+.role-fallback-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #fdf2f0;
+  color: #c04938;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.role-fallback-heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  margin: 0 0 12px;
+  color: #1f2b27;
+}
+
+.role-fallback-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #5c6c66;
+  margin: 0 0 10px;
+}
+
+.role-fallback-code {
+  background: #f0f4f2;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  color: #235848;
+  word-break: break-all;
+}
+
+.role-fallback-hint {
+  font-size: 13px;
+  color: #7d8985;
+  margin: 0 0 24px;
+}
+
+.role-fallback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-fallback-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.role-fallback-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+
+.role-fallback-btn:focus-visible {
+  outline: 3px solid #1f6e58;
+  outline-offset: 2px;
+}
+
+.role-fallback-btn-primary {
+  background: #32806d;
+  color: #ffffff;
+  border: 1px solid #2a6f5e;
+}
+
+.role-fallback-btn-primary:hover {
+  background: #276a59;
+}
+
+.role-fallback-btn-secondary {
+  background: #f7faf8;
+  color: #344840;
+  border: 1px solid #dce5e0;
+}
+
+.role-fallback-btn-secondary:hover {
+  background: #edf5f0;
+  border-color: #c7dbd0;
+  color: #1f4f3f;
+}
+
+.role-fallback-footer {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid #edf2ef;
+  font-size: 11px;
+  color: #929f99;
+}
+
+.role-fallback-footer code {
+  color: #4b665c;
+  font-weight: 600;
+}
+
+@media (max-width: 500px) {
+  .role-fallback-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -54,7 +54,7 @@ export default function AdminRoleManagement({ data, update }) {
         <div className="role-table-wrap"><table className="role-table admin-role-matrix" aria-label={`${selectedRole} module permissions`}><thead><tr><th scope="col">Module</th>{actions.map((action) => <th scope="col" key={action}>{action}</th>)}</tr></thead><tbody>
           {modules.map(([module, label]) => <tr key={module}><th scope="row">{label}</th>{actions.map((action) => <td key={action}><label className="admin-permission-check"><input type="checkbox" aria-label={`${selectedRole} ${action} ${label}`} checked={Boolean(permissions[selectedRole]?.[module]?.[action])} onChange={(event) => change(selectedRole, module, action, event.target.checked)} /></label></td>)}</tr>)}
         </tbody></table></div>
-        <div className="role-form-actions"><button className="role-primary" type="submit">Save permission matrix</button></div>
+        <div className="role-form-actions"><button className="role-primary admin-primary-action" type="submit">Save permission matrix</button></div>
         {notice && <p className="admin-settings-notice" role="status">{notice}</p>}
       </div>
     </form>
