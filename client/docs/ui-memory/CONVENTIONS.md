@@ -69,3 +69,16 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Every primitive has a Vitest + axe test in `src/shared/ui/primitives.test.tsx`. Add one
   for a new primitive.
 
+### C-009 · Keep the classic bundle lean
+- Code that runs for classic users (`main.tsx`, `app/router`, `app/providers`) must not
+  import the `shared/ui` barrel or `cn()`. Import single files, or use plain markup.
+- New role UIs and pages load with `React.lazy` from the router.
+- Check `npm run build` output for the `index-*.js` gzip size in the PR when touching eager
+  code (L-013).
+
+### C-010 · Shell and focus
+- Every rebuilt page renders inside `AppShell` with `PageHeader` (its single h1) and passes
+  a `pageKey` that changes on navigation; the shell then focuses the h1.
+- Dialogs that navigate stop Radix's focus restore (L-015).
+- Student phone navigation is the bottom bar (≤5 destinations); Instructor uses the drawer.
+

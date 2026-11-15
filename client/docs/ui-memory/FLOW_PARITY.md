@@ -81,3 +81,16 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Admin smoke (out of scope, must not break) | ✔ `routing` |
 | Poppins loaded on desktop, iPhone, Android | ✔ `platform` `@all` |
 | axe WCAG 2.2 AA baseline | ✔ `a11y-baseline` (report-only in Phase 0) |
+
+## New shell (Phase 1, behind `?ui=new`)
+
+| Check | Spec |
+| --- | --- |
+| Skip link first; nav `aria-current`; focus moves to h1 on page change | ✔ `new-shell` |
+| Choice remembered; "Use classic view" returns to the legacy UI | ✔ `new-shell` |
+| Workspace switch keeps the new UI; Admin stays classic | ✔ `new-shell` |
+| Offline banner announced and cleared | ✔ `new-shell` |
+| Student bottom nav on phones; no sideways scroll at 320px | ✔ `new-shell` `@mobile` |
+| Instructor drawer closes and focuses the page after navigating | ✔ `new-shell` `@mobile` |
+| Zero axe violations (incl. contrast), text ≥14px, controls ≥44px | ✔ `new-shell` `@all` (shells and `/ui-kit`) |
+

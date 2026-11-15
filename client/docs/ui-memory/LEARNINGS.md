@@ -84,3 +84,29 @@ button disabled. It now asserts the destination's h1, checks that the h1 is abse
 the click, and browses a month. This is the second vacuous test in Phase 0 (see L-005).
 Promoted to C-006.
 
+### L-013 · Importing the shared/ui barrel from eager code bloats the classic bundle
+`2026-11-16` · hiro · scope: performance · confidence: high
+`AppRouter` imported `Skeleton` from `shared/ui`, which pulled Radix into the bundle every
+classic user downloads: 139 → 195 KB gzipped. A direct import still pulled
+`tailwind-merge` through `cn()` (+11 KB). The router's loading fallback is now plain markup
+(+1.6 KB over Phase 0). Promoted to C-009.
+
+### L-014 · StrictMode breaks "skip the first render" focus logic
+`2026-11-16` · hiro · scope: shared/layout · confidence: high
+The shell skipped focusing the h1 on first render with a `firstRender` ref. StrictMode runs
+mount effects twice, so the second run moved focus to the h1 on page load and the skip
+link was no longer the first Tab stop. Compare against the previous `pageKey` instead
+(idempotent). The skip-link spec caught it.
+
+### L-015 · Radix Dialog restores focus to its trigger after closing
+`2026-11-16` · hiro · scope: shared/layout · confidence: high
+Choosing a page in the phone drawer moved focus to the new h1, and then Radix put it back
+on "Open menu". `onCloseAutoFocus` with `preventDefault()` keeps focus on the h1 when the
+drawer closed because of navigation. Apply the same pattern to any dialog that navigates.
+
+### L-016 · Legacy element CSS outranks Tailwind utilities
+`2026-11-16` · hiro · scope: styles · confidence: high
+`button, input { font: inherit }` and `button { min-height: 24px }` in `index.css` are
+unlayered, so they beat layered utilities. New buttons rendered at 24px with inherited
+text size. Fixed by D-010. `new-shell.spec.ts` checks computed heights so it cannot regress.
+

@@ -14,4 +14,5 @@ Each role also resolves from `?role=<role>`, `#/<role>`, `/<role>.html`, and `/<
 
 | Path | Element | Defined in |
 | --- | --- | --- |
+| `/ui-kit` | `DesignSystemPage` | `src/app/router/AppRouter.tsx` |
 | `*` | `RoleWorkspaceRoute` | `src/app/router/AppRouter.tsx` |

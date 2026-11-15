@@ -7,6 +7,7 @@ The Student and Instructor UIs are being rebuilt in phases (`docs/UI_REVAMP_PLAN
 - **Before UI work**, read `docs/ui-memory/CONVENTIONS.md`, skim `docs/ui-memory/DECISIONS.md` and `LEARNINGS.md`, and check `docs/ui-memory/generated/components.md` for something to reuse. The checklist is `.agents/skills/ui-memory/SKILL.md`.
 - **In the same PR**, record what you learned (`LEARNINGS.md`) and any choice others must follow (`DECISIONS.md`), update `FLOW_PARITY.md`, and run `npm run memory:sync`. CI fails when generated memory is stale.
 - Rebuilt screens must keep every spec in `e2e/` passing unchanged. A flow-chart node without a spec gets one, written against the current UI, before its screen is rebuilt.
+- Preview the rebuilt UI with `?ui=new` (for example `/student?ui=new`); `?ui=classic` or the profile menu goes back. Browse the design system at `/ui-kit`. Admin always uses its current UI.
 
 ## Project Structure & Module Organization
 
