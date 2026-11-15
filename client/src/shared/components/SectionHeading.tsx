@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /** Eyebrow + h2 + optional count and action, used for page sections. */
 export function SectionHeading({ id, eyebrow, title, count, description, icon, action }: { id?: string; eyebrow?: string; title: string; count?: number; description?: ReactNode; icon?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <div className="flex min-w-0 flex-col gap-0.5">
         {eyebrow && <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{eyebrow}</p>}
         <h2 id={id} className="m-0 flex items-center gap-2.5 font-sans text-section font-semibold text-ink">
