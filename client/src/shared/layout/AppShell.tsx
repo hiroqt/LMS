@@ -17,6 +17,8 @@ export interface NavItem {
 export interface AppShellProps {
   /** Used in landmark names: "Student navigation". */
   roleLabel: string;
+  /** Overrides the navigation landmark name (default "<roleLabel> navigation"). */
+  navLabel?: string;
   nav: NavItem[];
   activeId: string;
   onNavigate: (id: string) => void;
@@ -77,7 +79,8 @@ function Brand() {
       <span aria-hidden className="grid size-9 place-items-center rounded-control bg-primary-600 text-white">
         <GraduationCap className="size-5" />
       </span>
-      TMCC LMS
+      {/* Collapses to the mark on very narrow phones so the top bar fits 320px. */}
+      <span className="max-[379px]:sr-only">TMCC LMS</span>
     </span>
   );
 }
@@ -88,7 +91,7 @@ function Brand() {
  * tablets: a bottom bar or a drawer. Includes the skip link, landmarks,
  * connection banner, and focus management on page change (C-004).
  */
-export function AppShell({ roleLabel, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarActions, pageKey, children }: AppShellProps) {
+export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarActions, pageKey, children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // The drawer only exists below lg. If the viewport grows while it is open
   // (tablet rotation, window resize), it must close: Radix would otherwise keep
@@ -113,7 +116,7 @@ export function AppShell({ roleLabel, nav, activeId, onNavigate, mobileNav, side
     setDrawerOpen(false);
     onNavigate(id);
   };
-  const navLabel = `${roleLabel} navigation`;
+  const navLabel = navLabelOverride ?? `${roleLabel} navigation`;
 
   return (
     <div className="min-h-dvh bg-canvas font-sans text-ink">
