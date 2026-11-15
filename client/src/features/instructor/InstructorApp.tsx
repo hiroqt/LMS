@@ -1,6 +1,7 @@
 import { BookOpen, ChevronRight, GraduationCap, LayoutDashboard, Search } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { HelpSupport } from "../../shared/components/HelpSupport";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
@@ -100,7 +101,7 @@ function Workspace({ onNavigateRole, onCreateClass }: RoleAppProps & { onCreateC
                     currentClass === room.id ? "bg-primary-100" : "bg-transparent hover:bg-primary-50",
                   )}
                 >
-                  <span className={cn("grid size-8 shrink-0 place-items-center rounded-control text-body font-bold", toneFor(index))}>{classMark(subject)}</span>{" "}
+                  <span className={cn("w-14 shrink-0 rounded-chip py-0.5 text-center text-body font-semibold tracking-code tabular-nums", toneFor(index))}>{classMark(subject)}</span>{" "}
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-body font-medium text-ink">{subject?.title ?? "Classroom"}</span>{" "}
                     <span className="truncate text-body text-muted">{room.section}</span>
@@ -133,6 +134,7 @@ function Workspace({ onNavigateRole, onCreateClass }: RoleAppProps & { onCreateC
       mobileNav="drawer"
       pageKey={location.pathname}
       sidebarExtra={myClasses}
+      sidebarFooter={<HelpSupport />}
       topbarStart={
         <nav aria-label="Breadcrumb" className="hidden md:block">
           <ol className="m-0 flex list-none items-center gap-1 p-0 font-sans text-body">

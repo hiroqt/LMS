@@ -12,7 +12,7 @@ describe("instructor selectors", () => {
     expect(first?.firstName).toBe("Angela");
     const rooms = classroomsOf(store, first?.id);
     expect(rooms).toHaveLength(1);
-    expect(classMark(subjectOf(store, rooms[0]))).toBe("01");
+    expect(classMark(subjectOf(store, rooms[0]))).toBe("IT101");
   });
 
   it("reads year levels from the record or the section text", () => {

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, ClipboardCheck, Inbox, Megaphone, School, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ClipboardCheck, Inbox, Layers, Megaphone, School, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { academicEvents, featuredAnnouncements } from "../../../data.js";
@@ -6,11 +6,11 @@ import { FeaturedNewsCarousel } from "../../../shared/components/FeaturedNewsCar
 import { MonthGrid } from "../../../shared/components/MonthGrid";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { StatCard } from "../../../shared/components/StatCard";
-import { PageHeader } from "../../../shared/layout/PageHeader";
 import { inMonth, type CalendarMark } from "../../../shared/lib/calendar";
 import { cn } from "../../../shared/lib/cn";
-import { formatDay, formatDue, formatMonth } from "../../../shared/lib/format";
+import { formatDay, formatDue, formatFullDate, formatMonth } from "../../../shared/lib/format";
 import { featuredSlides, upcomingSchoolEvents, type SchoolEvent } from "../../../shared/lib/schoolNews";
+import { termStatus } from "../../../shared/lib/term";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { EmptyState } from "../../../shared/ui/EmptyState";
@@ -56,25 +56,32 @@ function Overview({ onNews }: { onNews: () => void }) {
 
   return (
     <>
-      <section aria-labelledby="teaching-greeting" className="flex flex-col gap-4 rounded-card bg-primary-700 p-5 font-sans text-white sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div className="flex flex-col gap-2">
-          <p className="m-0 text-label font-semibold tracking-wide text-primary-100 uppercase">Your teaching space</p>
-          <h2 id="teaching-greeting" className="m-0 text-section font-bold sm:text-page-mobile">{greetingFor(now)}, {instructor.firstName}.</h2>
-          <p className="m-0 max-w-prose text-body text-primary-100">Your classrooms are ready. Keep feedback moving and help students stay on track.</p>
-        </div>
-        <Button variant="secondary" size="lg" className="self-start sm:self-center" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
-      </section>
+      <div>
+        <section aria-labelledby="teaching-greeting" className="flex flex-col justify-between gap-4 rounded-card border border-line border-l-4 border-l-primary-600 bg-surface p-5 font-sans text-ink shadow-card sm:flex-row sm:items-center sm:p-6">
+          <div className="flex flex-col gap-2">
+            <p className="m-0 text-label font-semibold tracking-label text-primary-700 uppercase">Your teaching space</p>
+            <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight sm:text-page-mobile">{greetingFor(now)}, {instructor.firstName}.</h2>
+            <p className="m-0 max-w-prose text-body text-muted">
+              {queue.length
+                ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade. Feedback is most useful while the work is fresh.`
+                : "Your review queue is clear. Your classrooms are ready for the next lesson."}
+            </p>
+          </div>
+          <Button size="lg" className="self-start" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
+        </section>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" note="Ready for your next lesson" />
-        <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" note="Student assessment submissions" onOpen={queue.length ? () => openReview() : undefined} />
-        <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" note="Across your classrooms" />
-        <StatCard icon={<UsersRound />} tone="bg-success-soft text-success" value={reached} label="Students reached" note="Active enrollments" />
+        <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
+        <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
+        <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
+        <StatCard icon={<UsersRound />} tone="bg-success-soft text-success" value={reached} label="Students reached" />
       </div>
 
       <section aria-labelledby="classes-in-progress" className="flex flex-col gap-4">
         <SectionHeading
           id="classes-in-progress"
+          icon={<Layers />}
           eyebrow="Your course rooms"
           title="Classes in progress"
           action={<Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>}
@@ -91,6 +98,7 @@ function Overview({ onNews }: { onNews: () => void }) {
                   title={subject?.title ?? "Classroom"}
                   section={room.section}
                   mark={classMark(subject)}
+                  term={room.term}
                   index={index}
                   students={enrolledCount(store, room.id)}
                   coursework={content.exams.length + content.activities.length}
@@ -106,6 +114,7 @@ function Overview({ onNews }: { onNews: () => void }) {
         <section aria-labelledby="needs-review" className="flex flex-col gap-4">
           <SectionHeading
             id="needs-review"
+            icon={<Inbox />}
             eyebrow="Teacher inbox"
             title="Needs your review"
             count={queue.length}
@@ -143,7 +152,7 @@ function Overview({ onNews }: { onNews: () => void }) {
           )}
         </section>
         <section aria-labelledby="month-review" className="flex flex-col gap-4">
-          <SectionHeading id="month-review" eyebrow={`Month review · ${formatMonth(new Date(now))}`} title="Academic calendar" />
+          <SectionHeading id="month-review" icon={<CalendarDays />} eyebrow={`Month review · ${formatMonth(new Date(now))}`} title="Academic calendar" />
           <Card className="flex flex-col gap-3 p-4">
             <p className="m-0 text-body text-muted">{marks.filter((item) => item.kind === "event").length} academic dates · {marks.filter((item) => item.kind === "deadline").length} class deadlines</p>
             <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
@@ -172,7 +181,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
       <FeaturedNewsCarousel slides={featuredSlides(featuredAnnouncements, events, now)} onViewCalendar={onCalendar} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
-          <SectionHeading id="teacher-news" eyebrow="Your classes" title="Teacher announcements" count={announcements.length} />
+          <SectionHeading id="teacher-news" icon={<Megaphone />} eyebrow="Your classes" title="Teacher announcements" count={announcements.length} />
           {announcements.length ? (
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {announcements.map((item) => (
@@ -194,7 +203,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
           )}
         </section>
         <section aria-labelledby="school-news" className="flex flex-col gap-3">
-          <SectionHeading id="school-news" eyebrow="TMCC LMS" title="School announcements" count={upcoming.length} />
+          <SectionHeading id="school-news" icon={<School />} eyebrow="TMCC LMS" title="School announcements" count={upcoming.length} />
           <Card className="p-2">
             <ul className="m-0 flex list-none flex-col p-0">
               {upcoming.map((item) => (
@@ -215,6 +224,8 @@ function News({ onCalendar }: { onCalendar: () => void }) {
 }
 
 export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role: string) => void }) {
+  const [now] = useState(Date.now);
+  const term = termStatus(events, now);
   const { instructors, instructor, rooms } = useInstructorWorkspace();
   const { setInstructorId, openCreateClass } = useInstructorSession();
   const [view, setView] = useState<"overview" | "news">("overview");
@@ -222,12 +233,16 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
 
   return (
     <>
-      <PageHeader
-        eyebrow="Instructor workspace"
-        title="Your teaching day"
-        description="Keep coursework moving and give every submission timely attention."
-        actions={
-          <div className="flex flex-wrap items-end gap-3">
+      <header className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative flex max-w-2xl flex-col gap-1.5">
+          <p className="m-0 text-body text-muted">
+            {formatFullDate(now)}
+            {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
+          </p>
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">Your teaching day</h1>
+          <p className="m-0 text-body-lg text-muted">Keep coursework moving and give every submission timely attention.</p>
+        </div>
+        <div className="relative"><div className="flex flex-wrap items-end gap-3">
             {instructors.length > 1 && (
               <label className="flex flex-col gap-1 font-sans text-body text-muted">
                 Viewing instructor
@@ -245,9 +260,8 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
               <button type="button" aria-pressed={view === "overview"} onClick={() => setView("overview")} className={cn(toggle, view === "overview" ? "bg-primary-600 text-white" : "bg-transparent text-ink hover:bg-primary-50")}>Overview</button>
               <button type="button" aria-pressed={view === "news"} onClick={() => setView("news")} className={cn(toggle, view === "news" ? "bg-primary-600 text-white" : "bg-transparent text-ink hover:bg-primary-50")}><Megaphone aria-hidden className="size-4" />News &amp; announcements</button>
             </div>
-          </div>
-        }
-      />
+          </div></div>
+      </header>
       {!rooms.length ? (
         <EmptyState
           icon={<BookOpen />}

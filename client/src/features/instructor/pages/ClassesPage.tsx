@@ -36,7 +36,7 @@ export default function ClassesPage() {
             const content = classContent(store, room.id);
             return (
               <li key={room.id}>
-                <InstructorClassCard title={subject?.title ?? "Classroom"} section={room.section} mark={classMark(subject)} index={index} students={enrolledCount(store, room.id)} coursework={content.exams.length + content.activities.length} onOpen={() => navigate(instructorPaths.classPage(room.id))} />
+                <InstructorClassCard title={subject?.title ?? "Classroom"} section={room.section} mark={classMark(subject)} term={room.term} index={index} students={enrolledCount(store, room.id)} coursework={content.exams.length + content.activities.length} onOpen={() => navigate(instructorPaths.classPage(room.id))} />
               </li>
             );
           })}
