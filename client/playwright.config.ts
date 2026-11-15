@@ -3,6 +3,13 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 4173;
 const BASE_URL = `http://localhost:${PORT}`;
 
+/**
+ * Flow-parity suite. The flow specs encode the journeys in
+ * docs/STUDENT_USER_FLOW.md and docs/INSTRUCTOR_USER_FLOW.md. They were
+ * written against the classic UI and proved the rebuilt UI kept every
+ * journey (Phases 0–4); since cutover (D-021) they guard the rebuilt UI.
+ * Selectors use roles and accessible names only, never CSS classes.
+ */
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
