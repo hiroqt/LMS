@@ -54,26 +54,28 @@ Rebuilt Student status: every ✔ row passes **unchanged** in the `student-new` 
 | HOME, OVERVIEW | Teaching day; Overview ↔ News | ✔ `instructor-flow` | ⬜ |
 | CHOOSE | Switch demo instructor | ✔ `instructor-flow` CHOOSE | ⬜ |
 | EMPTY | No classrooms → message + Admin link | ✖ | ⬜ |
-| NEWS → B1 | Select a teacher announcement → class Announcements | ✖ | ⬜ |
+| NEWS → B1 | Select a teacher announcement → class Announcements | ✔ `instructor-more` | ⬜ |
 | TOOLS | Search → class, notifications (empty state), breadcrumb → Overview | ✔ `shell` TOOLS | ⬜ |
-| TOOLS | Notification → pending review | ✖ (needs a pending submission) | ⬜ |
+| TOOLS | Notification → pending review | ✔ `instructor-more` | ⬜ |
+| F | "Review student work" → review queue | ✔ `instructor-more` | ⬜ |
 | ROLE | Switch role (URL, title, Back) | ✔ `routing` | ⬜ |
 | A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | ⬜ |
 | TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | ⬜ |
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ⬜ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ⬜ |
-| COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✖ | ⬜ |
+| COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ⬜ |
 | K | Create class → opens; Cancel closes | ✔ `instructor-flow` K | ⬜ |
-| E: material | Material form → Materials list | ✖ | ⬜ |
+| E: material | Material form → Materials list | ✔ `instructor-more` | ⬜ |
+| C | Archive and restore a material | ✔ `instructor-more` | ⬜ |
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ⬜ |
-| E: assessment | Assessment form (one MCQ) → Classwork | ✖ | ⬜ |
-| D | Classwork search and filter | ✖ | ⬜ |
+| E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | ⬜ |
+| D | Classwork search and filter | ✔ `instructor-more` | ⬜ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ⬜ |
 | SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ⬜ |
 | J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ⬜ |
 | J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | ⬜ |
 | G | Gradebook loads | ✔ `instructor-flow` G | ⬜ |
-| SETTINGS | Edit weights and passing score | ✖ | ⬜ |
+| SETTINGS | Edit weights and passing score (persisted) | ✔ `instructor-more` | ⬜ |
 | Mobile | Drawer → class at phone width | ✔ `@mobile` | ⬜ |
 
 ## Cross-cutting
