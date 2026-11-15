@@ -164,3 +164,36 @@ Found in the Phase 2 review: `submitActivity` marked an assignment completed eve
 that was never stored. Completion is now recorded only after a successful save, and the
 form shows an error toast otherwise. The Phase 4 outbox must keep this rule.
 
+### L-025 · Classic gradebook showed NaN% for graded assignments
+`2026-11-17` · hiro · scope: instructor (classic) · confidence: high
+The classic average divided by `submission.maxScore`, which submissions do not have. The
+rebuilt selector uses the activity's `maxScore`, pinned by a unit test. Classic is left as
+is because it is replaced at cutover.
+
+### L-026 · Radix tab values become element ids
+`2026-11-17` · hiro · scope: shared/ui · confidence: high
+The value "Create content" produced ids with a space, so `aria-controls` was an invalid
+IDREF list (axe: critical). Use slug values and map labels and URLs to them. Promoted to C-013.
+
+### L-027 · Horizontally scrollable regions must be focusable
+`2026-11-17` · hiro · scope: a11y · confidence: high
+The gradebook table wrapper (`overflow-x-auto`) could not be scrolled by keyboard (axe:
+scrollable-region-focusable). Give it `tabIndex={0}`, `role="region"`, and a label. Promoted to C-013.
+
+### L-028 · Router navigations render in a transition
+`2026-11-17` · hiro · scope: app/router · confidence: high
+A tab bound only to `?tab=` switched a moment after the click, which a spec caught. Keep an
+optimistic local value until the URL catches up (`ClassPage` pending tab).
+
+### L-029 · Any navigation from inside a drawer must close it
+`2026-11-17` · hiro · scope: shared/layout · confidence: high
+Class links inside the phone drawer navigated without closing it, leaving the page hidden
+behind the modal. `AppShell` now closes the drawer on every page change, not only on its
+own nav items. Spec: "a class link in the drawer also closes it".
+
+### L-030 · Multi-page accessibility sweeps need a longer timeout on CI
+`2026-11-17` · hiro · scope: tests · confidence: high
+The Instructor "every tab, form, and dialog" sweep (about 13 loads, each with a full axe
+scan) hit the 30s limit once on CI's emulated iPhone WebKit and passed on retry. Sweep
+specs call `test.slow()`; do not paper over timeouts with more retries.
+

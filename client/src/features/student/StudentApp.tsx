@@ -14,7 +14,7 @@ import { Toaster } from "../../shared/ui/toast/Toaster";
 import { STUDENT } from "./api/catalog";
 import { resetProgress } from "./api/progressStore";
 import { dueSoon, searchWorkspace } from "./api/selectors";
-import { toneFor } from "./components/tones";
+import { toneFor } from "../../shared/lib/tones";
 import { useSharedDataSync } from "./hooks/useStudentCatalog";
 import { useWorkspace } from "./hooks/useWorkspace";
 import TodayPage from "./pages/TodayPage";

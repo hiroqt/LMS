@@ -38,8 +38,13 @@
 
 | File | Exports |
 | --- | --- |
+| `src/shared/components/BackLink.tsx` | `BackLink` |
+| `src/shared/components/FeaturedNewsCarousel.tsx` | `FeaturedNewsCarousel` |
+| `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
+| `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
+| `src/shared/components/StatCard.tsx` | `StatCard` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 
 ## Features
@@ -50,13 +55,24 @@
 | --- | --- |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
+| `src/features/instructor/components/CreateClassDialog.tsx` | `CreateClassDialog` |
+| `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
+| `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
+| `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
+| `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
+| `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
+| `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
+| `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
+| `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
+| `src/features/instructor/pages/class/CreateContentTab.tsx` | `CreateContentTab` |
+| `src/features/instructor/pages/class/MaterialsTab.tsx` | `MaterialsTab` |
+| `src/features/instructor/pages/class/PeopleTab.tsx` | `PeopleTab` |
+| `src/features/instructor/pages/class/StreamTab.tsx` | `StreamTab` |
+| `src/features/instructor/pages/class/SubmissionsTab.tsx` | `SubmissionsTab` |
+| `src/features/instructor/pages/class/shared.tsx` | `ListSearch` |
 | `src/features/student/StudentApp.tsx` | `StudentApp` |
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
-| `src/features/student/components/BackLink.tsx` | `BackLink` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
-| `src/features/student/components/MonthGrid.tsx` | `MonthGrid` |
-| `src/features/student/components/SectionHeading.tsx` | `SectionHeading` |
-| `src/features/student/components/StatCard.tsx` | `StatCard` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |

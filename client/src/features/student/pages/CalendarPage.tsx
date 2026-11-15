@@ -8,7 +8,7 @@ import { Badge } from "../../../shared/ui/Badge";
 import { Card } from "../../../shared/ui/Card";
 import { IconButton } from "../../../shared/ui/IconButton";
 import { calendarEntries, inMonth, weekBounds, type CalendarEntry } from "../api/selectors";
-import { MonthGrid } from "../components/MonthGrid";
+import { MonthGrid } from "../../../shared/components/MonthGrid";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 

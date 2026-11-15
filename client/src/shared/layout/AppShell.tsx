@@ -29,6 +29,8 @@ export interface AppShellProps {
   mobileNav: "bottom" | "drawer";
   /** Extra sidebar content under the main navigation, e.g. "My classes". */
   sidebarExtra?: ReactNode;
+  /** Left side of the top bar after the brand, e.g. breadcrumbs. */
+  topbarStart?: ReactNode;
   /** Right side of the top bar: search, notifications, profile. */
   topbarActions?: ReactNode;
   /** Changes on every page change; focus then moves to the page's h1. */
@@ -91,7 +93,7 @@ function Brand() {
  * tablets: a bottom bar or a drawer. Includes the skip link, landmarks,
  * connection banner, and focus management on page change (C-004).
  */
-export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarActions, pageKey, children }: AppShellProps) {
+export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarStart, topbarActions, pageKey, children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // The drawer only exists below lg. If the viewport grows while it is open
   // (tablet rotation, window resize), it must close: Radix would otherwise keep
@@ -107,9 +109,17 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
   useEffect(() => {
     if (previousPage.current === pageKey) return;
     previousPage.current = pageKey;
+    if (drawerVisible) {
+      // Any navigation from inside the drawer (nav items, class links, search)
+      // closes it; onCloseAutoFocus then moves focus to the new page's h1.
+      navigatedFromDrawer.current = true;
+      // oxlint-disable-next-line react/set-state-in-effect -- closing the drawer is the response to a route change
+      setDrawerOpen(false);
+      return;
+    }
     // Announce the new page to screen readers and give keyboard users a fresh start.
     (mainRef.current?.querySelector("h1") ?? mainRef.current)?.focus();
-  }, [pageKey]);
+  }, [pageKey, drawerVisible]);
 
   const navigate = (id: string) => {
     if (drawerVisible) navigatedFromDrawer.current = true;
@@ -122,7 +132,7 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
     <div className="min-h-dvh bg-canvas font-sans text-ink">
       <SkipLink />
 
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-6 border-r border-line bg-surface px-4 py-5 lg:flex">
+      <aside aria-label="Workspace" className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-6 border-r border-line bg-surface px-4 py-5 lg:flex">
         <Brand />
         <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" />
         {sidebarExtra && <div className="min-h-0 flex-1 overflow-y-auto">{sidebarExtra}</div>}
@@ -157,13 +167,17 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
                       <X aria-hidden className="size-5" />
                     </Dialog.Close>
                   </div>
-                  <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" />
-                  {sidebarExtra}
+                  {/* On phones the drawer is the sidebar, so it keeps the sidebar landmark. */}
+                  <aside aria-label="Workspace" className="flex flex-col gap-6">
+                    <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" />
+                    {sidebarExtra}
+                  </aside>
                 </Dialog.Content>
               </Dialog.Portal>
             </Dialog.Root>
           )}
           <span className="lg:hidden"><Brand /></span>
+          {topbarStart}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">{topbarActions}</div>
         </header>
 

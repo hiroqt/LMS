@@ -1,8 +1,9 @@
-import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardCheck, Megaphone, Sparkles, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, Megaphone, Sparkles, X } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
-import { formatDay, formatDue, formatFullDate, formatLongDay, formatMonth } from "../../../shared/lib/format";
+import { formatDay, formatDue, formatFullDate, formatMonth } from "../../../shared/lib/format";
+import { featuredSlides } from "../../../shared/lib/schoolNews";
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
@@ -11,10 +12,11 @@ import { STUDENT } from "../api/catalog";
 import { calendarEntries, dueSoon, dueThisWeek, greeting, inMonth, schoolEventsThisWeek, upcomingSchoolEvents } from "../api/selectors";
 import type { StudentCatalog } from "../api/types";
 import { ClassCard } from "../components/ClassCard";
-import { MonthGrid } from "../components/MonthGrid";
-import { SectionHeading } from "../components/SectionHeading";
-import { StatCard } from "../components/StatCard";
-import { toneFor } from "../components/tones";
+import { FeaturedNewsCarousel } from "../../../shared/components/FeaturedNewsCarousel";
+import { MonthGrid } from "../../../shared/components/MonthGrid";
+import { SectionHeading } from "../../../shared/components/SectionHeading";
+import { StatCard } from "../../../shared/components/StatCard";
+import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
@@ -159,57 +161,6 @@ function Overview({ catalog, completed, now }: { catalog: StudentCatalog; comple
   );
 }
 
-function FeaturedCarousel({ catalog, now }: { catalog: StudentCatalog; now: number }) {
-  const navigate = useNavigate();
-  const upcoming = upcomingSchoolEvents(catalog.academicEvents, now);
-  const slides = catalog.featured.flatMap((feature) => {
-    const event = upcoming.find((item) => item.id === feature.eventId);
-    return event ? [{ ...event, ...feature }] : [];
-  });
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [reduceMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-
-  useEffect(() => {
-    if (reduceMotion || paused || slides.length < 2) return undefined;
-    const id = window.setInterval(() => setIndex((current) => (current + 1) % slides.length), 6000);
-    return () => window.clearInterval(id);
-  }, [paused, reduceMotion, slides.length]);
-
-  const slide = slides[index % Math.max(slides.length, 1)];
-  if (!slide) return null;
-  const position = (index % slides.length) + 1;
-  return (
-    <section
-      aria-roledescription="carousel"
-      aria-label="Featured school announcements"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && setPaused(false)}
-      className="overflow-hidden rounded-card bg-primary-900 font-sans text-white shadow-card"
-    >
-      <div
-        aria-roledescription="slide"
-        aria-label={`${position} of ${slides.length}`}
-        className="flex min-h-56 flex-col justify-end gap-2 bg-cover bg-center p-5 sm:p-7"
-        style={{ backgroundImage: `linear-gradient(90deg, rgb(27 70 61 / 0.96), rgb(27 70 61 / 0.82) 55%, rgb(27 70 61 / 0.3)), url("${slide.image}")` }}
-      >
-        <p className="m-0 text-label font-semibold tracking-wide text-primary-100 uppercase">Featured · {slide.category}</p>
-        <h3 className="m-0 text-section font-bold">{slide.title}</h3>
-        <p className="m-0 text-body text-primary-100">{formatLongDay(new Date(`${slide.date}T00:00:00`))}</p>
-        <p className="m-0 max-w-prose text-body">{slide.summary}</p>
-        <Button variant="secondary" className="mt-2 self-start" onClick={() => navigate(studentPaths.calendar())}>View calendar<ArrowRight aria-hidden className="size-4" /></Button>
-      </div>
-      <div className="flex items-center gap-1 bg-primary-800 px-3 py-1">
-        <button type="button" aria-label="Previous announcement" onClick={() => setIndex((current) => (current - 1 + slides.length) % slides.length)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-white hover:bg-primary-700 focus-visible:outline-3 focus-visible:outline-white"><ChevronLeft aria-hidden className="size-5" /></button>
-        <span className="text-body">{position} / {slides.length}</span>
-        <button type="button" aria-label="Next announcement" onClick={() => setIndex((current) => (current + 1) % slides.length)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-white hover:bg-primary-700 focus-visible:outline-3 focus-visible:outline-white"><ChevronRight aria-hidden className="size-5" /></button>
-      </div>
-    </section>
-  );
-}
-
 function News({ catalog, now }: { catalog: StudentCatalog; now: number }) {
   const navigate = useNavigate();
   const upcoming = upcomingSchoolEvents(catalog.academicEvents, now);
@@ -217,7 +168,7 @@ function News({ catalog, now }: { catalog: StudentCatalog; now: number }) {
   const first = catalog.courses[0];
   return (
     <div className="flex flex-col gap-6">
-      <FeaturedCarousel catalog={catalog} now={now} />
+      <FeaturedNewsCarousel slides={featuredSlides(catalog.featured, catalog.academicEvents, now)} onViewCalendar={() => navigate(studentPaths.calendar())} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
           <SectionHeading id="teacher-news" eyebrow="Your classes" title="Teacher announcements" />

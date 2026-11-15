@@ -21,6 +21,7 @@ async function check(page: Page) {
 
 test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () => {
   test("Today (Overview and News), Tasks, Calendar, Classes @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
     await check(page);
     await page.getByRole("button", { name: "News & announcements" }).click();
@@ -33,6 +34,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
   });
 
   test("a class on every tab, and a material @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
     for (const tab of ["", "?tab=Classwork", "?tab=Materials", "?tab=People"]) {
       await page.goto(`/student/classes/biology${tab}`);
@@ -57,6 +59,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
 });
 
 test("no rebuilt Student page scrolls sideways at 320px @mobile", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
   await useNewStudentUi(page);
   await page.setViewportSize({ width: 320, height: 640 });
   const pages = [
@@ -129,7 +132,7 @@ test.describe("Rebuilt Student behavior", () => {
     await page.getByRole("main").getByRole("spinbutton").first().fill("32");
     await page.getByPlaceholder("Optional feedback").fill("Strong loops; revisit recursion.");
     await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(page.getByRole("tab", { name: /^Submissions0/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Submissions\s?0/ })).toBeVisible();
 
     await page.goto("/student/assessments/biology-1");
     const graded = page.getByRole("region", { name: "Graded by your instructor" });
@@ -143,8 +146,8 @@ test.describe("Rebuilt Student behavior", () => {
     await page.goto("/instructor");
     await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
     await page.getByRole("tab", { name: /^Create content/ }).click();
-    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: "+ Create" }).click();
-    await page.getByRole("textbox", { name: "Assignment title · required" }).fill("Pseudocode for a vending machine");
+    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
+    await page.getByRole("textbox", { name: /^Assignment title/ }).fill("Pseudocode for a vending machine");
     await page.getByRole("button", { name: "Save and publish" }).click();
 
     await useNewStudentUi(page);
@@ -158,7 +161,7 @@ test.describe("Rebuilt Student behavior", () => {
 
     await page.goto("/instructor");
     await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
-    await expect(page.getByRole("tab", { name: /^Submissions1/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Submissions\s?1/ })).toBeVisible();
   });
 
   test("search works on phones from the search sheet @mobile", async ({ page }) => {

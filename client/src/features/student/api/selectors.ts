@@ -1,4 +1,8 @@
+import { inMonth, monthGrid, type CalendarMark } from "../../../shared/lib/calendar";
 import type { AcademicEvent, Assessment, StudentCatalog, StudentProgress } from "./types";
+
+export { inMonth, monthGrid };
+export { upcomingSchoolEvents } from "../../../shared/lib/schoolNews";
 
 /*
  * Pure rules shared by the rebuilt Student screens. Each mirrors the classic
@@ -62,17 +66,7 @@ export function schoolEventsThisWeek(events: AcademicEvent[], now: number): Acad
   return events.filter((item) => eventDate(item) >= start && eventDate(item) < end).sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime());
 }
 
-/** School events from today on, soonest first. */
-export function upcomingSchoolEvents(events: AcademicEvent[], now: number): AcademicEvent[] {
-  const today = new Date(now);
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return events.filter((item) => eventDate(item) >= startOfToday).sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime());
-}
-
-export interface CalendarEntry {
-  id: string;
-  title: string;
-  date: Date;
+export interface CalendarEntry extends CalendarMark {
   /** Present for assessment deadlines; absent for school events. */
   assessment?: Assessment;
   category?: string;
@@ -81,24 +75,9 @@ export interface CalendarEntry {
 /** Assessment deadlines (at their due time) and school events (at noon, all day). */
 export function calendarEntries(assessments: Assessment[], events: AcademicEvent[]): CalendarEntry[] {
   return [
-    ...assessments.map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt), assessment: item })),
-    ...events.map((item) => ({ id: item.id, title: item.title, date: new Date(`${item.date}T12:00:00`), category: item.category })),
+    ...assessments.map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt), kind: "deadline" as const, assessment: item })),
+    ...events.map((item) => ({ id: item.id, title: item.title, date: new Date(`${item.date}T12:00:00`), kind: "event" as const, category: item.category })),
   ].sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-export function inMonth(entries: CalendarEntry[], month: Date): CalendarEntry[] {
-  return entries.filter((item) => item.date.getFullYear() === month.getFullYear() && item.date.getMonth() === month.getMonth());
-}
-
-/** Day numbers for a month grid starting on Sunday; null pads the edges. */
-export function monthGrid(month: Date, minCells = 0): Array<number | null> {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
-  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const cells = Math.max(Math.ceil((first + days) / 7) * 7, minCells);
-  return Array.from({ length: cells }, (_, index) => {
-    const day = index - first + 1;
-    return day > 0 && day <= days ? day : null;
-  });
 }
 
 export interface SearchResult {

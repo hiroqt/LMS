@@ -1,6 +1,6 @@
 import { UsersRound } from "lucide-react";
 import type { Course } from "../api/types";
-import { toneFor } from "./tones";
+import { toneFor } from "../../../shared/lib/tones";
 
 /** A class tile. The accessible name starts with the subject, then the class name. */
 export function ClassCard({ course, index, onOpen }: { course: Course; index: number; onOpen: () => void }) {

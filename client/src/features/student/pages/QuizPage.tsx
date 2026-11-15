@@ -8,7 +8,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../shared/ui/Dialog";
 import { saveAnswer } from "../api/progressStore";
 import { submitExam } from "../api/submissions";
-import { BackLink } from "../components/BackLink";
+import { BackLink } from "../../../shared/components/BackLink";
 import { useProgress } from "../hooks/useProgress";
 import { useQuizSession } from "../hooks/useQuizSession";
 import { useStudentCatalog } from "../hooks/useStudentCatalog";

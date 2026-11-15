@@ -1,44 +1,223 @@
-import { BookOpen, GraduationCap, LayoutDashboard } from "lucide-react";
-import { useState } from "react";
-import { RebuildNotice } from "../../app/migration/RebuildNotice";
+import { BookOpen, ChevronRight, GraduationCap, LayoutDashboard, Search } from "lucide-react";
+import { lazy, Suspense, useMemo, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
+import { TopbarSearch } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
-import { PageHeader } from "../../shared/layout/PageHeader";
-import type { RoleAppProps } from "../student/StudentApp";
+import { cn } from "../../shared/lib/cn";
+import { toneFor } from "../../shared/lib/tones";
+import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
+import { IconButton } from "../../shared/ui/IconButton";
+import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
+import { Toaster } from "../../shared/ui/toast/Toaster";
+import { createClassroom } from "./api/actions";
+import { activeInstructors, classMark, searchInstructor, subjectOf } from "./api/selectors";
+import { useRoleStore, useRoleStoreSync } from "./api/store";
+import { CreateClassDialog } from "./components/CreateClassDialog";
+import { useInstructorWorkspace } from "./hooks/useInstructorWorkspace";
+import { InstructorSessionContext, type InstructorSession } from "./instructorContext";
+import { instructorPaths } from "./paths";
+import OverviewPage from "./pages/OverviewPage";
 
-// Same destination names as the classic Instructor UI.
+const ClassesPage = lazy(() => import("./pages/ClassesPage"));
+const ClassPage = lazy(() => import("./pages/ClassPage"));
+const GradebookPage = lazy(() => import("./pages/GradebookPage"));
+
+export interface RoleAppProps {
+  onNavigateRole: (role: string) => void;
+  onUseClassic: () => void;
+}
+
+// "instructor navigation" keeps the classic landmark name (D-013).
 const nav: NavItem[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard /> },
-  { id: "classes", label: "My classes", icon: <BookOpen /> },
   { id: "gradebook", label: "Gradebook", icon: <GraduationCap /> },
 ];
 
-const pages = {
-  overview: { eyebrow: "Instructor workspace", title: "Your teaching day" },
-  classes: { eyebrow: "Your course rooms", title: "My classes" },
-  gradebook: { eyebrow: "Grades and weights", title: "Gradebook" },
-} as const;
+const pageNames: Record<string, string> = { overview: "Overview", classes: "Classes", gradebook: "Gradebook" };
 
-type PageId = keyof typeof pages;
+function sectionOf(pathname: string): string {
+  const [, , section] = pathname.split("/");
+  return section === "classes" || section === "gradebook" ? section : "overview";
+}
 
-/** Root of the rebuilt Instructor UI (Phase 3 replaces each RebuildNotice). */
-export default function InstructorApp({ onNavigateRole, onUseClassic }: RoleAppProps) {
-  const [page, setPage] = useState<PageId>("overview");
-  const current = pages[page];
+function ScreenLoading() {
+  return (
+    <SkeletonGroup label="Loading" className="flex flex-col gap-4">
+      <Skeleton className="h-9 w-1/2" />
+      <Skeleton className="h-28 w-full" />
+    </SkeletonGroup>
+  );
+}
+
+function Workspace({ onNavigateRole, onUseClassic, onCreateClass }: RoleAppProps & { onCreateClass: () => void }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { store, instructor, rooms, queue } = useInstructorWorkspace();
+  const [classesOpen, setClassesOpen] = useState(true);
+  const [mobileSearch, setMobileSearch] = useState(false);
+  const section = sectionOf(location.pathname);
+  const currentClass = section === "classes" ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
+
+  const searchField = (autoFocus = false) => (
+    <TopbarSearch
+      label="Search instructor workspace"
+      autoFocus={autoFocus}
+      search={(query) => searchInstructor(store, rooms, query)}
+      onSelect={(result) => {
+        setMobileSearch(false);
+        const tab = result.target === "material" ? "Materials" : result.target === "assessment" ? "Classwork" : "Stream";
+        navigate(instructorPaths.classPage(result.classroomId, tab));
+      }}
+    />
+  );
+
+  const myClasses = (
+    <section aria-label="My classes" className="flex flex-col gap-1">
+      <button
+        type="button"
+        aria-expanded={classesOpen}
+        onClick={() => setClassesOpen((open) => !open)}
+        className="flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent px-3 text-left font-sans text-body font-medium text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus"
+      >
+        <BookOpen aria-hidden className="size-5 text-muted" />
+        <span className="flex-1">My classes</span>{" "}
+        <span className="rounded-full bg-primary-100 px-2 font-semibold text-primary-700">{rooms.length}</span>
+        <ChevronRight aria-hidden className={cn("size-4 text-muted transition-transform motion-reduce:transition-none", classesOpen && "rotate-90")} />
+      </button>
+      {classesOpen && (
+        <ul className="m-0 flex list-none flex-col gap-1 p-0 pl-2">
+          {rooms.map((room, index) => {
+            const subject = subjectOf(store, room);
+            return (
+              <li key={room.id}>
+                <button
+                  type="button"
+                  aria-current={currentClass === room.id ? "page" : undefined}
+                  onClick={() => navigate(instructorPaths.classPage(room.id))}
+                  className={cn(
+                    "flex min-h-touch w-full items-center gap-3 rounded-control border-0 px-2 py-1.5 text-left font-sans focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus",
+                    currentClass === room.id ? "bg-primary-100" : "bg-transparent hover:bg-primary-50",
+                  )}
+                >
+                  <span className={cn("grid size-8 shrink-0 place-items-center rounded-control text-body font-bold", toneFor(index))}>{classMark(subject)}</span>{" "}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-body font-medium text-ink">{subject?.title ?? "Classroom"}</span>{" "}
+                    <span className="truncate text-body text-muted">{room.section}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              onClick={onCreateClass}
+              className="flex min-h-touch w-full items-center gap-2 rounded-control border border-dashed border-line-strong bg-transparent px-3 text-left font-sans text-body font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
+            >
+              + Create class
+            </button>
+          </li>
+        </ul>
+      )}
+    </section>
+  );
+
   return (
     <AppShell
       roleLabel="Instructor"
+      navLabel="instructor navigation"
       nav={nav}
-      activeId={page}
-      onNavigate={(id) => setPage(id as PageId)}
+      activeId={section}
+      onNavigate={(id) => navigate(id === "gradebook" ? instructorPaths.gradebook() : instructorPaths.overview)}
       mobileNav="drawer"
-      pageKey={page}
+      pageKey={location.pathname}
+      sidebarExtra={myClasses}
+      topbarStart={
+        <nav aria-label="Breadcrumb" className="hidden md:block">
+          <ol className="m-0 flex list-none items-center gap-1 p-0 font-sans text-body">
+            <li><button type="button" onClick={() => navigate(instructorPaths.overview)} className="min-h-touch rounded-control border-0 bg-transparent px-2 text-muted hover:text-ink focus-visible:outline-3 focus-visible:outline-focus">Workspace</button></li>
+            <li aria-hidden className="text-muted">›</li>
+            <li aria-current="page" className="font-semibold text-ink">{pageNames[section]}</li>
+          </ol>
+        </nav>
+      }
       topbarActions={
-        <ProfileMenu name="Angela Reyes" subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={onNavigateRole} onUseClassic={onUseClassic} />
+        <>
+          <div className="hidden w-80 md:block">{searchField()}</div>
+          <Dialog open={mobileSearch} onOpenChange={setMobileSearch}>
+            <DialogTrigger asChild>
+              <IconButton label="Search" className="md:hidden"><Search /></IconButton>
+            </DialogTrigger>
+            <DialogContent title="Search">{searchField(true)}</DialogContent>
+          </Dialog>
+          <NotificationsPopover
+            heading="Needs your attention"
+            emptyText="You’re all caught up."
+            items={queue.slice(0, 5).map((item) => ({ id: item.id, title: item.title, meta: `${item.student?.firstName ?? "Student"} ${item.student?.lastName ?? ""} · awaiting review` }))}
+            onSelect={(item) => {
+              const entry = queue.find((candidate) => candidate.id === item.id);
+              if (entry) navigate(instructorPaths.classPage(entry.classroomId, "Submissions", { review: entry.id }));
+            }}
+          />
+          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={onNavigateRole} onUseClassic={onUseClassic} />
+        </>
       }
     >
-      <PageHeader eyebrow={current.eyebrow} title={current.title} />
-      <RebuildNotice screen={current.title} onUseClassic={onUseClassic} />
+      <Suspense fallback={<ScreenLoading />}>
+        <Routes>
+          <Route path="instructor/classes" element={<ClassesPage />} />
+          <Route path="instructor/classes/:classId" element={<ClassPage />} />
+          <Route path="instructor/gradebook" element={<GradebookPage />} />
+          {/* /instructor, ?role=instructor, #/instructor, /instructor.html … land on Overview. */}
+          <Route path="*" element={<OverviewPage onNavigateRole={onNavigateRole} />} />
+        </Routes>
+      </Suspense>
     </AppShell>
+  );
+}
+
+/** Root of the rebuilt Instructor UI (Phase 3). */
+export default function InstructorApp(props: RoleAppProps) {
+  useRoleStoreSync();
+  const navigate = useNavigate();
+  const store = useRoleStore();
+  const [instructorId, setInstructorId] = useState(() => activeInstructors(store)[0]?.id ?? "");
+  const [creating, setCreating] = useState(false);
+  const session = useMemo<InstructorSession>(
+    () => ({
+      instructorId,
+      setInstructorId: (id) => {
+        setInstructorId(id);
+        navigate(instructorPaths.overview);
+      },
+      openCreateClass: () => setCreating(true),
+    }),
+    [instructorId, navigate],
+  );
+  const instructor = activeInstructors(store).find((item) => item.id === instructorId) ?? activeInstructors(store)[0];
+  const term = store.systemAdministration?.terms.find((item) => item.id === store.systemAdministration?.settings.currentTermId)?.name ?? "Fall 2026";
+
+  return (
+    <Toaster>
+      <InstructorSessionContext.Provider value={session}>
+        <Workspace {...props} onCreateClass={() => setCreating(true)} />
+        <CreateClassDialog
+          open={creating}
+          onOpenChange={setCreating}
+          subjects={store.subjects}
+          onCreate={(input) => {
+            if (!instructor) return null;
+            const id = createClassroom(instructor, input, term);
+            if (id) {
+              setCreating(false);
+              navigate(instructorPaths.classPage(id));
+            }
+            return id;
+          }}
+        />
+      </InstructorSessionContext.Provider>
+    </Toaster>
   );
 }

@@ -98,3 +98,10 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Write only through `api/submissions.ts` and `api/progressStore.ts` so the classic
   Instructor and Admin UIs keep reading the same records (D-016).
 
+### C-013 · Interactive patterns
+- Radix values (tabs, radio, select) never contain spaces; map labels to slugs (L-026).
+- Scrollable containers get `tabIndex={0}`, `role="region"`, and an accessible name (L-027).
+- Destructive actions confirm in a `Dialog` that names the item, never `window.confirm`.
+- Controls bound to the URL keep an optimistic local value so they respond immediately (L-028).
+- Every write shows a toast: success when stored, an error toast when storage refuses it.
+
