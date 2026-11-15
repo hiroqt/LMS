@@ -113,3 +113,12 @@ Utilities win over those rules because they are `!important` (D-010), so never a
   needs the network says so in the UI instead of failing silently.
 - Run `SCREEN_READER_CHECKLIST.md` with a person before cutover and after big changes.
 
+### C-015 · Dashboard and course patterns (D-023)
+- Dashboard panels: an `h2` with a leading icon (`SectionHeading` `icon`) and one
+  "View all" link to the full page; the heading stays on one line.
+- One control per action on a page; secondary views of the same item are read-only (L-037).
+- Courses are named by title first, with the course code (`CourseCode` or "IT101 · …")
+  as metadata; course pages open with `CourseHeader` (code · section · term, title, facts).
+- Due dates use pills that warm as the deadline nears (info → warning → danger) and
+  always include the date in text.
+

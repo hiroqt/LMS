@@ -200,3 +200,19 @@ change). D-003 and D-010 therefore stay in force, scoped to Admin's lifetime: no
 preflight, `!important` utilities, and scanning limited to `app/`, `shared/`, and
 `features/`. Revisit all three when Admin is rebuilt. Supersedes the cutover step in D-003.
 
+### D-023 · Academic dashboard redesign from the user's reference
+`2026-11-17` · hiro (user reference image) · scope: student, instructor, shared · confidence: high
+The dashboards follow the user's reference: a sidebar with the college seal and name
+("TMCC LMS · Trece Martires City College") and a solid green active item; Student
+destinations **Dashboard, My Classes, Tasks & Assessments, Calendar, News &
+Announcements** (short labels on the phone bar); a large greeting with the date and term
+week, compact stat chips, a campus illustration (Student, desktop only); panels with icon
+headings and "View all" links: Tasks & Assessments with due pills, My Classes cards with
+a left accent and subject icon, a read-only Academic Calendar timeline, and
+Announcements. Course codes ("IT101") replace the old two-digit marks, and class pages
+use a syllabus-style `CourseHeader`. Journey-name changes, with specs updated: "Today" →
+"Dashboard"; News & Announcements is its own page (`/student/news`) instead of a
+dashboard toggle (spec B → N); class buttons read "IT101 Introduction to Programming …";
+the dashboard course card's name starts with the course title. A term-progress band was
+prototyped and dropped in favor of the reference (the term week stays in the date line).
+

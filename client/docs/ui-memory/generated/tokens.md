@@ -64,6 +64,8 @@ Use as `rounded-<name>`.
 | --- | --- |
 | `card` | `14px` |
 | `control` | `10px` |
+| `chip` | `6px` |
+| `tick` | `3px` |
 
 ## Shadow
 

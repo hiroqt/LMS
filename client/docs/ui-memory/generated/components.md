@@ -39,12 +39,17 @@
 | File | Exports |
 | --- | --- |
 | `src/shared/components/BackLink.tsx` | `BackLink` |
+| `src/shared/components/CampusIllustration.tsx` | `CampusIllustration` |
+| `src/shared/components/CourseCode.tsx` | `CourseCode` |
+| `src/shared/components/CourseHeader.tsx` | `CourseHeader` |
 | `src/shared/components/FeaturedNewsCarousel.tsx` | `FeaturedNewsCarousel` |
+| `src/shared/components/HelpSupport.tsx` | `HelpSupport` |
 | `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
 | `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
 | `src/shared/components/StatCard.tsx` | `StatCard` |
+| `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 
 ## Features
@@ -79,6 +84,7 @@
 | `src/features/student/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/student/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/student/pages/MaterialPage.tsx` | `MaterialPage` |
+| `src/features/student/pages/NewsPage.tsx` | `NewsPage` |
 | `src/features/student/pages/QuizPage.tsx` | `QuizPage` |
 | `src/features/student/pages/ResultPage.tsx` | `ResultPage` |
 | `src/features/student/pages/TasksPage.tsx` | `TasksPage` |
