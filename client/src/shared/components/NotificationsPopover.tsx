@@ -20,7 +20,7 @@ export function NotificationsPopover({ heading, items, emptyText, onSelect }: No
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        aria-label="Notifications"
+        aria-label={items.length ? `Notifications, ${items.length} new` : "Notifications"}
         className="relative grid size-touch place-items-center rounded-control border-0 bg-transparent text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
       >
         <Bell aria-hidden className="size-5" />

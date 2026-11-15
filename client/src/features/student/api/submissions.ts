@@ -60,6 +60,7 @@ export function submitActivity(assessment: Assessment, work: { fileName: string;
   };
   const others = (role.activitySubmissions ?? []).filter((item) => !(item.activityId === assessment.id && item.studentId === STUDENT.id));
   const saved = saveRoleData(appendAuditEvent({ ...role, activitySubmissions: [...others, submission] }, { ...actor, target: "Assignment", targetId: assessment.id, summary: assessment.title }, new Date(submittedAt)));
-  markCompleted(assessment.id);
+  // Only show "Submitted" when the work was actually stored.
+  if (saved) markCompleted(assessment.id);
   return saved;
 }

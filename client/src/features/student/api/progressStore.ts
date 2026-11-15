@@ -36,17 +36,19 @@ export function updateProgress(change: (current: StudentProgress) => StudentProg
   emit();
 }
 
+// One storage listener for all subscribers (other tabs changing progress).
+function onStorage(event: StorageEvent) {
+  if (event.key !== PROGRESS_KEY && event.key !== null) return;
+  snapshot = readFromStorage();
+  emit();
+}
+
 export function subscribeProgress(listener: () => void): () => void {
+  if (listeners.size === 0) window.addEventListener("storage", onStorage);
   listeners.add(listener);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== PROGRESS_KEY && event.key !== null) return;
-    snapshot = readFromStorage();
-    emit();
-  };
-  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
   };
 }
 

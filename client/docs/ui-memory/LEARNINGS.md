@@ -157,3 +157,10 @@ looking at screenshots, not by tests.
 `bg-white/20` failed contrast; use `primary-800`. A toggle whose label changes ("Mark as
 reviewed" → "Reviewed") must not also set `aria-pressed`.
 
+### L-024 · Report success only after storage succeeds
+`2026-11-16` · hiro · scope: student/api · confidence: high
+Found in the Phase 2 review: `submitActivity` marked an assignment completed even when
+`saveRoleData` failed (storage full or blocked), so the student saw "Submitted" for work
+that was never stored. Completion is now recorded only after a successful save, and the
+form shows an error toast otherwise. The Phase 4 outbox must keep this rule.
+
