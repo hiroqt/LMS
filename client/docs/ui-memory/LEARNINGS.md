@@ -210,3 +210,10 @@ Lighthouse accessibility, mobile: classic Student 89, rebuilt Student and Instru
 (L-007 had 54 and 39 serious contrast nodes on classic). Screen-reader passes still need a
 person: see `SCREEN_READER_CHECKLIST.md`.
 
+### L-033 · Service-worker updates can strand open tabs
+`2026-11-17` · hiro · scope: app · confidence: medium
+Found in the Phase 4 review: after a deploy the new service worker deletes old precached
+chunks, so a tab still running the previous version fails its next lazy screen load.
+`main.tsx` reloads once on `vite:preloadError` (guarded by a sessionStorage flag so it
+cannot loop). Verify on the first real deploy.
+
