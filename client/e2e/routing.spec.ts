@@ -40,7 +40,8 @@ test("an unknown path shows the role fallback, which can return to Student", asy
 
 test("switching role updates the URL and title, and Back returns to the previous role", async ({ page }) => {
   await page.goto("/student");
-  await page.getByRole("group", { name: "Switch workspace role" }).getByRole("button", { name: "Instructor" }).click();
+  await page.getByRole("button", { name: "Profile: Alex Rivera" }).click();
+  await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
   await expect(page).toHaveURL(/\/instructor$/);
   await expect(page).toHaveTitle("TMCC LMS · Instructor Workspace");
   await expect(page.getByRole("heading", { level: 1, name: INSTRUCTOR })).toBeVisible();

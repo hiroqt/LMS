@@ -7,7 +7,6 @@ import { expect, test, type Page } from "./fixtures";
 
 test.describe("New Student shell", () => {
   const isNew = (page: Page) => expect(page.getByRole("link", { name: "Skip to main content" })).toHaveCount(1);
-  const isClassic = (page: Page) => expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
 
   test("landmarks, skip link, nav state, and focus on page change", async ({ page }) => {
     await page.goto("/student?ui=new");
@@ -23,31 +22,21 @@ test.describe("New Student shell", () => {
     await expect(nav.getByRole("button", { name: "Tasks" })).toHaveAttribute("aria-current", "page");
   });
 
-  test("the choice is remembered per role, and Use classic view returns to the current UI", async ({ page }) => {
-    await page.goto("/student?ui=new");
+  test("after cutover a leftover ?ui=classic still opens the rebuilt UI; Admin keeps its own (D-021)", async ({ page }) => {
+    await page.goto("/student?ui=classic");
     await isNew(page);
-    await page.goto("/student");
-    await isNew(page);
-
-    await page.getByRole("button", { name: "Profile: Alex Rivera" }).click();
-    await page.getByRole("button", { name: "Use classic view" }).click();
-    await isClassic(page);
-    await expect(page).toHaveURL(/\/student$/);
-    await page.reload();
-    await isClassic(page);
+    await page.goto("/instructor?ui=classic");
+    await expect(page.getByRole("link", { name: "Skip to main content" })).toHaveCount(1);
+    await page.goto("/admin");
+    await expect(page.getByRole("navigation", { name: "admin navigation" })).toBeVisible();
   });
 
-  test("the Instructor keeps its own choice; Admin always stays classic (D-014)", async ({ page }) => {
-    await page.goto("/student?ui=new");
+  test("the profile menu switches workspace", async ({ page }) => {
+    await page.goto("/student");
     await page.getByRole("button", { name: "Profile: Alex Rivera" }).click();
     await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
     await expect(page).toHaveURL(/\/instructor$/);
     await expect(page.getByRole("navigation", { name: "instructor navigation" })).toBeVisible();
-
-    await page.goto("/instructor?ui=new");
-    await expect(page.getByRole("navigation", { name: "Instructor navigation" })).toBeVisible();
-    await page.goto("/admin?ui=new");
-    await expect(page.getByRole("navigation", { name: "admin navigation" })).toBeVisible();
   });
 
   test("an offline connection is announced and clears when back online", async ({ page, context }) => {
