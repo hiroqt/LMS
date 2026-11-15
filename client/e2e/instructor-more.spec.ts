@@ -5,7 +5,7 @@ import { expect, openRole, test, type Page } from "./fixtures";
 
 async function openClass(page: Page) {
   await openRole(page, "instructor");
-  await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
+  await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Introduction to Programming" })).toBeVisible();
 }
 

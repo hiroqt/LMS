@@ -55,8 +55,7 @@ test.describe("Lost connection (production build)", () => {
 test.describe("Comfort settings", () => {
   test("with reduced motion, the featured carousel does not move on its own", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/student");
-    await page.getByRole("button", { name: "News & announcements" }).click();
+    await page.goto("/student/news");
     const slide = page.locator('[aria-roledescription="slide"]');
     await expect(slide).toHaveAttribute("aria-label", /^1 of/);
     await page.clock.runFor(13_000);
