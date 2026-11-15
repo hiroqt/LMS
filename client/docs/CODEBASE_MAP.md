@@ -2,7 +2,11 @@
 
 ## Active three-role prototype
 
-- `src/main.jsx` — routes `/student`, `/instructor`, and `/admin` to each role workspace.
+- `src/main.tsx` — mounts `src/app/providers/AppProviders.tsx` (TanStack Query client tuned for slow connections) and `src/app/router/AppRouter.tsx` (React Router), which resolves `/student`, `/instructor`, and `/admin` through `roles/shared/roleRouter.js` so legacy URL forms keep working.
+- `src/shared/styles/` — `tailwind.css` (Tailwind v4 design tokens, no preflight yet, scanning only `app/`, `shared/`, `features/`), `fonts.css` (self-hosted Poppins), and `tokens.test.ts` (WCAG contrast checks).
+- `src/features/` and `src/shared/{ui,layout,components,hooks,lib,api}` — home of the rebuilt Student and Instructor UI (UI revamp, `docs/UI_REVAMP_PLAN.md`).
+- `e2e/` — Playwright flow-parity, routing, platform, and accessibility-baseline specs (`playwright.config.ts`).
+- `docs/ui-memory/` — shared revamp memory: decisions, conventions, learnings, flow-parity status, and generated inventories (`scripts/memory-sync.ts`).
 - `src/roles/student/StudentWorkspace.jsx` — mounts the existing student dashboard without changing its layout or navigation.
 - `src/roles/shared/RoleWorkspace.jsx` / `.css` — shared responsive Instructor/Admin shell, collapsible sidebar, mobile drawer, and role switching.
 - `src/components/shared/` — reusable avatar, breadcrumbs, global search, and notifications used by Student, Instructor, and Admin.
@@ -15,4 +19,4 @@
 
 ## Earlier student-only prototype
 
-- `src/App.jsx`, `src/data.js`, `src/App.css`, `src/Details.css`, and `public/*-banner.jpg` remain from the earlier, richer GClass student prototype. They are not imported by the active `src/main.jsx` entry point. The role prototype reuses its Poppins/soft-green/card visual direction and the local SVG icon set.
+- `src/App.jsx`, `src/data.js`, `src/App.css`, `src/Details.css`, and `public/*-banner.jpg` come from the earlier GClass student prototype. `StudentWorkspace.jsx` still mounts `App.jsx`, so this is the live Student UI until the revamp replaces it. The role prototype reuses its Poppins/soft-green/card visual direction and the local SVG icon set.
