@@ -15,6 +15,7 @@ The plan it serves is [`../UI_REVAMP_PLAN.md`](../UI_REVAMP_PLAN.md).
 | [`CONVENTIONS.md`](CONVENTIONS.md) | Rules to follow when writing UI code. Short, imperative, testable. | Promoted from learnings (see the loop) |
 | [`LEARNINGS.md`](LEARNINGS.md) | Things discovered while building: gotchas, bugs, surprises, known gaps. | Anyone, in the PR where it was learned |
 | [`FLOW_PARITY.md`](FLOW_PARITY.md) | Migration status of every node in the Student and Instructor flow charts. | The PR that moves a screen |
+| [`SCREEN_READER_CHECKLIST.md`](SCREEN_READER_CHECKLIST.md) | Manual VoiceOver / TalkBack / NVDA journeys that automation cannot judge. | A person, before cutover and after big changes |
 | [`generated/`](generated/) | Component inventory, routes, and design tokens, generated from source. | `npm run memory:sync` only. CI fails when stale. |
 
 ## The loop

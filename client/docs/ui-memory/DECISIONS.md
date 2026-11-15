@@ -159,3 +159,24 @@ instead of "+ Create"). New projects: `instructor-new` (+ iPhone) runs the Instr
 journeys with Student classic, and `both-new` runs every flow spec with both rebuilt UIs,
 which is the state after cutover.
 
+### D-019 · Offline app shell (PWA)
+`2026-11-17` · hiro · scope: app · confidence: high
+`vite-plugin-pwa` precaches the built app, fonts, and icons (~1.1 MB, downloaded once in
+the background after the first visit) and caches images the first time they are shown.
+After one visit both rebuilt UIs open and work with no connection. Answers and drafts were
+already stored on the device. Registration is a deferred script tag, so no JS is added to
+the eager bundle. The manifest makes the app installable on phones. Disabled in the dev
+server; offline specs run against the production build (`E2E_PREVIEW=1`).
+
+### D-020 · Outbox and persisted query cache wait for the API; a performance budget now
+`2026-11-17` · hiro · scope: data, performance · confidence: high
+Every write is stored on the device the moment it happens, and nothing is sent over the
+network yet, so a submission outbox and a persisted query cache would have nothing to do.
+They are built with the .NET `httpAdapter` (plan §6), keeping the rule that success is
+shown only after the server accepts (L-024), with idempotency keys. Meanwhile
+`npm run budget` (in CI) caps the gzip size of the entry script (135 KB), lazy chunks
+(40 KB), and stylesheets (45 KB). Lighthouse mobile on the production build: rebuilt
+Student and Instructor score 100 / 100 / 100 (performance / accessibility / best
+practices), LCP 0.9 s, CLS 0. The first visit on Slow 3G shows content in 5.8 s (spec-enforced
+under 10 s).
+

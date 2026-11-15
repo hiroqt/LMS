@@ -30,8 +30,9 @@ This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy f
 - `npm run typecheck` runs `tsc --noEmit` (strict).
 - `npm test` runs `test:unit` (legacy `node:test` files and Vitest) and then `test:e2e` (Playwright: desktop Chromium, iPhone WebKit, Pixel Chromium). Run `npx playwright install chromium webkit` once. Set `E2E_PREVIEW=1` to test the production build.
 - `npm run memory:sync` regenerates `docs/ui-memory/generated/`; `npm run memory:check` verifies it.
+- `npm run budget` (after `build`) checks gzip sizes against the performance budget. Offline and Slow 3G specs run only with `E2E_PREVIEW=1` (production build with the service worker).
 
-Before opening a PR, run lint, typecheck, test, build, and memory:check.
+Before opening a PR, run lint, typecheck, test, build, budget, and memory:check.
 
 ## Coding Style & Naming Conventions
 

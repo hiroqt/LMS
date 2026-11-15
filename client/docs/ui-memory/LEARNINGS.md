@@ -197,3 +197,16 @@ The Instructor "every tab, form, and dialog" sweep (about 13 loads, each with a 
 scan) hit the 30s limit once on CI's emulated iPhone WebKit and passed on retry. Sweep
 specs call `test.slow()`; do not paper over timeouts with more retries.
 
+### L-031 · Forced colors hide states shown only by a fill
+`2026-11-17` · hiro · scope: a11y · confidence: high
+In Windows high contrast, pressed filters, the current nav item, and the chosen answer
+were indicated only by background color, which forced colors removes. A
+`@media (forced-colors: active)` rule in `tailwind.css` draws a `Highlight` outline for
+`aria-pressed`, `aria-current`, `aria-checked`, and selected tabs. Promoted to C-014.
+
+### L-032 · Accessibility baseline after the rebuild
+`2026-11-17` · hiro · scope: a11y · confidence: high
+Lighthouse accessibility, mobile: classic Student 89, rebuilt Student and Instructor 100
+(L-007 had 54 and 39 serious contrast nodes on classic). Screen-reader passes still need a
+person: see `SCREEN_READER_CHECKLIST.md`.
+

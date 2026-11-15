@@ -105,3 +105,11 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Controls bound to the URL keep an optimistic local value so they respond immediately (L-028).
 - Every write shows a toast: success when stored, an error toast when storage refuses it.
 
+### C-014 · Resilience and performance
+- Never show a state with color or fill alone; the forced-colors rule covers
+  `aria-pressed`, `aria-current`, `aria-checked`, and selected tabs. Use those attributes.
+- Keep `npm run budget` green. Raising a limit needs a DECISIONS entry.
+- New screens must work offline after one visit (precached automatically). Anything that
+  needs the network says so in the UI instead of failing silently.
+- Run `SCREEN_READER_CHECKLIST.md` with a person before cutover and after big changes.
+
