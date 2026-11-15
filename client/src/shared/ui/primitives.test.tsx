@@ -44,6 +44,8 @@ describe("Field", () => {
     expect(input).toBeRequired();
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription("For example, Section A Enter a section");
+    // "Required" is conveyed once, by the attribute, not repeated in the name.
+    expect(input).toHaveAccessibleName("Section");
     expect(await axeViolations()).toEqual([]);
   });
 

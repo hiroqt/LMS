@@ -116,6 +116,16 @@ test.describe("New Instructor shell", () => {
     await expect(page.getByRole("button", { name: "Open menu" })).toBeVisible();
   });
 
+  test("an open drawer closes when the viewport grows to desktop @mobile", async ({ page }) => {
+    await page.goto("/instructor?ui=new");
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Instructor navigation" }).getByRole("button", { name: "Gradebook" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Gradebook" })).toBeVisible();
+  });
+
   test("sidebar navigation on desktop", async ({ page }) => {
     await page.goto("/instructor?ui=new");
     const nav = page.getByRole("navigation", { name: "Instructor navigation" });

@@ -36,8 +36,8 @@ export function Field({ label, hint, error, required = false, className, childre
       <div className={cn("flex flex-col gap-1.5 font-sans", className)}>
         <label htmlFor={id} className="text-body font-medium text-ink">
           {label}
+          {/* The control's required attribute is announced, so the asterisk is visual only. */}
           {required && <span className="text-danger" aria-hidden> *</span>}
-          {required && <span className="sr-only"> (required)</span>}
         </label>
         {hint && <p id={hintId} className="m-0 text-body text-muted">{hint}</p>}
         {children}

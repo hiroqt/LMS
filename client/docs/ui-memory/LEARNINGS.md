@@ -110,3 +110,12 @@ drawer closed because of navigation. Apply the same pattern to any dialog that n
 unlayered, so they beat layered utilities. New buttons rendered at 24px with inherited
 text size. Fixed by D-010. `new-shell.spec.ts` checks computed heights so it cannot regress.
 
+### L-017 · A CSS-hidden Radix dialog can stay open and lock the page
+`2026-11-16` · hiro · scope: shared/layout · confidence: high
+Found in the Phase 1 review: with the phone drawer open, widening the viewport past `lg`
+hid the drawer with CSS, but Radix still considered it open, so the page kept
+`pointer-events: none` and trapped focus in an invisible dialog. Derive `open` from the
+breakpoint (`drawerOpen && !isDesktop`) rather than hiding with CSS alone. Any overlay
+that exists only at some breakpoints needs the same treatment. Spec: "an open drawer
+closes when the viewport grows to desktop".
+

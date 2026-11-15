@@ -1,6 +1,7 @@
 import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { cn } from "../lib/cn";
 import { NetworkBanner } from "./NetworkBanner";
 import { SkipLink } from "./SkipLink";
@@ -89,6 +90,11 @@ function Brand() {
  */
 export function AppShell({ roleLabel, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarActions, pageKey, children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // The drawer only exists below lg. If the viewport grows while it is open
+  // (tablet rotation, window resize), it must close: Radix would otherwise keep
+  // pointer-events off the page and focus trapped in a hidden dialog.
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const drawerVisible = drawerOpen && !isDesktop;
   const mainRef = useRef<HTMLElement>(null);
   // Compare with the previous key instead of skipping the "first render":
   // StrictMode runs effects twice on mount, which would steal initial focus.
@@ -103,7 +109,7 @@ export function AppShell({ roleLabel, nav, activeId, onNavigate, mobileNav, side
   }, [pageKey]);
 
   const navigate = (id: string) => {
-    if (drawerOpen) navigatedFromDrawer.current = true;
+    if (drawerVisible) navigatedFromDrawer.current = true;
     setDrawerOpen(false);
     onNavigate(id);
   };
@@ -122,7 +128,7 @@ export function AppShell({ roleLabel, nav, activeId, onNavigate, mobileNav, side
       <div className="flex min-h-dvh flex-col lg:pl-64">
         <header className="sticky top-0 z-30 flex min-h-16 items-center gap-2 border-b border-line bg-surface/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:px-6">
           {mobileNav === "drawer" && (
-            <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <Dialog.Root open={drawerVisible} onOpenChange={setDrawerOpen}>
               <Dialog.Trigger
                 aria-label="Open menu"
                 className="-ml-2 grid size-touch place-items-center rounded-control border-0 bg-transparent text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus lg:hidden"

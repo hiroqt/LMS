@@ -80,5 +80,7 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Every rebuilt page renders inside `AppShell` with `PageHeader` (its single h1) and passes
   a `pageKey` that changes on navigation; the shell then focuses the h1.
 - Dialogs that navigate stop Radix's focus restore (L-015).
+- An overlay that exists only at some breakpoints derives `open` from the breakpoint too;
+  CSS `hidden` alone leaves Radix's focus trap and pointer lock active (L-017).
 - Student phone navigation is the bottom bar (≤5 destinations); Instructor uses the drawer.
 
