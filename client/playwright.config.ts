@@ -8,8 +8,19 @@ const studentNew = {
   cookies: [],
   origins: [{ origin: BASE_URL, localStorage: [{ name: "tmcc-ui-version:student", value: "new" }] }],
 };
-// The flow specs that must pass unchanged on the rebuilt Student UI (D-007).
-const studentParity = /[\\/](student-flow|shell|instructor-flow)\.spec\.ts$/;
+/** Opens the rebuilt Instructor UI while Student stays classic. */
+const instructorNew = {
+  cookies: [],
+  origins: [{ origin: BASE_URL, localStorage: [{ name: "tmcc-ui-version:instructor", value: "new" }] }],
+};
+/** Both rebuilt UIs: the state after cutover (Phase 5). */
+const bothNew = {
+  cookies: [],
+  origins: [{ origin: BASE_URL, localStorage: [{ name: "tmcc-ui-version:student", value: "new" }, { name: "tmcc-ui-version:instructor", value: "new" }] }],
+};
+// The flow specs that must pass on every combination of classic and rebuilt UIs (D-007, D-013).
+const studentParity = /[\\/](student-flow|shell|instructor-flow|instructor-more)\.spec\.ts$/;
+const instructorParity = /[\\/](instructor-flow|instructor-more|shell)\.spec\.ts$/;
 
 /**
  * Flow-parity suite. These specs encode the journeys in
@@ -35,6 +46,9 @@ export default defineConfig({
     // Flow parity on the rebuilt Student UI: the same specs, unchanged.
     { name: "student-new", use: { ...devices["Desktop Chrome"], storageState: studentNew }, testMatch: studentParity, grepInvert: /@mobile/ },
     { name: "student-new-iphone", use: { ...devices["iPhone 15"], storageState: studentNew }, testMatch: studentParity, grep: /@mobile/ },
+    { name: "instructor-new", use: { ...devices["Desktop Chrome"], storageState: instructorNew }, testMatch: instructorParity, grepInvert: /@mobile/ },
+    { name: "instructor-new-iphone", use: { ...devices["iPhone 15"], storageState: instructorNew }, testMatch: instructorParity, grep: /@mobile/ },
+    { name: "both-new", use: { ...devices["Desktop Chrome"], storageState: bothNew }, testMatch: studentParity, grepInvert: /@mobile/ },
   ],
   // E2E_PREVIEW=1 runs against the production build (vite preview), which is
   // where the generated 404.html and role.html fallbacks are exercised.

@@ -59,7 +59,7 @@ test.describe("Instructor · Class workspace", () => {
     await page.getByPlaceholder("Write an update for your students").fill("Bring your laptops on Friday.");
     await page.getByRole("button", { name: "Post announcement" }).click();
     await expect(page.getByRole("main").getByText(title)).toBeVisible();
-    await expect(classTab(page, /^Announcements1/)).toBeVisible();
+    await expect(classTab(page, /^Announcements\s?1/)).toBeVisible();
 
     // Student-facing result (connector B → STUDENTNOTICE).
     await page.goto("/student");
@@ -98,12 +98,12 @@ test.describe("Instructor · Grading round trip", () => {
     // E: publish an assignment from Create content.
     await openClass(page);
     await classTab(page, /^Create content/).click();
-    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: "+ Create" }).click();
+    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
     await expect(page.getByRole("heading", { name: "Create an assignment" })).toBeVisible();
-    await page.getByRole("textbox", { name: "Assignment title · required" }).fill(title);
+    await page.getByRole("textbox", { name: /^Assignment title/ }).fill(title);
     await page.getByRole("textbox", { name: "Instructions" }).fill("Write each iteration's variable values.");
     await page.getByRole("button", { name: "Save and publish" }).click();
-    await expect(classTab(page, /^Classwork4/)).toBeVisible();
+    await expect(classTab(page, /^Classwork\s?4/)).toBeVisible();
 
     // I: the student opens the assignment and submits a filename and comment.
     await openRole(page, "student");
@@ -116,7 +116,7 @@ test.describe("Instructor · Grading round trip", () => {
 
     // F: the submission is waiting in the instructor's review queue.
     await openClass(page);
-    await expect(classTab(page, /^Submissions1/)).toBeVisible();
+    await expect(classTab(page, /^Submissions\s?1/)).toBeVisible();
     await classTab(page, /^Submissions/).click();
     await page.getByRole("main").getByRole("button", { name: new RegExp(title) }).first().click();
 
@@ -124,11 +124,11 @@ test.describe("Instructor · Grading round trip", () => {
     const score = page.getByRole("main").getByRole("spinbutton").first();
     await score.fill("9999");
     await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(classTab(page, /^Submissions1/)).toBeVisible();
+    await expect(classTab(page, /^Submissions\s?1/)).toBeVisible();
     await score.fill("8");
     await page.getByPlaceholder("Optional feedback").fill("Clear trace, check the last iteration.");
     await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(classTab(page, /^Submissions0/)).toBeVisible();
+    await expect(classTab(page, /^Submissions\s?0/)).toBeVisible();
 
     // J: the matching Student work detail (via CL → Classwork) shows the score and feedback.
     await openRole(page, "student");

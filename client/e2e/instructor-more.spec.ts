@@ -13,7 +13,7 @@ const tab = (page: Page, name: RegExp) => page.getByRole("tablist", { name: "Cla
 
 async function createBlock(page: Page, note: string) {
   await tab(page, /^Create content/).click();
-  await page.locator("header").filter({ hasText: note }).getByRole("button", { name: "+ Create" }).click();
+  await page.locator("header").filter({ hasText: note }).getByRole("button", { name: /Create/ }).click();
 }
 
 /** Student submits an instructor-created exam so the instructor has something to review. */
@@ -43,7 +43,7 @@ test.describe("Instructor · review entry points (F)", () => {
     await openRole(page, "instructor");
     await expect(page.getByRole("main").getByText("Awaiting review")).toBeVisible();
     await page.getByRole("button", { name: "Review student work" }).click();
-    await expect(tab(page, /^Submissions1/)).toHaveAttribute("aria-selected", "true");
+    await expect(tab(page, /^Submissions\s?1/)).toHaveAttribute("aria-selected", "true");
   });
 });
 
@@ -67,7 +67,7 @@ test.describe("Instructor · class content (B, C, D, E)", () => {
     await tab(page, /^Announcements/).click();
     await page.getByRole("main").getByRole("button", { name: /New announcement|Post announcement|\+ Create/ }).first().click();
     await page.getByRole("button", { name: "Post announcement" }).click();
-    await expect(tab(page, /^Announcements0/)).toBeVisible();
+    await expect(tab(page, /^Announcements\s?0/)).toBeVisible();
     await expect(page.getByPlaceholder("Announcement title")).toHaveAttribute("maxlength", "120");
     await expect(page.getByPlaceholder("Write an update for your students")).toHaveAttribute("maxlength", "1200");
     await page.getByRole("button", { name: "Cancel" }).click();
@@ -81,7 +81,7 @@ test.describe("Instructor · class content (B, C, D, E)", () => {
     await page.getByRole("combobox", { name: "Resource type" }).selectOption("Reference sheet");
     await page.getByRole("button", { name: "Save and publish" }).click();
     await expect(tab(page, /^Materials/)).toHaveAttribute("aria-selected", "true");
-    await expect(tab(page, /^Materials4/)).toBeVisible();
+    await expect(tab(page, /^Materials\s?4/)).toBeVisible();
     await expect(page.getByRole("main").getByText("Recursion cheat sheet")).toBeVisible();
   });
 
@@ -94,7 +94,7 @@ test.describe("Instructor · class content (B, C, D, E)", () => {
       await page.getByRole("textbox", { name: new RegExp(`^Answer choice ${n}`) }).fill(text);
     }
     await page.getByRole("button", { name: "Save and publish" }).click();
-    await expect(tab(page, /^Classwork4/)).toBeVisible();
+    await expect(tab(page, /^Classwork\s?4/)).toBeVisible();
   });
 
   test("D: Classwork search and type filter narrow the list", async ({ page }) => {

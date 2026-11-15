@@ -129,7 +129,7 @@ test.describe("Rebuilt Student behavior", () => {
     await page.getByRole("main").getByRole("spinbutton").first().fill("32");
     await page.getByPlaceholder("Optional feedback").fill("Strong loops; revisit recursion.");
     await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(page.getByRole("tab", { name: /^Submissions0/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Submissions\s?0/ })).toBeVisible();
 
     await page.goto("/student/assessments/biology-1");
     const graded = page.getByRole("region", { name: "Graded by your instructor" });
@@ -143,8 +143,8 @@ test.describe("Rebuilt Student behavior", () => {
     await page.goto("/instructor");
     await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
     await page.getByRole("tab", { name: /^Create content/ }).click();
-    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: "+ Create" }).click();
-    await page.getByRole("textbox", { name: "Assignment title · required" }).fill("Pseudocode for a vending machine");
+    await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
+    await page.getByRole("textbox", { name: /^Assignment title/ }).fill("Pseudocode for a vending machine");
     await page.getByRole("button", { name: "Save and publish" }).click();
 
     await useNewStudentUi(page);
@@ -158,7 +158,7 @@ test.describe("Rebuilt Student behavior", () => {
 
     await page.goto("/instructor");
     await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
-    await expect(page.getByRole("tab", { name: /^Submissions1/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Submissions\s?1/ })).toBeVisible();
   });
 
   test("search works on phones from the search sheet @mobile", async ({ page }) => {
