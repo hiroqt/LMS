@@ -1,16 +1,42 @@
-import { BookOpen, CalendarDays, House, ListChecks } from "lucide-react";
-import { useState } from "react";
-import { RebuildNotice } from "../../app/migration/RebuildNotice";
+import { BookOpen, CalendarDays, House, ListChecks, RotateCcw, Search } from "lucide-react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
+import { TopbarSearch } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
-import { PageHeader } from "../../shared/layout/PageHeader";
+import { formatDue } from "../../shared/lib/format";
+import { cn } from "../../shared/lib/cn";
+import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
+import { IconButton } from "../../shared/ui/IconButton";
+import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
+import { Toaster } from "../../shared/ui/toast/Toaster";
+import { STUDENT } from "./api/catalog";
+import { resetProgress } from "./api/progressStore";
+import { dueSoon, searchWorkspace } from "./api/selectors";
+import { toneFor } from "./components/tones";
+import { useSharedDataSync } from "./hooks/useStudentCatalog";
+import { useWorkspace } from "./hooks/useWorkspace";
+import TodayPage from "./pages/TodayPage";
+import { studentPaths } from "./paths";
+import { StudentSessionContext, type StudentSession } from "./studentContext";
+
+// Today loads with the app; other screens load on first visit (smaller first download).
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const ClassesPage = lazy(() => import("./pages/ClassesPage"));
+const ClassPage = lazy(() => import("./pages/ClassPage"));
+const AssessmentPage = lazy(() => import("./pages/AssessmentPage"));
+const QuizPage = lazy(() => import("./pages/QuizPage"));
+const ResultPage = lazy(() => import("./pages/ResultPage"));
+const MaterialPage = lazy(() => import("./pages/MaterialPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
   onUseClassic: () => void;
 }
 
-// Same destination names as the classic Student UI, so people keep their habits.
+// "Main navigation" and "My classes" keep the classic landmark names (D-013).
 const nav: NavItem[] = [
   { id: "today", label: "Today", icon: <House /> },
   { id: "tasks", label: "Tasks", icon: <ListChecks /> },
@@ -18,33 +44,151 @@ const nav: NavItem[] = [
   { id: "calendar", label: "Calendar", icon: <CalendarDays /> },
 ];
 
-const pages = {
-  today: { eyebrow: "Your learning space", title: "Today" },
-  tasks: { eyebrow: "Your work", title: "Tasks" },
-  classes: { eyebrow: "Enrolled this term", title: "My classes" },
-  calendar: { eyebrow: "Academic schedule", title: "Academic calendar" },
-} as const;
+function sectionOf(pathname: string): string {
+  const [, , section] = pathname.split("/");
+  if (section === "tasks" || section === "calendar") return section;
+  if (section === "classes" || section === "materials") return "classes";
+  if (section === "assessments") return "tasks";
+  return "today";
+}
 
-type PageId = keyof typeof pages;
-
-/** Root of the rebuilt Student UI (Phase 2 replaces each RebuildNotice). */
-export default function StudentApp({ onNavigateRole, onUseClassic }: RoleAppProps) {
-  const [page, setPage] = useState<PageId>("today");
-  const current = pages[page];
+function ScreenLoading() {
   return (
-    <AppShell
-      roleLabel="Student"
-      nav={nav}
-      activeId={page}
-      onNavigate={(id) => setPage(id as PageId)}
-      mobileNav="bottom"
-      pageKey={page}
-      topbarActions={
-        <ProfileMenu name="Alex Rivera" subtitle="BS Information Technology · Student" currentRole="student" onSwitchRole={onNavigateRole} onUseClassic={onUseClassic} />
-      }
-    >
-      <PageHeader eyebrow={current.eyebrow} title={current.title} />
-      <RebuildNotice screen={current.title} onUseClassic={onUseClassic} />
-    </AppShell>
+    <SkeletonGroup label="Loading" className="flex flex-col gap-4">
+      <Skeleton className="h-9 w-1/2" />
+      <Skeleton className="h-28 w-full" />
+      <Skeleton className="h-28 w-full" />
+    </SkeletonGroup>
+  );
+}
+
+/** Root of the rebuilt Student UI (Phase 2). */
+export default function StudentApp({ onNavigateRole, onUseClassic }: RoleAppProps) {
+  useSharedDataSync();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { catalog, completed, now } = useWorkspace();
+  const [reviewed, setReviewed] = useState<ReadonlySet<string>>(() => new Set());
+
+  const resetDemo = useCallback(() => {
+    resetProgress();
+    setReviewed(new Set());
+    navigate(studentPaths.today);
+  }, [navigate]);
+
+  const session = useMemo<StudentSession>(
+    () => ({
+      reviewed,
+      toggleReviewed: (id) => setReviewed((current) => new Set(current.has(id) ? [...current].filter((item) => item !== id) : [...current, id])),
+      resetDemo,
+    }),
+    [reviewed, resetDemo],
+  );
+
+  const active = sectionOf(location.pathname);
+  const go = (id: string) => navigate(id === "today" ? studentPaths.today : id === "tasks" ? studentPaths.tasks() : id === "classes" ? studentPaths.classes : studentPaths.calendar());
+  const currentClass = location.pathname.startsWith("/student/classes/") ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
+
+  const [mobileSearch, setMobileSearch] = useState(false);
+  const searchField = (autoFocus = false) => (
+    <TopbarSearch
+      label="Search student workspace"
+      autoFocus={autoFocus}
+      search={(query) => searchWorkspace(query, catalog)}
+      onSelect={(result) => {
+        setMobileSearch(false);
+        if (result.target === "class") navigate(studentPaths.classPage(result.id));
+        else if (result.target === "material") navigate(studentPaths.material(result.id));
+        else navigate(studentPaths.assessment(result.id));
+      }}
+    />
+  );
+  const search = searchField();
+
+  const myClasses = (
+    <nav aria-label="My classes">
+      <p className="m-0 px-3 pb-2 text-label font-semibold tracking-wide text-muted uppercase">My classes</p>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {catalog.courses.map((course, index) => (
+          <li key={course.id}>
+            <button
+              type="button"
+              aria-label={course.name}
+              aria-current={currentClass === course.id ? "page" : undefined}
+              onClick={() => navigate(studentPaths.classPage(course.id))}
+              className={cn(
+                "flex min-h-touch w-full items-center gap-3 rounded-control border-0 px-3 py-1.5 text-left font-sans focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus",
+                currentClass === course.id ? "bg-primary-100" : "bg-transparent hover:bg-primary-50",
+              )}
+            >
+              <span aria-hidden className={cn("grid size-8 shrink-0 place-items-center rounded-control text-body font-bold", toneFor(index))}>{course.symbol}</span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-body font-medium text-ink">{course.name}</span>
+                <span className="truncate text-body text-muted">{course.section}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+
+  return (
+    <Toaster>
+      <StudentSessionContext.Provider value={session}>
+        <AppShell
+          roleLabel="Student"
+          navLabel="Main navigation"
+          nav={nav}
+          activeId={active}
+          onNavigate={go}
+          mobileNav="bottom"
+          pageKey={location.pathname}
+          sidebarExtra={myClasses}
+          topbarActions={
+            <>
+              <div className="hidden w-80 md:block">{search}</div>
+              <Dialog open={mobileSearch} onOpenChange={setMobileSearch}>
+                <DialogTrigger asChild>
+                  <IconButton label="Search" className="md:hidden"><Search /></IconButton>
+                </DialogTrigger>
+                <DialogContent title="Search">{searchField(true)}</DialogContent>
+              </Dialog>
+              {/* Phones reach the calendar from the bottom bar; this keeps the top bar within 320px. */}
+              <IconButton label="Academic calendar" className="hidden md:inline-flex" onClick={() => navigate(studentPaths.calendar())}><CalendarDays /></IconButton>
+              <NotificationsPopover
+                heading="Coming up"
+                emptyText="You’re all caught up."
+                items={dueSoon(catalog.assessments, completed, now).map((item) => ({ id: item.id, title: item.title, meta: `Due ${formatDue(item.dueAt)}` }))}
+                onSelect={(item) => navigate(studentPaths.assessment(item.id))}
+              />
+              <ProfileMenu
+                name={STUDENT.name}
+                subtitle={`${STUDENT.program} · Student`}
+                currentRole="student"
+                onSwitchRole={onNavigateRole}
+                actions={[{ label: "Reset demo data", icon: <RotateCcw />, onSelect: resetDemo }]}
+                onUseClassic={onUseClassic}
+              />
+            </>
+          }
+        >
+          <Suspense fallback={<ScreenLoading />}>
+            <Routes>
+              <Route path="student/tasks" element={<TasksPage />} />
+              <Route path="student/calendar" element={<CalendarPage />} />
+              <Route path="student/classes" element={<ClassesPage />} />
+              <Route path="student/classes/:classId" element={<ClassPage />} />
+              <Route path="student/assessments/:assessmentId" element={<AssessmentPage />} />
+              <Route path="student/assessments/:assessmentId/quiz" element={<QuizPage />} />
+              <Route path="student/assessments/:assessmentId/result" element={<ResultPage />} />
+              <Route path="student/materials/:materialId" element={<MaterialPage />} />
+              {/* /student, /, /student.html, ?role=student, #/student, … all land on Today. */}
+              <Route path="*" element={<TodayPage />} />
+            </Routes>
+          </Suspense>
+        </AppShell>
+      </StudentSessionContext.Provider>
+    </Toaster>
   );
 }
