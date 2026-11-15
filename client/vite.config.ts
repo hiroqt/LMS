@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
 const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "dist");
 
-function multiRoutePlugin() {
+function multiRoutePlugin(): Plugin {
   return {
     name: "multi-route-plugin",
     closeBundle() {
