@@ -75,3 +75,12 @@ fixture callback `run` instead (see `e2e/fixtures.ts`).
 background tabs and sleeping phones slow it down or pause it. The rebuilt quiz should
 derive time left from an absolute deadline timestamp (plan §6) and keep the spec
 "Q1 → Q2 auto-advance" passing.
+
+### L-012 · A navigation spec can pass without navigating
+`2026-11-16` · hiro · scope: tests · confidence: high
+Found in the Phase 0 self-review: "C → CAL" asserted a heading matching `/calendar/i`, but
+the Today dashboard already has an h2 "Academic calendar", so the spec passed with the
+button disabled. It now asserts the destination's h1, checks that the h1 is absent before
+the click, and browses a month. This is the second vacuous test in Phase 0 (see L-005).
+Promoted to C-006.
+

@@ -16,8 +16,9 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | N | Overview ↔ News & announcements | ✔ `student-flow` B → N | ⬜ |
 | N1 | Read teacher announcements | ✔ (renders without error) | ⬜ |
 | N2, N3 | School announcements, featured carousel | ✖ | ⬜ |
-| CAL | Academic calendar from the top bar | ✔ `student-flow` C → CAL | ⬜ |
-| CAL1, CAL2 | Browse months; select an entry → AD | ✖ | ⬜ |
+| CAL | Academic calendar from the top bar | ✔ `student-flow` C → CAL → CAL1 | ⬜ |
+| CAL1 | Browse months | ✔ `student-flow` C → CAL → CAL1 | ⬜ |
+| CAL2 | Select a date entry → AD | ✖ | ⬜ |
 | S, S1 | Search → class | ✔ `student-flow` C → S | ⬜ |
 | S1 | Search → assessment / material | ✖ | ⬜ |
 | NO | Notification → assessment | ✖ | ⬜ |

@@ -46,7 +46,9 @@ plus `border-0` on buttons when needed. Do not rely on legacy `index.css` elemen
   class. Use `@mobile` for phone-only journeys and `@all` for every-device checks.
 - Unit and component tests use Vitest (`*.test.ts(x)` beside the code). Legacy
   `*.test.js` stays on `node:test`.
-- A test must be able to fail. Check it against a broken version once (L-005).
+- A test must be able to fail. Check it against a broken version once (L-005, L-012).
+- A navigation spec asserts something only the destination has (its `h1`, a unique
+  control) and, when the source page could match too, asserts its absence first.
 
 ### C-007 · Data and storage
 - Do not change the storage keys `tmcc-lms-roles-v1` or `gclass-student-workspace-v1`,

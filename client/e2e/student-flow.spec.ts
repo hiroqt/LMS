@@ -15,10 +15,16 @@ test.describe("Student · Today dashboard", () => {
     await expect(views.getByRole("button", { name: "News & announcements" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("C → CAL: academic calendar opens from the top bar", async ({ page }) => {
+  test("C → CAL → CAL1: academic calendar opens from the top bar and browses months", async ({ page }) => {
     await openRole(page, "student");
+    // Today also has an h2 "Academic calendar" panel, so assert the page's h1.
+    await expect(page.getByRole("heading", { level: 1, name: "Academic calendar" })).toHaveCount(0);
     await page.getByRole("banner").getByRole("button", { name: "Academic calendar" }).click();
-    await expect(page.getByRole("main").getByRole("heading", { name: /calendar/i }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Academic calendar" })).toBeVisible();
+
+    await expect(page.getByRole("heading", { level: 2, name: "October 2026" })).toBeVisible();
+    await page.getByRole("button", { name: "Next month" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "November 2026" })).toBeVisible();
   });
 
   test("C → S: search finds a class and opens it", async ({ page }) => {
@@ -86,7 +92,8 @@ test.describe("Student · Tasks and assessments", () => {
     await page.getByRole("button", { name: QUIZ }).click();
     await page.getByRole("button", { name: "Start assessment" }).click();
     await page.getByRole("button", { name: "Exit assessment" }).click();
-    await expect(page.getByRole("button", { name: /Start assessment|Continue|Resume/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Exit assessment" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Start assessment" })).toBeVisible();
   });
 });
 
