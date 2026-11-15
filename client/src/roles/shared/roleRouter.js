@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 export const VALID_ROLES = ["student", "instructor", "admin"];
 
 /**
@@ -103,54 +101,4 @@ export function getRoleUrl(targetRole) {
   const base = getBaseUrl();
   const roleName = VALID_ROLES.includes(targetRole) ? targetRole : "student";
   return `${base}/${roleName}`;
-}
-
-/**
- * Client-side navigation to a target role.
- */
-export function navigateRole(targetRole) {
-  if (!VALID_ROLES.includes(targetRole)) return;
-
-  const targetUrl = getRoleUrl(targetRole);
-
-  try {
-    window.history.pushState({ role: targetRole }, "", targetUrl);
-  } catch {
-    window.location.hash = `#/${targetRole}`;
-  }
-
-  // Update title
-  const roleLabel = targetRole.charAt(0).toUpperCase() + targetRole.slice(1);
-  document.title = `TMCC LMS · ${roleLabel} Workspace`;
-
-  window.dispatchEvent(new CustomEvent("tmcc-role-change", { detail: { role: targetRole } }));
-}
-
-/**
- * React hook that manages the current role and unknown path state.
- */
-export function useRoleRoute() {
-  const [routeState, setRouteState] = useState(() => parseRoleFromLocation());
-
-  useEffect(() => {
-    const handleLocationChange = () => {
-      setRouteState(parseRoleFromLocation());
-    };
-
-    window.addEventListener("popstate", handleLocationChange);
-    window.addEventListener("hashchange", handleLocationChange);
-    window.addEventListener("tmcc-role-change", handleLocationChange);
-
-    return () => {
-      window.removeEventListener("popstate", handleLocationChange);
-      window.removeEventListener("hashchange", handleLocationChange);
-      window.removeEventListener("tmcc-role-change", handleLocationChange);
-    };
-  }, []);
-
-  return {
-    role: routeState.role,
-    unknownPath: routeState.unknownPath,
-    navigateRole,
-  };
 }

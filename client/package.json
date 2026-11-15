@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p .",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test \"src/**/*.test.js\"",
+    "test:unit": "node --test \"src/**/*.test.js\" && vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {

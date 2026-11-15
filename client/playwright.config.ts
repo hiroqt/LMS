@@ -24,8 +24,12 @@ export default defineConfig({
     { name: "iphone-webkit", use: { ...devices["iPhone 15"] }, grep: /@mobile/ },
     { name: "android-chromium", use: { ...devices["Pixel 7"] }, grep: /@mobile/ },
   ],
+  // E2E_PREVIEW=1 runs against the production build (vite preview), which is
+  // where the generated 404.html and role.html fallbacks are exercised.
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
+    command: process.env.E2E_PREVIEW
+      ? `npm run build && npm run preview -- --port ${PORT} --strictPort`
+      : `npm run dev -- --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/student`,
     reuseExistingServer: !process.env.CI,
   },
