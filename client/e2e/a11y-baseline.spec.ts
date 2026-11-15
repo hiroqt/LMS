@@ -4,9 +4,9 @@ import { expect, test } from "./fixtures";
 /**
  * Accessibility baseline (WCAG 2.2 A/AA rules) for the screens being rebuilt.
  *
- * Phase 0 records today's violations without failing, so later phases can
- * prove improvement. From Phase 1, rebuilt screens move into a strict list
- * that must report zero violations. Run with --reporter=list to see counts.
+ * Records the classic UI's violations without failing, so later phases can
+ * prove improvement. Rebuilt screens are tested strictly (zero violations) in
+ * e2e/new-shell.spec.ts. Run with --reporter=list to see counts.
  */
 const screens = [
   { name: "student-today", path: "/student" },
