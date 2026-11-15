@@ -9,7 +9,7 @@ export function PeopleTab({ room, content }: ClassTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading eyebrow="Your class community" title="People" count={content.students.length} />
+        <SectionHeading title="People" count={content.students.length} />
         <ListSearch label="Search students" placeholder="Find a student" value={query} onChange={setQuery} />
       </div>
       <dl className="m-0 grid grid-cols-1 gap-3 sm:grid-cols-2">

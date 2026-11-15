@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { classContent, classMark, enrolledCount, subjectOf, yearLevels, yearOf } from "../api/selectors";
-import { InstructorClassCard } from "../components/InstructorClassCard";
+import { yearLevels, yearOf } from "../api/selectors";
+import { ViewToggle } from "../../../shared/components/ViewToggle";
+import { useClassView } from "../../../shared/hooks/useClassView";
+import { InstructorClassList } from "../components/InstructorClassList";
 import { YearFilter } from "../components/YearFilter";
 import { useInstructorSession } from "../hooks/useInstructorSession";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
@@ -15,6 +17,7 @@ export default function ClassesPage() {
   const [params] = useSearchParams();
   const { store, rooms } = useInstructorWorkspace();
   const { openCreateClass } = useInstructorSession();
+  const [view, setView] = useClassView();
   const levels = yearLevels(rooms);
   const requested = Number(params.get("year"));
   const year = levels.includes(requested) ? requested : "all";
@@ -23,24 +26,13 @@ export default function ClassesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Your course rooms"
         title="My classes"
-        description="Choose a classroom to prepare materials and coursework."
-        actions={<Button onClick={openCreateClass} icon={<Plus aria-hidden className="size-4" />}>Create class</Button>}
+        description={`${rooms.length} ${rooms.length === 1 ? "class" : "classes"} assigned to you`}
+        actions={<><ViewToggle view={view} onChange={setView} /><Button onClick={openCreateClass} icon={<Plus aria-hidden className="size-4" />}>Create class</Button></>}
       />
       <YearFilter levels={levels} selected={year} onSelect={(level) => navigate(instructorPaths.classes(level), { replace: true })} />
       {shown.length ? (
-        <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 2xl:grid-cols-3">
-          {shown.map((room, index) => {
-            const subject = subjectOf(store, room);
-            const content = classContent(store, room.id);
-            return (
-              <li key={room.id}>
-                <InstructorClassCard title={subject?.title ?? "Classroom"} section={room.section} mark={classMark(subject)} term={room.term} index={index} students={enrolledCount(store, room.id)} coursework={content.exams.length + content.activities.length} onOpen={() => navigate(instructorPaths.classPage(room.id))} />
-              </li>
-            );
-          })}
-        </ul>
+        <InstructorClassList store={store} rooms={shown} view={view} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
       ) : (
         <EmptyState icon={<BookOpen />} title="No classrooms yet" description="Create a class or ask an admin to assign one." />
       )}

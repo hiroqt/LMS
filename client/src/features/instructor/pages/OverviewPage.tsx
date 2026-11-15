@@ -6,6 +6,8 @@ import { FeaturedNewsCarousel } from "../../../shared/components/FeaturedNewsCar
 import { MonthGrid } from "../../../shared/components/MonthGrid";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { StatCard } from "../../../shared/components/StatCard";
+import { ViewToggle } from "../../../shared/components/ViewToggle";
+import { useClassView } from "../../../shared/hooks/useClassView";
 import { inMonth, type CalendarMark } from "../../../shared/lib/calendar";
 import { cn } from "../../../shared/lib/cn";
 import { formatDay, formatDue, formatFullDate, formatMonth } from "../../../shared/lib/format";
@@ -14,9 +16,9 @@ import { termStatus } from "../../../shared/lib/term";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { classContent, classMark, enrolledCount, subjectOf, yearLevels, yearOf } from "../api/selectors";
+import { subjectOf, yearLevels, yearOf } from "../api/selectors";
 import type { RoleStore } from "../api/types";
-import { InstructorClassCard } from "../components/InstructorClassCard";
+import { InstructorClassList } from "../components/InstructorClassList";
 import { YearFilter } from "../components/YearFilter";
 import { useInstructorSession } from "../hooks/useInstructorSession";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
@@ -43,6 +45,7 @@ function Overview({ onNews }: { onNews: () => void }) {
   const navigate = useNavigate();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
   const [year, setYear] = useState<number | "all">("all");
+  const [classView, setClassView] = useClassView();
   const [now] = useState(Date.now);
   const visible = year === "all" ? rooms : rooms.filter((room) => yearOf(room) === year);
   const marks = inMonth(monthMarks(store, new Set(rooms.map((room) => room.id))), new Date(now));
@@ -57,14 +60,13 @@ function Overview({ onNews }: { onNews: () => void }) {
   return (
     <>
       <div>
-        <section aria-labelledby="teaching-greeting" className="flex flex-col justify-between gap-4 rounded-card border border-line border-l-4 border-l-primary-600 bg-surface p-5 font-sans text-ink shadow-card sm:flex-row sm:items-center sm:p-6">
+        <section aria-labelledby="teaching-greeting" className="flex flex-col justify-between gap-4 rounded-card border border-line bg-surface p-5 font-sans text-ink shadow-card sm:flex-row sm:items-center sm:p-6">
           <div className="flex flex-col gap-2">
-            <p className="m-0 text-label font-semibold tracking-label text-primary-700 uppercase">Your teaching space</p>
-            <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight sm:text-page-mobile">{greetingFor(now)}, {instructor.firstName}.</h2>
+            <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight sm:text-page-mobile">{greetingFor(now)}, {instructor.firstName}</h2>
             <p className="m-0 max-w-prose text-body text-muted">
               {queue.length
-                ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade. Feedback is most useful while the work is fresh.`
-                : "Your review queue is clear. Your classrooms are ready for the next lesson."}
+                ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
+                : "Your review queue is clear."}
             </p>
           </div>
           <Button size="lg" className="self-start" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
@@ -82,32 +84,16 @@ function Overview({ onNews }: { onNews: () => void }) {
         <SectionHeading
           id="classes-in-progress"
           icon={<Layers />}
-          eyebrow="Your course rooms"
           title="Classes in progress"
-          action={<Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <ViewToggle view={classView} onChange={setClassView} />
+              <Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>
+            </div>
+          }
         />
-        <p className="m-0 -mt-2 text-body text-muted">Choose a classroom to prepare materials and coursework.</p>
         <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
-        <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 2xl:grid-cols-3">
-          {visible.map((room, index) => {
-            const subject = subjectOf(store, room);
-            const content = classContent(store, room.id);
-            return (
-              <li key={room.id}>
-                <InstructorClassCard
-                  title={subject?.title ?? "Classroom"}
-                  section={room.section}
-                  mark={classMark(subject)}
-                  term={room.term}
-                  index={index}
-                  students={enrolledCount(store, room.id)}
-                  coursework={content.exams.length + content.activities.length}
-                  onOpen={() => navigate(instructorPaths.classPage(room.id))}
-                />
-              </li>
-            );
-          })}
-        </ul>
+        <InstructorClassList store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -115,7 +101,6 @@ function Overview({ onNews }: { onNews: () => void }) {
           <SectionHeading
             id="needs-review"
             icon={<Inbox />}
-            eyebrow="Teacher inbox"
             title="Needs your review"
             count={queue.length}
             action={<Button variant="ghost" onClick={() => openReview()}>Open review queue<ArrowRight aria-hidden className="size-4" /></Button>}
@@ -203,7 +188,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
           )}
         </section>
         <section aria-labelledby="school-news" className="flex flex-col gap-3">
-          <SectionHeading id="school-news" icon={<School />} eyebrow="TMCC LMS" title="School announcements" count={upcoming.length} />
+          <SectionHeading id="school-news" icon={<School />} title="School announcements" count={upcoming.length} />
           <Card className="p-2">
             <ul className="m-0 flex list-none flex-col p-0">
               {upcoming.map((item) => (
@@ -240,7 +225,6 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
             {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
           </p>
           <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">Your teaching day</h1>
-          <p className="m-0 text-body-lg text-muted">Keep coursework moving and give every submission timely attention.</p>
         </div>
         <div className="relative"><div className="flex flex-wrap items-end gap-3">
             {instructors.length > 1 && (
