@@ -5,6 +5,7 @@ import Breadcrumbs from "../../components/shared/Breadcrumbs";
 import GlobalSearch from "../../components/shared/GlobalSearch";
 import NotificationMenu from "../../components/shared/NotificationMenu";
 import "./RoleWorkspace.css";
+import "./shellCompat.css";
 
 const icons = { Overview: LayoutDashboard, Classes: BookOpen, Gradebook: GraduationCap, Users: UsersRound, Subjects: BookOpen, Classrooms: LayoutDashboard, Enrollments: ListChecks, Reports: FileText, "System Configuration": Settings, "Academic Term Configuration": CalendarDays, "User Management": UsersRound, "Role Management": ShieldCheck, "Course Management": BookOpen, "Audit Logs": ClipboardCheck, "System Reports": FileText };
 const categoryIcons = { "People & Access": UsersRound, Courses: BookOpen, Oversight: ClipboardCheck };

@@ -1,5 +1,3 @@
-import { getStudentExtensions } from "./roles/shared/storage.js";
-
 export const courses = [
   {
     id: "biology",
@@ -462,24 +460,14 @@ export const questionsByAssessment = Object.fromEntries(
   }),
 );
 
-// Unmerged seed for the rebuilt Student UI, which merges role data on every
-// read instead of once at import time (features/student/api/catalog.ts).
-// Captured before the legacy merge below mutates these arrays.
+/**
+ * The fictional seed. The Student catalog (features/student/api/catalog.ts)
+ * merges instructor-created work from the role store on every read; the old
+ * import-time merge that mutated these arrays was removed at cutover.
+ */
 export const studentSeed = {
-  courses: [...courses],
-  assessments: [...assessments],
-  materials: [...materials],
-  questionsByAssessment: { ...questionsByAssessment },
+  courses,
+  assessments,
+  materials,
+  questionsByAssessment,
 };
-
-const roleExtensions = getStudentExtensions();
-if (roleExtensions.synced) {
-  const activeIds = new Set(roleExtensions.activeCourseIds);
-  courses.splice(0, courses.length, ...courses.filter((item) => activeIds.has(item.id)));
-  assessments.splice(0, assessments.length, ...assessments.filter((item) => activeIds.has(item.courseId)));
-  materials.splice(0, materials.length, ...materials.filter((item) => activeIds.has(item.courseId)));
-}
-courses.push(...roleExtensions.courses.filter((item) => !courses.some((course) => course.id === item.id)));
-assessments.push(...roleExtensions.assessments.filter((item) => !assessments.some((assessment) => assessment.id === item.id)));
-materials.push(...roleExtensions.materials.filter((item) => !materials.some((material) => material.id === item.id)));
-Object.assign(questionsByAssessment, roleExtensions.questions);

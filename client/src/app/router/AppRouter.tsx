@@ -2,21 +2,17 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import UnknownRoleFallback from "../../components/shared/UnknownRoleFallback.jsx";
 import Admin from "../../roles/admin/Admin.jsx";
-import Instructor from "../../roles/instructor/Instructor.jsx";
-import StudentWorkspace from "../../roles/student/StudentWorkspace.jsx";
 import { matchRole } from "./roles";
 import { useRoleNavigation } from "./useRoleNavigation";
-import { useUiVersion } from "./useUiVersion";
 
-// The rebuilt UIs load on demand, so people on the classic UI never download them.
+// Each workspace loads on demand, so a visitor downloads only their own role's UI.
 const StudentApp = lazy(() => import("../../features/student/StudentApp"));
 const InstructorApp = lazy(() => import("../../features/instructor/InstructorApp"));
 const DesignSystemPage = lazy(() => import("../../features/design-system/DesignSystemPage"));
 
 /**
- * Shown while a lazy UI chunk downloads. Plain markup on purpose: importing
- * shared/ui here would put Radix and tailwind-merge into the eager bundle
- * that classic-UI users download (L-013).
+ * Shown while a workspace chunk downloads. Plain markup on purpose: importing
+ * shared/ui here would put Radix and tailwind-merge into the entry bundle (L-013).
  */
 function PageLoading() {
   const bar = "animate-pulse rounded-control bg-line motion-reduce:animate-none";
@@ -34,24 +30,19 @@ function RoleWorkspaceRoute() {
   const location = useLocation();
   const navigateRole = useRoleNavigation();
   const { role, unknownPath } = matchRole(location);
-  const [uiVersion, setUiVersion] = useUiVersion(role === "instructor" ? "instructor" : "student");
 
   if (unknownPath) return <UnknownRoleFallback unknownPath={unknownPath} onNavigateRole={navigateRole} />;
-  // Admin is out of the revamp's scope and always uses its current UI (D-001).
+  // Admin keeps its current UI until it gets its own revamp (D-001).
   if (role === "admin") return <Admin onNavigateRole={navigateRole} />;
-
-  if (uiVersion === "new") {
-    const App = role === "instructor" ? InstructorApp : StudentApp;
-    return <App onNavigateRole={navigateRole} onUseClassic={() => setUiVersion("classic")} />;
-  }
-  if (role === "instructor") return <Instructor onNavigateRole={navigateRole} />;
-  return <StudentWorkspace onNavigateRole={navigateRole} currentRole="student" />;
+  if (role === "instructor") return <InstructorApp onNavigateRole={navigateRole} />;
+  return <StudentApp onNavigateRole={navigateRole} />;
 }
 
 /**
- * The catch-all route resolves the role exactly as the legacy router did
- * (D-004); /ui-kit is the design-system reference. ?ui=new previews the
- * rebuilt Student and Instructor UIs (D-011), remembered per role (D-014).
+ * The catch-all route resolves the role exactly as the legacy router did, so
+ * every old URL form still works (D-004); /ui-kit is the design-system
+ * reference. Since cutover (D-021), Student and Instructor always use the
+ * rebuilt UI; a leftover ?ui= parameter is ignored.
  */
 export function AppRouter() {
   return (

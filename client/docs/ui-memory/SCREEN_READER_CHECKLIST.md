@@ -13,7 +13,7 @@ cutover and after any major screen change, and records the result in `LEARNINGS.
 | Windows laptop | NVDA (free) | Chrome or Edge |
 | Mac | VoiceOver (Cmd+F5) | Safari |
 
-Preview the rebuilt UI with `?ui=new`. Do each journey **without looking at the screen**
+Open `/student` and `/instructor`. Do each journey **without looking at the screen**
 for at least one pair.
 
 ## Student

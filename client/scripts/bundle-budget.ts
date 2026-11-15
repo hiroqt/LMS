@@ -11,11 +11,11 @@ import { gzipSync } from "node:zlib";
 const KB = 1024;
 const BUDGET = {
   /** The entry chunk every visitor downloads before anything renders. */
-  entryJs: 135 * KB,
+  entryJs: 105 * KB,
   /** Any lazily loaded screen or shared chunk. */
   chunkJs: 40 * KB,
   /** Any stylesheet. */
-  css: 45 * KB,
+  css: 26 * KB,
 };
 
 const dir = join(process.cwd(), "dist", "assets");

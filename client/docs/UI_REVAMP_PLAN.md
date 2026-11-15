@@ -1,6 +1,6 @@
 # Student and Instructor UI revamp plan
 
-`Agreed 2026-11-16`. Decisions are recorded in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md),
+`Agreed 2026-11-16` · **Status: complete for Student and Instructor; cut over 2026-11-17** (PRs #17–#22). Decisions are recorded in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md),
 and progress per flow node in [`ui-memory/FLOW_PARITY.md`](ui-memory/FLOW_PARITY.md).
 
 ## Goal

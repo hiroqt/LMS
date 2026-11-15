@@ -180,3 +180,23 @@ Student and Instructor score 100 / 100 / 100 (performance / accessibility / best
 practices), LCP 0.9 s, CLS 0. The first visit on Slow 3G shows content in 5.8 s (spec-enforced
 under 10 s).
 
+### D-021 · Cutover: the rebuilt Student and Instructor UIs are the only ones
+`2026-11-17` · hiro (user decision: full cutover) · scope: all · confidence: high
+The classic Student (`App.jsx`, `App.css`, `Details.css`, `roles/student`) and Instructor
+(`roles/instructor`) UIs, the `?ui=` toggle (D-011, D-014), and the migration notice are
+removed; a leftover `?ui=` is ignored. `data.js` no longer merges role data at import (the
+Student catalog merges per read). Admin is untouched. Classic CSS rules the Admin shell
+still used moved verbatim to `roles/shared/shellCompat.css`; Admin is pixel-identical to
+`main` in every captured state (L-034). The screen-reader checklist had not been run by a
+person at cutover; run it next. The flow specs that proved parity now guard the rebuilt UI,
+and the `*-new` projects are gone. Entry JS 123.5 → 96.8 KB gz, CSS 39.1 → 22.2 KB gz;
+the budget is tightened to 105 / 26 KB.
+
+### D-022 · Preflight, `!important` utilities, and the `@source` limit stay until Admin is revamped
+`2026-11-17` · hiro · scope: styles · confidence: high
+The plan called for enabling Tailwind preflight at cutover. Admin still runs on legacy CSS
+that relies on browser defaults, so preflight would restyle it (D-001 says Admin must not
+change). D-003 and D-010 therefore stay in force, scoped to Admin's lifetime: no
+preflight, `!important` utilities, and scanning limited to `app/`, `shared/`, and
+`features/`. Revisit all three when Admin is rebuilt. Supersedes the cutover step in D-003.
+

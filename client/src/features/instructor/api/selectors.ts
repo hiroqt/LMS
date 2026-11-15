@@ -2,8 +2,8 @@ import { assessments as seedAssessments, questionsByAssessment } from "../../../
 import type { Activity, Classroom, Exam, ExamSubmission, ActivitySubmission, Material, RoleStore, Subject, User } from "./types";
 
 /*
- * Pure rules for the rebuilt Instructor UI, mirroring roles/instructor/
- * Instructor.jsx so counts, queues, and defaults are identical (C-012).
+ * Pure rules for the Instructor UI, carried over from the classic UI
+ * (removed at cutover) so counts, queues, and defaults stayed identical (C-012).
  */
 
 export const STUDENT_PROGRESS_KEY = "gclass-student-workspace-v1";

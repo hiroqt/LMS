@@ -9,8 +9,8 @@ from [`LEARNINGS.md`](LEARNINGS.md) (see the loop in [`README.md`](README.md)).
   (design system), `layout/`, `components/`, `hooks/`, `lib/`, `api/`, `styles/`.
 - `features` may import `shared`. `shared` never imports `features`. A feature imports
   another feature only through its `index.ts`.
-- Do not add to legacy files (`App.jsx`, `roles/**`, `components/shared/**`). Rebuild
-  the piece under `features/` or `shared/` instead.
+- Legacy code now belongs to Admin only (`roles/**`, `components/shared/**`, `index.css`).
+  Do not use it from `features/` or `shared/`; build new pieces there instead.
 
 ### C-002 · TypeScript
 - New files are `.ts`/`.tsx` and pass `npm run typecheck` (strict,

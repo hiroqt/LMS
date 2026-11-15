@@ -217,3 +217,13 @@ chunks, so a tab still running the previous version fails its next lazy screen l
 `main.tsx` reloads once on `vite:preloadError` (guarded by a sessionStorage flag so it
 cannot loop). Verify on the first real deploy.
 
+### L-034 · Deleting global CSS: compare pixels against a fresh baseline from main
+`2026-11-17` · hiro · scope: styles · confidence: high
+The classic stylesheets were loaded globally, so the Admin shell silently depended on some
+of their rules. A first pass that moved only classes defined *exclusively* in the deleted
+files missed rules that added properties to shared classes (`.profile-head`, `.popover`,
+search), and the profile menu shrank by 5px. What worked: (1) capture Admin screenshots on
+`main`, twice, to prove determinism; (2) move every legacy rule whose selector targets only
+classes the remaining code uses, in source order with its media queries; (3) compare the
+branch against the main baseline until it is pixel-identical (`maxDiffPixels: 0`).
+

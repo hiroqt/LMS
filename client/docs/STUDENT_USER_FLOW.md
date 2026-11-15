@@ -92,4 +92,15 @@ flowchart TD
 
 There is no authentication, server save, or cross-device sync. “Submit” records a local demo completion and displays a locally calculated result; instructor-created exams and saved instructor feedback are shared through browser storage. The academic calendar and class content are sample data, not an official TMCC schedule.
 
-Implementation references: [workspace interactions](../src/App.jsx), [fictional classes and assessment data](../src/data.js), and [project scope](PROJECT_BRIEF.md).
+## Since the rebuild (2026-11-17)
+
+The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` and `e2e/shell.spec.ts`. The rebuilt UI adds:
+
+- **Every screen has a URL** (`/student/tasks?status=Missing`, `/student/classes/<id>?tab=Materials`, `/student/assessments/<id>/quiz`, …), so Back, Forward, refresh, and shared links work.
+- **Tasks** shows the four statuses as one-tap filters with counts instead of a dropdown.
+- **Exams show the instructor's grade and feedback** on the assessment page once graded, plus "View your result" (D-015).
+- **Quiz:** number keys 1–4 pick answers, the timer and progress stay visible while scrolling, and timer milestones are announced politely. Per-question timers keep the same rules but are timestamp-based, so a sleeping phone cannot slow them.
+- **Phones:** bottom navigation (Today, Tasks, Classes, Calendar) and a search sheet.
+- **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
+
+Implementation references: [Student workspace](../src/features/student/StudentApp.tsx), [screens](../src/features/student/pages/), [data and rules](../src/features/student/api/), [fictional seed data](../src/data.js), and [project scope](PROJECT_BRIEF.md).

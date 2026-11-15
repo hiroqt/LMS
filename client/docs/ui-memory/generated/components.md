@@ -90,13 +90,12 @@
 
 | File | Exports |
 | --- | --- |
-| `src/app/migration/RebuildNotice.tsx` | `RebuildNotice` |
 | `src/app/providers/AppProviders.tsx` | `AppProviders` |
 | `src/app/router/AppRouter.tsx` | `AppRouter` |
 
-## Legacy (being replaced)
+## Legacy Admin (unchanged)
 
-Pre-revamp code. Do not extend; rebuild under `features/` or `shared/`.
+Admin and its shell keep their pre-revamp code until Admin is revamped (D-001, D-022).
 
 | File | Exports |
 | --- | --- |
@@ -115,9 +114,4 @@ Pre-revamp code. Do not extend; rebuild under `features/` or `shared/`.
 | `src/roles/admin/AdminReports.jsx` | `AdminReports` |
 | `src/roles/admin/AdminRoleManagement.jsx` | `AdminRoleManagement` |
 | `src/roles/admin/AdminSystemConfiguration.jsx` | `AdminSystemConfiguration` |
-| `src/roles/instructor/Instructor.jsx` | `Instructor` |
-| `src/roles/instructor/InstructorAcademicCalendar.jsx` | `InstructorAcademicCalendar` |
-| `src/roles/instructor/InstructorClassroom.jsx` | `InstructorClassroom` |
-| `src/roles/instructor/InstructorDashboardNews.jsx` | `InstructorDashboardNews` |
 | `src/roles/shared/RoleWorkspace.jsx` | `RoleWorkspace` |
-| `src/roles/student/StudentWorkspace.jsx` | `StudentWorkspace` |

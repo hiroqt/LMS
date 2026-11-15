@@ -6,7 +6,7 @@ export { upcomingSchoolEvents } from "../../../shared/lib/schoolNews";
 
 /*
  * Pure rules shared by the rebuilt Student screens. Each mirrors the classic
- * UI's logic in App.jsx so counts, groups, and order are identical.
+ * UI's logic (removed at cutover) so counts, groups, and order stayed identical.
  */
 
 export const DAY = 86_400_000;
