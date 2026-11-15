@@ -35,9 +35,9 @@ export function subjectOf(store: RoleStore, room: Classroom | undefined): Subjec
   return store.subjects.find((item) => item.id === room?.subjectId);
 }
 
-/** Two-character mark shown before a class name, e.g. "01" for IT101. */
+/** The course code shown before a class name, e.g. "IT101". */
 export function classMark(subject: Subject | undefined): string {
-  return subject?.code?.slice(-2) || "CL";
+  return subject?.code || "Class";
 }
 
 export function currentTermName(store: RoleStore): string {

@@ -2,22 +2,21 @@ import { BookOpen } from "lucide-react";
 import { useNavigate } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { ClassCard } from "../components/ClassCard";
+import { ViewToggle } from "../../../shared/components/ViewToggle";
+import { useClassView } from "../../../shared/hooks/useClassView";
+import { ClassList } from "../components/ClassList";
 import { useStudentCatalog } from "../hooks/useStudentCatalog";
 import { studentPaths } from "../paths";
 
 export default function ClassesPage() {
   const navigate = useNavigate();
   const { courses } = useStudentCatalog();
+  const [view, setView] = useClassView();
   return (
     <>
-      <PageHeader eyebrow="Enrolled this term" title="My classes" description="Open a class for its stream, classwork, materials, and classmates." />
+      <PageHeader title="My classes" description={`${courses.length} ${courses.length === 1 ? "class" : "classes"} this term`} actions={<ViewToggle view={view} onChange={setView} />} />
       {courses.length ? (
-        <ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
-          {courses.map((course, index) => (
-            <li key={course.id}><ClassCard course={course} index={index} onOpen={() => navigate(studentPaths.classPage(course.id))} /></li>
-          ))}
-        </ul>
+        <ClassList courses={courses} view={view} onOpen={(course) => navigate(studentPaths.classPage(course.id))} gridClassName="gap-4 sm:grid-cols-2 xl:grid-cols-3" />
       ) : (
         <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
       )}

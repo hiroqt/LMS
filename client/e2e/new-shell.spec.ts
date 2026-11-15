@@ -16,7 +16,7 @@ test.describe("New Student shell", () => {
     await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 
     const nav = page.getByRole("navigation", { name: "Main navigation" });
-    await expect(nav.getByRole("button", { name: "Today" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("button", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     await nav.getByRole("button", { name: "Tasks" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeFocused();
     await expect(nav.getByRole("button", { name: "Tasks" })).toHaveAttribute("aria-current", "page");
@@ -79,7 +79,7 @@ test.describe("New Instructor shell", () => {
   test("a class link in the drawer also closes it and focuses the class @mobile", async ({ page }) => {
     await page.goto("/instructor");
     await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("dialog").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 1, name: "Introduction to Programming" })).toBeFocused();
   });

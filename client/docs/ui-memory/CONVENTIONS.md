@@ -113,3 +113,22 @@ Utilities win over those rules because they are `!important` (D-010), so never a
   needs the network says so in the UI instead of failing silently.
 - Run `SCREEN_READER_CHECKLIST.md` with a person before cutover and after big changes.
 
+### C-015 · Dashboard and course patterns (D-023)
+- Dashboard panels: an `h2` with a leading icon (`SectionHeading` `icon`) and one
+  "View all" link to the full page; the heading stays on one line.
+- One control per action on a page; secondary views of the same item are read-only (L-037).
+- Courses are named by title first, with the course code (`CourseCode` or "IT101 · …")
+  as metadata; course pages open with `CourseHeader` (code · section · term, title, facts).
+- Due dates use pills that warm as the deadline nears (info → warning → danger) and
+  always include the date in text.
+
+
+### C-016 · Preferences and plain copy (D-024)
+- A display preference (layout, collapsed state) uses `usePersistentState` with a
+  `tmcc-…` key, defaults to the previous behavior, and never hides a control's
+  accessible name: collapse the label with `sr-only` and add `title`.
+- An alternative view of a list is a real `<table>` with a caption, `scope` on headers,
+  the item name as the row header, and a focusable scroll frame (`ClassTable`).
+- Copy states facts. No taglines, no encouragement, no eyebrow that repeats the heading,
+  no decorative illustration. If a line could sit on any product's page, delete it.
+- Cards have a uniform border. Do not add colored side or top stripes for identity.

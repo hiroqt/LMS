@@ -100,7 +100,8 @@ The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` 
 - **Tasks** shows the four statuses as one-tap filters with counts instead of a dropdown.
 - **Exams show the instructor's grade and feedback** on the assessment page once graded, plus "View your result" (D-015).
 - **Quiz:** number keys 1–4 pick answers, the timer and progress stay visible while scrolling, and timer milestones are announced politely. Per-question timers keep the same rules but are timestamp-based, so a sleeping phone cannot slow them.
-- **Phones:** bottom navigation (Today, Tasks, Classes, Calendar) and a search sheet.
+- **Navigation (D-023):** Dashboard (formerly Today), My Classes, Tasks & Assessments, Calendar, and News & Announcements, which is now its own page instead of a toggle on the dashboard. On phones these are in the bottom bar (Dashboard, Classes, Tasks, Calendar, News), with a search sheet.
+- **Dashboard:** greeting with the date and term week, summary chips, Tasks & Assessments with due-date pills, My Classes, an Academic Calendar timeline, and the latest announcement.
 - **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
 
 Implementation references: [Student workspace](../src/features/student/StudentApp.tsx), [screens](../src/features/student/pages/), [data and rules](../src/features/student/api/), [fictional seed data](../src/data.js), and [project scope](PROJECT_BRIEF.md).

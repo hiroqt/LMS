@@ -227,3 +227,42 @@ search), and the profile menu shrank by 5px. What worked: (1) capture Admin scre
 classes the remaining code uses, in source order with its media queries; (3) compare the
 branch against the main baseline until it is pixel-identical (`maxDiffPixels: 0`).
 
+### L-035 · Icon + number chips overflow narrow multi-column rows
+`2026-11-17` · hiro · scope: shared/components · confidence: high
+At 320px a 3-column chip row leaves ~70px for the label after the icon tile and padding,
+and "Assessments" overflowed (19px sideways scroll; found by the 320px sweep, and only
+with the pinned demo date, which changes the content). On phones `StatCard` stacks the
+icon above the number and lets long words break; from `sm` it is side by side.
+
+### L-036 · Definition lists only allow `div > dt + dd`
+`2026-11-17` · hiro · scope: a11y · confidence: high
+`CourseHeader` wrapped `dt`/`dd` in an extra element next to the icon (axe: definition-list,
+dlitem, serious). Put decorative icons inside the `dt`.
+
+### L-037 · One control per action on a dashboard
+`2026-11-17` · hiro · scope: ux · confidence: high
+The first dashboard made each deadline a button in both Tasks & Assessments and the
+Academic Calendar. Duplicate controls add tab stops, confuse screen-reader users, and made
+specs ambiguous. The calendar panel is a read-only timeline; deadlines open from Tasks.
+Promoted to C-015.
+
+### L-038 · Measure overflow with the test's exact sequence
+`2026-11-17` · hiro · scope: tests · confidence: medium
+An overflow that the spec reported did not reproduce in a fresh page because content
+depends on the pinned clock. To find the culprit: pin the same clock, repeat the spec's
+steps, then hide elements one by one and watch `scrollWidth` (bisecting beats scanning
+bounding boxes, which miss content that overflows its own box).
+
+
+### L-039 · A control added to a heading row needs a phone form
+`2026-11-16` · hiro · scope: shared · confidence: high
+Adding the cards/table toggle beside "View all classes" overflowed 320px by 29px. The
+heading row now wraps (`SectionHeading` uses `flex-wrap`) and the toggle shows icons
+only below `sm` (labels stay as `sr-only` text). Budget a heading row at 288px before
+adding a second action.
+
+### L-040 · Sidebar slots that depend on shell state take a function
+`2026-11-16` · hiro · scope: shared · confidence: medium
+The class list and Help link must render differently when the sidebar is collapsed, but
+they are built by the role app above `AppShell`. `sidebarExtra` and `sidebarFooter`
+accept `(collapsed) => ReactNode`; the phone drawer always passes `false`.

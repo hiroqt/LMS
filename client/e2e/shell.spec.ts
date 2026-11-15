@@ -48,7 +48,7 @@ test.describe("Student · shell", () => {
   test("P: Reset demo data clears saved progress and returns to Today", async ({ page }) => {
     await openRole(page, "student");
     await submitQuiz(page);
-    await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Today" }).click();
+    await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Dashboard" }).click();
     await expect(page.getByRole("button", { name: /^1 Assessments done/ })).toBeVisible();
 
     await page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ }).click();

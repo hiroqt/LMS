@@ -1,7 +1,8 @@
-import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
+import { GraduationCap, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { usePersistentState } from "../hooks/usePersistentState";
 import { cn } from "../lib/cn";
 import { NetworkBanner } from "./NetworkBanner";
 import { SkipLink } from "./SkipLink";
@@ -9,10 +10,17 @@ import { SkipLink } from "./SkipLink";
 export interface NavItem {
   id: string;
   label: string;
+  /** Shorter label for the phone bottom bar, e.g. "Tasks" for "Tasks & Assessments". */
+  shortLabel?: string;
   icon: ReactNode;
   /** Badge count shown next to the label, e.g. pending reviews. */
   count?: number;
 }
+
+/** Sidebar content. A function receives whether the desktop sidebar is collapsed to icons. */
+export type SidebarSlot = ReactNode | ((collapsed: boolean) => ReactNode);
+
+const renderSlot = (slot: SidebarSlot, collapsed: boolean) => (typeof slot === "function" ? slot(collapsed) : slot);
 
 export interface AppShellProps {
   /** Used in landmark names: "Student navigation". */
@@ -28,7 +36,9 @@ export interface AppShellProps {
    */
   mobileNav: "bottom" | "drawer";
   /** Extra sidebar content under the main navigation, e.g. "My classes". */
-  sidebarExtra?: ReactNode;
+  sidebarExtra?: SidebarSlot;
+  /** Pinned to the bottom of the sidebar and drawer, e.g. Help & Support. */
+  sidebarFooter?: SidebarSlot;
   /** Left side of the top bar after the brand, e.g. breadcrumbs. */
   topbarStart?: ReactNode;
   /** Right side of the top bar: search, notifications, profile. */
@@ -38,7 +48,7 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-function NavList({ nav, activeId, onNavigate, label, layout }: Pick<AppShellProps, "nav" | "activeId" | "onNavigate"> & { label: string; layout: "column" | "bar" }) {
+function NavList({ nav, activeId, onNavigate, label, layout, collapsed = false }: Pick<AppShellProps, "nav" | "activeId" | "onNavigate"> & { label: string; layout: "column" | "bar"; collapsed?: boolean }) {
   return (
     <nav aria-label={label}>
       <ul className={cn("m-0 list-none p-0", layout === "column" ? "flex flex-col gap-1" : "grid auto-cols-fr grid-flow-col")}>
@@ -49,19 +59,26 @@ function NavList({ nav, activeId, onNavigate, label, layout }: Pick<AppShellProp
               <button
                 type="button"
                 aria-current={active ? "page" : undefined}
+                title={collapsed ? item.label : undefined}
                 onClick={() => onNavigate(item.id)}
                 className={cn(
-                  "flex w-full items-center rounded-control border-0 font-sans font-medium focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus [&_svg]:shrink-0",
+                  "relative flex w-full items-center rounded-control border-0 font-sans font-medium focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus [&_svg]:shrink-0",
                   layout === "column"
-                    ? "min-h-touch gap-3 px-3 text-body [&_svg]:size-5"
+                    ? cn("min-h-touch gap-3 text-body [&_svg]:size-5", collapsed ? "justify-center px-0" : "px-3")
                     : "min-h-16 flex-col justify-center gap-0.5 px-1 text-body [&_svg]:size-6",
-                  active ? "bg-primary-100 text-primary-700" : "bg-transparent text-muted hover:bg-primary-50 hover:text-ink",
+                  layout === "column"
+                    ? active
+                      ? "bg-primary-700 font-semibold text-white shadow-card"
+                      : "bg-transparent text-ink hover:bg-primary-50"
+                    : active
+                      ? "bg-primary-100 font-semibold text-primary-800"
+                      : "bg-transparent text-muted hover:bg-primary-50 hover:text-ink",
                 )}
               >
                 <span aria-hidden className="inline-flex">{item.icon}</span>
-                <span className={layout === "column" ? "flex-1 text-left" : ""}>{item.label}</span>
+                <span className={layout === "column" ? (collapsed ? "sr-only" : "flex-1 text-left") : ""}>{layout === "bar" ? (item.shortLabel ?? item.label) : item.label}</span>
                 {item.count ? (
-                  <span className="rounded-full bg-primary-600 px-2 text-body font-semibold text-white">
+                  <span className={cn("rounded-full bg-primary-600 px-2 text-body font-semibold text-white", collapsed && "absolute -top-1 -right-1 ring-2 ring-surface")}>
                     {item.count}
                     <span className="sr-only"> pending</span>
                   </span>
@@ -75,14 +92,18 @@ function NavList({ nav, activeId, onNavigate, label, layout }: Pick<AppShellProp
   );
 }
 
-function Brand() {
+/** College seal and name. The full form (with the college name) sits in the sidebar. */
+function Brand({ full = false, sealOnly = false }: { full?: boolean; sealOnly?: boolean }) {
   return (
-    <span className="flex items-center gap-2.5 font-sans text-section font-bold text-ink">
-      <span aria-hidden className="grid size-9 place-items-center rounded-control bg-primary-600 text-white">
+    <span className="flex items-center gap-3 font-sans text-ink">
+      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-700 text-white">
         <GraduationCap className="size-5" />
       </span>
-      {/* Collapses to the mark on very narrow phones so the top bar fits 320px. */}
-      <span className="max-[379px]:sr-only">TMCC LMS</span>
+      <span className={sealOnly ? "sr-only" : "flex flex-col leading-tight"}>
+        {/* Collapses to the seal on very narrow phones so the top bar fits 320px. */}
+        <span className="text-section font-bold tracking-tight max-[379px]:sr-only">TMCC LMS</span>
+        {full && <span className="text-body text-muted">Trece Martires City College</span>}
+      </span>
     </span>
   );
 }
@@ -93,13 +114,15 @@ function Brand() {
  * tablets: a bottom bar or a drawer. Includes the skip link, landmarks,
  * connection banner, and focus management on page change (C-004).
  */
-export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, topbarStart, topbarActions, pageKey, children }: AppShellProps) {
+export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, sidebarFooter, topbarStart, topbarActions, pageKey, children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // The drawer only exists below lg. If the viewport grows while it is open
   // (tablet rotation, window resize), it must close: Radix would otherwise keep
   // pointer-events off the page and focus trapped in a hidden dialog.
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const drawerVisible = drawerOpen && !isDesktop;
+  // Desktop only: the sidebar narrows to icons to give the page more room.
+  const [collapsed, setCollapsed] = usePersistentState<boolean>("tmcc-sidebar-collapsed", false);
   const mainRef = useRef<HTMLElement>(null);
   // Compare with the previous key instead of skipping the "first render":
   // StrictMode runs effects twice on mount, which would steal initial focus.
@@ -132,14 +155,19 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
     <div className="min-h-dvh bg-canvas font-sans text-ink">
       <SkipLink />
 
-      <aside aria-label="Workspace" className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-6 border-r border-line bg-surface px-4 py-5 lg:flex">
-        <Brand />
-        <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" />
-        {sidebarExtra && <div className="min-h-0 flex-1 overflow-y-auto">{sidebarExtra}</div>}
+      <aside
+        id="workspace-sidebar"
+        aria-label="Workspace"
+        className={cn("fixed inset-y-0 left-0 hidden flex-col gap-6 border-r border-line bg-surface py-5 lg:flex", collapsed ? "w-20 px-3" : "w-72 px-4")}
+      >
+        <span className={collapsed ? "flex justify-center" : "px-1"}><Brand full sealOnly={collapsed} /></span>
+        <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" collapsed={collapsed} />
+        {sidebarExtra && <div className="min-h-0 flex-1 overflow-y-auto">{renderSlot(sidebarExtra, collapsed)}</div>}
+        {sidebarFooter && <div className="mt-auto border-t border-line pt-4">{renderSlot(sidebarFooter, collapsed)}</div>}
       </aside>
 
-      <div className="flex min-h-dvh flex-col lg:pl-64">
-        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-2 border-b border-line bg-surface/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:px-6">
+      <div className={cn("flex min-h-dvh flex-col", collapsed ? "lg:pl-20" : "lg:pl-72")}>
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 sm:min-h-16 border-b border-line bg-surface/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:px-6">
           {mobileNav === "drawer" && (
             <Dialog.Root open={drawerVisible} onOpenChange={setDrawerOpen}>
               <Dialog.Trigger
@@ -162,7 +190,7 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
                   className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,85vw)] flex-col gap-6 overflow-y-auto bg-surface px-4 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-5 font-sans text-ink shadow-popover lg:hidden"
                 >
                   <div className="flex items-center justify-between">
-                    <Dialog.Title asChild><span><Brand /></span></Dialog.Title>
+                    <Dialog.Title asChild><span><Brand full /></span></Dialog.Title>
                     <Dialog.Close aria-label="Close menu" className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus">
                       <X aria-hidden className="size-5" />
                     </Dialog.Close>
@@ -170,12 +198,24 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
                   {/* On phones the drawer is the sidebar, so it keeps the sidebar landmark. */}
                   <aside aria-label="Workspace" className="flex flex-col gap-6">
                     <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" />
-                    {sidebarExtra}
+                    {renderSlot(sidebarExtra, false)}
+                    {sidebarFooter && <div className="border-t border-line pt-4">{renderSlot(sidebarFooter, false)}</div>}
                   </aside>
                 </Dialog.Content>
               </Dialog.Portal>
             </Dialog.Root>
           )}
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-controls="workspace-sidebar"
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() => setCollapsed(!collapsed)}
+            className="-ml-2 hidden size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:bg-primary-50 hover:text-ink focus-visible:outline-3 focus-visible:outline-focus lg:grid"
+          >
+            {collapsed ? <PanelLeftOpen aria-hidden className="size-5" /> : <PanelLeftClose aria-hidden className="size-5" />}
+          </button>
           <span className="lg:hidden"><Brand /></span>
           {topbarStart}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">{topbarActions}</div>
@@ -187,7 +227,7 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
           id="main-content"
           ref={mainRef}
           tabIndex={-1}
-          className={cn("mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 outline-none sm:px-6 lg:py-8", mobileNav === "bottom" && "pb-28 lg:pb-8")}
+          className={cn("mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 outline-none sm:gap-6 sm:px-6 sm:py-6 lg:py-8", mobileNav === "bottom" && "pb-28 lg:pb-8")}
         >
           {children}
         </main>

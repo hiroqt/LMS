@@ -13,7 +13,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
 | B | Today dashboard loads | ✔ `student-flow` Today | ✅ |
-| N | Overview ↔ News & announcements | ✔ `student-flow` B → N | ✅ |
+| N | Dashboard → News & Announcements page (D-023; was a dashboard toggle) | ✔ `student-flow` B → N | ✅ |
 | N1 | Read teacher announcements | ✔ (renders without error) | ✅ |
 | N2, N3 | School announcements, featured carousel | ✖ | ✅ |
 | CAL | Academic calendar from the top bar | ✔ `student-flow` C → CAL → CAL1 | ✅ |

@@ -21,7 +21,7 @@ export default function GradebookPage() {
   const [params] = useSearchParams();
   const { store, instructor, rooms } = useInstructorWorkspace();
   const room = rooms.find((item) => item.id === params.get("class")) ?? rooms[0];
-  const header = <PageHeader eyebrow="Grades and weights" title="Gradebook" description="Set category weights and follow progress across your class." />;
+  const header = <PageHeader title="Gradebook" description="Set category weights and follow progress across your class." />;
   if (!room) return <>{header}<EmptyState title="No classrooms yet" description="Create a class to set up its gradebook." /></>;
 
   const settings = store.gradebookSettings[room.id] ?? DEFAULT_GRADEBOOK;

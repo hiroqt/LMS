@@ -1,34 +1,40 @@
-import { ClipboardList, UsersRound } from "lucide-react";
+import { ChevronRight, ClipboardList, UsersRound } from "lucide-react";
+import { SubjectIcon } from "../../../shared/components/SubjectIcon";
+import { cn } from "../../../shared/lib/cn";
 import { toneFor } from "../../../shared/lib/tones";
 
 export interface InstructorClassCardProps {
   title: string;
   section: string;
+  /** Course code, e.g. "IT101". */
   mark: string;
+  term?: string;
   index: number;
   students: number;
   coursework: number;
   onOpen: () => void;
 }
 
-export function InstructorClassCard({ title, section, mark, index, students, coursework, onOpen }: InstructorClassCardProps) {
+/** A class the instructor teaches: subject icon, title, code and section, enrollment and coursework. */
+export function InstructorClassCard({ title, section, mark, term, index, students, coursework, onOpen }: InstructorClassCardProps) {
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="group flex h-full w-full flex-col overflow-hidden rounded-card border border-line bg-surface text-left font-sans text-ink shadow-card transition hover:-translate-y-0.5 hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="group flex h-full w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink shadow-card transition hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
-      <span className={`flex items-center justify-between px-5 py-4 ${toneFor(index)}`}>
-        <strong className="text-card-title font-semibold">{title}</strong>
-        <span aria-hidden className="text-section font-bold">{mark}</span>
+      <span aria-hidden className={cn("grid size-12 shrink-0 place-items-center rounded-control", toneFor(index))}>
+        <SubjectIcon subject={title} className="size-6" />
       </span>
-      <span className="flex flex-1 flex-col gap-1 px-5 py-4">
-        <span className="text-body text-muted">{section}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <strong className="text-card-title font-semibold leading-snug">{title}</strong>
+        <span className="text-body text-muted">{mark} · {section}{term ? ` · ${term}` : ""}</span>
+        <span className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-body text-muted">
+          <span className="inline-flex items-center gap-1.5"><UsersRound aria-hidden className="size-4" />{students} students</span>
+          <span className="inline-flex items-center gap-1.5"><ClipboardList aria-hidden className="size-4" />{coursework} coursework items</span>
+        </span>
       </span>
-      <span className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-body text-muted">
-        <span className="inline-flex items-center gap-1.5"><UsersRound aria-hidden className="size-4" />{students} students</span>
-        <span className="inline-flex items-center gap-1.5"><ClipboardList aria-hidden className="size-4" />Coursework · {coursework} items</span>
-      </span>
+      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted group-hover:text-ink" />
     </button>
   );
 }

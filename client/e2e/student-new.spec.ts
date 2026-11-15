@@ -24,7 +24,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
   test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
     await check(page);
-    await page.getByRole("button", { name: "News & announcements" }).click();
+    await page.goto("/student/news");
     await expect(page.getByRole("heading", { name: "Teacher announcements" })).toBeVisible();
     await check(page);
     for (const path of ["/student/tasks", "/student/tasks?status=Missing", "/student/calendar", "/student/classes"]) {
@@ -126,7 +126,7 @@ test.describe("Rebuilt Student behavior", () => {
 
     // Grade it in the classic Instructor UI.
     await page.goto("/instructor");
-    await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
+    await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await page.getByRole("tablist", { name: "Classroom sections" }).getByRole("tab", { name: /^Submissions/ }).click();
     await page.getByRole("main").getByRole("button", { name: exam }).first().click();
     await page.getByRole("main").getByRole("spinbutton").first().fill("32");
@@ -144,7 +144,7 @@ test.describe("Rebuilt Student behavior", () => {
 
   test("an assignment submitted in the rebuilt UI reaches the classic instructor queue", async ({ page }) => {
     await page.goto("/instructor");
-    await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
+    await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await page.getByRole("tab", { name: /^Create content/ }).click();
     await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
     await page.getByRole("textbox", { name: /^Assignment title/ }).fill("Pseudocode for a vending machine");
@@ -160,7 +160,7 @@ test.describe("Rebuilt Student behavior", () => {
     await expect(page.getByRole("status").filter({ hasText: "Waiting for instructor review" })).toBeVisible();
 
     await page.goto("/instructor");
-    await page.getByRole("complementary").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
+    await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await expect(page.getByRole("tab", { name: /^Submissions\s?1/ })).toBeVisible();
   });
 

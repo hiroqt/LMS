@@ -30,6 +30,7 @@
 | `src/shared/layout/AppShell.tsx` | `AppShell` |
 | `src/shared/layout/NetworkBanner.tsx` | `NetworkBanner` |
 | `src/shared/layout/PageHeader.tsx` | `PageHeader` |
+| `src/shared/layout/SidebarGroup.tsx` | `SidebarGroup` |
 | `src/shared/layout/SkipLink.tsx` | `SkipLink` |
 
 ## Shared components
@@ -39,13 +40,19 @@
 | File | Exports |
 | --- | --- |
 | `src/shared/components/BackLink.tsx` | `BackLink` |
+| `src/shared/components/ClassTable.tsx` | `ClassTable` |
+| `src/shared/components/CourseCode.tsx` | `CourseCode` |
+| `src/shared/components/CourseHeader.tsx` | `CourseHeader` |
 | `src/shared/components/FeaturedNewsCarousel.tsx` | `FeaturedNewsCarousel` |
+| `src/shared/components/HelpSupport.tsx` | `HelpSupport` |
 | `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
 | `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
 | `src/shared/components/StatCard.tsx` | `StatCard` |
+| `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
+| `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 
 ## Features
 
@@ -57,6 +64,7 @@
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/instructor/components/CreateClassDialog.tsx` | `CreateClassDialog` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
+| `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
@@ -73,12 +81,14 @@
 | `src/features/student/StudentApp.tsx` | `StudentApp` |
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
+| `src/features/student/components/ClassList.tsx` | `ClassList` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |
 | `src/features/student/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/student/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/student/pages/MaterialPage.tsx` | `MaterialPage` |
+| `src/features/student/pages/NewsPage.tsx` | `NewsPage` |
 | `src/features/student/pages/QuizPage.tsx` | `QuizPage` |
 | `src/features/student/pages/ResultPage.tsx` | `ResultPage` |
 | `src/features/student/pages/TasksPage.tsx` | `TasksPage` |

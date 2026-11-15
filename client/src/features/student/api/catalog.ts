@@ -16,6 +16,8 @@ interface Extensions {
 }
 
 interface RoleData {
+  subjects?: Array<{ id: string; code?: string }>;
+  classrooms?: Array<{ id: string; subjectId: string }>;
   users?: Array<{ id: string; firstName: string; lastName: string }>;
   announcements?: Array<{ id: string; classroomId: string; instructorId: string; title: string; message: string; createdAt: string; status?: string }>;
   activitySubmissions?: Array<ActivitySubmission & { studentId: string }>;
@@ -42,7 +44,11 @@ export function buildStudentCatalog(): StudentCatalog {
   const active = new Set(ext.activeCourseIds);
   const keep = <T>(items: T[], courseOf: (item: T) => string) => (ext.synced ? items.filter((item) => active.has(courseOf(item))) : items);
 
-  const courses = mergeById(keep(studentSeed.courses as StudentCatalog["courses"], (item) => item.id), ext.courses);
+  // Instructor-created classes carry no course code; take it from the class's subject.
+  const subjectCode = (classroomId: string) => role.subjects?.find((subject) => subject.id === role.classrooms?.find((room) => room.id === classroomId)?.subjectId)?.code;
+  const courses = mergeById(keep(studentSeed.courses as StudentCatalog["courses"], (item) => item.id), ext.courses).map((course) =>
+    course.code ? course : { ...course, code: subjectCode(course.id) },
+  );
   const assessments = mergeById(keep(studentSeed.assessments as StudentCatalog["assessments"], (item) => item.courseId), ext.assessments);
   const materials = mergeById(keep(studentSeed.materials as StudentCatalog["materials"], (item) => item.courseId), ext.materials);
   const teacherOf = (classroomId: string) => courses.find((course) => course.id === classroomId)?.teacher ?? "Instructor";
@@ -81,4 +87,9 @@ export function buildStudentCatalog(): StudentCatalog {
     activitySubmissions,
     examGrades,
   };
+}
+
+/** The course code shown on cards and headers, e.g. "IT101" (falls back to the class symbol). */
+export function courseCode(course: { code?: string; symbol: string }): string {
+  return course.code || course.symbol;
 }

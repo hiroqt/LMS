@@ -8,13 +8,15 @@ import { AssessmentTypeIcon } from "./visuals";
 export interface AssessmentRowProps {
   item: Assessment;
   courseIndex: number;
+  /** Shown before the assessment type, e.g. "IT204 · Quiz". Omit inside a class page. */
+  courseCode?: string;
   completed: boolean;
   missing?: boolean;
   onOpen: () => void;
 }
 
-export function AssessmentRow({ item, courseIndex, completed, missing, onOpen }: AssessmentRowProps) {
-  const meta = item.kind === "activity" ? [item.type, `${item.points} points`] : [item.type, `${item.questionCount ?? 0} questions`, `${item.points} points`];
+export function AssessmentRow({ item, courseIndex, courseCode, completed, missing, onOpen }: AssessmentRowProps) {
+  const meta = [courseCode, item.type, item.kind === "activity" ? undefined : `${item.questionCount ?? 0} questions`, `${item.points} points`].filter(Boolean);
   return (
     <button
       type="button"

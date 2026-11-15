@@ -2,7 +2,7 @@ import { expect, openRole, test, type Page } from "./fixtures";
 
 // Journeys from docs/INSTRUCTOR_USER_FLOW.md. Letters refer to the chart connectors.
 
-const CLASS_BUTTON = /^01 Introduction to Programming/;
+const CLASS_BUTTON = /^IT101 Introduction to Programming/;
 
 async function openClass(page: Page) {
   await openRole(page, "instructor");

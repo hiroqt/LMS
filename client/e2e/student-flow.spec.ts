@@ -5,14 +5,17 @@ import { expect, openRole, test } from "./fixtures";
 const QUIZ = /Quiz 02: Relational Data and Keys/;
 
 test.describe("Student · Today dashboard", () => {
-  test("B → N: dashboard switches between Overview and News & announcements", async ({ page }) => {
+  // D-023: News & Announcements is its own destination instead of a dashboard toggle.
+  test("B → N: the dashboard leads to News & Announcements", async ({ page }) => {
     await openRole(page, "student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
 
-    const views = page.getByRole("group", { name: "Dashboard content" });
-    await expect(views.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-pressed", "true");
-    await views.getByRole("button", { name: "News & announcements" }).click();
-    await expect(views.getByRole("button", { name: "News & announcements" })).toHaveAttribute("aria-pressed", "true");
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+    await expect(nav.getByRole("button", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    await nav.getByRole("button", { name: "News & Announcements" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "News & Announcements" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Teacher announcements" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "School announcements" })).toBeVisible();
   });
 
   test("C → CAL → CAL1: academic calendar opens from the top bar and browses months", async ({ page }) => {
@@ -130,7 +133,7 @@ test.describe("Student · Mobile @mobile", () => {
     await openRole(page, "student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
     // On a phone the sidebar is an off-canvas drawer; use the dashboard class card.
-    await page.getByRole("main").getByRole("button", { name: /^Programming fundamentals Introduction to Programming/ }).click();
+    await page.getByRole("main").getByRole("button", { name: /^Introduction to Programming/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Introduction to Programming" })).toBeVisible();
     // No horizontal page scroll at phone width.
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
