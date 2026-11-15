@@ -20,9 +20,9 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@mobile/ },
-    // Phone projects run only the @mobile journeys (layout-specific navigation).
-    { name: "iphone-webkit", use: { ...devices["iPhone 15"] }, grep: /@mobile/ },
-    { name: "android-chromium", use: { ...devices["Pixel 7"] }, grep: /@mobile/ },
+    // Phone projects run the @mobile journeys (layout-specific navigation) and @all checks.
+    { name: "iphone-webkit", use: { ...devices["iPhone 15"] }, grep: /@mobile|@all/ },
+    { name: "android-chromium", use: { ...devices["Pixel 7"] }, grep: /@mobile|@all/ },
   ],
   // E2E_PREVIEW=1 runs against the production build (vite preview), which is
   // where the generated 404.html and role.html fallbacks are exercised.
