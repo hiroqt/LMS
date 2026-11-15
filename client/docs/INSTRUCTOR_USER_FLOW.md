@@ -1,6 +1,6 @@
 # Instructor end-to-end user flow
 
-This is the current instructor prototype flow, traced from `src/roles/instructor/Instructor.jsx`, `InstructorClassroom.jsx`, `InstructorDashboardNews.jsx`, `InstructorAcademicCalendar.jsx`, and the shared role shell. Start at **Instructor** in the role picker or open `/instructor`. The workspace uses fictional demo identities and browser-local data; there is no sign-in screen.
+This is the instructor prototype flow. It was traced from the classic Instructor UI and is implemented by the rebuilt UI in `src/features/instructor/` (see “Since the rebuild” below). Start at **Instructor** in the role picker or open `/instructor`. The workspace uses fictional demo identities and browser-local data; there is no sign-in screen.
 
 **Standalone flowchart:** [Open the scalable instructor flowchart](flowcharts/tmcc-instructor-user-flow.svg). Connector letters in the SVG match the student chart convention: follow a letter to any corresponding letter elsewhere in the diagram.
 
@@ -166,4 +166,16 @@ flowchart TD
 - A grade is complete when a valid score is saved. The submission is marked graded and removed from the pending queue. The Student sees the score and optional feedback in the matching work detail after returning to or refreshing the Student workspace; there is no standalone Student Grades page.
 - There is no authentication, server persistence, real file upload, cross-device sync, or protected instructor authorization. Student progress and role data use separate browser storage keys; exam review reads completed Student answers and stores the final grade in role data. Demo class codes, attachment names, submissions, and scores are not official records.
 
-Implementation references: [Instructor workspace](../src/roles/instructor/Instructor.jsx), [class tabs and forms](../src/roles/instructor/InstructorClassroom.jsx), [dashboard news](../src/roles/instructor/InstructorDashboardNews.jsx), [academic calendar](../src/roles/instructor/InstructorAcademicCalendar.jsx), [shared role shell](../src/roles/shared/RoleWorkspace.jsx), and [local data model](../src/roles/shared/lmsData.js).
+## Since the rebuild (2026-11-17)
+
+The journeys above are unchanged and are verified by `e2e/instructor-flow.spec.ts`, `e2e/instructor-more.spec.ts`, and `e2e/shell.spec.ts`. The rebuilt UI adds:
+
+- **Every screen, tab, open form, and selected submission has a URL**, so notifications and "Review" open straight into grading.
+- **Search results open the matching class tab** (Materials or Classwork) instead of only the Classes view (D-017).
+- **Deleting a material asks first** in a dialog that names it. Forms and the announcement composer explain missing fields inline and show character counts.
+- **Grading** starts exam scores at the auto-score suggestion and shows per-question results; assignment scores start empty. Saving confirms with a message.
+- **Gradebook** notes (without blocking) when the weights do not add up to 100%, and its averages are correct (the classic page showed NaN% for graded assignments).
+- The class header shows the **class code with a copy button**.
+- **Phones:** the drawer holds navigation and the class list and closes on any choice; search opens in a sheet.
+
+Implementation references: [Instructor workspace](../src/features/instructor/InstructorApp.tsx), [screens and class tabs](../src/features/instructor/pages/), [data, rules, and writes](../src/features/instructor/api/), [shared shell](../src/shared/layout/AppShell.tsx), and [local data model](../src/roles/shared/lmsData.js).

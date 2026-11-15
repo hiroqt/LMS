@@ -2,13 +2,12 @@
 
 ## UI revamp and shared memory (read first)
 
-The Student and Instructor UIs are being rebuilt in phases (`docs/UI_REVAMP_PLAN.md`). Admin is out of scope and stays as is.
+The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`) and cut over on 2026-11-17 (D-021): they are the only Student and Instructor UIs. Admin is out of scope and keeps its current UI.
 
 - **Before UI work**, read `docs/ui-memory/CONVENTIONS.md`, skim `docs/ui-memory/DECISIONS.md` and `LEARNINGS.md`, and check `docs/ui-memory/generated/components.md` for something to reuse. The checklist is `.agents/skills/ui-memory/SKILL.md`.
 - **In the same PR**, record what you learned (`LEARNINGS.md`) and any choice others must follow (`DECISIONS.md`), update `FLOW_PARITY.md`, and run `npm run memory:sync`. CI fails when generated memory is stale.
-- Rebuilt screens must keep every spec in `e2e/` passing unchanged. A flow-chart node without a spec gets one, written against the current UI, before its screen is rebuilt.
-- Preview the rebuilt UI with `?ui=new` (for example `/student?ui=new`); the choice is remembered per role, and `?ui=classic` or the profile menu goes back. Browse the design system at `/ui-kit`. Admin always uses its current UI.
-- The Playwright projects `student-new`, `instructor-new` (each with an iPhone variant), and `both-new` run the flow specs against the rebuilt UIs (D-013, D-014, D-018).
+- Every spec in `e2e/` must keep passing. They encode the journeys in the role flow documents; change one only with a DECISIONS entry explaining why the journey changed.
+- Browse the design system at `/ui-kit`. Run `docs/ui-memory/SCREEN_READER_CHECKLIST.md` with a person after big UI changes.
 
 ## Project Structure & Module Organization
 
@@ -16,7 +15,7 @@ This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy f
 
 - `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with the legacy `roles/shared/roleRouter.js` parser.
 - New code goes in `src/features/<role>/<feature>` and `src/shared/{ui,layout,components,hooks,lib,api,styles}`. See `docs/ui-memory/CONVENTIONS.md` (C-001).
-- Legacy, being replaced: `src/App.jsx` (Student), `src/roles/instructor`, `src/components/shared`, and their CSS. Do not extend them. Admin (`src/roles/admin`, `src/roles/shared/RoleWorkspace.jsx`) stays.
+- Admin (legacy, unchanged): `src/roles/admin`, its shell `src/roles/shared/RoleWorkspace.jsx` (+ `shellCompat.css`), `src/components/shared`, `src/icons.jsx`, and `src/index.css`. Shared data modules live in `src/roles/shared/*.js` and `src/data.js`.
 - Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens, no preflight yet) and `fonts.css` (self-hosted Poppins), then the legacy `src/index.css`, `App.css`, and `Details.css`.
 - `e2e/`: Playwright flow-parity specs. `public/`: static assets. Project scope and data flow: `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/CODEBASE_MAP.md`, and the role flow docs.
 
@@ -42,7 +41,7 @@ Use React function components and hooks. New files are TypeScript and follow `do
 
 - Keep one visual system across all roles: Poppins, warm white canvas, soft green surfaces, rounded cards, restrained accent colors, and consistent spacing, type scale, focus rings, and button heights. For rebuilt Student and Instructor screens, the design tokens in `src/shared/styles/tailwind.css` are the source of truth.
 - For Admin dashboard layout, follow `.agents/skills/admin-dashboard-design/SKILL.md` and the user-provided Ember dashboard screenshot from 2026-10-29: brand and search at the top of the left sidebar, grouped navigation below, large reporting heading, metric-specific illustrated cards, and a wide primary chart with supporting charts. Match each card illustration to its metric. Copy the information hierarchy and layout only. Keep the LMS palette and TMCC identity; never copy the reference's dark palette, brand, or financial imagery.
-- Keep Instructor and Admin navigation in the shared `RoleWorkspace` shell. Preserve its shared active state, brand, navigation height, collapse behavior, and mobile drawer. Admin may place the existing GlobalSearch inside the sidebar beneath the brand; keep Instructor search in the top bar.
+- Admin navigation stays in the legacy `RoleWorkspace` shell (Student and Instructor use `src/shared/layout/AppShell`). Preserve its active state, brand, navigation height, collapse behavior, and mobile drawer. Admin may place the existing GlobalSearch inside the sidebar beneath the brand; keep Instructor search in the top bar.
 - Type scale by purpose (rebuilt screens, decision D-005): page headings 28px on desktop and 24px on phones, section headings 18px, card titles 15px, body and metadata at least 14px, and 12px only for brief uppercase labels. Inputs use 16px. Admin keeps its current scale until it is revamped.
 - Keep dashboards calm and scannable: one clear page heading, a focused hero, simple metric cards with one useful supporting line, and consistent panel spacing. Remove duplicate headings and decorative status badges that repeat nearby information.
 - Keep management screens on one directory pattern: page heading and prominent primary action first; search and clearly labeled filters together in a standalone toolbar; records in a padded, rounded card; pagination directly below the records. Use filters that correspond to real record fields and reset to page one when the search or filters change.

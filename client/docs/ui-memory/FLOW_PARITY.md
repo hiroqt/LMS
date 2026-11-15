@@ -5,80 +5,80 @@ Every node in [`STUDENT_USER_FLOW.md`](../STUDENT_USER_FLOW.md) and
 status. **A node without a spec gets one, against the old UI, before its screen is
 rebuilt.**
 
-Status: ⬜ legacy UI · 🟨 rebuilt behind the classic/new toggle · ✅ cut over
+Status: ⬜ legacy UI · 🟨 rebuilt behind the classic/new toggle · ✅ cut over (2026-11-17, D-021; the `*-new` projects that proved parity were retired at cutover)
 Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 
 ## Student
 
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
-| B | Today dashboard loads | ✔ `student-flow` Today | 🟨 |
-| N | Overview ↔ News & announcements | ✔ `student-flow` B → N | 🟨 |
-| N1 | Read teacher announcements | ✔ (renders without error) | 🟨 |
-| N2, N3 | School announcements, featured carousel | ✖ | 🟨 |
-| CAL | Academic calendar from the top bar | ✔ `student-flow` C → CAL → CAL1 | 🟨 |
-| CAL1 | Browse months | ✔ `student-flow` C → CAL → CAL1 | 🟨 |
-| CAL2 | Select a date entry → AD | ✖ | 🟨 |
-| S, S1 | Search → class | ✔ `student-flow` C → S | 🟨 |
-| S1 | Search → assessment / material | ✔ `shell` S1 | 🟨 |
-| NO | Notification → assessment | ✔ `shell` NO | 🟨 |
-| P | Profile → Reset demo data | ✔ `shell` P | 🟨 |
-| ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | 🟨 |
-| T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | 🟨 |
-| T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | 🟨 |
-| TD | "Assessments done" summary → Tasks: Done | ✔ `student-flow` (after reload) | 🟨 |
-| TW | "Due this week" summary → Tasks | ✔ `shell` TW | 🟨 |
-| CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | 🟨 |
-| STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | 🟨 |
-| MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | 🟨 |
-| CW | Classwork filter | ✖ | 🟨 |
-| AD | Assessment details | ✔ `student-flow` | 🟨 |
-| Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | 🟨 |
-| Q2 | Per-question timer auto-advances | ✔ `student-flow` Q1 → Q2 | 🟨 |
-| Q2 (last) | Final timeout auto-submits | ✖ | 🟨 |
-| Q → AD | Exit assessment | ✔ `student-flow` Q → AD | 🟨 |
-| CONF | Keep working / Submit now | ✔ `student-flow` | 🟨 |
-| R | Result and answer review; persists after reload | ✔ `student-flow` | 🟨 |
-| R → Q | Practice again | ✖ | 🟨 |
-| MD1 | Mark material reviewed; back | ✔ `student-flow` | 🟨 |
-| Activity | Submit an assignment (filename + comment) | ✔ `instructor-flow` E → I → F → J | 🟨 |
-| Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | 🟨 |
-| D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | 🟨 |
+| B | Today dashboard loads | ✔ `student-flow` Today | ✅ |
+| N | Overview ↔ News & announcements | ✔ `student-flow` B → N | ✅ |
+| N1 | Read teacher announcements | ✔ (renders without error) | ✅ |
+| N2, N3 | School announcements, featured carousel | ✖ | ✅ |
+| CAL | Academic calendar from the top bar | ✔ `student-flow` C → CAL → CAL1 | ✅ |
+| CAL1 | Browse months | ✔ `student-flow` C → CAL → CAL1 | ✅ |
+| CAL2 | Select a date entry → AD | ✖ | ✅ |
+| S, S1 | Search → class | ✔ `student-flow` C → S | ✅ |
+| S1 | Search → assessment / material | ✔ `shell` S1 | ✅ |
+| NO | Notification → assessment | ✔ `shell` NO | ✅ |
+| P | Profile → Reset demo data | ✔ `shell` P | ✅ |
+| ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | ✅ |
+| T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | ✅ |
+| T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | ✅ |
+| TD | "Assessments done" summary → Tasks: Done | ✔ `student-flow` (after reload) | ✅ |
+| TW | "Due this week" summary → Tasks | ✔ `shell` TW | ✅ |
+| CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
+| STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
+| MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
+| CW | Classwork filter | ✖ | ✅ |
+| AD | Assessment details | ✔ `student-flow` | ✅ |
+| Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |
+| Q2 | Per-question timer auto-advances | ✔ `student-flow` Q1 → Q2 | ✅ |
+| Q2 (last) | Final timeout auto-submits | ✖ | ✅ |
+| Q → AD | Exit assessment | ✔ `student-flow` Q → AD | ✅ |
+| CONF | Keep working / Submit now | ✔ `student-flow` | ✅ |
+| R | Result and answer review; persists after reload | ✔ `student-flow` | ✅ |
+| R → Q | Practice again | ✖ | ✅ |
+| MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
+| Activity | Submit an assignment (filename + comment) | ✔ `instructor-flow` E → I → F → J | ✅ |
+| Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
+| D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | ✅ |
 
-Rebuilt Student status: every ✔ row passes **unchanged** in the `student-new` and `student-new-iphone` Playwright projects (Phase 2).
+Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 2) and is now guarded in the default projects.
 
 ## Instructor
 
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
-| HOME, OVERVIEW | Teaching day; Overview ↔ News | ✔ `instructor-flow` | 🟨 |
-| CHOOSE | Switch demo instructor | ✔ `instructor-flow` CHOOSE | 🟨 |
-| EMPTY | No classrooms → message + Admin link | ✖ | 🟨 |
-| NEWS → B1 | Select a teacher announcement → class Announcements | ✔ `instructor-more` | 🟨 |
-| TOOLS | Search → class, notifications (empty state), breadcrumb → Overview | ✔ `shell` TOOLS | 🟨 |
-| TOOLS | Notification → pending review | ✔ `instructor-more` | 🟨 |
-| F | "Review student work" → review queue | ✔ `instructor-more` | 🟨 |
-| ROLE | Switch role (URL, title, Back) | ✔ `routing` | 🟨 |
-| A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | 🟨 |
-| TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | 🟨 |
-| PEOPLE | Roster search | ✔ `instructor-flow` People | 🟨 |
-| B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | 🟨 |
-| COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | 🟨 |
-| K | Create class → opens; Cancel closes | ✔ `instructor-flow` K | 🟨 |
-| E: material | Material form → Materials list | ✔ `instructor-more` | 🟨 |
-| C | Archive and restore a material | ✔ `instructor-more` | 🟨 |
-| E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | 🟨 |
-| E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | 🟨 |
-| D | Classwork search and filter | ✔ `instructor-more` | 🟨 |
-| F, REVIEW | Pending submission → review | ✔ `instructor-flow` | 🟨 |
-| SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | 🟨 |
-| J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | 🟨 |
-| J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | 🟨 |
-| G | Gradebook loads | ✔ `instructor-flow` G | 🟨 |
-| SETTINGS | Edit weights and passing score (persisted) | ✔ `instructor-more` | 🟨 |
-| Mobile | Drawer → class at phone width | ✔ `@mobile` | 🟨 |
+| HOME, OVERVIEW | Teaching day; Overview ↔ News | ✔ `instructor-flow` | ✅ |
+| CHOOSE | Switch demo instructor | ✔ `instructor-flow` CHOOSE | ✅ |
+| EMPTY | No classrooms → message + Admin link | ✖ | ✅ |
+| NEWS → B1 | Select a teacher announcement → class Announcements | ✔ `instructor-more` | ✅ |
+| TOOLS | Search → class, notifications (empty state), breadcrumb → Overview | ✔ `shell` TOOLS | ✅ |
+| TOOLS | Notification → pending review | ✔ `instructor-more` | ✅ |
+| F | "Review student work" → review queue | ✔ `instructor-more` | ✅ |
+| ROLE | Switch role (URL, title, Back) | ✔ `routing` | ✅ |
+| A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | ✅ |
+| TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | ✅ |
+| PEOPLE | Roster search | ✔ `instructor-flow` People | ✅ |
+| B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ✅ |
+| COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ✅ |
+| K | Create class → opens; Cancel closes | ✔ `instructor-flow` K | ✅ |
+| E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
+| C | Archive and restore a material | ✔ `instructor-more` | ✅ |
+| E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
+| E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | ✅ |
+| D | Classwork search and filter | ✔ `instructor-more` | ✅ |
+| F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |
+| SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ✅ |
+| J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ✅ |
+| J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | ✅ |
+| G | Gradebook loads | ✔ `instructor-flow` G | ✅ |
+| SETTINGS | Edit weights and passing score (persisted) | ✔ `instructor-more` | ✅ |
+| Mobile | Drawer → class at phone width | ✔ `@mobile` | ✅ |
 
-Rebuilt Instructor status: every ✔ row passes in the `instructor-new`, `instructor-new-iphone`, and `both-new` Playwright projects (Phase 3).
+Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cutover (Phase 3) and is now guarded in the default projects.
 
 ## Cross-cutting
 
@@ -87,7 +87,7 @@ Rebuilt Instructor status: every ✔ row passes in the `instructor-new`, `instru
 | Every legacy URL form resolves; unknown path fallback | ✔ `routing` |
 | Admin smoke (out of scope, must not break) | ✔ `routing` |
 | Poppins loaded on desktop, iPhone, Android | ✔ `platform` `@all` |
-| axe WCAG 2.2 AA baseline | ✔ `a11y-baseline` (report-only in Phase 0) |
+| axe WCAG 2.2 AA baseline | retired at cutover (classic removed); strict checks in `student-new`, `instructor-new`, `new-shell` |
 
 ## New shell (Phase 1, behind `?ui=new`)
 
