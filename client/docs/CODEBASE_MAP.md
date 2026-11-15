@@ -4,7 +4,9 @@
 
 - `src/main.tsx` — mounts `src/app/providers/AppProviders.tsx` (TanStack Query client tuned for slow connections) and `src/app/router/AppRouter.tsx` (React Router), which resolves `/student`, `/instructor`, and `/admin` through `roles/shared/roleRouter.js` so legacy URL forms keep working.
 - `src/shared/styles/` — `tailwind.css` (Tailwind v4 design tokens, no preflight yet, scanning only `app/`, `shared/`, `features/`), `fonts.css` (self-hosted Poppins), and `tokens.test.ts` (WCAG contrast checks).
-- `src/features/` and `src/shared/{ui,layout,components,hooks,lib,api}` — home of the rebuilt Student and Instructor UI (UI revamp, `docs/UI_REVAMP_PLAN.md`).
+- `src/shared/ui` — design-system primitives (Button, Field, Dialog, Tabs, Menu, Card, Badge, EmptyState, Skeleton, Toaster); reference page at `/ui-kit` (`src/features/design-system`).
+- `src/shared/layout` — `AppShell` (sidebar, Student bottom bar, Instructor drawer, skip link, connection banner, focus on navigation) and `PageHeader`. `src/shared/hooks` — `useNetworkStatus`, `useMediaQuery`.
+- `src/features/student/StudentApp.tsx`, `src/features/instructor/InstructorApp.tsx` — roots of the rebuilt UIs, shown with `?ui=new` (`src/app/router/useUiVersion.ts`, `src/shared/lib/uiVersion.ts`). Screens not rebuilt yet show `src/app/migration/RebuildNotice.tsx`.
 - `e2e/` — Playwright flow-parity, routing, platform, and accessibility-baseline specs (`playwright.config.ts`).
 - `docs/ui-memory/` — shared revamp memory: decisions, conventions, learnings, flow-parity status, and generated inventories (`scripts/memory-sync.ts`).
 - `src/roles/student/StudentWorkspace.jsx` — mounts the existing student dashboard without changing its layout or navigation.

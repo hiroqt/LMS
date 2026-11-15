@@ -72,3 +72,31 @@ so connecting .NET later swaps the adapter without touching screens.
 backoff (1s → 15s), no automatic mutation retries. Mutations get retries only through
 the Phase 4 outbox, which adds idempotency keys first, so a retried quiz submission
 cannot be recorded twice.
+
+### D-010 · Tailwind utilities are `!important` until cutover
+`2026-11-16` · hiro · scope: styles · confidence: high
+Legacy `index.css` has unlayered element rules (`button, input { font: inherit }`,
+`button:not(.class-card) { min-height: 24px }`, heading weights). Unlayered CSS beats any
+layered utility, so `text-body` or `min-h-touch` on a new button silently lost. The
+utilities import now uses Tailwind's `important` flag. Legacy screens are unaffected
+because no utilities are generated from legacy files (D-003). `e2e/new-shell.spec.ts`
+checks computed sizes in a real browser. Remove the flag with preflight at cutover.
+Amends D-003.
+
+### D-011 · Classic/new toggle for the migration
+`2026-11-16` · hiro · scope: app/router · confidence: high
+`?ui=new` (or `?ui=classic`) chooses the UI and is remembered under its own key
+`tmcc-ui-version`; the default stays **classic** until cutover. Students and instructors
+can go back with "Use classic view" in the new profile menu. Admin ignores the toggle
+(D-001). The new UIs (`features/student/StudentApp`, `features/instructor/InstructorApp`)
+are lazy-loaded, so classic users never download them. Screens not rebuilt yet show
+`app/migration/RebuildNotice`. The classic UI does not advertise the toggle until Phase 2
+ships a real screen.
+
+### D-012 · /ui-kit is the living design-system reference
+`2026-11-16` · hiro · scope: shared/ui · confidence: high
+`/ui-kit` renders every primitive and state. It is how co-developers find what exists, and
+the specs in `e2e/new-shell.spec.ts` run strict axe (including
+contrast), the 44px control check, and the 14px text check against it on desktop, iPhone,
+and Android. A new primitive is added to this page in the same PR.
+

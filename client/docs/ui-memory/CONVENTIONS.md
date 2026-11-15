@@ -37,8 +37,10 @@ from [`LEARNINGS.md`](LEARNINGS.md) (see the loop in [`README.md`](README.md)).
 
 ### C-005 · Base styles while preflight is off
 Until cutover (D-003), rebuilt components set their own base styles: `font-sans`, a text
-color, `box-border`, margin/padding resets on headings and lists, and `bg-transparent`
-plus `border-0` on buttons when needed. Do not rely on legacy `index.css` element rules.
+color, `m-0` on headings and paragraphs, `list-none p-0` on lists, and `border-0
+bg-transparent` on bare buttons. Do not rely on legacy `index.css` element rules.
+Utilities win over those rules because they are `!important` (D-010), so never add
+`!important` by hand.
 
 ### C-006 · Tests
 - A new or rebuilt screen keeps every flow spec in `e2e/` passing unchanged (D-007).
@@ -55,3 +57,30 @@ plus `border-0` on buttons when needed. Do not rely on legacy `index.css` elemen
   or the shape of what they hold (D-008).
 - Screens never touch `localStorage` directly. They use feature hooks over the app
   QueryClient.
+
+### C-008 · Design-system primitives
+- Use `shared/ui` before writing markup: `Button`/`IconButton` (44px, `loading` sets
+  `aria-busy`), `Field` + `Input`/`Textarea`/`Select` (label, hint, and error linked
+  automatically), `Dialog` (bottom sheet on phones), `Tabs`, `Menu`, `Card`, `Badge`,
+  `EmptyState`, `Skeleton`/`SkeletonGroup`, and `useToast` under `<Toaster>`.
+- Buttons default to `type="button"`; pass `type="submit"` explicitly in forms.
+- `Select` is the native element on purpose: it gives the best phone pickers and
+  screen-reader support.
+- Every primitive has a Vitest + axe test in `src/shared/ui/primitives.test.tsx`. Add one
+  for a new primitive.
+
+### C-009 · Keep the classic bundle lean
+- Code that runs for classic users (`main.tsx`, `app/router`, `app/providers`) must not
+  import the `shared/ui` barrel or `cn()`. Import single files, or use plain markup.
+- New role UIs and pages load with `React.lazy` from the router.
+- Check `npm run build` output for the `index-*.js` gzip size in the PR when touching eager
+  code (L-013).
+
+### C-010 · Shell and focus
+- Every rebuilt page renders inside `AppShell` with `PageHeader` (its single h1) and passes
+  a `pageKey` that changes on navigation; the shell then focuses the h1.
+- Dialogs that navigate stop Radix's focus restore (L-015).
+- An overlay that exists only at some breakpoints derives `open` from the breakpoint too;
+  CSS `hidden` alone leaves Radix's focus trap and pointer lock active (L-017).
+- Student phone navigation is the bottom bar (≤5 destinations); Instructor uses the drawer.
+

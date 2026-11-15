@@ -20,13 +20,14 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | CAL1 | Browse months | ✔ `student-flow` C → CAL → CAL1 | ⬜ |
 | CAL2 | Select a date entry → AD | ✖ | ⬜ |
 | S, S1 | Search → class | ✔ `student-flow` C → S | ⬜ |
-| S1 | Search → assessment / material | ✖ | ⬜ |
-| NO | Notification → assessment | ✖ | ⬜ |
-| P | Profile → Reset demo data | ✖ | ⬜ |
+| S1 | Search → assessment / material | ✔ `shell` S1 | ⬜ |
+| NO | Notification → assessment | ✔ `shell` NO | ⬜ |
+| P | Profile → Reset demo data | ✔ `shell` P | ⬜ |
+| ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | ⬜ |
 | T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | ⬜ |
 | T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | ⬜ |
 | TD | "Assessments done" summary → Tasks: Done | ✔ `student-flow` (after reload) | ⬜ |
-| TW | "Due this week" summary → Tasks | ✖ | ⬜ |
+| TW | "Due this week" summary → Tasks | ✔ `shell` TW | ⬜ |
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ⬜ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ⬜ |
 | MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ⬜ |
@@ -51,9 +52,10 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | CHOOSE | Switch demo instructor | ✔ `instructor-flow` CHOOSE | ⬜ |
 | EMPTY | No classrooms → message + Admin link | ✖ | ⬜ |
 | NEWS → B1 | Select a teacher announcement → class Announcements | ✖ | ⬜ |
-| TOOLS | Search, notifications → review, breadcrumbs | ✖ | ⬜ |
+| TOOLS | Search → class, notifications (empty state), breadcrumb → Overview | ✔ `shell` TOOLS | ⬜ |
+| TOOLS | Notification → pending review | ✖ (needs a pending submission) | ⬜ |
 | ROLE | Switch role (URL, title, Back) | ✔ `routing` | ⬜ |
-| A, PICK | Sidebar class; year filter | ✔ (sidebar) / ✖ (year filter) | ⬜ |
+| A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | ⬜ |
 | TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | ⬜ |
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ⬜ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ⬜ |
@@ -79,3 +81,16 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Admin smoke (out of scope, must not break) | ✔ `routing` |
 | Poppins loaded on desktop, iPhone, Android | ✔ `platform` `@all` |
 | axe WCAG 2.2 AA baseline | ✔ `a11y-baseline` (report-only in Phase 0) |
+
+## New shell (Phase 1, behind `?ui=new`)
+
+| Check | Spec |
+| --- | --- |
+| Skip link first; nav `aria-current`; focus moves to h1 on page change | ✔ `new-shell` |
+| Choice remembered; "Use classic view" returns to the legacy UI | ✔ `new-shell` |
+| Workspace switch keeps the new UI; Admin stays classic | ✔ `new-shell` |
+| Offline banner announced and cleared | ✔ `new-shell` |
+| Student bottom nav on phones; no sideways scroll at 320px | ✔ `new-shell` `@mobile` |
+| Instructor drawer closes and focuses the page after navigating | ✔ `new-shell` `@mobile` |
+| Zero axe violations (incl. contrast), text ≥14px, controls ≥44px | ✔ `new-shell` `@all` (shells and `/ui-kit`) |
+

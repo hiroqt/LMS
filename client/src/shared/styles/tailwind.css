@@ -8,7 +8,7 @@
  */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tailwindcss/utilities.css" layer(utilities) source(none) important;
 
 /* Scan only rebuilt code. Legacy JSX contains words such as "hidden",
    "collapse", or "table" that would otherwise generate utilities and
@@ -78,6 +78,7 @@
   --color-warning: #8f4f05;
   --color-warning-soft: #fdf1db;
   --color-danger: #b42318;
+  --color-danger-strong: #912018;
   --color-danger-soft: #fdecea;
   --color-info: #1d5fa8;
   --color-info-soft: #e8f1fb;
