@@ -33,8 +33,8 @@ function PageLoading() {
 function RoleWorkspaceRoute() {
   const location = useLocation();
   const navigateRole = useRoleNavigation();
-  const [uiVersion, setUiVersion] = useUiVersion();
   const { role, unknownPath } = matchRole(location);
+  const [uiVersion, setUiVersion] = useUiVersion(role === "instructor" ? "instructor" : "student");
 
   if (unknownPath) return <UnknownRoleFallback unknownPath={unknownPath} onNavigateRole={navigateRole} />;
   // Admin is out of the revamp's scope and always uses its current UI (D-001).
@@ -51,7 +51,7 @@ function RoleWorkspaceRoute() {
 /**
  * The catch-all route resolves the role exactly as the legacy router did
  * (D-004); /ui-kit is the design-system reference. ?ui=new previews the
- * rebuilt Student and Instructor UIs (D-011).
+ * rebuilt Student and Instructor UIs (D-011), remembered per role (D-014).
  */
 export function AppRouter() {
   return (
