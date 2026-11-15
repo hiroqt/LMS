@@ -6,23 +6,24 @@ export interface StatCardProps {
   tone: string;
   value: number;
   label: string;
-  note: string;
-  /** When present the card is a button; its name starts with the value, e.g. "2 Due this week". */
+  /** When present the chip is a button; its name starts with the value, e.g. "2 Due this week". */
   onOpen?: () => void;
 }
 
-export function StatCard({ icon, tone, value, label, note, onOpen }: StatCardProps) {
+/** A compact summary chip: icon tile, a number, and what it counts. */
+export function StatCard({ icon, tone, value, label, onOpen }: StatCardProps) {
   const content = (
     <>
-      <span aria-hidden className={cn("grid size-10 place-items-center rounded-control [&>svg]:size-5", tone)}>{icon}</span>
-      <span className="flex flex-col">
-        <strong className="text-page font-bold leading-tight">{value}</strong>
-        <span className="text-body font-medium">{label}</span>
+      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-control sm:size-12 [&>svg]:size-5 sm:[&>svg]:size-6", tone)}>{icon}</span>
+      <span className="flex w-full min-w-0 flex-col">
+        <strong className="text-page-mobile leading-tight font-bold tabular-nums">{value}</strong>
+        <span className="text-body break-words text-muted lg:whitespace-nowrap">{label}</span>
       </span>
-      <span className="line-clamp-2 text-body text-muted">{note}</span>
     </>
   );
-  const base = "flex h-full flex-col items-start gap-3 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink";
+  // Phones: three compact chips in a row (icon above the number). From sm up:
+  // icon beside the number, as on the desktop dashboard.
+  const base = "flex h-full w-full flex-col items-start gap-1.5 rounded-card border border-line bg-surface p-3 text-left font-sans text-ink shadow-card sm:flex-row sm:items-center sm:gap-4 sm:p-4";
   return onOpen ? (
     <button type="button" onClick={onOpen} className={cn(base, "transition-colors hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none")}>
       {content}

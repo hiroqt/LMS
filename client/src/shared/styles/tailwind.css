@@ -92,6 +92,13 @@
   /* Shape and depth. */
   --radius-card: 14px;
   --radius-control: 10px;
+  /* Course-code chips and term-track week cells. */
+  --radius-chip: 6px;
+  --radius-tick: 3px;
+
+  /* Tracking for uppercase eyebrows and course codes (academic labelling). */
+  --tracking-label: 0.12em;
+  --tracking-code: 0.08em;
   --shadow-card: 0 10px 32px rgb(47 74 64 / 0.055);
   --shadow-popover: 0 16px 40px rgb(36 49 45 / 0.14);
 
