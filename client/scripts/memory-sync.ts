@@ -41,7 +41,7 @@ function componentsDoc(): string {
     ["Shared components", "`src/shared/components`: cross-feature composites.", ["shared/components"]],
     ["Features", "`src/features/<role>/<feature>`.", ["features"]],
     ["App", "`src/app`: providers and router.", ["app"]],
-    ["Legacy (being replaced)", "Pre-revamp code. Do not extend; rebuild under `features/` or `shared/`.", ["components", "roles", "App.jsx"]],
+    ["Legacy Admin (unchanged)", "Admin and its shell keep their pre-revamp code until Admin is revamped (D-001, D-022).", ["components", "roles"]],
   ];
   let out = `${HEADER}# Component inventory\n`;
   for (const [title, note, dirs] of groups) {

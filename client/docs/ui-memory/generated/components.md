@@ -93,9 +93,9 @@
 | `src/app/providers/AppProviders.tsx` | `AppProviders` |
 | `src/app/router/AppRouter.tsx` | `AppRouter` |
 
-## Legacy (being replaced)
+## Legacy Admin (unchanged)
 
-Pre-revamp code. Do not extend; rebuild under `features/` or `shared/`.
+Admin and its shell keep their pre-revamp code until Admin is revamped (D-001, D-022).
 
 | File | Exports |
 | --- | --- |

@@ -16,7 +16,7 @@ This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy f
 - `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with the legacy `roles/shared/roleRouter.js` parser.
 - New code goes in `src/features/<role>/<feature>` and `src/shared/{ui,layout,components,hooks,lib,api,styles}`. See `docs/ui-memory/CONVENTIONS.md` (C-001).
 - Admin (legacy, unchanged): `src/roles/admin`, its shell `src/roles/shared/RoleWorkspace.jsx` (+ `shellCompat.css`), `src/components/shared`, `src/icons.jsx`, and `src/index.css`. Shared data modules live in `src/roles/shared/*.js` and `src/data.js`.
-- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens, no preflight yet) and `fonts.css` (self-hosted Poppins), then the legacy `src/index.css`, `App.css`, and `Details.css`.
+- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens; no preflight while Admin is legacy, D-022) and `fonts.css` (self-hosted Poppins). Admin also loads the legacy `src/index.css`, `roles/shared/*.css`, and its own CSS.
 - `e2e/`: Playwright flow-parity specs. `public/`: static assets. Project scope and data flow: `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/CODEBASE_MAP.md`, and the role flow docs.
 
 ## Build, Test, and Development Commands

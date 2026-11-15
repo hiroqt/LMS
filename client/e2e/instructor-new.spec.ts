@@ -9,7 +9,7 @@ const CLASS = "/instructor/classes/biology";
 const TABS = ["", "?tab=Classwork", "?tab=Announcements", "?tab=Materials", "?tab=People", "?tab=Submissions", "?tab=Create+content"];
 
 async function useNewInstructorUi(page: Page) {
-  await page.goto("/instructor?ui=new");
+  await page.goto("/instructor");
   await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
 }
 

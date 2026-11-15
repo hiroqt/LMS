@@ -89,12 +89,12 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | Poppins loaded on desktop, iPhone, Android | ✔ `platform` `@all` |
 | axe WCAG 2.2 AA baseline | retired at cutover (classic removed); strict checks in `student-new`, `instructor-new`, `new-shell` |
 
-## New shell (Phase 1, behind `?ui=new`)
+## New shell (Phase 1)
 
 | Check | Spec |
 | --- | --- |
 | Skip link first; nav `aria-current`; focus moves to h1 on page change | ✔ `new-shell` |
-| Choice remembered; "Use classic view" returns to the legacy UI | ✔ `new-shell` |
+| Choice remembered; "Use classic view" returns to the legacy UI | retired at cutover (D-021); a leftover `?ui=classic` opens the rebuilt UI: ✔ `new-shell` |
 | Workspace switch keeps the new UI; Admin stays classic | ✔ `new-shell` |
 | Offline banner announced and cleared | ✔ `new-shell` |
 | Student bottom nav on phones; no sideways scroll at 320px | ✔ `new-shell` `@mobile` |

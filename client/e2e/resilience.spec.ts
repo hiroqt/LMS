@@ -11,7 +11,7 @@ test.describe("Lost connection (production build)", () => {
 
   test("after one visit, the rebuilt Student UI opens and works offline", async ({ page, context, browserName }) => {
     test.skip(browserName !== "chromium", "Service worker control is only automated in Chromium.");
-    await page.goto("/student?ui=new");
+    await page.goto("/student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload(); // now controlled by the service worker
@@ -44,7 +44,7 @@ test.describe("Lost connection (production build)", () => {
     // Chrome DevTools "Slow 3G": 400 ms latency, ~50 KB/s down.
     await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 400, downloadThroughput: (500 * 1024) / 8, uploadThroughput: (500 * 1024) / 8 });
     const started = Date.now();
-    await page.goto("/student?ui=new", { waitUntil: "commit" });
+    await page.goto("/student", { waitUntil: "commit" });
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible({ timeout: 20_000 });
     const elapsed = Date.now() - started;
     test.info().annotations.push({ type: "slow-3g-first-content-ms", description: String(elapsed) });
@@ -55,7 +55,7 @@ test.describe("Lost connection (production build)", () => {
 test.describe("Comfort settings", () => {
   test("with reduced motion, the featured carousel does not move on its own", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/student?ui=new");
+    await page.goto("/student");
     await page.getByRole("button", { name: "News & announcements" }).click();
     const slide = page.locator('[aria-roledescription="slide"]');
     await expect(slide).toHaveAttribute("aria-label", /^1 of/);
@@ -65,7 +65,7 @@ test.describe("Comfort settings", () => {
 
   test("in Windows high contrast, selected states stay visible @all", async ({ page }) => {
     await page.emulateMedia({ forcedColors: "active" });
-    await page.goto("/student/tasks?status=Missing&ui=new");
+    await page.goto("/student/tasks?status=Missing");
     const pressed = page.getByRole("button", { name: /^Missing/ });
     await expect(pressed).toHaveAttribute("aria-pressed", "true");
     expect(await pressed.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");

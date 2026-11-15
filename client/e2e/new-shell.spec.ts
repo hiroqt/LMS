@@ -1,7 +1,7 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
 import { expect, test, type Page } from "./fixtures";
 
-// The rebuilt Student and Instructor shells behind ?ui=new (Phase 1), and the
+// The Student and Instructor shells (rebuilt in Phases 1–3), and the
 // /ui-kit design-system reference. Accessibility here is strict: zero axe
 // violations, including color contrast.
 
@@ -9,7 +9,7 @@ test.describe("New Student shell", () => {
   const isNew = (page: Page) => expect(page.getByRole("link", { name: "Skip to main content" })).toHaveCount(1);
 
   test("landmarks, skip link, nav state, and focus on page change", async ({ page }) => {
-    await page.goto("/student?ui=new");
+    await page.goto("/student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
 
     await page.keyboard.press("Tab");
@@ -40,7 +40,7 @@ test.describe("New Student shell", () => {
   });
 
   test("an offline connection is announced and clears when back online", async ({ page, context }) => {
-    await page.goto("/student?ui=new");
+    await page.goto("/student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
     await context.setOffline(true);
     await expect(page.getByRole("status").filter({ hasText: "You’re offline." })).toBeVisible();
@@ -49,7 +49,7 @@ test.describe("New Student shell", () => {
   });
 
   test("bottom navigation on phones, and no sideways scroll at 320px @mobile", async ({ page }) => {
-    await page.goto("/student?ui=new");
+    await page.goto("/student");
     const nav = page.getByRole("navigation", { name: "Main navigation" });
     await expect(nav).toHaveCount(1); // the sidebar copy is hidden on phones
     const box = await nav.boundingBox();
@@ -67,7 +67,7 @@ test.describe("New Student shell", () => {
 
 test.describe("New Instructor shell", () => {
   test("drawer navigation on phones closes after choosing a page @mobile", async ({ page }) => {
-    await page.goto("/instructor?ui=new");
+    await page.goto("/instructor");
     await page.getByRole("button", { name: "Open menu" }).click();
     const drawer = page.getByRole("dialog");
     await drawer.getByRole("button", { name: "Gradebook" }).click();
@@ -77,7 +77,7 @@ test.describe("New Instructor shell", () => {
   });
 
   test("a class link in the drawer also closes it and focuses the class @mobile", async ({ page }) => {
-    await page.goto("/instructor?ui=new");
+    await page.goto("/instructor");
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("dialog").getByRole("button", { name: /^01 Introduction to Programming/ }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -85,7 +85,7 @@ test.describe("New Instructor shell", () => {
   });
 
   test("an open drawer closes when the viewport grows to desktop @mobile", async ({ page }) => {
-    await page.goto("/instructor?ui=new");
+    await page.goto("/instructor");
     await page.getByRole("button", { name: "Open menu" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -95,7 +95,7 @@ test.describe("New Instructor shell", () => {
   });
 
   test("sidebar navigation and breadcrumb on desktop", async ({ page }) => {
-    await page.goto("/instructor?ui=new");
+    await page.goto("/instructor");
     const nav = page.getByRole("navigation", { name: "instructor navigation" });
     await nav.getByRole("button", { name: "Gradebook" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Gradebook" })).toBeFocused();
@@ -106,7 +106,7 @@ test.describe("New Instructor shell", () => {
   });
 
   test("zero axe violations and readable text sizes @all", async ({ page }) => {
-    await page.goto("/instructor?ui=new");
+    await page.goto("/instructor");
     await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
     await expectNoAxeViolations(page);
     await expectReadableText(page);

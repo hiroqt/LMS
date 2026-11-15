@@ -9,7 +9,7 @@ import { expect, test, type Page } from "./fixtures";
 const QUIZ = /Quiz 02: Relational Data and Keys/;
 
 async function useNewStudentUi(page: Page) {
-  await page.goto("/student?ui=new");
+  await page.goto("/student");
   await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
 }
 

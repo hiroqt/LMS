@@ -3,7 +3,7 @@ import { DEFAULT_GRADEBOOK, type ReviewItem } from "./selectors";
 import type { AuditEvent, Classroom, GradebookSetting, User } from "./types";
 
 /*
- * Every write mirrors roles/instructor/Instructor.jsx: same record shapes,
+ * Every write mirrors the classic Instructor UI (removed at cutover): same record shapes,
  * ids, defaults, and metadata-only audit events, so Student, Admin, and the
  * classic UI read them unchanged. Each returns false if storage refused it.
  */
