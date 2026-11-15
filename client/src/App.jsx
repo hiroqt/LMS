@@ -1498,7 +1498,7 @@ function ClassPage({
   );
 }
 
-function Stream({ course, announcements, onClasswork, onMaterial }) {
+function Stream({ course, announcements = [], onClasswork, onMaterial }) {
   const resource = materials.find((item) => item.courseId === course.id);
   return (
     <div className="stream-layout">

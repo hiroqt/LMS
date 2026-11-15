@@ -1,0 +1,97 @@
+/*
+ * Tailwind v4 entry and the TMCC design tokens.
+ *
+ * Preflight (Tailwind's CSS reset) is deliberately NOT imported while the
+ * legacy Student/Instructor/Admin stylesheets are still loaded: it would
+ * restyle every legacy button, heading, and list. Import it in the cutover
+ * phase, once only rebuilt screens remain (see docs/ui-memory/DECISIONS.md).
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+/* Scan only rebuilt code. Legacy JSX contains words such as "hidden",
+   "collapse", or "table" that would otherwise generate utilities and
+   silently restyle legacy elements that use those class names. */
+@source "../../app";
+@source "../../shared";
+@source "../../features";
+@source not "../../**/*.test.{ts,tsx}";
+
+/* `static` emits every token as a CSS variable, used or not, so legacy CSS
+   and inline styles can reference them during the migration. */
+@theme static {
+  /* Typography: Poppins everywhere. */
+  --font-sans: Poppins, "Poppins Fallback", "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Type scale, by purpose. Body text never goes below 14px; 12px exists
+     only as `text-label` for short uppercase eyebrows. Tailwind's text-xs
+     (12px) is removed so it cannot be used for body copy by accident. */
+  --text-xs: initial;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-label--letter-spacing: 0.06em;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.5rem;
+  --text-card-title: 0.9375rem;
+  --text-card-title--line-height: 1.375rem;
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.625rem;
+  --text-page: 1.75rem;
+  --text-page--line-height: 2.25rem;
+  --text-page-mobile: 1.5rem;
+  --text-page-mobile--line-height: 2rem;
+
+  /* Brand: TMCC green. 600 and 700 are the original --green / --green-dark.
+     600 is a fill color (white text on it passes AA). For green text use
+     700 or darker: 600 on canvas is 4.47:1 and fails AA. */
+  --color-primary-50: #f0f8f5;
+  --color-primary-100: #e3f4ec;
+  --color-primary-200: #c4e6d8;
+  --color-primary-300: #9bd2bd;
+  --color-primary-400: #5fae94;
+  --color-primary-500: #3f927d;
+  --color-primary-600: #32806d;
+  --color-primary-700: #246b5a;
+  --color-primary-800: #1f5649;
+  --color-primary-900: #1b463d;
+
+  /* Accent: the original gold, for fills only. Use accent-700 for text. */
+  --color-accent-100: #fdf1db;
+  --color-accent-400: #f4b94f;
+  --color-accent-700: #8a5a0b;
+
+  /* Neutrals. `muted` is darkened from the legacy #7d8985 (3.6:1, fails
+     WCAG AA) to pass 4.5:1 on both surface and canvas. */
+  --color-ink: #24312d;
+  --color-muted: #5f6b67;
+  --color-line: #e9efec;
+  --color-line-strong: #c9d4cf;
+  --color-canvas: #f7f9f8;
+  --color-surface: #ffffff;
+
+  /* Status: each passes 4.5:1 as text on surface. */
+  --color-success: #2f6f4a;
+  --color-success-soft: #e6f4ec;
+  --color-warning: #8f4f05;
+  --color-warning-soft: #fdf1db;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-info: #1d5fa8;
+  --color-info-soft: #e8f1fb;
+
+  /* Focus ring: the legacy 3px #1f6e58 outline. */
+  --color-focus: #1f6e58;
+
+  /* Shape and depth. */
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --shadow-card: 0 10px 32px rgb(47 74 64 / 0.055);
+  --shadow-popover: 0 16px 40px rgb(36 49 45 / 0.14);
+
+  /* Minimum touch target (WCAG 2.5.8 asks 24px; we use 44px). Enables
+     min-h-touch, min-w-touch, size-touch. */
+  --spacing-touch: 2.75rem;
+}

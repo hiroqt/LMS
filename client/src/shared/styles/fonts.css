@@ -1,0 +1,24 @@
+/*
+ * Poppins, self-hosted through @fontsource (no Google Fonts request), so the
+ * font renders the same on every platform and keeps working offline after
+ * the first visit. Only the latin subset and the weights in use are shipped.
+ * Weights such as 650 or 750 in legacy CSS snap to the nearest file.
+ */
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
+
+/*
+ * Metric-matched fallback shown while Poppins downloads (font-display: swap).
+ * Overrides make Arial occupy the same box as Poppins, so text does not jump
+ * when the real font arrives on slow connections.
+ */
+@font-face {
+  font-family: "Poppins Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Roboto");
+  ascent-override: 92.33%;
+  descent-override: 30.78%;
+  line-gap-override: 8.79%;
+  size-adjust: 113.73%;
+}
