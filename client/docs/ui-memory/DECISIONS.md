@@ -136,3 +136,26 @@ L-003. Spec: "an instructor's exam grade and feedback appear on the Student exam
   the query string. Back/Forward and deep links work.
 - The quiz clock is timestamp-based (`quizSession.ts`), with the classic rules unchanged.
 
+### D-017 · Instructor data layer and URLs
+`2026-11-17` · hiro · scope: instructor/api · confidence: high
+- `features/instructor/api/store.ts` reads the role store through TanStack Query
+  (`useRoleStore`) and writes with `commit(change, audit)`, the same path as the classic
+  `useLmsData().update`. `commit` returns false when storage refuses the write (L-024).
+- `actions.ts` writes the classic records and metadata-only audit events.
+  `selectors.ts` holds the classic rules, including the review queue built from the
+  demo student's local progress, with the auto-score suggestion.
+- Every screen, tab (`?tab=`), open form (`?create=`), and selected submission
+  (`?review=`) has a URL under `/instructor/…`.
+- Search results open the matching class tab (Materials or Classwork). The classic UI only
+  switched to its Classes view without opening the result.
+
+### D-018 · Phase 3 spec widenings and parity projects
+`2026-11-17` · hiro · scope: tests · confidence: high
+Under D-013, three classic-specific selectors were widened; all still pass on classic:
+tab counts accept a space (`/^Submissions\s?1/`, since the classic "Submissions1" was the
+L-021 bug), required labels match by prefix (`/^Assignment title/`, since the classic label
+appended " · required"), and category buttons match `/Create/` (now "Create assignment"
+instead of "+ Create"). New projects: `instructor-new` (+ iPhone) runs the Instructor
+journeys with Student classic, and `both-new` runs every flow spec with both rebuilt UIs,
+which is the state after cutover.
+

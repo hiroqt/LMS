@@ -8,7 +8,7 @@ The Student and Instructor UIs are being rebuilt in phases (`docs/UI_REVAMP_PLAN
 - **In the same PR**, record what you learned (`LEARNINGS.md`) and any choice others must follow (`DECISIONS.md`), update `FLOW_PARITY.md`, and run `npm run memory:sync`. CI fails when generated memory is stale.
 - Rebuilt screens must keep every spec in `e2e/` passing unchanged. A flow-chart node without a spec gets one, written against the current UI, before its screen is rebuilt.
 - Preview the rebuilt UI with `?ui=new` (for example `/student?ui=new`); the choice is remembered per role, and `?ui=classic` or the profile menu goes back. Browse the design system at `/ui-kit`. Admin always uses its current UI.
-- The Playwright projects `student-new` and `student-new-iphone` run the unchanged flow specs against the rebuilt Student UI (D-013, D-014).
+- The Playwright projects `student-new`, `instructor-new` (each with an iPhone variant), and `both-new` run the flow specs against the rebuilt UIs (D-013, D-014, D-018).
 
 ## Project Structure & Module Organization
 
