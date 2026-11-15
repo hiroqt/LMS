@@ -39,8 +39,10 @@ test.describe("Student · shell", () => {
     await openRole(page, "student");
     await page.getByRole("main").getByRole("button", { name: /Due this week/ }).click();
     await expect(page.getByRole("heading", { name: "Tasks" })).toBeVisible();
-    // The Today card also says "Due this week"; check the Tasks status filter itself.
-    await expect(page.getByRole("main").getByRole("group").locator("summary")).toContainText("Due this week");
+    // The selected group's description is unique to "Due this week" and shown
+    // by both UIs (the classic filter is a <details>, the rebuilt one a
+    // segmented control; D-013).
+    await expect(page.getByRole("main").getByText("Unfinished work due before the week ends").filter({ visible: true })).toHaveCount(1);
   });
 
   test("P: Reset demo data clears saved progress and returns to Today", async ({ page }) => {
