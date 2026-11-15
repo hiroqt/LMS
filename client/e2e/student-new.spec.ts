@@ -21,6 +21,7 @@ async function check(page: Page) {
 
 test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () => {
   test("Today (Overview and News), Tasks, Calendar, Classes @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
     await check(page);
     await page.getByRole("button", { name: "News & announcements" }).click();
@@ -33,6 +34,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
   });
 
   test("a class on every tab, and a material @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
     for (const tab of ["", "?tab=Classwork", "?tab=Materials", "?tab=People"]) {
       await page.goto(`/student/classes/biology${tab}`);
@@ -57,6 +59,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
 });
 
 test("no rebuilt Student page scrolls sideways at 320px @mobile", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
   await useNewStudentUi(page);
   await page.setViewportSize({ width: 320, height: 640 });
   const pages = [

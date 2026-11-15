@@ -23,6 +23,7 @@ const tab = (page: Page, name: RegExp) => page.getByRole("tablist", { name: "Cla
 
 test.describe("Rebuilt Instructor screens: zero axe violations, text ≥14px", () => {
   test("Overview, News, Classes, and Gradebook @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewInstructorUi(page);
     await check(page);
     await page.getByRole("button", { name: "News & announcements" }).click();
@@ -35,6 +36,7 @@ test.describe("Rebuilt Instructor screens: zero axe violations, text ≥14px", (
   });
 
   test("every class tab, the three content forms, and the dialogs @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewInstructorUi(page);
     for (const query of TABS) {
       await page.goto(`${CLASS}${query}`);
@@ -59,6 +61,7 @@ test.describe("Rebuilt Instructor screens: zero axe violations, text ≥14px", (
 });
 
 test("no rebuilt Instructor page scrolls sideways at 320px @mobile", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
   await useNewInstructorUi(page);
   await page.setViewportSize({ width: 320, height: 640 });
   for (const path of ["/instructor", "/instructor/classes", "/instructor/gradebook", ...TABS.map((query) => `${CLASS}${query}`), `${CLASS}?tab=Create+content&create=exam`]) {

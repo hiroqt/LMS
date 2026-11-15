@@ -191,3 +191,9 @@ Class links inside the phone drawer navigated without closing it, leaving the pa
 behind the modal. `AppShell` now closes the drawer on every page change, not only on its
 own nav items. Spec: "a class link in the drawer also closes it".
 
+### L-030 · Multi-page accessibility sweeps need a longer timeout on CI
+`2026-11-17` · hiro · scope: tests · confidence: high
+The Instructor "every tab, form, and dialog" sweep (about 13 loads, each with a full axe
+scan) hit the 30s limit once on CI's emulated iPhone WebKit and passed on retry. Sweep
+specs call `test.slow()`; do not paper over timeouts with more retries.
+
