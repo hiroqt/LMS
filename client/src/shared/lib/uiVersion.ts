@@ -1,14 +1,18 @@
 /**
  * Which UI a person sees during the migration: the legacy ("classic") UI or
- * the rebuilt one ("new"). Admin always stays classic (D-001).
+ * the rebuilt one ("new"), chosen per role (D-014) because Student and
+ * Instructor are rebuilt in different phases. Admin always stays classic.
  *
- * `?ui=new` or `?ui=classic` in the URL wins and is remembered; otherwise the
- * remembered choice applies; otherwise "classic" (until cutover).
- * Stored under its own key, never inside the LMS data keys (C-007).
+ * `?ui=new` or `?ui=classic` in the URL wins and is remembered for that role;
+ * otherwise the role's remembered choice applies; otherwise "classic".
+ * Stored under its own keys, never inside the LMS data keys (C-007).
  */
 export type UiVersion = "classic" | "new";
+export type UiRole = "student" | "instructor";
 
-export const UI_VERSION_STORAGE_KEY = "tmcc-ui-version";
+/** Phase 1 stored one choice for both roles; still honored as a fallback. */
+export const LEGACY_UI_VERSION_KEY = "tmcc-ui-version";
+export const uiVersionKey = (role: UiRole) => `tmcc-ui-version:${role}`;
 export const UI_VERSION_EVENT = "tmcc-ui-version-change";
 
 const isVersion = (value: unknown): value is UiVersion => value === "classic" || value === "new";
@@ -19,17 +23,17 @@ export function resolveUiVersion(search: string, stored: string | null): { versi
   return { version: isVersion(stored) ? stored : "classic", fromUrl: false };
 }
 
-export function readStoredUiVersion(): string | null {
+export function readStoredUiVersion(role: UiRole): string | null {
   try {
-    return localStorage.getItem(UI_VERSION_STORAGE_KEY);
+    return localStorage.getItem(uiVersionKey(role)) ?? localStorage.getItem(LEGACY_UI_VERSION_KEY);
   } catch {
     return null; // Private mode or blocked storage: fall back to the default.
   }
 }
 
-export function storeUiVersion(version: UiVersion): void {
+export function storeUiVersion(role: UiRole, version: UiVersion): void {
   try {
-    localStorage.setItem(UI_VERSION_STORAGE_KEY, version);
+    localStorage.setItem(uiVersionKey(role), version);
   } catch {
     // The choice still applies for this page; it just is not remembered.
   }

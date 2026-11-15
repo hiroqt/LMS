@@ -16,6 +16,7 @@
 | `src/shared/ui/Field.tsx` | `Field`, `Input`, `Textarea`, `Select` |
 | `src/shared/ui/IconButton.tsx` | `IconButton` |
 | `src/shared/ui/Menu.tsx` | `MenuContent`, `MenuItem`, `MenuLabel`, `MenuSeparator`, `Menu`, `MenuTrigger`, `MenuGroup` |
+| `src/shared/ui/Popover.tsx` | `PopoverContent`, `Popover`, `PopoverTrigger`, `PopoverClose` |
 | `src/shared/ui/Skeleton.tsx` | `Skeleton`, `SkeletonGroup` |
 | `src/shared/ui/Tabs.tsx` | `TabsList`, `TabsTrigger`, `TabsContent`, `Tabs` |
 | `src/shared/ui/toast/Toaster.tsx` | `Toaster` |
@@ -37,7 +38,9 @@
 
 | File | Exports |
 | --- | --- |
+| `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
+| `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 
 ## Features
 
@@ -48,6 +51,22 @@
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/student/StudentApp.tsx` | `StudentApp` |
+| `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
+| `src/features/student/components/BackLink.tsx` | `BackLink` |
+| `src/features/student/components/ClassCard.tsx` | `ClassCard` |
+| `src/features/student/components/MonthGrid.tsx` | `MonthGrid` |
+| `src/features/student/components/SectionHeading.tsx` | `SectionHeading` |
+| `src/features/student/components/StatCard.tsx` | `StatCard` |
+| `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
+| `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
+| `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |
+| `src/features/student/pages/ClassPage.tsx` | `ClassPage` |
+| `src/features/student/pages/ClassesPage.tsx` | `ClassesPage` |
+| `src/features/student/pages/MaterialPage.tsx` | `MaterialPage` |
+| `src/features/student/pages/QuizPage.tsx` | `QuizPage` |
+| `src/features/student/pages/ResultPage.tsx` | `ResultPage` |
+| `src/features/student/pages/TasksPage.tsx` | `TasksPage` |
+| `src/features/student/pages/TodayPage.tsx` | `TodayPage` |
 
 ## App
 

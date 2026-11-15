@@ -8,6 +8,7 @@ export { Dialog, DialogClose, DialogContent, DialogTrigger, type DialogContentPr
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Field, Input, Select, Textarea, type FieldProps } from "./Field";
 export { IconButton, type IconButtonProps } from "./IconButton";
+export { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./Popover";
 export { Menu, MenuContent, MenuGroup, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "./Menu";
 export { Skeleton, SkeletonGroup } from "./Skeleton";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./Tabs";

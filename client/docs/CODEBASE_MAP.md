@@ -6,6 +6,7 @@
 - `src/shared/styles/` — `tailwind.css` (Tailwind v4 design tokens, no preflight yet, scanning only `app/`, `shared/`, `features/`), `fonts.css` (self-hosted Poppins), and `tokens.test.ts` (WCAG contrast checks).
 - `src/shared/ui` — design-system primitives (Button, Field, Dialog, Tabs, Menu, Card, Badge, EmptyState, Skeleton, Toaster); reference page at `/ui-kit` (`src/features/design-system`).
 - `src/shared/layout` — `AppShell` (sidebar, Student bottom bar, Instructor drawer, skip link, connection banner, focus on navigation) and `PageHeader`. `src/shared/hooks` — `useNetworkStatus`, `useMediaQuery`.
+- `src/features/student/` — the rebuilt Student UI: `api/` (catalog, selectors, progress store, submissions), `hooks/` (catalog query, progress, quiz clock), `pages/` (Today, Tasks, Calendar, Classes, Class, Assessment, Quiz, Result, Material), `paths.ts` (URLs).
 - `src/features/student/StudentApp.tsx`, `src/features/instructor/InstructorApp.tsx` — roots of the rebuilt UIs, shown with `?ui=new` (`src/app/router/useUiVersion.ts`, `src/shared/lib/uiVersion.ts`). Screens not rebuilt yet show `src/app/migration/RebuildNotice.tsx`.
 - `e2e/` — Playwright flow-parity, routing, platform, and accessibility-baseline specs (`playwright.config.ts`).
 - `docs/ui-memory/` — shared revamp memory: decisions, conventions, learnings, flow-parity status, and generated inventories (`scripts/memory-sync.ts`).

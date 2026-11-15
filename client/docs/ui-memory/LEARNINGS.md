@@ -23,7 +23,7 @@ only right after submitting. When an instructor grades later, the Student assess
 detail offers "Practice again" but no way to see the grade or feedback. Assignments do
 show grade and feedback on the detail page. `INSTRUCTOR_USER_FLOW.md` connector J implies
 both work. Not fixed in Phase 0 (it changes the flow). The round-trip spec uses an
-assignment. Decide in Phase 2 whether the rebuilt detail shows exam grades.
+assignment. **Resolved in the rebuilt UI by D-015**; the classic UI keeps the gap.
 
 ### L-004 · Tailwind's automatic scan generates utilities from legacy prose
 `2026-11-16` · hiro · scope: styles · confidence: high
@@ -118,4 +118,49 @@ hid the drawer with CSS, but Radix still considered it open, so the page kept
 breakpoint (`drawerOpen && !isDesktop`) rather than hiding with CSS alone. Any overlay
 that exists only at some breakpoints needs the same treatment. Spec: "an open drawer
 closes when the viewport grows to desktop".
+
+### L-018 · Classic Instructor crashed publishing work without instructions
+`2026-11-16` · hiro · scope: instructor (classic) · confidence: high
+`openCreate` did not default `instructions` or `prompt`, and saving called `.trim()` on
+`undefined`, so an assignment or assessment without instructions never saved. Found by a
+Phase 2 cross-role spec; fixed by adding the two defaults in `Instructor.jsx`. Phase 3
+should cover optional fields in its form specs.
+
+### L-019 · Single-column CSS grids overflow at 320px
+`2026-11-16` · hiro · scope: layout · confidence: high
+`grid lg:grid-cols-[…]` has an implicit `auto` column below `lg`, which grows to its
+content's min-content width (the month table: 313px on a 288px screen). Use
+`grid-cols-1` (`minmax(0,1fr)`). Promoted to C-011. The 320px sweep in
+`student-new.spec.ts` catches it.
+
+### L-020 · Buttons do not wrap or shrink by default
+`2026-11-16` · hiro · scope: shared/ui · confidence: high
+The button base is `shrink-0 whitespace-nowrap`, so "Open Introduction to Programming"
+pushed a 320px page sideways. Long-label buttons need `max-w-full shrink whitespace-normal`.
+Promoted to C-011.
+
+### L-021 · Adjacent elements join without a space in accessible names
+`2026-11-16` · hiro · scope: a11y · confidence: high
+`<span>Class</span><strong>Computer Networking</strong>` is announced as
+"ClassComputer Networking". Put a `{" "}` between parts. The parity spec caught it.
+
+### L-022 · position: sticky only works inside a tall parent
+`2026-11-16` · hiro · scope: layout · confidence: high
+The quiz timer was sticky inside its short header, so it scrolled away on phones. Sticky
+elements must be children of the container that spans the scrolling content. Found by
+looking at screenshots, not by tests.
+
+### L-023 · Small details that changed roles or contrast
+`2026-11-16` · hiro · scope: a11y · confidence: high
+`type="search"` exposes the `searchbox` role (classic used `textbox`); use
+`type="text" inputMode="search"` where the role matters. White-on-brand chips with
+`bg-white/20` failed contrast; use `primary-800`. A toggle whose label changes ("Mark as
+reviewed" → "Reviewed") must not also set `aria-pressed`.
+
+### L-024 · Report success only after storage succeeds
+`2026-11-16` · hiro · scope: student/api · confidence: high
+Found in the Phase 2 review: `submitActivity` marked an assignment completed even when
+`saveRoleData` failed (storage full or blocked), so the student saw "Submitted" for work
+that was never stored. Completion is now recorded only after a successful save, and the
+form shows an error toast otherwise. The Phase 4 outbox must keep this rule.
 

@@ -87,6 +87,9 @@ export default function Instructor({ onNavigateRole }) {
       correctIndex: "0",
       title: "",
       description: "",
+      // Optional fields that saving trims; undefined crashed publishing without them.
+      instructions: "",
+      prompt: "",
       fileName: "",
       fileType: "pdf",
       fileSize: "",

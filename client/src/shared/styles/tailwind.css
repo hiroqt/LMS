@@ -43,6 +43,9 @@
   --text-page--line-height: 2.25rem;
   --text-page-mobile: 1.5rem;
   --text-page-mobile--line-height: 2rem;
+  /* Large numerals only (scores, counts), never running text. */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1;
 
   /* Brand: TMCC green. 600 and 700 are the original --green / --green-dark.
      600 is a fill color (white text on it passes AA). For green text use

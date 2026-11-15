@@ -100,3 +100,39 @@ the specs in `e2e/new-shell.spec.ts` run strict axe (including
 contrast), the 44px control check, and the 14px text check against it on desktop, iPhone,
 and Android. A new primitive is added to this page in the same PR.
 
+### D-013 · How flow specs may change while proving parity
+`2026-11-16` · hiro · scope: tests · confidence: high
+Rebuilt screens keep the classic **accessible names and roles** the flow specs use
+("Main navigation", "My classes", "Dashboard content", textbox "Search student workspace",
+radio/aria-checked, "Go to question N"). A spec may change only to drop a dependency on
+classic DOM structure while asserting the same journey on both UIs. Phase 2 made exactly
+two such changes: the TW spec checks the selected group's description instead of the
+classic `<summary>`, and the persistence check loads `/student` fresh instead of
+`reload()` (the rebuilt result page has its own URL). Both specs still pass on classic.
+
+### D-014 · The UI preference is per role
+`2026-11-16` · hiro · scope: app/router · confidence: high
+`tmcc-ui-version:student` and `tmcc-ui-version:instructor` replace the single Phase 1 key,
+which is still read as a fallback. Student and Instructor are rebuilt in different phases,
+and real people have one role. It also lets the rebuilt Student UI be tested against the
+classic Instructor UI in cross-role journeys (Playwright projects `student-new*`).
+Supersedes the "switching workspace keeps the new UI" part of D-011.
+
+### D-015 · Students see instructor exam grades on the exam page
+`2026-11-16` · hiro (user decision) · scope: student/assessment · confidence: high
+The rebuilt assessment page shows "Graded by your instructor · score / points · feedback"
+once an exam is graded, plus "View your result" after any submission. Closes the gap in
+L-003. Spec: "an instructor's exam grade and feedback appear on the Student exam page".
+
+### D-016 · Student data layer and URLs
+`2026-11-16` · hiro · scope: student/api · confidence: high
+- `features/student/api/catalog.ts` rebuilds the classic merged view (seed + role store)
+  on every read from `studentSeed`, so instructor changes appear without a reload.
+  `progressStore.ts` uses the classic key and shape. `submissions.ts` writes the same
+  records and audit events as the classic UI.
+- Screens read through `useStudentCatalog()` (TanStack Query, refreshed on
+  `tmcc-lms-data`/`storage`) and `useProgress()`. Rules live in `selectors.ts` (unit-tested).
+- Every Student screen has a URL under `/student/…` (`paths.ts`); filters and tabs live in
+  the query string. Back/Forward and deep links work.
+- The quiz clock is timestamp-based (`quizSession.ts`), with the classic rules unchanged.
+

@@ -462,6 +462,16 @@ export const questionsByAssessment = Object.fromEntries(
   }),
 );
 
+// Unmerged seed for the rebuilt Student UI, which merges role data on every
+// read instead of once at import time (features/student/api/catalog.ts).
+// Captured before the legacy merge below mutates these arrays.
+export const studentSeed = {
+  courses: [...courses],
+  assessments: [...assessments],
+  materials: [...materials],
+  questionsByAssessment: { ...questionsByAssessment },
+};
+
 const roleExtensions = getStudentExtensions();
 if (roleExtensions.synced) {
   const activeIds = new Set(roleExtensions.activeCourseIds);
