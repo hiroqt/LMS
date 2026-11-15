@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./shared/styles/fonts.css";
+import "./shared/styles/tailwind.css";
 import "./index.css";
 import { AppRouter } from "./app/router/AppRouter";
 
