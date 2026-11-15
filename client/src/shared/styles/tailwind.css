@@ -117,3 +117,15 @@
     }
   }
 }
+
+/* Moved from the classic Details.css at cutover: honor reduced motion everywhere. */
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition: none !important;
+    }
+  }
+}

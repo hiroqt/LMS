@@ -1,0 +1,447 @@
+/*
+ * Rules from the removed classic Student stylesheets (App.css, Details.css)
+ * whose selectors target classes the Admin shell still uses (RoleWorkspace,
+ * Avatar, menus). Moved verbatim and in order at cutover so Admin looks
+ * exactly the same (D-021). Delete when Admin is revamped.
+ */
+
+.search-wrap {
+  position: relative;
+  height: 37px;
+  width: 250px;
+  border: 1px solid #e8eeeb;
+  background: #fafcfb;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: #95a19b;
+  z-index: 30;
+}
+
+.search-wrap input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  min-width: 0;
+  flex: 1;
+  color: #34423b;
+  font-size: 12px;
+}
+
+.search-wrap input::placeholder {
+  color: #a6b0ac;
+}
+
+.search-wrap > button {
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: #88958e;
+  display: flex;
+}
+
+.search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 43px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 11px;
+  padding: 5px;
+  display: grid;
+  gap: 2px;
+}
+
+.search-results button {
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  text-align: left;
+  gap: 4px;
+  padding: 9px;
+  font-size: 12px;
+}
+
+.search-results button:hover {
+  background: #f5f9f7;
+}
+
+.search-results button small {
+  grid-row: span 2;
+  color: #4b8d74;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.search-results button strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.search-empty {
+  padding: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.top-icon {
+  width: 35px;
+  height: 35px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: #74817b;
+  position: relative;
+  border-radius: 9px;
+}
+
+.top-icon:hover {
+  background: #f5f8f6;
+}
+
+.top-icon i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ef987d;
+  border: 1px solid #fff;
+  right: 8px;
+  top: 7px;
+  border-radius: 50%;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.profile-button > span {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.profile-button strong {
+  font-size: 12px;
+  color: #36443e;
+}
+
+.profile-button small {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.profile-button > svg {
+  color: #88958e;
+}
+
+.popover-holder {
+  position: relative;
+}
+
+.popover {
+  position: absolute;
+  right: 0;
+  top: 45px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  z-index: 40;
+  width: 270px;
+  padding: 13px;
+}
+
+.popover > strong {
+  font-size: 12px;
+}
+
+.notification-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 2px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.notification-menu button + button {
+  border-top: 1px solid #f0f3f1;
+}
+
+.notification-menu button svg {
+  color: #56a285;
+}
+
+.notification-menu button span {
+  display: grid;
+  gap: 4px;
+}
+
+.notification-menu small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.profile-menu {
+  width: 220px;
+}
+
+.profile-head {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 3px 0 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+
+.profile-head span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-head strong {
+  font-size: 12px;
+}
+
+.profile-head small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.profile-menu > button {
+  border: 0;
+  background: #fff;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 3px;
+  text-align: left;
+  font-size: 12px;
+  color: #64716b;
+}
+
+@media (max-width: 760px) {
+  .notification-menu {
+    position: fixed;
+    top: 68px;
+    right: auto;
+    left: 50%;
+    width: min(270px, calc(100vw - 32px));
+    transform: translateX(-50%);
+  }
+}
+
+.eyebrow,
+.section-heading > div > small,
+.panel-title > div > small,
+.page-heading > div > small {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.05px;
+  color: #93a09a;
+}
+
+.eyebrow i,
+.focus-top i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #58ac89;
+}
+
+.avatar {
+  width: 29px;
+  height: 29px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #65a48b;
+}
+
+.avatar-small {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.tone-0 {
+  background: #6e9ec2;
+}
+
+.tone-1 {
+  background: #bf8a72;
+}
+
+.tone-2 {
+  background: #679e8d;
+}
+
+.tone-3 {
+  background: #a486bc;
+}
+
+.tone-4 {
+  background: #ba9a5f;
+}
+
+.tone-5 {
+  background: #7289b6;
+}
+
+.roster {
+  max-width: 1050px;
+  margin: auto;
+  background: #fff;
+  border: 1px solid #e8efeb;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.role-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-global-search {
+  position: relative;
+  height: 37px;
+  width: min(235px, 24vw);
+  border: 1px solid #e8eeeb;
+  background: #fafcfb;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: #95a19b;
+  z-index: 30;
+}
+
+.role-switch {
+  margin-left: 12px;
+  color: #7d8985;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.role-switch select {
+  height: 35px;
+  border: 1px solid #e2ebe6;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 24px 0 9px;
+  color: #33443e;
+  font: 600 11px Poppins, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.role-switch select:focus-visible {
+  outline: 3px solid #1f6e58;
+  outline-offset: 2px;
+}
+
+.profile-role-section {
+  display: grid;
+  gap: 4px;
+  padding: 9px 0;
+  margin: 6px 0;
+  border-top: 1px solid #edf1ef;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.profile-role-title {
+  color: #8b9792;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0 4px 3px;
+}
+
+.profile-role-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #384a43;
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-role-link:hover {
+  background: #f0f6f3;
+  color: #276b58;
+}
+
+.profile-role-link.is-current {
+  background: #eaf5f0;
+  color: #276b58;
+  font-weight: 700;
+}
+
+.profile-role-link.is-current span::after {
+  content: " (current)";
+  font-size: 10px;
+  color: #6d887c;
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .search-wrap {
+    width: min(26vw, 180px);
+    height: 34px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .profile-button > span:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .search-wrap {
+    width: 30vw;
+    padding: 0 7px;
+  }
+  .search-wrap input {
+    font-size: 12px;
+  }
+  .profile-button {
+    gap: 4px;
+  }
+}
