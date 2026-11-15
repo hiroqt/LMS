@@ -1,12 +1,12 @@
-import { pad2 } from "../../../shared/lib/format";
-import { cn } from "../../../shared/lib/cn";
-import { monthGrid, type CalendarEntry } from "../api/selectors";
+import { monthGrid, type CalendarMark } from "../lib/calendar";
+import { cn } from "../lib/cn";
+import { pad2 } from "../lib/format";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export interface MonthGridProps {
   month: Date;
-  entries: CalendarEntry[];
+  entries: CalendarMark[];
   now: number;
   label: string;
   /** Compact (dashboard) or full (calendar page) cells. */
@@ -39,8 +39,8 @@ export function MonthGrid({ month, entries, now, label, size = "compact" }: Mont
             {cells.slice(week * 7, week * 7 + 7).map((day, weekday) => {
               const dayEntries = day === null ? [] : entries.filter((item) => item.date.getDate() === day);
               const isToday = day === today.getDate() && month.getMonth() === today.getMonth() && month.getFullYear() === today.getFullYear();
-              const hasAssessment = dayEntries.some((item) => item.assessment);
-              const hasEvent = dayEntries.some((item) => !item.assessment);
+              const hasAssessment = dayEntries.some((item) => item.kind === "deadline");
+              const hasEvent = dayEntries.some((item) => item.kind === "event");
               return (
                 <td key={weekday} className={cn("p-0.5 align-top", size === "full" && "h-16 sm:h-20")}>
                   {day !== null && (

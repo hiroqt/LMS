@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tab
 import { dueSoon } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
-import { SectionHeading } from "../components/SectionHeading";
-import { toneFor } from "../components/tones";
+import { SectionHeading } from "../../../shared/components/SectionHeading";
+import { toneFor } from "../../../shared/lib/tones";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { CLASS_TABS, isClassTab, studentPaths, type ClassTab } from "../paths";
 

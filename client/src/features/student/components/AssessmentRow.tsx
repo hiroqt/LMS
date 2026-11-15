@@ -2,7 +2,7 @@ import { Check, ChevronRight } from "lucide-react";
 import { formatDue } from "../../../shared/lib/format";
 import { Badge } from "../../../shared/ui/Badge";
 import type { Assessment } from "../api/types";
-import { toneFor } from "./tones";
+import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "./visuals";
 
 export interface AssessmentRowProps {
