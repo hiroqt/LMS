@@ -72,3 +72,14 @@ so connecting .NET later swaps the adapter without touching screens.
 backoff (1s → 15s), no automatic mutation retries. Mutations get retries only through
 the Phase 4 outbox, which adds idempotency keys first, so a retried quiz submission
 cannot be recorded twice.
+
+### D-010 · Tailwind utilities are `!important` until cutover
+`2026-11-16` · hiro · scope: styles · confidence: high
+Legacy `index.css` has unlayered element rules (`button, input { font: inherit }`,
+`button:not(.class-card) { min-height: 24px }`, heading weights). Unlayered CSS beats any
+layered utility, so `text-body` or `min-h-touch` on a new button silently lost. The
+utilities import now uses Tailwind's `important` flag. Legacy screens are unaffected
+because no utilities are generated from legacy files (D-003). `e2e/design-system.spec.ts`
+checks computed sizes in a real browser. Remove the flag with preflight at cutover.
+Amends D-003.
+

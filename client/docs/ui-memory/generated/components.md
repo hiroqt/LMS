@@ -6,7 +6,19 @@
 
 `src/shared/ui`: reuse these before writing new markup.
 
-_None yet._
+| File | Exports |
+| --- | --- |
+| `src/shared/ui/Badge.tsx` | `Badge` |
+| `src/shared/ui/Button.tsx` | `Button` |
+| `src/shared/ui/Card.tsx` | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardBody`, `CardFooter` |
+| `src/shared/ui/Dialog.tsx` | `DialogContent`, `Dialog`, `DialogTrigger`, `DialogClose` |
+| `src/shared/ui/EmptyState.tsx` | `EmptyState` |
+| `src/shared/ui/Field.tsx` | `Field`, `Input`, `Textarea`, `Select` |
+| `src/shared/ui/IconButton.tsx` | `IconButton` |
+| `src/shared/ui/Menu.tsx` | `MenuContent`, `MenuItem`, `MenuLabel`, `MenuSeparator`, `Menu`, `MenuTrigger`, `MenuGroup` |
+| `src/shared/ui/Skeleton.tsx` | `Skeleton`, `SkeletonGroup` |
+| `src/shared/ui/Tabs.tsx` | `TabsList`, `TabsTrigger`, `TabsContent`, `Tabs` |
+| `src/shared/ui/toast/Toaster.tsx` | `Toaster` |
 
 ## Layout
 

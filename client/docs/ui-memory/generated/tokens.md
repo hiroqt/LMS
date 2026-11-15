@@ -34,6 +34,7 @@ Use as `text-<name>`, `bg-<name>`, `border-<name>`.
 | `warning` | `#8f4f05` |
 | `warning-soft` | `#fdf1db` |
 | `danger` | `#b42318` |
+| `danger-strong` | `#912018` |
 | `danger-soft` | `#fdecea` |
 | `info` | `#1d5fa8` |
 | `info-soft` | `#e8f1fb` |
