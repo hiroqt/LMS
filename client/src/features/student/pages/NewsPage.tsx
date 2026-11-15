@@ -45,7 +45,7 @@ function NewsContent({ catalog, now }: { catalog: StudentCatalog; now: number })
           )}
         </section>
         <section aria-labelledby="school-news" className="flex flex-col gap-3">
-          <SectionHeading id="school-news" eyebrow="TMCC LMS" title="School announcements" count={upcoming.length} />
+          <SectionHeading id="school-news" title="School announcements" count={upcoming.length} />
           <Card className="p-2">
             {upcoming.length ? (
               <ul className="m-0 flex list-none flex-col p-0">
@@ -74,7 +74,7 @@ export default function NewsPage() {
   const { catalog, now } = useWorkspace();
   return (
     <>
-      <PageHeader eyebrow="Campus and class updates" title="News & Announcements" description="Updates from your teachers and across the school." />
+      <PageHeader title="News & Announcements" description="Updates from your teachers and across the school." />
       <NewsContent catalog={catalog} now={now} />
     </>
   );

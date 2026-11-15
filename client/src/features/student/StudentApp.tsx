@@ -6,6 +6,7 @@ import { NotificationsPopover } from "../../shared/components/NotificationsPopov
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
+import { SidebarGroup } from "../../shared/layout/SidebarGroup";
 import { formatDue } from "../../shared/lib/format";
 import { cn } from "../../shared/lib/cn";
 import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
@@ -108,24 +109,26 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
   );
   const search = searchField();
 
-  const myClasses = (
+  const myClasses = (collapsed: boolean) => (
     <nav aria-label="My classes">
-      <p className="m-0 px-3 pb-2 text-label font-semibold tracking-wide text-muted uppercase">My classes</p>
+      <SidebarGroup label="My classes" icon={<BookOpen />} count={catalog.courses.length} collapsed={collapsed} storageKey="tmcc-sidebar-classes-open:student">
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {catalog.courses.map((course, index) => (
           <li key={course.id}>
             <button
               type="button"
               aria-label={course.name}
+              title={collapsed ? course.name : undefined}
               aria-current={currentClass === course.id ? "page" : undefined}
               onClick={() => navigate(studentPaths.classPage(course.id))}
               className={cn(
-                "flex min-h-touch w-full items-center gap-3 rounded-control border-0 px-3 py-1.5 text-left font-sans focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus",
+                "flex min-h-touch w-full items-center gap-3 rounded-control border-0 py-1.5 text-left font-sans focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus",
+                collapsed ? "justify-center px-0" : "px-3",
                 currentClass === course.id ? "bg-primary-100" : "bg-transparent hover:bg-primary-50",
               )}
             >
               <span aria-hidden className={cn("w-14 shrink-0 rounded-chip py-0.5 text-center text-body font-semibold tracking-code tabular-nums", toneFor(index))}>{courseCode(course)}</span>
-              <span className="flex min-w-0 flex-col">
+              <span className={collapsed ? "sr-only" : "flex min-w-0 flex-col"}>
                 <span className="truncate text-body font-medium text-ink">{course.name}</span>
                 <span className="truncate text-body text-muted">{course.section}</span>
               </span>
@@ -133,6 +136,7 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
           </li>
         ))}
       </ul>
+      </SidebarGroup>
     </nav>
   );
 
@@ -148,7 +152,7 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
           mobileNav="bottom"
           pageKey={location.pathname}
           sidebarExtra={myClasses}
-          sidebarFooter={<HelpSupport />}
+          sidebarFooter={(collapsed) => <HelpSupport collapsed={collapsed} />}
           topbarActions={
             <>
               <div className="hidden w-80 md:block">{search}</div>

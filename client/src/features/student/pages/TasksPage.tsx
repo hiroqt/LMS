@@ -35,7 +35,7 @@ export default function TasksPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Your work" title="Tasks" description="See due dates, missing work, and completed assessments." />
+      <PageHeader title="Tasks" description="See due dates, missing work, and completed assessments." />
 
       {/* Visible filter instead of the classic dropdown: one tap, counts always shown. */}
       <div role="group" aria-label="Filter by status" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">

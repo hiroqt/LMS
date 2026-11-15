@@ -1,9 +1,10 @@
-import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, Layers, ListChecks, Megaphone, Newspaper, Sparkles, X } from "lucide-react";
+import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, Layers, ListChecks, Megaphone, Newspaper, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { CampusIllustration } from "../../../shared/components/CampusIllustration";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { StatCard } from "../../../shared/components/StatCard";
+import { ViewToggle } from "../../../shared/components/ViewToggle";
+import { useClassView } from "../../../shared/hooks/useClassView";
 import { cn } from "../../../shared/lib/cn";
 import { formatDue, formatFullDate } from "../../../shared/lib/format";
 import { featuredSlides } from "../../../shared/lib/schoolNews";
@@ -13,7 +14,7 @@ import { EmptyState } from "../../../shared/ui/EmptyState";
 import { STUDENT } from "../api/catalog";
 import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting } from "../api/selectors";
 import type { Assessment, StudentCatalog } from "../api/types";
-import { ClassCard } from "../components/ClassCard";
+import { ClassList } from "../components/ClassList";
 import { AssessmentTypeIcon } from "../components/visuals";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
@@ -42,11 +43,10 @@ function NewDesignIntro() {
   };
   return (
     <section aria-labelledby="new-design-title" className="flex items-start gap-3 rounded-card border border-primary-200 bg-primary-50 p-4 font-sans">
-      <Sparkles aria-hidden className="mt-0.5 size-5 shrink-0 text-primary-700" />
       <div className="flex flex-1 flex-col gap-1">
         <h2 id="new-design-title" className="m-0 text-body font-semibold text-ink">Welcome to the new design</h2>
         <p className="m-0 text-body text-ink">
-          Everything is where you expect: your dashboard, classes, tasks, calendar, and news. On a phone they are in the bar at the bottom. Your saved work carried over.
+          Dashboard, classes, tasks, calendar, and news are in the sidebar, or in the bottom bar on a phone. Your saved work carried over.
         </p>
       </div>
       <button
@@ -116,7 +116,7 @@ function TasksPanel({ catalog, completed, now }: { catalog: StudentCatalog; comp
           ))}
         </ul>
       ) : (
-        <p className="m-0 text-body text-muted">Nothing due soon. Enjoy your focus time.</p>
+        <p className="m-0 text-body text-muted">Nothing is due in the next few days.</p>
       )}
     </Panel>
   );
@@ -198,20 +198,19 @@ export default function TodayPage() {
   const { catalog, completed, now } = useWorkspace();
   const term = termStatus(catalog.academicEvents, now);
   const { courses, assessments } = catalog;
+  const [classView, setClassView] = useClassView();
 
   return (
     <>
       <header className="relative flex flex-col gap-5">
-        <CampusIllustration className="absolute -top-6 -right-6 hidden h-56 w-auto opacity-90 lg:block xl:h-64" />
         <div className="relative flex max-w-2xl flex-col gap-1.5">
           <p className="m-0 text-body text-muted">
             {formatFullDate(now)}
             {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
           </p>
           <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">
-            {greeting(now)}, {STUDENT.firstName}!
+            {greeting(now)}, {STUDENT.firstName}
           </h1>
-          <p className="m-0 text-body-lg text-muted">Here’s your academic workspace for today.</p>
         </div>
         <ul className="relative m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3 lg:max-w-[48rem]">
           <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" /></li>
@@ -230,14 +229,15 @@ export default function TodayPage() {
               id="my-classes"
               icon={<Layers />}
               title="My Classes"
-              action={<ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />}
+              action={
+                <div className="flex flex-wrap items-center gap-2">
+                  <ViewToggle view={classView} onChange={setClassView} />
+                  <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
+                </div>
+              }
             />
             {courses.length ? (
-              <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                {courses.map((course, index) => (
-                  <li key={course.id}><ClassCard course={course} index={index} onOpen={() => navigate(studentPaths.classPage(course.id))} /></li>
-                ))}
-              </ul>
+              <ClassList courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} gridClassName="grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" />
             ) : (
               <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
             )}

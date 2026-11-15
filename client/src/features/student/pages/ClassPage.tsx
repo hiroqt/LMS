@@ -92,7 +92,7 @@ function Stream({ course, catalog, completed, now, onTab }: { course: Course; ca
               ))}
             </ul>
           ) : (
-            <p className="m-0 text-body text-muted">No work due soon. Enjoy your focus time!</p>
+            <p className="m-0 text-body text-muted">No work is due soon.</p>
           )}
           <Button variant="ghost" className="self-start" onClick={() => onTab("Classwork")}>View all<ArrowRight aria-hidden className="size-4" /></Button>
         </Card>
@@ -210,7 +210,7 @@ function People({ course, catalog }: { course: Course; catalog: StudentCatalog }
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading eyebrow="Your class community" title="People" count={course.count} />
+        <SectionHeading title="People" count={course.count} />
         <ListSearch label="Find a student" placeholder="Find a student" value={query} onChange={setQuery} />
       </div>
       <Card className="flex items-center gap-3 p-4">

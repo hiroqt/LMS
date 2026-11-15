@@ -1,7 +1,7 @@
 import { CalendarDays, ChevronRight } from "lucide-react";
 import { SubjectIcon } from "../../../shared/components/SubjectIcon";
 import { cn } from "../../../shared/lib/cn";
-import { borderFor, toneFor } from "../../../shared/lib/tones";
+import { toneFor } from "../../../shared/lib/tones";
 import { courseCode } from "../api/catalog";
 import type { Course } from "../api/types";
 
@@ -11,10 +11,7 @@ export function ClassCard({ course, index, onOpen }: { course: Course; index: nu
     <button
       type="button"
       onClick={onOpen}
-      className={cn(
-        "group flex h-full w-full items-center gap-4 rounded-card border border-l-4 border-line bg-surface p-4 text-left font-sans text-ink shadow-card transition hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none",
-        borderFor(index),
-      )}
+      className="group flex h-full w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink shadow-card transition hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
       <span aria-hidden className={cn("grid size-12 shrink-0 place-items-center rounded-control", toneFor(index))}>
         <SubjectIcon subject={`${course.name} ${course.subject}`} className="size-6" />

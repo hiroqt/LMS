@@ -38,7 +38,6 @@ export default function CalendarPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Academic schedule"
         title="Academic calendar"
         description="Term dates, school events, and assessment deadlines in one view."
         actions={
