@@ -6,6 +6,7 @@ export const studentPaths = {
   tasks: (status?: TaskStatus) => (status && status !== "Due soon" ? `/student/tasks?status=${encodeURIComponent(status)}` : "/student/tasks"),
   calendar: (thisWeek = false) => (thisWeek ? "/student/calendar?view=week" : "/student/calendar"),
   classes: "/student/classes",
+  news: "/student/news",
   classPage: (id: string, tab: ClassTab = "Stream") => `/student/classes/${encodeURIComponent(id)}${tab === "Stream" ? "" : `?tab=${tab}`}`,
   assessment: (id: string) => `/student/assessments/${encodeURIComponent(id)}`,
   quiz: (id: string) => `/student/assessments/${encodeURIComponent(id)}/quiz`,

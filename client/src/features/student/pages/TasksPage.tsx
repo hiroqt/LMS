@@ -3,10 +3,23 @@ import { useNavigate, useSearchParams } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { cn } from "../../../shared/lib/cn";
 import { EmptyState } from "../../../shared/ui/EmptyState";
+import { courseCode } from "../api/catalog";
 import { isTaskStatus, taskGroups, type TaskStatus } from "../api/selectors";
 import { AssessmentRow } from "../components/AssessmentRow";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
+
+/** Groups items (already sorted by due date) under their due day. */
+function byDay<T extends { dueAt: string }>(items: T[]): Array<[string, T[]]> {
+  const days = new Map<string, T[]>();
+  for (const item of items) {
+    const key = new Date(item.dueAt).toDateString();
+    days.set(key, [...(days.get(key) ?? []), item]);
+  }
+  return [...days];
+}
+
+const dayLabel = (key: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date(key));
 
 const icons: Record<TaskStatus, typeof CalendarDays> = { "Due soon": CalendarDays, "Due this week": CalendarDays, Missing: AlarmClock, Done: Check };
 
@@ -54,19 +67,31 @@ export default function TasksPage() {
           <p className="m-0 text-body text-muted">{group.description}</p>
         </div>
         {group.items.length ? (
-          <ul className="m-0 flex list-none flex-col gap-3 p-0">
-            {group.items.map((item) => (
-              <li key={item.id}>
-                <AssessmentRow
-                  item={item}
-                  courseIndex={courseIndex(item.courseId)}
-                  completed={completed.includes(item.id)}
-                  missing={group.status === "Missing"}
-                  onOpen={() => navigate(studentPaths.assessment(item.id))}
-                />
+          <ol className="m-0 flex list-none flex-col gap-5 p-0">
+            {byDay(group.items).map(([day, items]) => (
+              <li key={day} className="flex flex-col gap-2">
+                <h3 className="m-0 text-label font-semibold tracking-label text-primary-700 uppercase">{dayLabel(day)}</h3>
+                <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                  {items.map((item) => {
+                    const index = courseIndex(item.courseId);
+                    const course = catalog.courses[index];
+                    return (
+                      <li key={item.id}>
+                        <AssessmentRow
+                          item={item}
+                          courseIndex={index}
+                          courseCode={course ? courseCode(course) : undefined}
+                          completed={completed.includes(item.id)}
+                          missing={group.status === "Missing"}
+                          onOpen={() => navigate(studentPaths.assessment(item.id))}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
             ))}
-          </ul>
+          </ol>
         ) : (
           <EmptyState icon={<ListChecks />} title={`No ${group.status.toLowerCase()} work`} description="Try another status above, or check your classes for new work." />
         )}

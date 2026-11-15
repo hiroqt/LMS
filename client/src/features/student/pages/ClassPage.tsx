@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, ClipboardList, ExternalLink, FileText, GraduationCap, Search, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { cn } from "../../../shared/lib/cn";
@@ -10,7 +10,9 @@ import { dueSoon } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
-import { toneFor } from "../../../shared/lib/tones";
+import { CourseHeader } from "../../../shared/components/CourseHeader";
+import { termStatus } from "../../../shared/lib/term";
+import { courseCode } from "../api/catalog";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { CLASS_TABS, isClassTab, studentPaths, type ClassTab } from "../paths";
 
@@ -246,6 +248,7 @@ export default function ClassPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
+  const term = termStatus(catalog.academicEvents, now)?.name ?? "This term";
   const index = catalog.courses.findIndex((item) => item.id === classId);
   const course = catalog.courses[index];
   if (!course) return <Navigate to={studentPaths.classes} replace />;
@@ -257,27 +260,29 @@ export default function ClassPage() {
 
   return (
     <>
-      <header className={cn("flex flex-col gap-3 rounded-card p-5 sm:p-7", toneFor(index))}>
-        <nav aria-label="Breadcrumb">
-          <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0 text-body">
-            <li><button type="button" onClick={() => navigate(studentPaths.classes)} className="min-h-touch rounded-control border-0 bg-transparent px-1 font-sans font-medium underline underline-offset-4 focus-visible:outline-3 focus-visible:outline-focus">My classes</button></li>
-            <li aria-hidden>›</li>
-            <li aria-current="page">{course.section}</li>
-          </ol>
-        </nav>
-        <p className="m-0 text-label font-semibold tracking-wide uppercase">{course.subject}</p>
-        <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold text-ink outline-none sm:text-page">{course.name}</h1>
-        <p className="m-0 text-body-lg text-ink">{course.section} · {course.room}</p>
-        <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-body text-ink">
-          <span>With {course.teacher}</span>
-          <span className="inline-flex items-center gap-1.5"><UsersRound aria-hidden className="size-4" />{course.count} students</span>
-        </p>
-        {course.id === "biology" && (
-          <Button asChild variant="secondary" className="self-start">
-            <a href="https://discord.com/app" target="_blank" rel="noreferrer">Join live class on Discord<ExternalLink aria-hidden className="size-4" /><span className="sr-only"> (opens in a new tab)</span></a>
-          </Button>
-        )}
-      </header>
+      <CourseHeader
+        code={courseCode(course)}
+        section={course.section}
+        term={term}
+        title={course.name}
+        subject={course.subject}
+        index={index}
+        breadcrumbLabel="My classes"
+        onBreadcrumb={() => navigate(studentPaths.classes)}
+        facts={[
+          { label: "Instructor", value: course.teacher, icon: <GraduationCap /> },
+          { label: "Room", value: course.room, icon: <MapPin /> },
+          { label: "Enrolled", value: `${course.count} students`, icon: <UsersRound /> },
+          { label: "Next class", value: course.next, icon: <Clock3 /> },
+        ]}
+        actions={
+          course.id === "biology" && (
+            <Button asChild variant="secondary">
+              <a href="https://discord.com/app" target="_blank" rel="noreferrer">Join live class on Discord<ExternalLink aria-hidden className="size-4" /><span className="sr-only"> (opens in a new tab)</span></a>
+            </Button>
+          )
+        }
+      />
 
       <Tabs value={tab} onValueChange={(value) => isClassTab(value) && setTab(value)}>
         <TabsList aria-label="Class sections">
