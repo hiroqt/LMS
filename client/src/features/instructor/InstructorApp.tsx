@@ -26,7 +26,6 @@ const GradebookPage = lazy(() => import("./pages/GradebookPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
-  onUseClassic: () => void;
 }
 
 // "instructor navigation" keeps the classic landmark name (D-013).
@@ -51,7 +50,7 @@ function ScreenLoading() {
   );
 }
 
-function Workspace({ onNavigateRole, onUseClassic, onCreateClass }: RoleAppProps & { onCreateClass: () => void }) {
+function Workspace({ onNavigateRole, onCreateClass }: RoleAppProps & { onCreateClass: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
@@ -161,7 +160,7 @@ function Workspace({ onNavigateRole, onUseClassic, onCreateClass }: RoleAppProps
               if (entry) navigate(instructorPaths.classPage(entry.classroomId, "Submissions", { review: entry.id }));
             }}
           />
-          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={onNavigateRole} onUseClassic={onUseClassic} />
+          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={onNavigateRole} />
         </>
       }
     >

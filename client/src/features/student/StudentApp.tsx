@@ -33,7 +33,6 @@ const MaterialPage = lazy(() => import("./pages/MaterialPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
-  onUseClassic: () => void;
 }
 
 // "Main navigation" and "My classes" keep the classic landmark names (D-013).
@@ -63,7 +62,7 @@ function ScreenLoading() {
 }
 
 /** Root of the rebuilt Student UI (Phase 2). */
-export default function StudentApp({ onNavigateRole, onUseClassic }: RoleAppProps) {
+export default function StudentApp({ onNavigateRole }: RoleAppProps) {
   useSharedDataSync();
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,7 +167,6 @@ export default function StudentApp({ onNavigateRole, onUseClassic }: RoleAppProp
                 currentRole="student"
                 onSwitchRole={onNavigateRole}
                 actions={[{ label: "Reset demo data", icon: <RotateCcw />, onSelect: resetDemo }]}
-                onUseClassic={onUseClassic}
               />
             </>
           }

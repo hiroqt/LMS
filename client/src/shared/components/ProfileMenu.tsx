@@ -1,4 +1,4 @@
-import { ChevronDown, GraduationCap, LayoutDashboard, RotateCcw, ShieldCheck } from "lucide-react";
+import { ChevronDown, GraduationCap, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover";
 
@@ -18,8 +18,6 @@ export interface ProfileMenuProps {
   onSwitchRole: (role: Role) => void;
   /** Role-specific actions, e.g. Student "Reset demo data". */
   actions?: ProfileAction[];
-  /** Present during the migration: returns to the legacy UI. */
-  onUseClassic?: () => void;
 }
 
 const roles: Array<{ role: Role; label: string; icon: typeof LayoutDashboard }> = [
@@ -35,7 +33,7 @@ function initials(name: string) {
 }
 
 /** Profile, workspace switching, and account actions. Same structure as the classic menu. */
-export function ProfileMenu({ name, subtitle, currentRole, onSwitchRole, actions = [], onUseClassic }: ProfileMenuProps) {
+export function ProfileMenu({ name, subtitle, currentRole, onSwitchRole, actions = [] }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const run = (action: () => void) => {
     setOpen(false);
@@ -69,7 +67,7 @@ export function ProfileMenu({ name, subtitle, currentRole, onSwitchRole, actions
             </button>
           ))}
         </div>
-        {(actions.length > 0 || onUseClassic) && (
+        {actions.length > 0 && (
           <div className="mt-1.5 border-t border-line pt-1.5">
             {actions.map((action) => (
               <button key={action.label} type="button" className={item} onClick={() => run(action.onSelect)}>
@@ -77,12 +75,6 @@ export function ProfileMenu({ name, subtitle, currentRole, onSwitchRole, actions
                 {action.label}
               </button>
             ))}
-            {onUseClassic && (
-              <button type="button" className={item} onClick={() => run(onUseClassic)}>
-                <RotateCcw aria-hidden />
-                Use classic view
-              </button>
-            )}
           </div>
         )}
       </PopoverContent>

@@ -2,9 +2,9 @@
  * Tailwind v4 entry and the TMCC design tokens.
  *
  * Preflight (Tailwind's CSS reset) is deliberately NOT imported while the
- * legacy Student/Instructor/Admin stylesheets are still loaded: it would
- * restyle every legacy button, heading, and list. Import it in the cutover
- * phase, once only rebuilt screens remain (see docs/ui-memory/DECISIONS.md).
+ * legacy Admin UI is loaded: it would restyle Admin's buttons, headings, and
+ * lists. Same for the !important utilities and the @source limit below: keep
+ * all three until Admin is revamped (D-003, D-010, D-022).
  */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);

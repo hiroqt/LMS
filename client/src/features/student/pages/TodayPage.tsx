@@ -49,7 +49,7 @@ function NewDesignIntro() {
       <div className="flex flex-1 flex-col gap-1">
         <h2 id="new-design-title" className="m-0 text-body font-semibold text-ink">Welcome to the new design</h2>
         <p className="m-0 text-body text-ink">
-          Everything is where you expect: Today, Tasks, your classes, and the calendar. On a phone they are in the bar at the bottom. You can switch back from your profile menu at any time.
+          Everything is where you expect: Today, Tasks, your classes, and the calendar. On a phone they are in the bar at the bottom. Your saved work carried over.
         </p>
       </div>
       <button
