@@ -99,3 +99,21 @@
      min-h-touch, min-w-touch, size-touch. */
   --spacing-touch: 2.75rem;
 }
+
+/*
+ * Windows high contrast (forced colors) replaces background colors, so states
+ * shown only by a fill (pressed filters, the current page or question, a chosen
+ * answer) would disappear. Draw them with the system highlight color instead.
+ */
+@layer base {
+  @media (forced-colors: active) {
+    [aria-pressed="true"],
+    [aria-current="page"],
+    [aria-current="step"],
+    [aria-checked="true"],
+    [role="tab"][aria-selected="true"] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+  }
+}

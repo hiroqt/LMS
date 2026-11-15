@@ -101,3 +101,14 @@ Rebuilt Instructor status: every ✔ row passes in the `instructor-new`, `instru
 | Instructor drawer closes and focuses the page after navigating | ✔ `new-shell` `@mobile` |
 | Zero axe violations (incl. contrast), text ≥14px, controls ≥44px | ✔ `new-shell` `@all` (shells and `/ui-kit`) |
 
+## Resilience (Phase 4)
+
+| Check | Spec |
+| --- | --- |
+| After one visit, the app opens offline; quiz answers save offline and survive reload | ✔ `resilience` (production build) |
+| First visit on Slow 3G shows content in under 10 s (measured 5.8 s) | ✔ `resilience` (production build) |
+| Reduced motion stops the carousel auto-advancing | ✔ `resilience` |
+| Selected states visible in Windows high contrast | ✔ `resilience` `@all` |
+| Bundle within budget | ✔ `npm run budget` (CI) |
+| Screen-reader journeys | ✖ manual: `SCREEN_READER_CHECKLIST.md` |
+
