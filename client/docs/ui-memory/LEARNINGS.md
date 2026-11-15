@@ -253,3 +253,16 @@ depends on the pinned clock. To find the culprit: pin the same clock, repeat the
 steps, then hide elements one by one and watch `scrollWidth` (bisecting beats scanning
 bounding boxes, which miss content that overflows its own box).
 
+
+### L-039 · A control added to a heading row needs a phone form
+`2026-11-16` · hiro · scope: shared · confidence: high
+Adding the cards/table toggle beside "View all classes" overflowed 320px by 29px. The
+heading row now wraps (`SectionHeading` uses `flex-wrap`) and the toggle shows icons
+only below `sm` (labels stay as `sr-only` text). Budget a heading row at 288px before
+adding a second action.
+
+### L-040 · Sidebar slots that depend on shell state take a function
+`2026-11-16` · hiro · scope: shared · confidence: medium
+The class list and Help link must render differently when the sidebar is collapsed, but
+they are built by the role app above `AppShell`. `sidebarExtra` and `sidebarFooter`
+accept `(collapsed) => ReactNode`; the phone drawer always passes `false`.
