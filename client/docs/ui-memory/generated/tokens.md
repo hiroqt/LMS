@@ -54,6 +54,7 @@ Use as `text-<name>` (body minimum is `text-body`, 14px).
 | `section` | `1.125rem` |
 | `page` | `1.75rem` |
 | `page-mobile` | `1.5rem` |
+| `display` | `2.5rem` |
 
 ## Radius
 

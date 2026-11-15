@@ -84,3 +84,17 @@ Utilities win over those rules because they are `!important` (D-010), so never a
   CSS `hidden` alone leaves Radix's focus trap and pointer lock active (L-017).
 - Student phone navigation is the bottom bar (≤5 destinations); Instructor uses the drawer.
 
+### C-011 · Responsive layout rules
+- Multi-column page grids start from `grid-cols-1`, never the implicit auto column (L-019).
+- Buttons with long or data-driven labels get `max-w-full shrink whitespace-normal` (L-020).
+- Sticky bars live directly in the column they should stick within (L-022).
+- Every rebuilt page is in a 320px sweep spec with no sideways scroll.
+
+### C-012 · Student data access
+- Read through `useStudentCatalog()`, `useProgress()`, or `useWorkspace()`; never
+  `localStorage` or `data.js` directly.
+- Put counting, grouping, and date rules in `features/student/api/selectors.ts` with a
+  unit test; screens only render.
+- Write only through `api/submissions.ts` and `api/progressStore.ts` so the classic
+  Instructor and Admin UIs keep reading the same records (D-016).
+
