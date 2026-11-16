@@ -1,4 +1,3 @@
-import { assessments as seedAssessments, questionsByAssessment } from "../../../data.js";
 import type { Activity, Classroom, Exam, ExamSubmission, ActivitySubmission, Material, RoleStore, Subject, User } from "./types";
 
 /*
@@ -6,13 +5,7 @@ import type { Activity, Classroom, Exam, ExamSubmission, ActivitySubmission, Mat
  * (removed at cutover) so counts, queues, and defaults stayed identical (C-012).
  */
 
-export const STUDENT_PROGRESS_KEY = "gclass-student-workspace-v1";
 export const DEFAULT_GRADEBOOK = { activityWeight: 40, examWeight: 60, passingScore: 60 } as const;
-
-export interface StudentProgressSnapshot {
-  answers?: Record<string, Record<number, number>>;
-  completed?: string[];
-}
 
 export function activeInstructors(store: RoleStore): User[] {
   return store.users.filter((item) => item.role === "instructor" && item.status === "active");
@@ -94,32 +87,27 @@ export function classWork(content: Pick<ClassContent, "activities" | "exams">): 
 }
 
 export interface ReviewItem {
+  /** The submission's id. */
   id: string;
   kind: "activity" | "exam";
   classroomId: string;
+  /** The assignment's or exam's id. */
+  courseworkId: string;
   title: string;
   maxScore: number;
   student?: User;
   /** Assignment: the student's note and attachment filename. */
   submission?: ActivitySubmission;
-  /** Exam: saved answers, the questions, and the local auto-score. */
-  answers: Record<number, number>;
-  questions: Array<{ prompt: string; options: string[]; correct: number }>;
-  correct: number;
+  /** Exam: the attempt waiting for essay scores (details load when it is opened). */
   existing?: ExamSubmission;
 }
 
-/** The score field's starting value: the auto-score scaled to the maximum (classic rule). */
-export function suggestedScore(item: ReviewItem): number {
-  return Math.round((item.correct / Math.max(item.questions.length, 1)) * item.maxScore);
-}
-
 /**
- * Work waiting for a grade in these classrooms: submitted, ungraded
- * assignments, then exams the demo student completed (from their local
- * progress) that are not graded yet. Same order and rules as the classic UI.
+ * Work waiting for a grade in these classrooms: handed-in assignments without
+ * a grade, then exam attempts with essays the server could not score. Exams
+ * without essays are graded on submit, so they never wait here (D-032).
  */
-export function reviewQueue(store: RoleStore, rooms: Classroom[], progress: StudentProgressSnapshot): ReviewItem[] {
+export function reviewQueue(store: RoleStore, rooms: Classroom[]): ReviewItem[] {
   const inRooms = (classroomId: string) => rooms.some((room) => room.id === classroomId);
   const studentOf = (id: string) => store.users.find((user) => user.id === id);
 
@@ -128,23 +116,18 @@ export function reviewQueue(store: RoleStore, rooms: Classroom[], progress: Stud
     .flatMap((record) => {
       const activity = store.activities.find((item) => item.id === record.activityId);
       return activity
-        ? [{ id: record.id, kind: "activity" as const, classroomId: record.classroomId, title: activity.title, maxScore: activity.maxScore, student: studentOf(record.studentId), submission: record, answers: {}, questions: [], correct: 0 }]
+        ? [{ id: record.id, kind: "activity" as const, classroomId: record.classroomId, courseworkId: activity.id, title: activity.title, maxScore: activity.maxScore, student: studentOf(record.studentId), submission: record }]
         : [];
     });
 
-  const exams: ReviewItem[] = (progress.completed ?? []).flatMap((assessmentId) => {
-    const exam = store.exams.find((item) => item.id === assessmentId);
-    if (!exam || !inRooms(exam.classroomId)) return [];
-    const existing = store.examSubmissions.find((item) => item.examId === exam.id && item.studentId === "s0");
-    if (existing?.status === "graded") return [];
-    const answers = progress.answers?.[assessmentId] ?? {};
-    const seeded = (seedAssessments as Array<{ id: string }>).some((item) => item.id === assessmentId);
-    const questions = seeded
-      ? ((questionsByAssessment as Record<string, Array<{ prompt: string; options: string[]; correct: number }>>)[assessmentId] ?? [])
-      : (exam.questions ?? []).map((question) => ({ prompt: question.prompt, options: question.options, correct: question.correctIndex }));
-    const correct = questions.reduce((total, question, index) => total + (answers[index] === question.correct ? 1 : 0), 0);
-    return [{ id: exam.id, kind: "exam" as const, classroomId: exam.classroomId, title: exam.title, maxScore: exam.totalMarks, student: studentOf("s0"), answers, questions, correct, existing }];
-  });
+  const exams: ReviewItem[] = store.examSubmissions
+    .filter((record) => record.status === "submitted" && inRooms(record.classroomId))
+    .flatMap((record) => {
+      const exam = store.exams.find((item) => item.id === record.examId);
+      return exam
+        ? [{ id: record.id, kind: "exam" as const, classroomId: record.classroomId, courseworkId: exam.id, title: exam.title, maxScore: exam.totalMarks, student: studentOf(record.studentId), existing: record }]
+        : [];
+    });
 
   return [...activities, ...exams];
 }

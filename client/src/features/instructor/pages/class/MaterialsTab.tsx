@@ -7,7 +7,7 @@ import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Select } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { deleteMaterial, setMaterialArchived } from "../../api/actions";
+import { useInstructorActions } from "../../api/actions";
 import type { Material } from "../../api/types";
 import { RESOURCE_TYPES } from "./classUtils";
 import { ListSearch, type ClassTabProps } from "./shared";
@@ -51,9 +51,11 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
   const moduleTitle = (id: string) => content.modules.find((item) => item.id === id)?.title ?? "Unit";
   const filtered = Boolean(q) || moduleId !== "all" || kind !== "all";
 
-  const archive = (item: Material) => {
+  const actions = useInstructorActions();
+  const archive = async (item: Material) => {
     const archived = item.status !== "archived";
-    if (setMaterialArchived(instructor, item.id, archived)) toast.show({ title: archived ? "Material archived" : "Material restored", description: item.title });
+    const result = await actions.setMaterialArchived(room.id, item.id, archived);
+    toast.show(result.ok ? { title: archived ? "Material archived" : "Material restored", description: item.title } : { title: "Could not change the material", description: result.message, tone: "danger" });
   };
 
   return (
@@ -146,8 +148,9 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
                 <DialogClose asChild><Button variant="secondary">Keep material</Button></DialogClose>
                 <Button
                   variant="danger"
-                  onClick={() => {
-                    if (deleteMaterial(instructor, removing.id, removing.title)) toast.show({ title: "Material deleted", description: removing.title });
+                  onClick={async () => {
+                    const result = await actions.deleteMaterial(room.id, removing.id);
+                    toast.show(result.ok ? { title: "Material deleted", description: removing.title } : { title: "Could not delete the material", description: result.message, tone: "danger" });
                     setRemoving(null);
                   }}
                 >

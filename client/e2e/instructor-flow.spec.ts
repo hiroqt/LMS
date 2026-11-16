@@ -76,8 +76,8 @@ test.describe("Instructor · Class workspace", () => {
 
     await page.goto("/instructor/classes");
     await expect(page.getByRole("button", { name: /Create class/ })).toHaveCount(0);
-    // The LMS API is not running in this suite, so the page says where the list comes from.
-    await expect(page.getByRole("status").filter({ hasText: "ISMS is not connected" })).toBeVisible();
+    // The page says where the list comes from.
+    await expect(page.getByRole("status").filter({ hasText: "Classes and class lists come from ISMS" })).toBeVisible();
   });
 });
 

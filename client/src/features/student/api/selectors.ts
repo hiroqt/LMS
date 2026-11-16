@@ -23,7 +23,8 @@ export function weekBounds(now: number): { start: Date; end: Date } {
   return { start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7) };
 }
 
-const due = (item: Assessment) => new Date(item.dueAt).getTime();
+/** Work without a due date sorts last and is never missing or due this week. */
+const due = (item: Assessment) => (item.dueAt ? new Date(item.dueAt).getTime() : Number.POSITIVE_INFINITY);
 const byDue = (a: Assessment, b: Assessment) => due(a) - due(b);
 
 /** Up to three unfinished items with a future due date, soonest first. */
@@ -75,7 +76,7 @@ export interface CalendarEntry extends CalendarMark {
 /** Assessment deadlines (at their due time) and school events (at noon, all day). */
 export function calendarEntries(assessments: Assessment[], events: AcademicEvent[]): CalendarEntry[] {
   return [
-    ...assessments.map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt), kind: "deadline" as const, assessment: item })),
+    ...assessments.filter((item) => item.dueAt).map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt), kind: "deadline" as const, assessment: item })),
     ...events.map((item) => ({ id: item.id, title: item.title, date: new Date(`${item.date}T12:00:00`), kind: "event" as const, category: item.category })),
   ].sort((a, b) => a.date.getTime() - b.date.getTime());
 }

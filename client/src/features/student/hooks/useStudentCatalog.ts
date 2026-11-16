@@ -1,31 +1,44 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { buildStudentCatalog } from "../api/catalog";
+import { useCallback } from "react";
+import { fetchOverview, fetchPeople } from "../../../shared/api/overview";
+import type { Viewer } from "../../../shared/api/viewer";
+import { toStudentCatalog } from "../api/catalog";
+import { studentKeys, studentQueryOptions } from "../api/student";
 import type { StudentCatalog } from "../api/types";
+import { useStudentSession } from "./useStudentSession";
 
-export const studentCatalogKey = ["student", "catalog"] as const;
+export function useStudentPeople() {
+  return useQuery({ queryKey: ["student", "people"], queryFn: ({ signal }) => fetchPeople(signal), ...studentQueryOptions, staleTime: 5 * 60_000 });
+}
 
-/**
- * The Student workspace data, through the app QueryClient (D-008). Today the
- * source is browser storage, read synchronously, so `initialData` renders at
- * once with no loading state. Switching to the .NET API replaces the queryFn
- * and drops `initialData`; screens do not change.
- */
+export function useStudentOverview(studentId: string) {
+  const viewer: Viewer = { id: studentId, role: "student" };
+  return useQuery({
+    queryKey: studentKeys.overview(studentId),
+    queryFn: ({ signal }) => fetchOverview(viewer, signal),
+    select: toStudentCatalog,
+    ...studentQueryOptions,
+    enabled: Boolean(studentId),
+  });
+}
+
+/** The Student workspace data. StudentApp renders the workspace only once it has loaded. */
 export function useStudentCatalog(): StudentCatalog {
-  const { data } = useQuery({ queryKey: studentCatalogKey, queryFn: buildStudentCatalog, initialData: buildStudentCatalog });
+  const { studentId } = useStudentSession();
+  const { data } = useStudentOverview(studentId);
+  if (!data) throw new Error("useStudentCatalog() used before the student overview loaded");
   return data;
 }
 
-/** Refreshes Student data when instructors or other tabs change the shared store. */
-export function useSharedDataSync(): void {
+/** The viewer to send with Student calls. */
+export function useStudentViewer(): Viewer {
+  const { studentId } = useStudentSession();
+  return { id: studentId, role: "student" };
+}
+
+/** Refreshes the student's data after handing in work. */
+export function useRefreshStudent(): () => Promise<void> {
   const queryClient = useQueryClient();
-  useEffect(() => {
-    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["student"] });
-    window.addEventListener("tmcc-lms-data", refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener("tmcc-lms-data", refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, [queryClient]);
+  const { studentId } = useStudentSession();
+  return useCallback(() => queryClient.invalidateQueries({ queryKey: studentKeys.overview(studentId) }), [queryClient, studentId]);
 }

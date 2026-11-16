@@ -7,7 +7,8 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Field, Input, Textarea } from "../../../shared/ui/Field";
 import { useToast } from "../../../shared/ui/toast/useToast";
-import { submitActivity } from "../api/submissions";
+import { failureMessage, submitAssignment } from "../api/student";
+import { useRefreshStudent, useStudentViewer } from "../hooks/useStudentCatalog";
 import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
 import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
@@ -19,7 +20,7 @@ import { studentPaths } from "../paths";
 function ExamGradeNote({ grade, points }: { grade: ExamGrade; points: number }) {
   return (
     <section aria-labelledby="exam-grade" className="flex flex-col gap-1 rounded-card border border-success/30 bg-success-soft p-4">
-      <h2 id="exam-grade" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold text-success"><Check aria-hidden className="size-4" />Graded by your instructor</h2>
+      <h2 id="exam-grade" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold text-success"><Check aria-hidden className="size-4" />Your grade</h2>
       <p className="m-0 text-body-lg font-semibold text-ink">{grade.totalScore} / {points} points</p>
       {grade.feedback && <p className="m-0 text-body text-ink">{grade.feedback}</p>}
     </section>
@@ -43,16 +44,26 @@ function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment;
   const [fileName, setFileName] = useState("");
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const viewer = useStudentViewer();
+  const refresh = useRefreshStudent();
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     if (!fileName.trim()) {
       setError("Enter the filename of the work you are turning in.");
       return;
     }
-    if (!submitActivity(assessment, { fileName, comment })) {
-      toast.show({ title: "Could not save your work", description: "Browser storage is full or blocked. Try again or free some space.", tone: "danger" });
+    setSaving(true);
+    try {
+      await submitAssignment(viewer, assessment.courseId, assessment.id, { fileName, comment });
+      await refresh();
+    } catch (failure) {
+      toast.show({ title: "Could not hand in your work", description: failureMessage(failure), tone: "danger" });
       return;
+    } finally {
+      setSaving(false);
     }
     setFileName("");
     setComment("");
@@ -65,7 +76,7 @@ function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment;
       <div className="flex flex-col gap-1">
         <h2 className="m-0 font-sans text-section font-semibold">{submitted ? "Submit a new version" : "Turn in your work"}</h2>
         <p className="m-0 text-body text-muted">
-          {closed ? "The due date has passed and late submissions are turned off." : "Use the filename of the document you prepared for this class. The demo stores the filename only."}
+          {closed ? "The due date has passed and late submissions are turned off." : "Use the filename of the document you prepared for this class. Only the filename is saved for now."}
         </p>
       </div>
       <Field label="Attachment filename" required error={error || undefined}>
@@ -74,7 +85,7 @@ function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment;
       <Field label="Comment for instructor">
         <Textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={3} placeholder="Add a note about your work" disabled={closed} />
       </Field>
-      <Button type="submit" disabled={closed} className="self-start">{submitted ? "Resubmit work" : "Submit work"}<ArrowRight aria-hidden className="size-4" /></Button>
+      <Button type="submit" disabled={closed || saving} className="self-start">{submitted ? "Resubmit work" : "Submit work"}<ArrowRight aria-hidden className="size-4" /></Button>
     </form>
   );
 }
@@ -92,7 +103,10 @@ export default function AssessmentPage() {
   const isCompleted = completed.includes(assessment.id);
   const submission = catalog.activitySubmissions[assessment.id];
   const grade = catalog.examGrades[assessment.id];
-  const closed = isActivity && new Date(assessment.dueAt).getTime() < now && !assessment.allowLate;
+  const attempts = catalog.attempts[assessment.id];
+  const attemptsLeft = (assessment.maxAttempts ?? 1) - (attempts?.used ?? 0);
+  const canStart = Boolean(attempts?.openId) || attemptsLeft > 0;
+  const closed = isActivity && Boolean(assessment.dueAt) && new Date(assessment.dueAt).getTime() < now && !assessment.allowLate;
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
   const facts: Array<[string, string, typeof ListChecks]> = [
@@ -165,11 +179,15 @@ export default function AssessmentPage() {
             </div>
             {!isActivity && (
               <div className="flex flex-col gap-2">
-                <Button size="lg" block onClick={() => navigate(studentPaths.quiz(assessment.id))}>{isCompleted ? "Practice again" : "Start assessment"}<ArrowRight aria-hidden className="size-4" /></Button>
+                {canStart ? (
+                  <Button size="lg" block onClick={() => navigate(studentPaths.quiz(assessment.id))}>{attempts?.openId ? "Continue assessment" : isCompleted ? "Practice again" : "Start assessment"}<ArrowRight aria-hidden className="size-4" /></Button>
+                ) : (
+                  <p className="m-0 text-body text-muted">You have used every attempt for this assessment.</p>
+                )}
                 {isCompleted && <Button variant="secondary" block onClick={() => navigate(studentPaths.result(assessment.id))}>View your result</Button>}
               </div>
             )}
-            <p className="m-0 flex items-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your answers save as you go, even offline.</p>
+            <p className="m-0 flex items-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your answers save to your class as you go.</p>
           </Card>
         </aside>
       </div>

@@ -1,5 +1,5 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
-import { expect, test, type Page } from "./fixtures";
+import { expect, test, type Page, demoAssessment, demoMaterial } from "./fixtures";
 
 // The rebuilt Student UI (Phase 2): strict accessibility on every screen, and
 // behavior that is new in the rebuild (URLs, keyboard, phone search, D-015).
@@ -40,13 +40,13 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
       await page.goto(`/student/classes/biology${tab}`);
       await check(page);
     }
-    await page.goto("/student/materials/biology-material-0");
+    await page.goto(`/student/materials/${demoMaterial("biology-material-0")}`);
     await check(page);
   });
 
   test("assessment details, the quiz with its dialog, and the result @all", async ({ page }) => {
     await useNewStudentUi(page);
-    await page.goto("/student/assessments/math-0");
+    await page.goto(`/student/assessments/${demoAssessment("math-0")}`);
     await check(page);
     await page.getByRole("button", { name: "Start assessment" }).click();
     await check(page);
@@ -64,7 +64,7 @@ test("no rebuilt Student page scrolls sideways at 320px @mobile", async ({ page 
   await page.setViewportSize({ width: 320, height: 640 });
   const pages = [
     "/student", "/student/tasks", "/student/calendar", "/student/classes", "/student/classes/biology?tab=Classwork",
-    "/student/classes/biology?tab=People", "/student/materials/biology-material-0", "/student/assessments/math-0", "/student/assessments/math-0/quiz",
+    "/student/classes/biology?tab=People", `/student/materials/${demoMaterial("biology-material-0")}`, `/student/assessments/${demoAssessment("math-0")}`, `/student/assessments/${demoAssessment("math-0")}/quiz`,
   ];
   for (const path of pages) {
     await page.goto(path);
@@ -81,7 +81,7 @@ test.describe("Rebuilt Student behavior", () => {
     await expect(page.getByRole("button", { name: /^Missing/ })).toHaveAttribute("aria-pressed", "true");
 
     await page.getByRole("main").getByRole("button", { name: /Quiz 03: Variables and Data Types/ }).click();
-    await expect(page).toHaveURL(/\/student\/assessments\/biology-0$/);
+    await expect(page).toHaveURL(new RegExp(`/student/assessments/${demoAssessment("biology-0")}$`));
     await page.goBack();
     await expect(page.getByRole("button", { name: /^Missing/ })).toHaveAttribute("aria-pressed", "true");
     await page.goForward();
@@ -93,7 +93,7 @@ test.describe("Rebuilt Student behavior", () => {
 
   test("number keys pick answers, and Previous/Next keep each question's own timer", async ({ page }) => {
     await useNewStudentUi(page);
-    await page.goto("/student/assessments/math-0/quiz");
+    await page.goto(`/student/assessments/${demoAssessment("math-0")}/quiz`);
     const radios = page.getByRole("radiogroup", { name: "Choose an answer" }).getByRole("radio");
     await expect(radios.first()).toBeVisible();
     await page.keyboard.press("2");
@@ -108,38 +108,28 @@ test.describe("Rebuilt Student behavior", () => {
 
   test("the last question's timeout submits and shows the result", async ({ page }) => {
     await useNewStudentUi(page);
-    await page.goto("/student/assessments/math-0/quiz");
+    await page.goto(`/student/assessments/${demoAssessment("math-0")}/quiz`);
     await page.getByRole("button", { name: "Go to question 5" }).click();
     await page.clock.runFor(61_000);
     await expect(page.getByText("Assessment submitted")).toBeVisible();
     await expect(page).toHaveURL(/\/result$/);
   });
 
-  test("an instructor's exam grade and feedback appear on the Student exam page (D-015)", async ({ page }) => {
-    const exam = /Long Quiz 01: Control Flow and Functions/;
+  // D-015, updated by D-032: the server grades a multiple-choice exam on submit, and the grade
+  // shows on the Student exam page and the result.
+  test("an exam's grade appears on the Student exam page and the result (D-015)", async ({ page }) => {
+    const exam = demoAssessment("biology-1");
     await useNewStudentUi(page);
-    await page.goto("/student/assessments/biology-1/quiz");
+    await page.goto(`/student/assessments/${exam}/quiz`);
     await page.getByRole("radiogroup", { name: "Choose an answer" }).getByRole("radio").first().click();
     await page.getByRole("button", { name: "Submit assessment" }).click();
     await page.getByRole("button", { name: /Submit now/ }).click();
     await expect(page.getByText("Assessment submitted")).toBeVisible();
 
-    // Grade it in the classic Instructor UI.
-    await page.goto("/instructor");
-    await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
-    await page.getByRole("tablist", { name: "Classroom sections" }).getByRole("tab", { name: /^Submissions/ }).click();
-    await page.getByRole("main").getByRole("button", { name: exam }).first().click();
-    await page.getByRole("main").getByRole("spinbutton").first().fill("32");
-    await page.getByPlaceholder("Optional feedback").fill("Strong loops; revisit recursion.");
-    await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(page.getByRole("tab", { name: /^Submissions\s?0/ })).toBeVisible();
-
-    await page.goto("/student/assessments/biology-1");
-    const graded = page.getByRole("region", { name: "Graded by your instructor" });
-    await expect(graded).toContainText("32 / 40 points");
-    await expect(graded).toContainText("Strong loops; revisit recursion.");
+    await page.goto(`/student/assessments/${exam}`);
+    await expect(page.getByRole("region", { name: "Your grade" })).toContainText(/\/ 40 points/);
     await page.getByRole("button", { name: "View your result" }).click();
-    await expect(page.getByRole("region", { name: "Instructor feedback" })).toContainText("32 / 40 points");
+    await expect(page.getByText(/correct$/).first()).toBeVisible();
   });
 
   test("an assignment submitted in the rebuilt UI reaches the classic instructor queue", async ({ page }) => {
@@ -149,6 +139,8 @@ test.describe("Rebuilt Student behavior", () => {
     await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
     await page.getByRole("textbox", { name: /^Assignment title/ }).fill("Pseudocode for a vending machine");
     await page.getByRole("button", { name: "Save and publish" }).click();
+    // Publishing is a server call (D-032): wait for it before leaving the page.
+    await expect(page.getByRole("status").filter({ hasText: "Assignment published" })).toBeVisible();
 
     await useNewStudentUi(page);
     await page.goto("/student/tasks");

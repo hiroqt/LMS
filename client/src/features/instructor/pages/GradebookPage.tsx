@@ -1,10 +1,12 @@
 import { TriangleAlert } from "lucide-react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { Card } from "../../../shared/ui/Card";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Field, Input, Select } from "../../../shared/ui/Field";
-import { setGradebookSetting } from "../api/actions";
+import { useInstructorActions } from "../api/actions";
+import { useToast } from "../../../shared/ui/toast/useToast";
 import { DEFAULT_GRADEBOOK, gradebookAverages, subjectOf } from "../api/selectors";
 import type { GradebookSetting } from "../api/types";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
@@ -19,12 +21,31 @@ const SETTINGS: Array<{ key: keyof GradebookSetting; label: string; hint: string
 export default function GradebookPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { store, instructor, rooms } = useInstructorWorkspace();
+  const { store, rooms } = useInstructorWorkspace();
+  const actions = useInstructorActions();
+  const toast = useToast();
   const room = rooms.find((item) => item.id === params.get("class")) ?? rooms[0];
+  // Edits stay here until the weights add up to 100, which the server requires before saving.
+  const [draft, setDraft] = useState<{ classId: string; values: GradebookSetting } | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const header = <PageHeader title="Gradebook" description="Set category weights and follow progress across your class." />;
   if (!room) return <>{header}<EmptyState title="No classrooms yet" description="Create a class to set up its gradebook." /></>;
 
-  const settings = store.gradebookSettings[room.id] ?? DEFAULT_GRADEBOOK;
+  const saved = store.gradebookSettings[room.id] ?? DEFAULT_GRADEBOOK;
+  const settings = draft?.classId === room.id ? draft.values : saved;
+  const change = async (key: keyof GradebookSetting, value: number) => {
+    const values = { ...settings, [key]: value };
+    setDraft({ classId: room.id, values });
+    const valid = [values.activityWeight, values.examWeight, values.passingScore].every((n) => Number.isFinite(n) && n >= 0 && n <= 100);
+    if (!valid || values.activityWeight + values.examWeight !== 100) {
+      setSaveState("idle");
+      return;
+    }
+    setSaveState("saving");
+    const result = await actions.saveGradebook(room.id, values);
+    setSaveState(result.ok ? "saved" : "idle");
+    if (!result.ok) toast.show({ title: "Could not save the gradebook", description: result.message, tone: "danger" });
+  };
   const averages = gradebookAverages(store, room.id);
   const weightTotal = settings.activityWeight + settings.examWeight;
   const subject = subjectOf(store, room);
@@ -41,14 +62,15 @@ export default function GradebookPage() {
         </Field>
         {SETTINGS.map(({ key, label, hint }) => (
           <Field key={key} label={label} hint={hint}>
-            <Input type="number" inputMode="numeric" min={0} max={100} value={settings[key]} onChange={(event) => setGradebookSetting(instructor, room.id, key, Number(event.target.value))} />
+            <Input type="number" inputMode="numeric" min={0} max={100} value={settings[key]} onChange={(event) => void change(key, Number(event.target.value))} />
           </Field>
         ))}
       </Card>
+      <p role="status" className="m-0 min-h-6 text-body text-muted">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}</p>
       {weightTotal !== 100 && (
         <p role="status" className="m-0 flex items-start gap-2 rounded-card border border-warning/30 bg-warning-soft p-3 text-body text-warning">
           <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-          Activity and exam weights add up to {weightTotal}%. Most courses use 100%. Saved as entered.
+          Activity and exam weights add up to {weightTotal}%. They must add up to 100% before the gradebook is saved.
         </p>
       )}
       <section aria-labelledby="weighted-progress" className="flex flex-col gap-3">

@@ -311,3 +311,23 @@ when nothing changed and the hook writes only when it differs; ISMS query keys s
 its JSON is the effect dependency. The instructor being viewed was never persisted, so a
 reload of another instructor's class fell back to the first instructor; the initial
 instructor is now taken from the class in the URL.
+
+### L-046 · Server-backed tests: ports, time zones, and the main landmark
+`2026-11-17` · hiro · scope: e2e, shared · confidence: high
+Playwright's `reuseExistingServer` happily reused a stale dev server left on 4173 that pointed
+at an old API URL, so every workspace showed "API not running"; the suite now uses port 4317.
+`new Date("2026-10-23T09:00:00")` in the Node runner is the runner's local time (UTC in CI),
+so the pinned clock carries an offset and the browser zone is pinned (`timezoneId`). A loading
+screen inside `<main>` made `openRole` (which waits for `main`) and screen readers treat a
+half-loaded page as ready: the loading gate is a `div aria-busy` and only the workspace or its
+error state is `main`. An assignment without a due date became `NaN` in every date rule and
+silently disappeared from Tasks; treat empty as "no due date" (sorts last, never missing).
+
+### L-047 · Moving code between chunks can push the entry over budget without new code
+`2026-11-17` · hiro · scope: shared, build · confidence: high
+When Student and Instructor stopped importing the browser role store (D-032), `data.js` and
+`storage.js` were left with one eager importer (Admin), so Rollup folded them from their shared,
+preloaded chunk into `index` and the entry passed 105 KB with no code added. Comparing the entry's
+source-map `sources` between `main` and the branch shows such moves at once. The fix was real,
+not a budget change: Admin now loads lazily like the other workspaces, so a student or instructor
+no longer downloads Admin code before the first screen.

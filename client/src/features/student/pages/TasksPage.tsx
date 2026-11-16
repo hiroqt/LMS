@@ -13,13 +13,13 @@ import { studentPaths } from "../paths";
 function byDay<T extends { dueAt: string }>(items: T[]): Array<[string, T[]]> {
   const days = new Map<string, T[]>();
   for (const item of items) {
-    const key = new Date(item.dueAt).toDateString();
+    const key = item.dueAt ? new Date(item.dueAt).toDateString() : "";
     days.set(key, [...(days.get(key) ?? []), item]);
   }
   return [...days];
 }
 
-const dayLabel = (key: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date(key));
+const dayLabel = (key: string) => (key ? new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date(key)) : "No due date");
 
 const icons: Record<TaskStatus, typeof CalendarDays> = { "Due soon": CalendarDays, "Due this week": CalendarDays, Missing: AlarmClock, Done: Check };
 

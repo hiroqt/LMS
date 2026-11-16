@@ -3,26 +3,39 @@ import { Navigate, useNavigate, useParams } from "react-router";
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
-import { STUDENT } from "../api/catalog";
-import { scoreAttempt } from "../api/selectors";
-import { useProgress } from "../hooks/useProgress";
-import { useStudentCatalog } from "../hooks/useStudentCatalog";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
+import { fetchAttempt, studentKeys, studentQueryOptions } from "../api/student";
+import { useStudentCatalog, useStudentViewer } from "../hooks/useStudentCatalog";
 import { studentPaths } from "../paths";
 
 export default function ResultPage() {
   const { assessmentId = "" } = useParams();
   const navigate = useNavigate();
   const catalog = useStudentCatalog();
-  const progress = useProgress();
+  const viewer = useStudentViewer();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
-  const questions = assessment ? catalog.questions[assessment.id] ?? [] : [];
-  if (!assessment || !questions.length) return <Navigate to={studentPaths.tasks()} replace />;
+  const attemptId = catalog.attempts[assessmentId]?.latestId;
+  const result = useQuery({
+    queryKey: studentKeys.result(viewer.id, attemptId ?? 0),
+    queryFn: ({ signal }) => fetchAttempt(viewer, assessment!.courseId, assessmentId, attemptId!, signal),
+    ...studentQueryOptions,
+    enabled: Boolean(assessment && attemptId),
+  });
+  if (!assessment || !attemptId) return <Navigate to={assessment ? studentPaths.assessment(assessment.id) : studentPaths.tasks()} replace />;
+  if (!result.data) {
+    return <SkeletonGroup label="Loading your result" className="mx-auto flex w-full max-w-3xl flex-col gap-4"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></SkeletonGroup>;
+  }
 
+  const attempt = result.data;
+  const questions = attempt.questions;
+  const pointsOf = (questionId: number) => attempt.answers.find((answer) => answer.questionId === questionId)?.pointsAwarded ?? 0;
+  const isRight = (item: { id: number; points: number }) => pointsOf(item.id) >= item.points;
+  const score = questions.filter(isRight).length;
+  const earned = attempt.score ?? questions.reduce((sum, item) => sum + pointsOf(item.id), 0);
+  const percent = attempt.maxPoints > 0 ? Math.round((earned / attempt.maxPoints) * 100) : 0;
   const course = catalog.courses.find((item) => item.id === assessment.courseId);
-  const answers = progress.answers[assessment.id] ?? {};
-  const score = scoreAttempt(questions, answers);
-  const percent = Math.round((score / questions.length) * 100);
-  const grade = catalog.examGrades[assessment.id];
+  const grade = attempt.feedback ? { totalScore: attempt.score ?? earned, feedback: attempt.feedback } : undefined;
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
   return (
@@ -31,7 +44,7 @@ export default function ResultPage() {
         <header className="flex flex-col items-center gap-2 text-center">
           <span aria-hidden className="grid size-14 place-items-center rounded-full bg-success-soft text-success"><ClipboardCheck className="size-7" /></span>
           <p className="m-0 text-label font-semibold tracking-wide text-success uppercase">Assessment submitted</p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold outline-none sm:text-page">You did it, {STUDENT.firstName}!</h1>
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold outline-none sm:text-page">You did it, {catalog.me.firstName}!</h1>
           <p className="m-0 text-body-lg text-muted">Your {assessment.type.toLowerCase()} for {course?.name ?? "your class"} has been submitted.</p>
         </header>
 
@@ -61,7 +74,7 @@ export default function ResultPage() {
           <h2 id="answer-review" className="m-0 font-sans text-section font-semibold">Answer review <span className="font-normal text-muted">· {questions.length} questions</span></h2>
           <ol className="m-0 flex list-none flex-col gap-2 p-0">
             {questions.map((item, index) => {
-              const correct = answers[index] === item.correct;
+              const correct = isRight(item);
               return (
                 <li key={item.id} className="flex items-start gap-3 rounded-control border border-line p-3">
                   <span aria-hidden className={cn("grid size-7 shrink-0 place-items-center rounded-full", correct ? "bg-success-soft text-success" : "bg-danger-soft text-danger")}>
@@ -83,7 +96,7 @@ export default function ResultPage() {
           <Button onClick={() => navigate(studentPaths.quiz(assessment.id))}>Practice again<ArrowRight aria-hidden className="size-4" /></Button>
         </div>
       </Card>
-      <p className="m-0 flex items-center justify-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your result is saved in this browser for the demo.</p>
+      <p className="m-0 flex items-center justify-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your result is saved with your class record.</p>
     </>
   );
 }

@@ -1,7 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 4173;
+// An uncommon port, so a dev server left running on 4173 or 5173 is never reused by mistake.
+const PORT = 4317;
 const BASE_URL = `http://localhost:${PORT}`;
+/** The LMS API in Demo mode (server/README.md): fictional seed, one database per test sandbox. */
+export const API_PORT = 5299;
+const API_URL = `http://localhost:${API_PORT}`;
+/** The fixtures pin the browser clock to this moment; the API's clock starts at the same instant. */
+const DEMO_NOW = "2026-10-23T09:00:00+08:00";
 
 /**
  * Flow-parity suite. The flow specs encode the journeys in
@@ -19,6 +25,8 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
+    // The demo seed's dates are Manila times; pin the zone so every machine and CI agree.
+    timezoneId: "Asia/Manila",
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@mobile/ },
@@ -28,11 +36,26 @@ export default defineConfig({
   ],
   // E2E_PREVIEW=1 runs against the production build (vite preview), which is
   // where the generated 404.html and role.html fallbacks are exercised.
-  webServer: {
-    command: process.env.E2E_PREVIEW
-      ? `npm run build && npm run preview -- --port ${PORT} --strictPort`
-      : `npm run dev -- --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/student`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: "dotnet run --project ../server/src/Lms.Api --no-launch-profile",
+      url: `${API_URL}/api/lms/status`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+      env: {
+        ASPNETCORE_ENVIRONMENT: "Demo",
+        ASPNETCORE_URLS: API_URL,
+        Lms__Demo__Now: DEMO_NOW,
+        Lms__Demo__DataDirectory: `${process.env.RUNNER_TEMP ?? process.env.TMPDIR ?? "/tmp"}/lms-e2e`,
+      },
+    },
+    {
+      command: process.env.E2E_PREVIEW
+        ? `npm run build && npm run preview -- --port ${PORT} --strictPort`
+        : `npm run dev -- --port ${PORT} --strictPort`,
+      url: `http://localhost:${PORT}/student`,
+      reuseExistingServer: !process.env.CI,
+      env: { VITE_LMS_API_URL: API_URL },
+    },
+  ],
 });

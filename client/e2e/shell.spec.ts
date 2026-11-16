@@ -45,16 +45,19 @@ test.describe("Student · shell", () => {
     await expect(page.getByRole("main").getByText("Unfinished work due before the week ends").filter({ visible: true })).toHaveCount(1);
   });
 
-  test("P: Reset demo data clears saved progress and returns to Today", async ({ page }) => {
+  // P changed with D-032: work lives on the server, so there is no browser progress to reset.
+  // The workspace shows one student at a time, chosen on Today.
+  test("P: the profile names the student being viewed, and Today switches student", async ({ page }) => {
     await openRole(page, "student");
     await submitQuiz(page);
     await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Dashboard" }).click();
     await expect(page.getByRole("button", { name: /^1 Assessments done/ })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ })).toBeVisible();
 
-    await page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ }).click();
-    await page.getByRole("button", { name: "Reset demo data" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
+    await page.getByRole("combobox", { name: "Choose demo student" }).selectOption({ label: "Jamie Lee" });
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Jamie/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^0 Assessments done/ })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: /Jamie Lee/ })).toBeVisible();
   });
 
   test("ROLE: the profile menu switches workspace", async ({ page }) => {

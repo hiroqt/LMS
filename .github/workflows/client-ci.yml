@@ -2,10 +2,10 @@ name: Client CI
 
 on:
   pull_request:
-    paths: ["client/**", "server/src/Lms.Api/Demo/**", ".github/workflows/client-ci.yml"]
+    paths: ["client/**", "server/**", ".github/workflows/client-ci.yml"]
   push:
     branches: [main]
-    paths: ["client/**", ".github/workflows/client-ci.yml"]
+    paths: ["client/**", "server/**", ".github/workflows/client-ci.yml"]
 
 concurrency:
   group: client-ci-${{ github.ref }}
@@ -49,6 +49,12 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
       - run: npm ci
+      # The suite starts the LMS API in Demo mode (fictional seed, SQLite per test; D-032).
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Build the LMS API
+        run: dotnet build ../server/src/Lms.Api
       - run: npx playwright install --with-deps chromium webkit
       - name: Flow parity on the dev server
         run: npm run test:e2e

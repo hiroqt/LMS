@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import UnknownRoleFallback from "../../components/shared/UnknownRoleFallback.jsx";
-import Admin from "../../roles/admin/Admin.jsx";
 import { matchRole } from "./roles";
 import { useRoleNavigation } from "./useRoleNavigation";
 
 // Each workspace loads on demand, so a visitor downloads only their own role's UI.
+// Every workspace loads on first visit, so each role downloads only its own code (L-047).
+const Admin = lazy(() => import("../../roles/admin/Admin.jsx"));
 const StudentApp = lazy(() => import("../../features/student/StudentApp"));
 const InstructorApp = lazy(() => import("../../features/instructor/InstructorApp"));
 const DesignSystemPage = lazy(() => import("../../features/design-system/DesignSystemPage"));
