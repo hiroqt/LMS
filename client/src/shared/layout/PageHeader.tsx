@@ -16,7 +16,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
       <div className="flex min-w-0 flex-col gap-1">
         {eyebrow && <p className="m-0 text-label font-semibold tracking-label text-primary-700 uppercase">{eyebrow}</p>}
         <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-page">{title}</h1>
-        {description && <p className="m-0 max-w-prose text-body-lg text-muted">{description}</p>}
+        {description && <p className="m-0 max-w-prose text-body text-muted">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </header>
