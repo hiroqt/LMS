@@ -40,3 +40,6 @@ POST {{lms}}/api/classes
 Content-Type: application/json
 
 {}
+
+### LMS database reachable and migrated, and the result of the last ISMS sync
+GET {{lms}}/api/lms/status

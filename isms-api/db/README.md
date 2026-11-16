@@ -14,7 +14,8 @@ mappings in the reference `ISMSdbContext.cs` exactly (including casing).
 | `01_schema.sql` | Creates `isms_dev` and (re)creates its 11 tables. Every `DROP`/`CREATE` is qualified with `isms_dev`. |
 | `02_seed.sql` | Inserts the fictional seed data. |
 | `03_users.sh` | Creates the empty `ismsapi_dev` database and the `isms_api_ro` / `isms_api_rw` users. Passwords come from environment variables. |
-| `../docker-compose.yml` | MySQL 8.4 on host port **3307** (bound to 127.0.0.1) that runs the three files above on first start. |
+| `04_lmsdb.sh` | Creates the LMS API's own database `lmsdb` and its user `lms_api_rw`. Not ISMS data: it shares this dev server for convenience. |
+| `../docker-compose.yml` | MySQL 8.4 on host port **3307** (bound to 127.0.0.1) that runs the files above on first start. |
 
 ## Start
 
@@ -38,9 +39,10 @@ them or put them in an untracked `isms-api/.env` **before the first start**:
 ISMS_DB_ROOT_PASSWORD=dev_only_root_change_me
 ISMS_API_RO_PASSWORD=dev_only_ro_change_me
 ISMS_API_RW_PASSWORD=dev_only_rw_change_me
+LMS_API_RW_PASSWORD=dev_only_lms_change_me
 ```
 
-The API passwords must not contain `'` or `\`. If they do, `03_users.sh` refuses to run.
+All API passwords, including `LMS_API_RW_PASSWORD`, must not contain `'` or `\`. If they do, `03_users.sh` refuses to run.
 
 ## Reset
 
@@ -65,11 +67,22 @@ Stop the server and keep the data with `docker compose down`.
 |---|---|
 | ISMS data (read-only) | `Server=127.0.0.1;Port=3307;Database=isms_dev;User=isms_api_ro;Password=dev_only_ro_change_me;` |
 | API's own tables (EF migrations) | `Server=127.0.0.1;Port=3307;Database=ismsapi_dev;User=isms_api_rw;Password=dev_only_rw_change_me;` |
+| LMS API's database (`../../server`) | `Server=127.0.0.1;Port=3307;Database=lmsdb;User=lms_api_rw;Password=dev_only_lms_change_me;` |
 
 | User | Rights |
 |---|---|
 | `isms_api_ro` | `SELECT` on `isms_dev.*` only. It cannot write and has no access to `ismsapi_dev`. |
 | `isms_api_rw` | `ALL PRIVILEGES` on `ismsapi_dev.*` only. It has no access to `isms_dev`. |
+| `lms_api_rw` | `ALL PRIVILEGES` on `lmsdb.*` only. It cannot read `isms_dev`, so the LMS reaches ISMS data only through the ISMS API. |
+
+**Existing volume.** `04_lmsdb.sh` runs by itself only on a fresh volume. If your container was
+created before it existed, run it once:
+
+```bash
+cd isms-api
+docker compose up -d      # picks up LMS_API_RW_PASSWORD; data is kept
+docker compose exec isms-db bash /docker-entrypoint-initdb.d/04_lmsdb.sh
+```
 
 ## Join keys
 
