@@ -112,3 +112,11 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | Bundle within budget | ✔ `npm run budget` (CI) |
 | Screen-reader journeys | ✖ manual: `SCREEN_READER_CHECKLIST.md` |
 
+## Server-backed: ISMS connection (D-030)
+
+| Check | Spec |
+| --- | --- |
+| `/isms-link` shows status, classes (instructor filter, student roster by keyboard), subjects, read-only note; zero axe violations, text ≥14px | ✔ `isms-link` `@all` (API mocked) |
+| API not running: plain error with retry per section | ✔ `isms-link` `@all`; offline and 502 in `IsmsLinkPage.test.tsx` |
+| No sideways scroll at 320px | ✔ `isms-link` `@mobile` |
+| Against the real LMS API | ✖ manual, once `../server` is running |

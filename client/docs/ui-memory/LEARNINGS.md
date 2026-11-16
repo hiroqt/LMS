@@ -289,3 +289,15 @@ worked: put tiles with similar natural heights in the same row, move the short t
 a full-width row with a horizontal layout, and show more real items where a tile is
 still short. A heading that cannot shrink below its longest word must be allowed to push
 its action to the next line (no `min-w-0` on the heading), or the two overlap.
+
+### L-044 · Server reads: offline pauses, the service worker, and the entry chunk
+`2026-11-16` · hiro · scope: shared, isms-link · confidence: high
+The app's `networkMode: "offlineFirst"` pauses a failed query's retries while TanStack
+thinks the device is offline, so a server-backed section showed its skeleton forever;
+`/isms-link` opts out with `networkMode: "always"` and says "You’re offline". The
+Workbox service worker does not touch cross-origin API calls (no matching route), so
+`page.route` mocks still work on the production build; mocked cross-origin responses need
+`Access-Control-Allow-Origin`, and the real API must allow the client's origin. Adding the
+lazy route moved `@tanstack/query-core` from the preloaded `storage` chunk into `index`:
+total eager JS was unchanged (124.3 → 124.0 KB gz) but `index` grew 99.2 → 103.7 KB gz,
+leaving 3.7 KB under its budget.

@@ -9,6 +9,8 @@ import { useRoleNavigation } from "./useRoleNavigation";
 const StudentApp = lazy(() => import("../../features/student/StudentApp"));
 const InstructorApp = lazy(() => import("../../features/instructor/InstructorApp"));
 const DesignSystemPage = lazy(() => import("../../features/design-system/DesignSystemPage"));
+// First server-backed page (D-030): ISMS data through the LMS API. Reached by URL only.
+const IsmsLinkPage = lazy(() => import("../../features/isms-link/IsmsLinkPage"));
 
 /**
  * Shown while a workspace chunk downloads. Plain markup on purpose: importing
@@ -41,7 +43,7 @@ function RoleWorkspaceRoute() {
 /**
  * The catch-all route resolves the role exactly as the legacy router did, so
  * every old URL form still works (D-004); /ui-kit is the design-system
- * reference. Since cutover (D-021), Student and Instructor always use the
+ * reference and /isms-link the ISMS connection check (D-030). Since cutover (D-021), Student and Instructor always use the
  * rebuilt UI; a leftover ?ui= parameter is ignored.
  */
 export function AppRouter() {
@@ -50,6 +52,7 @@ export function AppRouter() {
       <Suspense fallback={<PageLoading />}>
         <Routes>
           <Route path="/ui-kit" element={<DesignSystemPage />} />
+          <Route path="/isms-link" element={<IsmsLinkPage />} />
           <Route path="*" element={<RoleWorkspaceRoute />} />
         </Routes>
       </Suspense>

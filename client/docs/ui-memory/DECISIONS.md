@@ -280,3 +280,17 @@ The collapse/expand button moved from the top bar into the sidebar, as its last 
 under Help & Support (a labelled row when expanded, an icon when collapsed). Beside the
 brand it forced the college name onto two lines. Name, `aria-expanded`, and
 `aria-controls` are unchanged (amends D-024).
+
+### D-030 · First server-backed feature: ISMS data, read-only, at /isms-link
+`2026-11-16` · hiro (ISMS integration, phase 1) · scope: shared, isms-link · confidence: medium
+The school's student information system (ISMS) owns subjects, instructors, and class
+schedules; the LMS reads them through the LMS API (`../server`, `VITE_LMS_API_URL`,
+default `http://localhost:5200`) and never edits them. `/isms-link` is the first screen
+that reads a server: a lazily loaded, standalone route (like `/ui-kit`), reached by URL
+only, outside the Student, Instructor, and Admin navigation. Those flows still use
+browser-local data and are unchanged for now, including "Create class"; no spec changed.
+Server reads go through `shared/api/http.ts` (`getJson`, typed `ApiError`: network,
+timeout, 502 ISMS sign-in, 503 ISMS down, other) and TanStack Query hooks in the feature.
+Every server section has a skeleton, an empty state, and an error state with a retry that
+says plainly when the API is not running. ISMS queries use `networkMode: "always"` so an
+offline device gets an error instead of a paused skeleton (L-044).
