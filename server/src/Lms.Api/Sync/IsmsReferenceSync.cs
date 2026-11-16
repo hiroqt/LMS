@@ -77,6 +77,7 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
                 row.IsActive = false;
         }
         await db.SaveChangesAsync(ct);
+        await AddStartersAsync(offeredIds, ct);
 
         foreach (var item in offered)
             await SyncClassStudentsAsync(item.Id, classLists[item.Id], now.UtcDateTime, ct);
@@ -89,11 +90,30 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
         return new SyncResult(now, termName, offered.Count, activeClasses, students, null);
     }
 
+    public const string StarterModuleTitle = "Unit 1 · Foundations";
+
+    /// <summary>
+    /// Gives every offered class what a new class always had: a starter module when it has no
+    /// module yet, and default gradebook weights (40% activities, 60% exams, pass at 60).
+    /// </summary>
+    private async Task AddStartersAsync(IReadOnlyCollection<string> classIds, CancellationToken ct)
+    {
+        var withModules = await db.Modules.Where(m => classIds.Contains(m.ClassId)).Select(m => m.ClassId).Distinct().ToListAsync(ct);
+        var withSettings = await db.GradebookSettings.Where(g => classIds.Contains(g.ClassId)).Select(g => g.ClassId).ToListAsync(ct);
+        foreach (var id in classIds.Except(withModules))
+            db.Modules.Add(new Module { ClassId = id, Title = StarterModuleTitle, SortOrder = 1 });
+        foreach (var id in classIds.Except(withSettings))
+            db.GradebookSettings.Add(new GradebookSetting { ClassId = id });
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>Upserts one class list; returns the number of active students.</summary>
     private async Task<int> SyncClassStudentsAsync(string classId, IReadOnlyList<IsmsStudent> listed, DateTime now, CancellationToken ct)
     {
         var rows = await db.IsmsClassStudents.Where(s => s.ClassId == classId).ToDictionaryAsync(s => s.StudentId, ct);
 
+        // A row without a student id cannot be matched to anyone; skip it rather than fail the sync.
+        listed = listed.Where(s => !string.IsNullOrWhiteSpace(s.StudentId)).ToList();
         foreach (var student in listed)
         {
             if (!rows.TryGetValue(student.StudentId, out var row))
