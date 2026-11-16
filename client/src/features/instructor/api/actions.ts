@@ -1,6 +1,6 @@
 import { commit } from "./store";
 import { DEFAULT_GRADEBOOK, type ReviewItem } from "./selectors";
-import type { AuditEvent, Classroom, GradebookSetting, User } from "./types";
+import type { AuditEvent, GradebookSetting, User } from "./types";
 
 /*
  * Every write mirrors the classic Instructor UI (removed at cutover): same record shapes,
@@ -22,31 +22,6 @@ function auditFor(instructor: User) {
     targetId,
     summary,
   });
-}
-
-export function createClassroom(instructor: User, input: { subjectId: string; yearLevel: number; section: string }, term: string): string | null {
-  const id = `classroom-${uid()}`;
-  const classroom: Classroom = {
-    id,
-    subjectId: input.subjectId,
-    instructorId: instructor.id,
-    section: input.section.trim(),
-    yearLevel: input.yearLevel,
-    term,
-    enrollmentCode: `TMCC-${id.slice(-8).toUpperCase()}`,
-    status: "active",
-    createdAt: now(),
-  };
-  const saved = commit(
-    (current) => ({
-      ...current,
-      classrooms: [...current.classrooms, classroom],
-      modules: [...current.modules, { id: `module-${uid()}`, classroomId: id, title: "Unit 1 · Foundations", order: 1 }],
-      gradebookSettings: { ...current.gradebookSettings, [id]: { ...DEFAULT_GRADEBOOK } },
-    }),
-    auditFor(instructor)("courses", "created", "Classroom", id, `${classroom.section} · ${term}`),
-  );
-  return saved ? id : null;
 }
 
 export interface MaterialInput {

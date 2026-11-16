@@ -67,25 +67,17 @@ test.describe("Instructor · Class workspace", () => {
     await expect(page.getByRole("main").getByRole("heading", { name: title })).toBeVisible();
   });
 
-  test("K: creating a class opens it with a starter workspace", async ({ page }) => {
+  // K changed with D-031: classes come from ISMS, so the Instructor UI no longer creates them.
+  test("K: the sidebar lists assigned classes and offers no way to create one", async ({ page }) => {
     await openRole(page, "instructor");
-    await page.getByRole("complementary").getByRole("button", { name: "+ Create class" }).click();
-    await expect(page.getByRole("heading", { name: "Create a class" })).toBeVisible();
+    const sidebar = page.getByRole("complementary");
+    await expect(sidebar.getByRole("button", { name: "My classes 1" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Create class/ })).toHaveCount(0);
 
-    await page.getByRole("combobox", { name: "Subject" }).selectOption({ label: "IT230 · Computer Networking" });
-    await page.getByRole("combobox", { name: "Year level" }).selectOption({ label: "Year 2" });
-    await page.getByRole("textbox", { name: "Section" }).fill("Section Z");
-    await page.getByRole("button", { name: "Create class", exact: true }).click();
-
-    await expect(page.getByRole("heading", { level: 1, name: "Computer Networking" })).toBeVisible();
-    await expect(page.getByRole("complementary").getByRole("button", { name: "My classes 2" })).toBeVisible();
-  });
-
-  test("K: cancelling class creation closes the form", async ({ page }) => {
-    await openRole(page, "instructor");
-    await page.getByRole("complementary").getByRole("button", { name: "+ Create class" }).click();
-    await page.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByRole("heading", { name: "Create a class" })).toBeHidden();
+    await page.goto("/instructor/classes");
+    await expect(page.getByRole("button", { name: /Create class/ })).toHaveCount(0);
+    // The LMS API is not running in this suite, so the page says where the list comes from.
+    await expect(page.getByRole("status").filter({ hasText: "ISMS is not connected" })).toBeVisible();
   });
 });
 

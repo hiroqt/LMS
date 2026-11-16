@@ -67,13 +67,10 @@ test.describe("Collapsible sidebar", () => {
     await expect(classes.getByRole("button", { name: "Introduction to Programming" })).toHaveCount(0);
   });
 
-  test("instructor: a collapsed sidebar still opens a class and Create class", async ({ page }) => {
+  test("instructor: a collapsed sidebar still opens a class", async ({ page }) => {
     await openRole(page, "instructor");
     await page.getByRole("button", { name: "Collapse sidebar" }).click();
     const sidebar = page.getByRole("complementary", { name: "Workspace" });
-    await sidebar.getByRole("button", { name: "+ Create class" }).click();
-    await expect(page.getByRole("heading", { name: "Create a class" })).toBeVisible();
-    await page.getByRole("button", { name: "Cancel" }).click();
     await sidebar.getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Introduction to Programming" })).toBeVisible();
   });

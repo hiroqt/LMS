@@ -32,6 +32,18 @@ export interface IsmsClass {
   meetings: ClassMeeting[];
 }
 
+export interface IsmsTerm {
+  schoolYearId: number;
+  schoolYearName: string;
+  semesterId: number;
+  semesterName: string;
+}
+
+/** `/api/classes?term=current`: the class list plus the term it was limited to. */
+export interface IsmsClassList extends IsmsList<IsmsClass> {
+  term: IsmsTerm | null;
+}
+
 export interface IsmsStudent {
   studentId: string;
   enrollmentId: string;

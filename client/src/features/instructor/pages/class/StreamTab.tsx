@@ -64,6 +64,8 @@ export function StreamTab({ room, subject, instructor, content, goTab }: ClassTa
           <h2 className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><BookOpen aria-hidden className="size-4 text-primary-700" />About this class</h2>
           <p className="m-0 text-body">{subject?.description ?? "Course information and resources for this classroom."}</p>
           <p className="m-0 text-body text-muted">{content.students.length} students · {room.term ?? "Fall 2026"}</p>
+          {room.schedule && <p className="m-0 text-body text-muted">Schedule <strong className="font-semibold text-ink">{room.schedule}</strong></p>}
+          {room.source === "isms" && <p className="m-0 text-body text-muted">This class and its class list come from ISMS.</p>}
           {room.enrollmentCode && <p className="m-0 text-body text-muted">Class code <strong className="font-semibold text-ink">{room.enrollmentCode}</strong></p>}
         </Card>
       </aside>

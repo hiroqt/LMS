@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, LayoutDashboard, Plus, Search } from "lucide-react";
+import { BookOpen, GraduationCap, LayoutDashboard, Search } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
@@ -13,11 +13,10 @@ import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
 import { IconButton } from "../../shared/ui/IconButton";
 import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
 import { Toaster } from "../../shared/ui/toast/Toaster";
-import { createClassroom } from "./api/actions";
 import { activeInstructors, classMark, searchInstructor, subjectOf } from "./api/selectors";
 import { useRoleStore, useRoleStoreSync } from "./api/store";
-import { CreateClassDialog } from "./components/CreateClassDialog";
 import { useInstructorWorkspace } from "./hooks/useInstructorWorkspace";
+import { useIsmsClassSync } from "./hooks/useIsmsClassSync";
 import { InstructorSessionContext, type InstructorSession } from "./instructorContext";
 import { instructorPaths } from "./paths";
 import OverviewPage from "./pages/OverviewPage";
@@ -52,7 +51,7 @@ function ScreenLoading() {
   );
 }
 
-function Workspace({ onNavigateRole, onCreateClass }: RoleAppProps & { onCreateClass: () => void }) {
+function Workspace({ onNavigateRole }: RoleAppProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
@@ -101,19 +100,6 @@ function Workspace({ onNavigateRole, onCreateClass }: RoleAppProps & { onCreateC
               </li>
             );
           })}
-          <li>
-            <button
-              type="button"
-              title={collapsed ? "Create class" : undefined}
-              onClick={onCreateClass}
-              className={cn(
-                "flex min-h-touch w-full items-center gap-2 rounded-control border border-dashed border-line-strong bg-transparent text-left font-sans text-body font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus",
-                collapsed ? "justify-center px-0" : "px-3",
-              )}
-            >
-              {collapsed ? <><Plus aria-hidden className="size-5" /><span className="sr-only">+ Create class</span></> : "+ Create class"}
-            </button>
-          </li>
         </ul>
       </SidebarGroup>
     </section>
@@ -179,8 +165,16 @@ export default function InstructorApp(props: RoleAppProps) {
   useRoleStoreSync();
   const navigate = useNavigate();
   const store = useRoleStore();
-  const [instructorId, setInstructorId] = useState(() => activeInstructors(store)[0]?.id ?? "");
-  const [creating, setCreating] = useState(false);
+  const location = useLocation();
+  // A class link opens under the instructor who teaches that class, so a reload or a shared
+  // link to a class keeps showing it; otherwise the first active instructor is viewed.
+  const [instructorId, setInstructorId] = useState(() => {
+    const linked = sectionOf(location.pathname) === "classes" ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
+    const owner = store.classrooms.find((room) => room.id === linked && room.status === "active")?.instructorId;
+    const active = activeInstructors(store);
+    return active.find((item) => item.id === owner)?.id ?? active[0]?.id ?? "";
+  });
+  const isms = useIsmsClassSync(instructorId);
   const session = useMemo<InstructorSession>(
     () => ({
       instructorId,
@@ -188,31 +182,15 @@ export default function InstructorApp(props: RoleAppProps) {
         setInstructorId(id);
         navigate(instructorPaths.overview);
       },
-      openCreateClass: () => setCreating(true),
+      isms,
     }),
-    [instructorId, navigate],
+    [instructorId, navigate, isms],
   );
-  const instructor = activeInstructors(store).find((item) => item.id === instructorId) ?? activeInstructors(store)[0];
-  const term = store.systemAdministration?.terms.find((item) => item.id === store.systemAdministration?.settings.currentTermId)?.name ?? "Fall 2026";
 
   return (
     <Toaster>
       <InstructorSessionContext.Provider value={session}>
-        <Workspace {...props} onCreateClass={() => setCreating(true)} />
-        <CreateClassDialog
-          open={creating}
-          onOpenChange={setCreating}
-          subjects={store.subjects}
-          onCreate={(input) => {
-            if (!instructor) return null;
-            const id = createClassroom(instructor, input, term);
-            if (id) {
-              setCreating(false);
-              navigate(instructorPaths.classPage(id));
-            }
-            return id;
-          }}
-        />
+        <Workspace {...props} />
       </InstructorSessionContext.Provider>
     </Toaster>
   );

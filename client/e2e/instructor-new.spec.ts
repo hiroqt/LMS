@@ -51,12 +51,6 @@ test.describe("Rebuilt Instructor screens: zero axe violations, text ≥14px", (
     await expect(page.getByRole("dialog", { name: "Delete this material?" })).toBeVisible();
     await expectNoAxeViolations(page);
     await page.keyboard.press("Escape");
-    // On phones the class list (with "+ Create class") is in the drawer.
-    const menu = page.getByRole("button", { name: "Open menu" });
-    if (await menu.isVisible()) await menu.click();
-    await page.getByRole("complementary").getByRole("button", { name: "+ Create class" }).click();
-    await expect(page.getByRole("dialog", { name: "Create a class" })).toBeVisible();
-    await expectNoAxeViolations(page);
   });
 });
 
@@ -139,12 +133,5 @@ test.describe("Rebuilt Instructor behavior", () => {
     await expect(page.getByText(/add up to/)).toHaveCount(0);
     await page.getByRole("spinbutton", { name: "Activity weight" }).fill("50");
     await expect(page.getByText("Activity and exam weights add up to 110%.", { exact: false })).toBeVisible();
-  });
-
-  test("Create class explains a missing section", async ({ page }) => {
-    await useNewInstructorUi(page);
-    await page.getByRole("complementary").getByRole("button", { name: "+ Create class" }).click();
-    await page.getByRole("button", { name: "Create class", exact: true }).click();
-    await expect(page.getByText("Enter a section, for example Section A.")).toBeVisible();
   });
 });
