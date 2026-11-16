@@ -311,3 +311,20 @@ when nothing changed and the hook writes only when it differs; ISMS query keys s
 its JSON is the effect dependency. The instructor being viewed was never persisted, so a
 reload of another instructor's class fell back to the first instructor; the initial
 instructor is now taken from the class in the URL.
+
+
+### L-046 · Keep remote class content separate from saved browser records
+`2026-11-16` · Codex · scope: instructor, shared API · confidence: medium
+A local starter module has a string ID that cannot identify a database module. Server
+materials therefore select only mapped `lms-module-` records, while local coursework
+keeps its existing module links. Explicit network writes reuse the shared timeout and
+problem handling; HTTP 204 succeeds without trying to parse JSON, and content refreshes
+only after a successful write.
+
+
+### L-047 · Lock the complete form during server writes
+`2026-11-16` · Codex · scope: instructor · confidence: medium
+Disabling only Submit allowed edits or Cancel during an in-flight request; the old save
+handler could then clear or close a newer draft. Content, announcement, and module forms
+use a disabled fieldset while pending. A delayed API rejection check verifies inputs and
+Cancel are locked, then re-enabled with the draft retained.

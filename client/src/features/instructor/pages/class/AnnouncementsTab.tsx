@@ -7,6 +7,8 @@ import { Card } from "../../../../shared/ui/Card";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Input, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
+import { isServerClass, writeContent } from "../../api/content";
+import { describeApiError } from "../../../../shared/api/http";
 import { publishAnnouncement } from "../../api/actions";
 import type { ClassTabProps } from "./shared";
 
@@ -15,13 +17,14 @@ const MESSAGE_MAX = 1200;
 
 export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
   const toast = useToast();
+  const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<{ title?: string; message?: string }>({});
   const list = [...content.announcements].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const next = {
       title: title.trim() ? undefined : "Enter a title.",
@@ -29,14 +32,23 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
     };
     setErrors(next);
     if (next.title || next.message) return;
-    if (!publishAnnouncement(instructor, room.id, { title, message })) {
-      toast.show({ title: "Could not post the announcement", description: "Browser storage is full or blocked.", tone: "danger" });
-      return;
-    }
-    toast.show({ title: "Announcement posted", description: "Students see it in their class stream.", tone: "success" });
-    setTitle("");
-    setMessage("");
-    setOpen(false);
+    if (pending) return;
+    setPending(true);
+    try {
+      const saved = isServerClass(room)
+        ? await writeContent(room.id, instructor.id, "/announcements", { title, message }).then(() => true)
+        : publishAnnouncement(instructor, room.id, { title, message });
+      if (!saved) {
+        toast.show({ title: "Could not post the announcement", description: "Browser storage is full or blocked.", tone: "danger" });
+        return;
+      }
+      toast.show({ title: "Announcement posted", description: isServerClass(room) ? "Saved to this class on the development LMS API." : "Students see it in their class stream.", tone: "success" });
+      setTitle("");
+      setMessage("");
+      setOpen(false);
+    } catch (error) {
+      toast.show({ title: "Could not post the announcement", description: describeApiError(error).detail, tone: "danger" });
+    } finally { setPending(false); }
   };
 
   return (
@@ -47,6 +59,7 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
       </div>
       {open && (
         <form onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
+      <fieldset disabled={pending} className="contents">
           <h3 className="m-0 font-sans text-card-title font-semibold">New class announcement</h3>
           <Field label="Title" required error={errors.title} hint={`${title.length} / ${TITLE_MAX} characters`}>
             <Input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={TITLE_MAX} placeholder="Announcement title" />
@@ -56,9 +69,10 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
           </Field>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={() => { setOpen(false); setErrors({}); }}>Cancel</Button>
-            <Button type="submit">Post announcement</Button>
+            <Button type="submit" loading={pending}>Post announcement</Button>
           </div>
-        </form>
+        </fieldset>
+    </form>
       )}
       {list.length ? (
         <ul className="m-0 flex list-none flex-col gap-3 p-0">

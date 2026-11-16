@@ -19,8 +19,8 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 ## Boundaries and acceptance
 
-- The role workspaces are frontend-only React/Vite with fictional college data: no accounts, real uploads, or cross-device persistence.
-- Subjects, instructors, and schedules belong to the school's ISMS. The LMS reads them through a separate ISMS API (`../isms-api`) and the LMS API (`../server`), never by connecting to the ISMS database. It is shown at `/isms-link`, and the Instructor workspace lists ISMS classes and class lists instead of creating classes (D-031); coursework and grades move to the LMS API in later phases.
+- The role workspaces use fictional college data with no accounts or real uploads. Most state remains browser-local; Development-only Instructor content persistence is described below.
+- Subjects, instructors, and schedules belong to the school's ISMS. The LMS reads them through a separate ISMS API (`../isms-api`) and the LMS API (`../server`), never by connecting to the ISMS database. It is shown at `/isms-link`, and the Instructor workspace lists ISMS classes and class lists instead of creating classes (D-031); in Development, Instructor modules, material metadata and announcements now use the LMS database (D-032). Coursework, grades and Student/Admin server integration remain for later phases.
 - Role data and submissions persist in the current browser. Admin Reset Demo restores seed records after saving a separate local snapshot.
 - Exams support multiple choice, true/false, essay, enumeration, and matching. Essays need instructor grading; remaining types use simple local automatic grading. Both exam-wide and per-question timers can be disabled or configured; retry and correct-answer visibility settings are configurable.
 - Gradebook category weights and passing threshold are instructor-configurable. The illustrative overall uses graded work only.

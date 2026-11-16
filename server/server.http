@@ -40,3 +40,19 @@ POST {{lms}}/api/classes
 Content-Type: application/json
 
 {}
+
+### LMS database reachable and migrated, and the result of the last ISMS sync
+GET {{lms}}/api/lms/status
+
+### Development-only content (use a class id returned by /api/classes and its instructor)
+@classId = replace-with-class-id
+@instructorId = replace-with-isms-instructor-id
+GET {{lms}}/api/classes/{{classId}}/content
+X-Demo-Instructor-Id: {{instructorId}}
+
+### Create a module in that class (Development only)
+POST {{lms}}/api/classes/{{classId}}/content/modules
+X-Demo-Instructor-Id: {{instructorId}}
+Content-Type: application/json
+
+{ "title": "Unit 1", "sortOrder": 1 }

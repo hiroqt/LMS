@@ -6,6 +6,8 @@ import { Button } from "../../../shared/ui/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { useToast } from "../../../shared/ui/toast/useToast";
 import { classContent, classMark, classWork, subjectOf, yearOf } from "../api/selectors";
+import { useClassContent } from "../hooks/useClassContent";
+import { describeApiError } from "../../../shared/api/http";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { CLASS_TABS, instructorPaths, isClassTab, isContentType, type ClassTab, type ContentType } from "../paths";
 import { AnnouncementsTab } from "./class/AnnouncementsTab";
@@ -24,7 +26,7 @@ export default function ClassPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { store, instructor, rooms, queue } = useInstructorWorkspace();
+  const { store: localStore, instructor, rooms, queue } = useInstructorWorkspace();
   const requested = params.get("tab");
   const urlTab: ClassTab = isClassTab(requested) ? requested : "Stream";
   // Show the chosen tab at once; the URL follows. Router navigations render in a
@@ -42,6 +44,8 @@ export default function ClassPage() {
   }, [shownTab]);
   const index = rooms.findIndex((item) => item.id === classId);
   const room = rooms[index];
+  const remote = useClassContent(localStore, room, instructor);
+  const store = remote.store;
   if (!room) return <Navigate to={instructorPaths.classes()} replace />;
 
   const tab = shownTab;
@@ -98,6 +102,12 @@ export default function ClassPage() {
         }
       />
 
+      {remote.enabled && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-body text-muted" role="status">
+          <span>{remote.isPending ? "Loading saved class content…" : remote.isError ? describeApiError(remote.error).detail : "Materials, modules, and announcements save to the development LMS API. Assignments and assessments stay in this browser."}</span>
+          {remote.isError && <Button variant="secondary" onClick={() => void remote.refetch()}>Retry class content</Button>}
+        </div>
+      )}
       {/* Radix derives element ids from tab values, so values must not contain
           spaces ("Create content" broke aria-controls); labels and URLs keep them. */}
       <Tabs value={slug(tab)} onValueChange={(value) => goTab(fromSlug(value))}>

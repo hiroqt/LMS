@@ -121,3 +121,13 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | No sideways scroll at 320px | ✔ `isms-link` `@mobile` |
 | Instructor Classes page names ISMS as the source; no Create class; zero axe violations | ✔ `instructor-isms` `@all` (API mocked) |
 | Against the real LMS API | ✖ manual, once `../server` is running |
+
+
+## Development class content (D-032)
+
+| Check | Spec |
+| --- | --- |
+| ISMS class announcement saves and reloads through the content API in development | ✔ `instructor-isms` (API mocked) |
+| Create a saved module, select it, and publish a server material | ✔ `instructor-isms` (development, API mocked) |
+| Mapping preserves browser records; pages load fully; failed write has no local fallback; bodyless delete works | ✔ `content.test.ts` |
+| Real MySQL and API browser flow; Student consumption of server records | ✖ outside the client mocked checks |

@@ -5,6 +5,9 @@ import { Button } from "../../../../shared/ui/Button";
 import { Card } from "../../../../shared/ui/Card";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
+import { isServerClass, serverModuleId, writeContent } from "../../api/content";
+import { describeApiError } from "../../../../shared/api/http";
+import { ModuleForm } from "./ModuleForm";
 import { createActivity, createExam, createMaterial } from "../../api/actions";
 import type { ContentType } from "../../paths";
 import { RESOURCE_TYPES } from "./classUtils";
@@ -25,7 +28,10 @@ const titles: Record<ContentType, string> = { material: "Upload class material",
 
 function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabProps, "room" | "instructor" | "content"> & { type: ContentType; onDone: (saved: boolean) => void }) {
   const toast = useToast();
-  const [values, setValues] = useState<Record<string, string>>({ moduleId: content.modules[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", correctIndex: "0" });
+  const remote = isServerClass(room) && type === "material";
+  const modules = content.modules.filter((item) => remote ? serverModuleId(item.id) !== undefined : serverModuleId(item.id) === undefined);
+  const [pending, setPending] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({ moduleId: modules[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", correctIndex: "0" });
   const [flags, setFlags] = useState({ allowLate: false, allowResubmission: false });
   const [file, setFile] = useState<{ name: string; type: string; size: string } | null>(null);
   const [errors, setErrors] = useState<Errors>({});
@@ -34,6 +40,7 @@ function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabP
 
   const validate = (): Errors => {
     const next: Errors = { title: v("title").trim() ? undefined : "Enter a title." };
+    if (remote && serverModuleId(v("moduleId")) === undefined) next.moduleId = "Create or select a saved module first.";
     if (type !== "material") {
       const points = Number(v("points"));
       next.points = v("points") && points > 0 ? undefined : "Enter points greater than 0.";
@@ -45,37 +52,46 @@ function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabP
     return next;
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const next = validate();
     setErrors(next);
     if (Object.values(next).some(Boolean)) return;
-    const common = { moduleId: v("moduleId"), title: v("title"), instructions: v("instructions"), dueAt: v("dueAt"), points: Number(v("points")) };
-    const saved =
-      type === "material"
-        ? createMaterial(instructor, room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
-        : type === "activity"
-          ? createActivity(instructor, { ...common, ...flags })
-          : createExam(instructor, room.id, { ...common, timeLimit: Number(v("timeLimit")), prompt: v("prompt"), options: [1, 2, 3, 4].map((n) => v(`option${n}`)), correctIndex: Number(v("correctIndex")) });
-    if (!saved) {
-      toast.show({ title: "Could not publish", description: "Browser storage is full or blocked.", tone: "danger" });
-      return;
-    }
-    toast.show({ title: `${type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"} published`, description: v("title").trim(), tone: "success" });
-    onDone(true);
+    if (pending) return;
+    setPending(true);
+    try {
+      const common = { moduleId: v("moduleId"), title: v("title"), instructions: v("instructions"), dueAt: v("dueAt"), points: Number(v("points")) };
+      const saved = remote
+        ? await writeContent(room.id, instructor.id, "/materials", { moduleId: serverModuleId(v("moduleId")), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size }).then(() => true)
+        : type === "material"
+          ? createMaterial(instructor, room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
+          : type === "activity"
+            ? createActivity(instructor, { ...common, ...flags })
+            : createExam(instructor, room.id, { ...common, timeLimit: Number(v("timeLimit")), prompt: v("prompt"), options: [1, 2, 3, 4].map((n) => v(`option${n}`)), correctIndex: Number(v("correctIndex")) });
+      if (!saved) {
+        toast.show({ title: "Could not publish", description: "Browser storage is full or blocked.", tone: "danger" });
+        return;
+      }
+      toast.show({ title: `${type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"} published`, description: v("title").trim(), tone: "success" });
+      onDone(true);
+    } catch (error) {
+      toast.show({ title: "Could not publish", description: describeApiError(error).detail, tone: "danger" });
+    } finally { setPending(false); }
   };
 
   const label = type === "material" ? "Material title" : type === "activity" ? "Assignment title" : "Assessment title";
   return (
     <form onSubmit={submit} noValidate aria-labelledby="content-form-title" className="flex flex-col gap-4 rounded-card border border-primary-200 bg-surface p-5">
+      <fieldset disabled={pending} className="contents">
       <div className="flex flex-col gap-1">
         <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"}</p>
         <h3 id="content-form-title" className="m-0 font-sans text-section font-semibold">{titles[type]}</h3>
         <p className="m-0 text-body text-muted">This content will be shared with {room.section}.</p>
       </div>
-      <Field label="Curriculum Unit / Module">
+      <Field label="Curriculum Unit / Module" error={errors.moduleId}>
         <Select value={v("moduleId")} onChange={set("moduleId")}>
-          {content.modules.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+          {remote && <option value="">Select a saved module</option>}
+          {modules.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
         </Select>
       </Field>
       <Field label={label} required error={errors.title}>
@@ -157,8 +173,9 @@ function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabP
       )}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={() => onDone(false)}>Cancel</Button>
-        <Button type="submit">Save and publish</Button>
+        <Button type="submit" loading={pending}>Save and publish</Button>
       </div>
+    </fieldset>
     </form>
   );
 }
@@ -191,6 +208,7 @@ export function CreateContentTab({ room, instructor, content, goTab, open }: Cla
     <div className="flex flex-col gap-4">
       <SectionHeading eyebrow="Class content" title="Create and organize" />
       <p className="m-0 -mt-2 text-body text-muted">Choose what you want to share with this class.</p>
+      {isServerClass(room) && <ModuleForm room={room} instructor={instructor} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => `${item.title} · ${item.kind ?? "Material"}`)} onCreate={(type) => goTab("Create content", { create: type })} />
         <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => item.title)} onCreate={(type) => goTab("Create content", { create: type })} />
