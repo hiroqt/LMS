@@ -39,7 +39,7 @@ function Stream({ course, catalog, completed, now, onTab }: { course: Course; ca
   const upcoming = dueSoon(catalog.assessments.filter((item) => item.courseId === course.id), completed, now);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
         {announcements.length ? (
           announcements.map((item) => (
@@ -171,7 +171,7 @@ function MaterialGrid({ materials }: { materials: StudentCatalog["materials"] })
   const navigate = useNavigate();
   if (!materials.length) return <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">No materials found.</p>;
   return (
-    <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="m-0 grid list-none gap-3 p-0 @xl:grid-cols-2 @4xl:grid-cols-3 @7xl:grid-cols-4">
       {materials.map((item) => (
         <li key={item.id}>
           <button

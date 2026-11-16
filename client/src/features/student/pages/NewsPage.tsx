@@ -20,7 +20,7 @@ function NewsContent({ catalog, now }: { catalog: StudentCatalog; now: number })
   return (
     <div className="flex flex-col gap-6">
       <FeaturedNewsCarousel slides={featuredSlides(catalog.featured, catalog.academicEvents, now)} onViewCalendar={() => navigate(studentPaths.calendar())} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
           <SectionHeading id="teacher-news" eyebrow="Your classes" title="Teacher announcements" />
           {catalog.announcements.length ? (

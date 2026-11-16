@@ -5,6 +5,7 @@ import { academicEvents, featuredAnnouncements } from "../../../data.js";
 import { FeaturedNewsCarousel } from "../../../shared/components/FeaturedNewsCarousel";
 import { MonthGrid } from "../../../shared/components/MonthGrid";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
+import { Panel } from "../../../shared/components/Panel";
 import { StatCard } from "../../../shared/components/StatCard";
 import { ViewToggle } from "../../../shared/components/ViewToggle";
 import { useClassView } from "../../../shared/hooks/useClassView";
@@ -58,62 +59,62 @@ function Overview({ onNews }: { onNews: () => void }) {
   };
 
   return (
-    <>
-      <div>
-        <section aria-labelledby="teaching-greeting" className="flex flex-col justify-between gap-4 rounded-card border border-line bg-surface p-5 font-sans text-ink shadow-card sm:flex-row sm:items-center sm:p-6">
-          <div className="flex flex-col gap-2">
-            <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight sm:text-page-mobile">{greetingFor(now)}, {instructor.firstName}</h2>
-            <p className="m-0 max-w-prose text-body text-muted">
-              {queue.length
-                ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
-                : "Your review queue is clear."}
-            </p>
-          </div>
-          <Button size="lg" className="self-start" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
-        </section>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
-        <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
-        <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
-        <StatCard icon={<UsersRound />} tone="bg-success-soft text-success" value={reached} label="Students reached" />
-      </div>
-
-      <section aria-labelledby="classes-in-progress" className="flex flex-col gap-4">
-        <SectionHeading
-          id="classes-in-progress"
-          icon={<Layers />}
-          title="Classes in progress"
-          action={
-            <div className="flex flex-wrap items-center gap-2">
-              <ViewToggle view={classView} onChange={setClassView} />
-              <Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>
+    // A bento grid: tiles share one gutter and stretch to their row (D-026).
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @7xl:grid-cols-[minmax(0,2fr)_minmax(0,4fr)]">
+        <section aria-labelledby="teaching-greeting" className="@container rounded-card border border-line bg-surface p-4 font-sans text-ink shadow-card sm:p-5">
+          <div className="flex h-full flex-col justify-between gap-3 @lg:flex-row @lg:items-center">
+            <div className="flex flex-col gap-1">
+              <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
+              <p className="m-0 text-body text-muted">
+                {queue.length
+                  ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
+                  : "Your review queue is clear."}
+              </p>
             </div>
-          }
-        />
-        <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
-        <InstructorClassList store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
-      </section>
+            <Button className="shrink-0 self-start @lg:self-center" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
+          </div>
+        </section>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 @3xl:grid-cols-4">
+          <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
+          <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
+          <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
+          <StatCard icon={<UsersRound />} tone="bg-success-soft text-success" value={reached} label="Students reached" />
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section aria-labelledby="needs-review" className="flex flex-col gap-4">
-          <SectionHeading
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-3 sm:gap-4 @7xl:col-span-2 @7xl:grid @7xl:grid-cols-2">
+          <Panel
+            id="classes-in-progress"
+            icon={<Layers />}
+            title="Classes in progress"
+            action={
+              <div className="flex flex-wrap items-center gap-2">
+                <ViewToggle view={classView} onChange={setClassView} />
+                <Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>
+              </div>
+            }
+          >
+            <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
+            <InstructorClassList store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
+          </Panel>
+          <Panel
             id="needs-review"
+            className="flex-1"
             icon={<Inbox />}
             title="Needs your review"
             count={queue.length}
             action={<Button variant="ghost" onClick={() => openReview()}>Open review queue<ArrowRight aria-hidden className="size-4" /></Button>}
-          />
-          {queue.length ? (
-            <Card className="p-2">
-              <ul className="m-0 flex list-none flex-col p-0">
+          >
+            {queue.length ? (
+              <ul className="m-0 flex flex-1 list-none flex-col divide-y divide-line p-0">
                 {queue.slice(0, 3).map((item) => (
                   <li key={item.id}>
                     <button
                       type="button"
                       onClick={() => openReview(item.id)}
-                      className="flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent p-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus"
+                      className="flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent px-1 py-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus"
                     >
                       <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-100 text-body font-semibold text-primary-700">
                         {(item.student?.firstName?.[0] ?? "A") + (item.student?.lastName?.[0] ?? "R")}
@@ -127,25 +128,18 @@ function Overview({ onNews }: { onNews: () => void }) {
                   </li>
                 ))}
               </ul>
-            </Card>
-          ) : (
-            <EmptyState
-              icon={<ClipboardCheck />}
-              title="Your review queue is clear"
-              description="New work will appear here after students submit."
-            />
-          )}
-        </section>
-        <section aria-labelledby="month-review" className="flex flex-col gap-4">
-          <SectionHeading id="month-review" icon={<CalendarDays />} eyebrow={`Month review · ${formatMonth(new Date(now))}`} title="Academic calendar" />
-          <Card className="flex flex-col gap-3 p-4">
-            <p className="m-0 text-body text-muted">{marks.filter((item) => item.kind === "event").length} academic dates · {marks.filter((item) => item.kind === "deadline").length} class deadlines</p>
-            <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
-            <Button variant="secondary" onClick={onNews}><Megaphone aria-hidden className="size-4" />View announcements</Button>
-          </Card>
-        </section>
+            ) : (
+              <EmptyState className="flex-1 justify-center" icon={<ClipboardCheck />} title="Your review queue is clear" description="New work will appear here after students submit." />
+            )}
+          </Panel>
+        </div>
+        <Panel id="month-review" icon={<CalendarDays />} title="Academic calendar">
+          <p className="m-0 text-body text-muted">{formatMonth(new Date(now))} · {marks.filter((item) => item.kind === "event").length} academic dates · {marks.filter((item) => item.kind === "deadline").length} class deadlines</p>
+          <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
+          <Button variant="secondary" className="mt-auto" onClick={onNews}><Megaphone aria-hidden className="size-4" />View announcements</Button>
+        </Panel>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -164,7 +158,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
   return (
     <div className="flex flex-col gap-6">
       <FeaturedNewsCarousel slides={featuredSlides(featuredAnnouncements, events, now)} onViewCalendar={onCalendar} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
           <SectionHeading id="teacher-news" icon={<Megaphone />} eyebrow="Your classes" title="Teacher announcements" count={announcements.length} />
           {announcements.length ? (

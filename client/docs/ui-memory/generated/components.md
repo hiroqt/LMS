@@ -47,6 +47,7 @@
 | `src/shared/components/HelpSupport.tsx` | `HelpSupport` |
 | `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
+| `src/shared/components/Panel.tsx` | `Panel` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
 | `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
 | `src/shared/components/StatCard.tsx` | `StatCard` |

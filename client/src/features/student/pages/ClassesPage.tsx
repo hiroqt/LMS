@@ -16,7 +16,7 @@ export default function ClassesPage() {
     <>
       <PageHeader title="My classes" description={`${courses.length} ${courses.length === 1 ? "class" : "classes"} this term`} actions={<ViewToggle view={view} onChange={setView} />} />
       {courses.length ? (
-        <ClassList courses={courses} view={view} onOpen={(course) => navigate(studentPaths.classPage(course.id))} gridClassName="gap-4 sm:grid-cols-2 xl:grid-cols-3" />
+        <ClassList courses={courses} view={view} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
       ) : (
         <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
       )}

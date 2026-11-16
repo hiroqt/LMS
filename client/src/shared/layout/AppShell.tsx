@@ -223,11 +223,14 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
 
         <NetworkBanner />
 
+        {/* Fills the space beside the sidebar. It is a size container, so pages lay
+            out by the room they actually have (@4xl:, @7xl:), which also changes
+            when the sidebar collapses. Capped only on very wide monitors. */}
         <main
           id="main-content"
           ref={mainRef}
           tabIndex={-1}
-          className={cn("mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 outline-none sm:gap-6 sm:px-6 sm:py-6 lg:py-8", mobileNav === "bottom" && "pb-28 lg:pb-8")}
+          className={cn("@container mx-auto flex w-full max-w-[120rem] flex-1 flex-col gap-5 px-4 py-5 outline-none sm:gap-6 sm:px-6 sm:py-6 lg:px-8 lg:py-8", mobileNav === "bottom" && "pb-28 lg:pb-8")}
         >
           {children}
         </main>

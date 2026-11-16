@@ -6,18 +6,21 @@ export interface StatCardProps {
   tone: string;
   value: number;
   label: string;
+  /** Shown instead of the label on phones, where a chip is about 90px wide. The full label stays the accessible name. */
+  shortLabel?: string;
   /** When present the chip is a button; its name starts with the value, e.g. "2 Due this week". */
   onOpen?: () => void;
 }
 
 /** A compact summary chip: icon tile, a number, and what it counts. */
-export function StatCard({ icon, tone, value, label, onOpen }: StatCardProps) {
+export function StatCard({ icon, tone, value, label, shortLabel, onOpen }: StatCardProps) {
   const content = (
     <>
       <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-control sm:size-12 [&>svg]:size-5 sm:[&>svg]:size-6", tone)}>{icon}</span>
       <span className="flex w-full min-w-0 flex-col">
         <strong className="text-page-mobile leading-tight font-bold tabular-nums">{value}</strong>
-        <span className="text-body break-words text-muted lg:whitespace-nowrap">{label}</span>
+        {shortLabel && <span aria-hidden className="text-body text-muted sm:hidden">{shortLabel}</span>}
+        <span className={cn("text-body break-words text-muted", shortLabel && "max-sm:sr-only")}>{label}</span>
       </span>
     </>
   );

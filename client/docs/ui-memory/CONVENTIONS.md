@@ -132,3 +132,19 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Copy states facts. No taglines, no encouragement, no eyebrow that repeats the heading,
   no decorative illustration. If a line could sit on any product's page, delete it.
 - Cards have a uniform border. Do not add colored side or top stripes for identity.
+
+### C-017 · Adaptive layout (D-025)
+- Lay out page regions with container variants (`@4xl:grid-cols-…`), not viewport
+  ones (`lg:`). `<main>` is the container; a reusable list wraps itself in `@container`.
+- Reference widths: `@xl` two cards, `@4xl` two page columns or three cards, `@7xl`
+  three page columns or four cards.
+- Viewport variants remain right for the shell (sidebar, bottom bar) and for type and spacing.
+- Limit line length on prose (`max-w-prose`), never on the page.
+
+### C-018 · Bento tiles (D-026)
+- A dashboard section is a `Panel`. Do not place a bare heading and list on the canvas.
+- One gutter for the whole grid: `gap-3 sm:gap-4`, between rows and between columns.
+- Leave grid items stretched (no `items-start`); give the tile's main child `flex-1` so
+  the height is used by content, not by blank space under it.
+- Keep DOM order equal to reading order and place tiles with spans, not `order`.
+- Card grids: `grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))]`.
