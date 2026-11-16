@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardList, UsersRound } from "lucide-react";
+import { ArrowUpRight, ChevronRight, ClipboardList, UsersRound } from "lucide-react";
 import { SubjectIcon } from "../../../shared/components/SubjectIcon";
 import { cn } from "../../../shared/lib/cn";
 import { toneFor } from "../../../shared/lib/tones";
@@ -13,10 +13,31 @@ export interface InstructorClassCardProps {
   students: number;
   coursework: number;
   onOpen: () => void;
+  /** A flat tinted tile for dashboard mosaics. */
+  tile?: boolean;
 }
 
 /** A class the instructor teaches: subject icon, title, code and section, enrollment and coursework. */
-export function InstructorClassCard({ title, section, mark, term, index, students, coursework, onOpen }: InstructorClassCardProps) {
+export function InstructorClassCard({ title, section, mark, term, index, students, coursework, onOpen, tile = false }: InstructorClassCardProps) {
+  if (tile) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn("group flex h-full w-full flex-col justify-between gap-4 rounded-card border-0 p-4 text-left font-sans transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none", toneFor(index))}
+      >
+        <span aria-hidden className="flex w-full items-start justify-between">
+          <span className="grid size-11 place-items-center rounded-control bg-surface"><SubjectIcon subject={title} className="size-6" /></span>
+          <ArrowUpRight className="size-5" />
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <strong className="text-card-title leading-snug font-semibold text-ink">{title}</strong>
+          <span className="text-body">{mark} · {section}{term ? ` · ${term}` : ""}</span>
+          <span className="text-body">{students} students · {coursework} coursework items</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <button
       type="button"

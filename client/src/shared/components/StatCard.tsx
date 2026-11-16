@@ -14,19 +14,19 @@ export interface StatCardProps {
 
 /** A compact summary chip: icon tile, a number, and what it counts. */
 export function StatCard({ icon, tone, value, label, shortLabel, onOpen }: StatCardProps) {
+  // The chip lays itself out by its own width: icon above the number when narrow,
+  // beside it from 12rem; under 9rem the short label replaces the full one on screen.
   const content = (
-    <>
-      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-control sm:size-12 [&>svg]:size-5 sm:[&>svg]:size-6", tone)}>{icon}</span>
+    <span className="flex h-full flex-col items-start justify-center gap-1.5 p-3 @[12rem]:flex-row @[12rem]:items-center @[12rem]:justify-start @[12rem]:gap-4 @[12rem]:p-4">
+      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-control @[12rem]:size-12 [&>svg]:size-5 @[12rem]:[&>svg]:size-6", tone)}>{icon}</span>
       <span className="flex w-full min-w-0 flex-col">
         <strong className="text-page-mobile leading-tight font-bold tabular-nums">{value}</strong>
-        {shortLabel && <span aria-hidden className="text-body text-muted sm:hidden">{shortLabel}</span>}
-        <span className={cn("text-body break-words text-muted", shortLabel && "max-sm:sr-only")}>{label}</span>
+        {shortLabel && <span aria-hidden className="text-body text-muted @[9rem]:hidden">{shortLabel}</span>}
+        <span className={cn("text-body break-words text-muted", shortLabel && "@max-[9rem]:sr-only")}>{label}</span>
       </span>
-    </>
+    </span>
   );
-  // Phones: three compact chips in a row (icon above the number). From sm up:
-  // icon beside the number, as on the desktop dashboard.
-  const base = "flex h-full w-full flex-col items-start gap-1.5 rounded-card border border-line bg-surface p-3 text-left font-sans text-ink shadow-card sm:flex-row sm:items-center sm:gap-4 sm:p-4";
+  const base = "@container block h-full w-full rounded-card border border-line bg-surface p-0 text-left font-sans text-ink shadow-card";
   return onOpen ? (
     <button type="button" onClick={onOpen} className={cn(base, "transition-colors hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none")}>
       {content}

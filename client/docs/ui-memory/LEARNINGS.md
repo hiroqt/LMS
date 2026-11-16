@@ -281,3 +281,11 @@ stretched and `justify-between` spread four rows over it. Fix the grid so neighb
 similar natural heights (tasks beside calendar; classes on their own row), then let one
 child absorb the small remainder. A chip label that cannot fit ~90px gets a `shortLabel`
 for phones instead of breaking mid-word; the full label stays the accessible name.
+
+### L-043 · Fill a stretched tile with content, or change its neighbors
+`2026-11-16` · hiro · scope: shared · confidence: high
+Row-spanning tiles next to a taller stack stretched the task rows to 200px each. What
+worked: put tiles with similar natural heights in the same row, move the short tile to
+a full-width row with a horizontal layout, and show more real items where a tile is
+still short. A heading that cannot shrink below its longest word must be allowed to push
+its action to the next line (no `min-w-0` on the heading), or the two overlap.

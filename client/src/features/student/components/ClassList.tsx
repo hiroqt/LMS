@@ -6,7 +6,7 @@ import type { Course } from "../api/types";
 import { ClassCard } from "./ClassCard";
 
 /** The student's classes as cards or as a table (the reader's choice, see ViewToggle). */
-export function ClassList({ courses, view, onOpen, fill = false }: { courses: Course[]; view: ClassView; onOpen: (course: Course) => void; /** Stretch the cards to the height of the tile that holds the list. */ fill?: boolean }) {
+export function ClassList({ courses, view, onOpen, fill = false }: { courses: Course[]; view: ClassView; onOpen: (course: Course) => void; /** Dashboard mosaic: flat tinted tiles that take the height of the panel. */ fill?: boolean }) {
   if (view === "table") {
     return (
       <ClassTable
@@ -23,9 +23,9 @@ export function ClassList({ courses, view, onOpen, fill = false }: { courses: Co
   }
   return (
     // As many columns as fit; cards share the row evenly, so no cell is left empty beside them.
-    <ul className={cn("m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))] gap-3 p-0", fill && "flex-1 auto-rows-fr")}>
+    <ul className={cn("m-0 grid list-none gap-3 p-0", fill ? "flex-1 auto-rows-fr grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))]" : "grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))]")}>
       {courses.map((course, index) => (
-        <li key={course.id}><ClassCard course={course} index={index} onOpen={() => onOpen(course)} /></li>
+        <li key={course.id}><ClassCard tile={fill} course={course} index={index} onOpen={() => onOpen(course)} /></li>
       ))}
     </ul>
   );

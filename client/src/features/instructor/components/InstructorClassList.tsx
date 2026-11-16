@@ -7,7 +7,7 @@ import { InstructorClassCard } from "./InstructorClassCard";
 type Room = RoleStore["classrooms"][number];
 
 /** The instructor's classes as cards or as a table (the reader's choice, see ViewToggle). */
-export function InstructorClassList({ store, rooms, view, onOpen }: { store: RoleStore; rooms: Room[]; view: ClassView; onOpen: (room: Room) => void }) {
+export function InstructorClassList({ store, rooms, view, onOpen, tile = false }: { store: RoleStore; rooms: Room[]; view: ClassView; onOpen: (room: Room) => void; tile?: boolean }) {
   const rows = rooms.map((room) => {
     const subject = subjectOf(store, room);
     const content = classContent(store, room.id);
@@ -29,10 +29,10 @@ export function InstructorClassList({ store, rooms, view, onOpen }: { store: Rol
   }
   return (
     // As many columns as fit; cards share the row evenly, so no cell is left empty beside them.
-    <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))] gap-3 p-0">
+    <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3 p-0">
       {rows.map(({ room, title, mark, students, coursework }, index) => (
         <li key={room.id}>
-          <InstructorClassCard title={title} section={room.section} mark={mark} term={room.term} index={index} students={students} coursework={coursework} onOpen={() => onOpen(room)} />
+          <InstructorClassCard title={title} section={room.section} mark={mark} term={room.term} tile={tile} index={index} students={students} coursework={coursework} onOpen={() => onOpen(room)} />
         </li>
       ))}
     </ul>

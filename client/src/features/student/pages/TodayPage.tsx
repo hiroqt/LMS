@@ -112,7 +112,7 @@ function TasksPanel({ catalog, completed, now, className }: { catalog: StudentCa
   );
 }
 
-function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; completed: string[]; now: number }) {
+function CalendarPanel({ catalog, completed, now, className }: { catalog: StudentCatalog; completed: string[]; now: number; className?: string }) {
   const navigate = useNavigate();
   const today = new Date(now);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
@@ -121,7 +121,7 @@ function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; c
     .slice(0, 4);
   const courseName = (id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
   return (
-    <Panel id="calendar-panel" icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
+    <Panel id="calendar-panel" className={className} icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
       {entries.length ? (
         <ol className="m-0 flex flex-1 list-none flex-col justify-between p-0">
           {entries.map((entry, position) => {
@@ -136,7 +136,7 @@ function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; c
                   <span className={cn("relative size-2.5 rounded-full ring-2 ring-surface", entry.assessment ? "bg-primary-600" : "bg-accent-400")} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="text-body font-semibold">{entry.title}</strong>
+                  <strong className="text-card-title font-semibold">{entry.title}</strong>
                   <span className="text-body text-muted">{entry.assessment ? courseName(entry.assessment.courseId) : `${entry.category} · School calendar`}</span>
                 </span>
               </>
@@ -159,22 +159,30 @@ function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; c
 
 function AnnouncementsPanel({ catalog, now, className }: { catalog: StudentCatalog; now: number; className?: string }) {
   const navigate = useNavigate();
-  const latest = catalog.announcements[0];
-  const featured = featuredSlides(catalog.featured, catalog.academicEvents, now)[0];
   const courseName = (id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
+  // Teacher posts first, then school news, so the tile is never a single short line.
+  const items = [
+    ...catalog.announcements.map((item) => ({ id: item.id, title: item.title, body: item.message, meta: `${item.author} · ${courseName(item.classroomId)} · ${formatDue(item.createdAt)}` })),
+    ...featuredSlides(catalog.featured, catalog.academicEvents, now).map((item) => ({ id: item.id, title: item.title, body: item.summary, meta: `School announcement · ${item.category}` })),
+  ].slice(0, 3);
   return (
     <Panel id="announcements-panel" className={className} icon={<Megaphone />} title="Announcements" action={<ViewAll onClick={() => navigate(studentPaths.news)} />}>
-      {latest || featured ? (
-        <article className="flex items-start gap-3">
-          <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-control bg-primary-100 text-primary-700"><Newspaper className="size-5" /></span>
-          <div className="flex min-w-0 flex-col gap-1">
-            <h3 className="m-0 text-card-title font-semibold">{latest ? latest.title : featured?.title}</h3>
-            <p className="m-0 line-clamp-3 text-body">{latest ? latest.message : featured?.summary}</p>
-            <p className="m-0 text-body text-muted">
-              {latest ? `${latest.author} · ${courseName(latest.classroomId)} · ${formatDue(latest.createdAt)}` : `School announcement · ${featured?.category}`}
-            </p>
-          </div>
-        </article>
+      {items.length ? (
+        /* Side by side when the tile is wide, stacked when it is a narrow column. */
+        <div className="@container flex flex-1 flex-col">
+        <ul className="m-0 grid flex-1 list-none grid-cols-1 gap-3 p-0 @3xl:grid-cols-3">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-start gap-3 rounded-control bg-canvas p-3">
+              <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-control bg-surface text-primary-700"><Newspaper className="size-5" /></span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <h3 className="m-0 text-card-title font-semibold">{item.title}</h3>
+                <p className="m-0 line-clamp-2 text-body">{item.body}</p>
+                <p className="m-0 text-body text-muted">{item.meta}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        </div>
       ) : (
         <p className="m-0 text-body text-muted">No announcements yet.</p>
       )}
@@ -190,55 +198,58 @@ export default function TodayPage() {
   const { courses, assessments } = catalog;
   const [classView, setClassView] = useClassView();
 
+  const next = dueSoon(assessments, completed, now, 1)[0];
+
   return (
-    // A bento grid: every tile shares one gutter and stretches to its row, so
-    // rows end on the same line at every width (D-026).
-    <div className="flex flex-col gap-3 sm:gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)]">
-        <header className="flex flex-col justify-center gap-1 rounded-card border border-line bg-surface p-4 shadow-card sm:p-5">
-          <p className="m-0 text-body text-muted">
-            {formatFullDate(now)}
-            {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
-          </p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-page">
+    // One 12-column bento grid: every tile shares the gutter and stretches to its
+    // row, and tiles differ in size by importance (D-026, D-027).
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
+      <header className="flex flex-col justify-between gap-4 rounded-card bg-primary-700 p-5 text-white shadow-card @4xl:col-span-5 sm:p-6">
+        <p className="m-0 text-body text-primary-100">
+          {formatFullDate(now)}
+          {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
+        </p>
+        <div className="flex flex-col gap-1">
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight outline-none sm:text-page">
             {greeting(now)}, {STUDENT.firstName}
           </h1>
-        </header>
-        <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-4">
-          <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" shortLabel="Classes" /></li>
-          <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" shortLabel="Due soon" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
-          <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" shortLabel="Done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
-        </ul>
-      </div>
+          <p className="m-0 text-body-lg text-primary-100">
+            {next ? <>Next due: {next.title}, {formatDue(next.dueAt)}</> : "Nothing is due in the next few days."}
+          </p>
+        </div>
+      </header>
+      <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 @4xl:col-span-7 sm:gap-4">
+        <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" shortLabel="Classes" /></li>
+        <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" shortLabel="Due soon" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
+        <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" shortLabel="Done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
+      </ul>
 
-      <NewDesignIntro />
+      <div className="col-span-full empty:hidden"><NewDesignIntro /></div>
 
-      {/* Reading order: tasks, calendar, classes, announcements. Two columns put the
-          class cards and the announcement in full-width rows; three columns stack the
-          calendar over the announcement between tasks and classes. */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-3 @7xl:grid-rows-[1fr_auto]">
-        <TasksPanel className="@7xl:row-span-2" catalog={catalog} completed={completed} now={now} />
-        <CalendarPanel catalog={catalog} completed={completed} now={now} />
-        <Panel
-          id="my-classes"
-          className="@4xl:col-span-2 @7xl:col-span-1 @7xl:row-span-2"
-          icon={<Layers />}
-          title="My Classes"
-          action={
-            <div className="flex flex-wrap items-center gap-2">
-              <ViewToggle view={classView} onChange={setClassView} />
-              <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
-            </div>
-          }
-        >
-          {courses.length ? (
-            <ClassList fill courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
-          ) : (
-            <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
-          )}
-        </Panel>
-        <AnnouncementsPanel className="@4xl:col-span-2 @7xl:col-span-1" catalog={catalog} now={now} />
-      </div>
+      {/* Reading order: tasks, calendar, classes, announcements.
+          12 columns:  tasks 7 | calendar 5, then classes 8 | announcements 4.
+          Wide (@7xl): tasks 5 | calendar 3 | classes 4, then announcements across. */}
+      <TasksPanel className="@4xl:col-span-7 @7xl:col-span-5" catalog={catalog} completed={completed} now={now} />
+      <CalendarPanel className="@4xl:col-span-5 @7xl:col-span-3" catalog={catalog} completed={completed} now={now} />
+      <Panel
+        id="my-classes"
+        className="@4xl:col-span-7 @7xl:col-span-4"
+        icon={<Layers />}
+        title="My Classes"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ViewToggle view={classView} onChange={setClassView} />
+            <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
+          </div>
+        }
+      >
+        {courses.length ? (
+          <ClassList fill courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
+        ) : (
+          <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
+        )}
+      </Panel>
+      <AnnouncementsPanel className="@4xl:col-span-5 @7xl:col-span-12" catalog={catalog} now={now} />
     </div>
   );
 }
