@@ -163,7 +163,25 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
         <span className={collapsed ? "flex justify-center" : "px-1"}><Brand full sealOnly={collapsed} /></span>
         <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" collapsed={collapsed} />
         {sidebarExtra && <div className="min-h-0 flex-1 overflow-y-auto">{renderSlot(sidebarExtra, collapsed)}</div>}
-        {sidebarFooter && <div className="mt-auto border-t border-line pt-4">{renderSlot(sidebarFooter, collapsed)}</div>}
+        {/* The collapse control is the last row of the sidebar it controls. */}
+        <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
+          {renderSlot(sidebarFooter, collapsed)}
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-controls="workspace-sidebar"
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand sidebar" : undefined}
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent text-left font-sans text-body font-medium text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus",
+              collapsed ? "justify-center px-0" : "px-3",
+            )}
+          >
+            {collapsed ? <PanelLeftOpen aria-hidden className="size-5 shrink-0 text-muted" /> : <PanelLeftClose aria-hidden className="size-5 shrink-0 text-muted" />}
+            {!collapsed && <span aria-hidden>Collapse sidebar</span>}
+          </button>
+        </div>
       </aside>
 
       <div className={cn("flex min-h-dvh flex-col", collapsed ? "lg:pl-20" : "lg:pl-72")}>
@@ -205,17 +223,6 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
               </Dialog.Portal>
             </Dialog.Root>
           )}
-          <button
-            type="button"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-controls="workspace-sidebar"
-            aria-expanded={!collapsed}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() => setCollapsed(!collapsed)}
-            className="-ml-2 hidden size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:bg-primary-50 hover:text-ink focus-visible:outline-3 focus-visible:outline-focus lg:grid"
-          >
-            {collapsed ? <PanelLeftOpen aria-hidden className="size-5" /> : <PanelLeftClose aria-hidden className="size-5" />}
-          </button>
           <span className="lg:hidden"><Brand /></span>
           {topbarStart}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">{topbarActions}</div>

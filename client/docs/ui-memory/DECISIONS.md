@@ -273,3 +273,10 @@ Amends D-026 and the type scale in D-005.
 `2026-11-16` · hiro (user request) · scope: shared · confidence: high
 17px card titles (D-027) read as too big. Card and item titles are 16px semibold over
 14px details; section headings stay 20px. The greeting tiles' second line is 14px.
+
+### D-029 · The sidebar toggle is in the sidebar
+`2026-11-16` · hiro (user request) · scope: shared · confidence: high
+The collapse/expand button moved from the top bar into the sidebar, as its last row
+under Help & Support (a labelled row when expanded, an icon when collapsed). Beside the
+brand it forced the college name onto two lines. Name, `aria-expanded`, and
+`aria-controls` are unchanged (amends D-024).
