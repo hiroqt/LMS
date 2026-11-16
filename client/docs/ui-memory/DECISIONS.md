@@ -311,17 +311,3 @@ the workspace keeps working on what the browser already has and the Classes page
 Admin can still create demo subjects and classrooms (Admin is out of scope). `e2e/fixtures.ts`
 refuses the LMS API origin by default so a developer's running API cannot change a journey;
 specs that need ISMS data mock it. A class link now opens under the instructor who teaches it.
-
-
-### D-032 · Development-only class content API
-`2026-11-16` · Codex · scope: instructor, shared API, e2e · confidence: medium
-The user selected a Development-only demo API before real sign-in. In Vite development,
-ISMS classes read modules, materials, and announcements from `/api/classes/{id}/content`
-using the selected instructor's raw ISMS ID in `X-Demo-Instructor-Id`; this is a demo
-selector, not authentication, and the server exposes these routes only in Development.
-Server records overlay the class view in the query cache with `lms-` IDs, leaving saved
-browser data intact. Material creation requires a server module, and failed writes never
-fall back to browser storage. Assignments, assessments, Student, Admin, local classes,
-and production builds keep their existing browser data paths for this slice.
-`instructor-isms` retains its announcement journey with a mocked content API and adds
-module/material creation in development; the production preview retains the local journey.

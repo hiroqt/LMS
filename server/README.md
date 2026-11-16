@@ -152,21 +152,4 @@ later without changing the endpoints.
 ## Not in this slice
 
 - Login and authorization. The old empty `Auth` placeholders were removed. Every endpoint is anonymous.
-- Coursework, questionnaires, submissions, grading, and production content endpoints remain for later Phase 2 slices.
-
-## Phase 2: class content demo (Development only)
-
-In Development the Instructor workspace reads and writes modules, material metadata, and announcements in `lmsdb` for ISMS classes. The class must already exist in the synced reference copy; otherwise content returns 404 until sync succeeds. Existing browser-local demo records are kept. No files are uploaded.
-
-These routes are absent outside Development. Every request needs `X-Demo-Instructor-Id` matching the class's raw ISMS instructor ID. This is a caller-selected demo identity, not authentication or authorization suitable for real users. Use fictional data and local development only. Configure real sign-in and resource authorization before exposing content in production. Development CORS permits GET, POST, PATCH and DELETE for the configured origins; other environments remain GET-only.
-
-| Method | Route below `/api/classes/{classId}/content` | Body / response |
-|---|---|---|
-| GET | (root) `?offset=0&limit=200` | `{ modules, materials, announcements, nextOffset }`; limit 1–200, follow `nextOffset` until null |
-| POST | `/modules` | `{ title, sortOrder }` → 201 module |
-| POST | `/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }` → 201 material |
-| POST | `/announcements` | `{ title, message }` → 201 announcement |
-| PATCH | `/materials/{id}` | `{ status: "active" | "archived" }` → material |
-| DELETE | `/materials/{id}` | 204; removes material metadata |
-
-IDs are database integers. Modules are ordered by sort order then ID, materials by ID, announcements newest first. The aggregate uses the same offset independently for each collection. A missing class/resource returns 404, a mismatched demo instructor 403, invalid fields 400, and writes to an inactive class 409. Reads of retained inactive-class content are permitted. Material references must belong to the requested class. Content writes and metadata-only audit entries commit together; audit summaries omit message and description content.
+- Endpoints that read or write the LMS-owned tables. The tables exist; the endpoints arrive in the next Phase 2 steps.

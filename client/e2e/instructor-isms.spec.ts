@@ -17,25 +17,9 @@ const students = [
 
 async function mockIsms(page: Page) {
   const requests: string[] = [];
-  const content = { modules: [] as object[], materials: [] as object[], announcements: [] as object[], nextOffset: null };
-  const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, X-Demo-Instructor-Id", "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS" };
   await page.route(`${API}/api/**`, async (route) => {
     const url = new URL(route.request().url());
     requests.push(url.pathname + url.search);
-    const request = route.request();
-    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
-    if (url.pathname.startsWith("/api/classes/C-1/content")) {
-      expect(request.headers()["x-demo-instructor-id"]).toBe("EMP-3");
-      if (request.method() === "POST") {
-        const input = request.postDataJSON();
-        const item = { ...input, id: 1, classId: "C-1", status: "active", createdBy: "EMP-3", createdAt: syncedAt };
-        if (url.pathname.endsWith("/modules")) content.modules.push(item);
-        if (url.pathname.endsWith("/materials")) content.materials.push(item);
-        if (url.pathname.endsWith("/announcements")) content.announcements.push(item);
-        return route.fulfill({ status: 201, headers: cors, json: item });
-      }
-      return route.fulfill({ status: 200, headers: cors, json: content });
-    }
     const body =
       url.pathname === "/api/classes" ? { items: [klass], source: "isms", syncedAt, term }
       : url.pathname === "/api/classes/C-1/students" ? { items: students, source: "isms", syncedAt }
@@ -77,59 +61,9 @@ test.describe("Instructor · classes from ISMS", () => {
     await page.getByRole("button", { name: "Post announcement" }).click();
     await expect(page.getByRole("main").getByText("Bring your laptops")).toBeVisible();
 
-    if (!process.env.E2E_PREVIEW) {
-      expect(requests).toContain("/api/classes/C-1/content/announcements");
-      await page.getByRole("tab", { name: /^Create content/ }).click();
-      await page.getByRole("textbox", { name: "New module title" }).fill("SQL basics");
-      await page.getByRole("button", { name: "Create module", exact: true }).click();
-      await expect(page.getByRole("status").filter({ hasText: "Module created" })).toBeVisible();
-      await page.getByRole("button", { name: /Create material/ }).click();
-      await page.getByRole("combobox", { name: "Curriculum Unit / Module" }).selectOption({ label: "SQL basics" });
-      await page.getByRole("textbox", { name: "Material title" }).fill("SQL reference");
-      await page.getByRole("button", { name: "Save and publish" }).click();
-      await expect(page.getByRole("button", { name: "SQL reference", exact: true })).toBeVisible();
-      expect(requests).toContain("/api/classes/C-1/content/materials");
-    }
-
     // A reload keeps the class and its announcement.
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "Database Systems 1" })).toBeVisible();
-    if (!process.env.E2E_PREVIEW) {
-      await expect(page.getByRole("button", { name: "SQL reference", exact: true })).toBeVisible();
-    }
-    await page.getByRole("tab", { name: /^Announcements/ }).click();
-    await expect(page.getByRole("main").getByText("Bring your laptops")).toBeVisible();
-  });
-
-  test("content forms keep their values while a save is pending or rejected", async ({ page }) => {
-    test.skip(Boolean(process.env.E2E_PREVIEW), "The content API is development-only.");
-    await mockIsms(page);
-    await openRole(page, "instructor");
-    await page.getByRole("combobox", { name: "Choose demo instructor" }).selectOption({ label: "Nerissa Asterwood" });
-    await page.getByRole("complementary").getByRole("button", { name: /IT202 Database Systems 1/ }).click();
-    await page.getByRole("tab", { name: /^Announcements/ }).click();
-    await page.getByRole("button", { name: "New announcement" }).click();
-    const title = page.getByRole("textbox", { name: "Title", exact: true });
-    const message = page.getByRole("textbox", { name: "Message", exact: true });
-    await title.fill("Keep this draft");
-    await message.fill("The server may reject this request.");
-    let release!: () => void;
-    const pending = new Promise<void>((resolve) => { release = resolve; });
-    await page.route(`${API}/api/classes/C-1/content/announcements`, async (route) => {
-      if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, X-Demo-Instructor-Id", "Access-Control-Allow-Methods": "POST, OPTIONS" } });
-      await pending;
-      return route.fulfill({ status: 503, headers: { "Access-Control-Allow-Origin": "*" }, json: { title: "Content unavailable" } });
-    });
-    await page.getByRole("button", { name: "Post announcement" }).click();
-    await expect(title).toBeDisabled();
-    await expect(message).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled();
-    release();
-    await expect(title).toBeEnabled();
-    await expect(message).toBeEnabled();
-    await expect(title).toHaveValue("Keep this draft");
-    await expect(message).toHaveValue("The server may reject this request.");
-    await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeEnabled();
   });
 
   test("the Classes page says the list comes from ISMS and offers no Create class @all", async ({ page }) => {

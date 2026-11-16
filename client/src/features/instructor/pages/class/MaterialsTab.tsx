@@ -7,8 +7,6 @@ import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Select } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { writeContent } from "../../api/content";
-import { describeApiError } from "../../../../shared/api/http";
 import { deleteMaterial, setMaterialArchived } from "../../api/actions";
 import type { Material } from "../../api/types";
 import { RESOURCE_TYPES } from "./classUtils";
@@ -38,7 +36,6 @@ function download(material: Material, context: { section: string; subject: strin
 
 export function MaterialsTab({ room, subject, instructor, content, goTab }: ClassTabProps) {
   const toast = useToast();
-  const [pending, setPending] = useState(false);
   const [query, setQuery] = useState("");
   const [moduleId, setModuleId] = useState("all");
   const [kind, setKind] = useState("all");
@@ -54,20 +51,9 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
   const moduleTitle = (id: string) => content.modules.find((item) => item.id === id)?.title ?? "Unit";
   const filtered = Boolean(q) || moduleId !== "all" || kind !== "all";
 
-  const changeMaterial = async (item: Material, remove: boolean) => {
-    if (pending) return;
-    setPending(true);
+  const archive = (item: Material) => {
     const archived = item.status !== "archived";
-    try {
-      const saved = item.id.startsWith("lms-material-")
-        ? await writeContent(room.id, instructor.id, `/materials/${item.id.slice(13)}`, remove ? undefined : { status: archived ? "archived" : "active" }, remove ? "DELETE" : "PATCH").then(() => true)
-        : remove ? deleteMaterial(instructor, item.id, item.title) : setMaterialArchived(instructor, item.id, archived);
-      if (!saved) throw new Error("Browser storage is full or blocked.");
-      toast.show({ title: remove ? "Material deleted" : archived ? "Material archived" : "Material restored", description: item.title });
-      if (remove) setRemoving(null);
-    } catch (error) {
-      toast.show({ title: "Could not update material", description: describeApiError(error).detail, tone: "danger" });
-    } finally { setPending(false); }
+    if (setMaterialArchived(instructor, item.id, archived)) toast.show({ title: archived ? "Material archived" : "Material restored", description: item.title });
   };
 
   return (
@@ -113,7 +99,7 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
                 <p className="m-0 text-body text-muted">{item.fileSize ?? "1.8 MB"} · {item.downloads ?? 0} downloads · {moduleTitle(item.moduleId)}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-1">
                   <Button variant="secondary" icon={<Download aria-hidden className="size-4" />} aria-label={`Download ${item.title}`} onClick={() => download(item, { section: room.section, subject: subject?.title ?? "", module: moduleTitle(item.moduleId) })}>Download</Button>
-                  <Button variant="ghost" icon={archived ? <ArchiveRestore aria-hidden className="size-4" /> : <Archive aria-hidden className="size-4" />} aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} disabled={pending} onClick={() => void changeMaterial(item, false)}>
+                  <Button variant="ghost" icon={archived ? <ArchiveRestore aria-hidden className="size-4" /> : <Archive aria-hidden className="size-4" />} aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => archive(item)}>
                     {archived ? "Restore" : "Archive"}
                   </Button>
                   <Button variant="ghost" icon={<Trash2 aria-hidden className="size-4" />} aria-label={`Delete ${item.title}`} onClick={() => setRemoving(item)}>Delete</Button>
@@ -154,14 +140,16 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
         {removing && (
           <DialogContent
             title="Delete this material?"
-            description={`“${removing.title}” will be removed from this class. This cannot be undone.`}
+            description={`“${removing.title}” will be removed from this class for you and your students. This cannot be undone.`}
             footer={
               <>
                 <DialogClose asChild><Button variant="secondary">Keep material</Button></DialogClose>
                 <Button
                   variant="danger"
-                  loading={pending}
-                  onClick={() => void changeMaterial(removing, true)}
+                  onClick={() => {
+                    if (deleteMaterial(instructor, removing.id, removing.title)) toast.show({ title: "Material deleted", description: removing.title });
+                    setRemoving(null);
+                  }}
                 >
                   Delete material
                 </Button>

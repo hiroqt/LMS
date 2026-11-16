@@ -85,7 +85,6 @@ export interface GetJsonOptions {
   /** Cancels the request (TanStack Query passes one per query). */
   signal?: AbortSignal;
   timeoutMs?: number;
-  headers?: Record<string, string>;
 }
 
 /**
@@ -93,15 +92,10 @@ export interface GetJsonOptions {
  * rejects with an `ApiError`. A cancellation by the caller's `signal` is
  * rethrown as-is so TanStack Query treats it as a cancel, not a failure.
  *
- * Default reads use CORS-safelisted headers. Callers that add demo headers or
- * write JSON also require the API's preflight policy to allow them.
+ * Only CORS-safelisted headers are sent, so a cross-origin GET needs no
+ * preflight; the API still has to allow the client's origin.
  */
-export function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
-  return requestJson<T>(path, options);
-}
-
-/** Shared timeout and problem handling for reads and explicit content writes. */
-export async function requestJson<T>(path: string, options: GetJsonOptions & { method?: string; body?: unknown } = {}): Promise<T> {
+export async function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
   const url = apiUrl(path, options.params);
   const controller = new AbortController();
   let timedOut = false;
@@ -117,7 +111,7 @@ export async function requestJson<T>(path: string, options: GetJsonOptions & { m
   try {
     let response: Response;
     try {
-      response = await fetch(url, { method: options.method ?? "GET", headers: { Accept: "application/json", ...(options.body === undefined ? {} : { "Content-Type": "application/json" }), ...options.headers }, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: controller.signal });
+      response = await fetch(url, { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
     } catch (cause) {
       if (outer?.aborted && !timedOut) throw cause;
       if (timedOut) throw new ApiError({ kind: "timeout", status: 0, url, cause });
@@ -129,7 +123,6 @@ export async function requestJson<T>(path: string, options: GetJsonOptions & { m
       throw new ApiError({ kind: kindForStatus(response.status), status: response.status, url, ...problem });
     }
 
-    if (response.status === 204) return undefined as T;
     try {
       return (await response.json()) as T;
     } catch (cause) {

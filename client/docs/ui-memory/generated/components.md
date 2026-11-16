@@ -75,7 +75,6 @@
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
 | `src/features/instructor/pages/class/CreateContentTab.tsx` | `CreateContentTab` |
 | `src/features/instructor/pages/class/MaterialsTab.tsx` | `MaterialsTab` |
-| `src/features/instructor/pages/class/ModuleForm.tsx` | `ModuleForm` |
 | `src/features/instructor/pages/class/PeopleTab.tsx` | `PeopleTab` |
 | `src/features/instructor/pages/class/StreamTab.tsx` | `StreamTab` |
 | `src/features/instructor/pages/class/SubmissionsTab.tsx` | `SubmissionsTab` |

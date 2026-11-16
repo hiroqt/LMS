@@ -26,6 +26,9 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
         var offered = ClassMapper.FromSchedules(schedules.Data);
         var termName = IsmsTerms.DisplayName(term);
         var classLists = new Dictionary<string, IReadOnlyList<IsmsStudent>>();
+        // Everything is read from ISMS before anything is written, so a failure part-way changes nothing.
+        // Classes of one section share a schedule and the catalog caches each list, so ISMS is asked
+        // once per section, not once per class.
         foreach (var item in offered)
         {
             var roster = await catalog.GetScheduleStudentsAsync(item.ScheduleId, ct);
@@ -82,7 +85,8 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
             db.IsmsClasses.Any(c => c.Id == s.ClassId && c.IsActive), ct);
         await transaction.CommitAsync(ct);
 
-        return new SyncResult(now, termName, existing.Count, existing.Values.Count(c => c.IsActive), students, null);
+        var activeClasses = await db.IsmsClasses.CountAsync(c => c.IsActive, ct);
+        return new SyncResult(now, termName, offered.Count, activeClasses, students, null);
     }
 
     /// <summary>Upserts one class list; returns the number of active students.</summary>
