@@ -205,7 +205,7 @@ public static class ContentEndpoints
         return null;
     }
 
-    private static IResult? PageError(int? page, int? pageSize)
+    internal static IResult? PageError(int? page, int? pageSize)
     {
         var errors = new Errors();
         if (page is < 1) errors.Add("page", "page must be 1 or more.");
@@ -213,7 +213,7 @@ public static class ContentEndpoints
         return errors.Any ? errors.Result() : null;
     }
 
-    private static async Task<PagedList<TDto>> PageAsync<TRow, TDto>(IQueryable<TRow> ordered, int? page, int? pageSize, Func<TRow, TDto> map, CancellationToken ct)
+    internal static async Task<PagedList<TDto>> PageAsync<TRow, TDto>(IQueryable<TRow> ordered, int? page, int? pageSize, Func<TRow, TDto> map, CancellationToken ct)
     {
         var p = page ?? 1;
         var size = pageSize ?? ContentRules.DefaultPageSize;
@@ -222,14 +222,14 @@ public static class ContentEndpoints
         return new PagedList<TDto>(rows.Select(map).ToList(), p, size, total);
     }
 
-    private static IResult NotFound(string what) =>
+    internal static IResult NotFound(string what) =>
         TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: $"{what} not found");
 
     /// <summary>
     /// Saves the change and its audit row together: the row's id is known only after the first
     /// save, so both saves share one transaction and neither is kept if the other fails.
     /// </summary>
-    private static async Task SaveWithAuditAsync(LmsDbContext db, CurrentUser user, object? added, string action, string target, Func<long> id, CancellationToken ct)
+    internal static async Task SaveWithAuditAsync(LmsDbContext db, CurrentUser user, object? added, string action, string target, Func<long> id, CancellationToken ct, string category = "content")
     {
         if (added is not null && db.Entry(added).State == EntityState.Detached) db.Add(added);
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -238,7 +238,7 @@ public static class ContentEndpoints
         {
             ActorId = user.Id,
             ActorRole = user.Role,
-            Category = "content",
+            Category = category,
             Action = action,
             Target = target,
             TargetId = id().ToString(System.Globalization.CultureInfo.InvariantCulture),
