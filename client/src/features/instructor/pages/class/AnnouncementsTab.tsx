@@ -7,7 +7,7 @@ import { Card } from "../../../../shared/ui/Card";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Input, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { publishAnnouncement } from "../../api/actions";
+import { useInstructorActions } from "../../api/actions";
 import type { ClassTabProps } from "./shared";
 
 const TITLE_MAX = 120;
@@ -21,16 +21,23 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
   const [errors, setErrors] = useState<{ title?: string; message?: string }>({});
   const list = [...content.announcements].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const submit = (event: FormEvent) => {
+  const actions = useInstructorActions();
+  const [saving, setSaving] = useState(false);
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const next = {
       title: title.trim() ? undefined : "Enter a title.",
       message: message.trim() ? undefined : "Enter a message for your students.",
     };
     setErrors(next);
     if (next.title || next.message) return;
-    if (!publishAnnouncement(instructor, room.id, { title, message })) {
-      toast.show({ title: "Could not post the announcement", description: "Browser storage is full or blocked.", tone: "danger" });
+    setSaving(true);
+    const result = await actions.publishAnnouncement(room.id, { title, message });
+    setSaving(false);
+    if (!result.ok) {
+      setErrors({ title: result.fieldErrors?.title?.[0], message: result.fieldErrors?.message?.[0] });
+      toast.show({ title: "Could not post the announcement", description: result.message, tone: "danger" });
       return;
     }
     toast.show({ title: "Announcement posted", description: "Students see it in their class stream.", tone: "success" });

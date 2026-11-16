@@ -7,29 +7,74 @@ import { Card } from "../../../../shared/ui/Card";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Input, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { saveGrade } from "../../api/actions";
-import { suggestedScore, type ReviewItem } from "../../api/selectors";
+import { useQuery } from "@tanstack/react-query";
+import { describeApiError, getJson, shouldRetryApiRead } from "../../../../shared/api/http";
+import { Skeleton, SkeletonGroup } from "../../../../shared/ui/Skeleton";
+import { useInstructorActions } from "../../api/actions";
+import type { ReviewItem } from "../../api/selectors";
 import type { User } from "../../api/types";
+
+interface AttemptDetail {
+  questions: Array<{ id: number; type: string; prompt: string; points: number }>;
+  answers: Array<{ questionId: number; optionId: number | null; text: string | null; items: string[]; pointsAwarded: number | null }>;
+}
+
+/** An exam attempt as the server scored it; essays need the instructor's points. */
+function useAttempt(item: ReviewItem, instructorId: string) {
+  return useQuery({
+    queryKey: ["instructor", "attempt", item.id],
+    queryFn: ({ signal }) =>
+      getJson<AttemptDetail>(`/api/classes/${encodeURIComponent(item.classroomId)}/coursework/${item.courseworkId}/submissions/${item.id}`, { identity: true, viewer: { id: instructorId, role: "instructor" }, signal }),
+    enabled: item.kind === "exam",
+    retry: shouldRetryApiRead,
+    networkMode: "always",
+  });
+}
 
 function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor: User; onDone: () => void }) {
   const toast = useToast();
-  const [score, setScore] = useState(item.kind === "exam" ? String(suggestedScore(item)) : "");
+  const actions = useInstructorActions();
+  const attempt = useAttempt(item, instructor.id);
+  const [score, setScore] = useState("");
+  const [essayPoints, setEssayPoints] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const student = `${item.student?.firstName ?? "Student"} ${item.student?.lastName ?? ""}`.trim();
+  const essays = (attempt.data?.questions ?? []).filter((question) => question.type === "essay");
+  const answerOf = (questionId: number) => attempt.data?.answers.find((answer) => answer.questionId === questionId);
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const value = Number(score);
-    if (score.trim() === "" || Number.isNaN(value) || value < 0 || value > item.maxScore) {
-      setError(`Enter a score from 0 to ${item.maxScore}.`);
+    if (saving) return;
+    let answerPoints: Record<string, number> | undefined;
+    let value = Number(score);
+    if (item.kind === "activity") {
+      if (score.trim() === "" || Number.isNaN(value) || value < 0 || value > item.maxScore) {
+        setError(`Enter a score from 0 to ${item.maxScore}.`);
+        return;
+      }
+    } else {
+      answerPoints = {};
+      for (const essay of essays) {
+        const points = Number(essayPoints[essay.id] ?? "");
+        if ((essayPoints[essay.id] ?? "").trim() === "" || Number.isNaN(points) || points < 0 || points > essay.points) {
+          setError(`Score every essay from 0 to its points.`);
+          return;
+        }
+        answerPoints[essay.id] = points;
+      }
+      const automatic = (attempt.data?.answers ?? []).filter((answer) => !essays.some((essay) => essay.id === answer.questionId)).reduce((sum, answer) => sum + (answer.pointsAwarded ?? 0), 0);
+      value = automatic + Object.values(answerPoints).reduce((sum, points) => sum + points, 0);
+    }
+    setSaving(true);
+    const result = await actions.saveGrade(item, value, feedback, answerPoints);
+    setSaving(false);
+    if (!result.ok) {
+      toast.show({ title: "Could not save the grade", description: result.message, tone: "danger" });
       return;
     }
-    if (!saveGrade(instructor, item, value, feedback)) {
-      toast.show({ title: "Could not save the grade", description: "Browser storage is full or blocked.", tone: "danger" });
-      return;
-    }
-    toast.show({ title: "Grade saved", description: `${student} · ${value} / ${item.maxScore}`, tone: "success" });
+    toast.show({ title: "Grade saved", description: `${student} · ${Math.round(value * 100) / 100} / ${item.maxScore}`, tone: "success" });
     onDone();
   };
 
@@ -40,37 +85,50 @@ function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor:
         <h3 id="grading-title" className="m-0 font-sans text-section font-semibold">{item.title}</h3>
       </div>
       {item.kind === "activity" ? (
-        <dl className="m-0 flex flex-col gap-3 rounded-control bg-canvas p-3">
-          <div className="flex flex-col"><dt className="flex items-center gap-1.5 text-body text-muted"><Paperclip aria-hidden className="size-4" />Attachment</dt><dd className="m-0 text-body font-medium">{item.submission?.fileAttachmentUrl || "No file name"}</dd></div>
-          <div className="flex flex-col"><dt className="text-body text-muted">Student note</dt><dd className="m-0 text-body">{item.submission?.submissionText || "No note"}</dd></div>
-        </dl>
+        <>
+          <dl className="m-0 flex flex-col gap-3 rounded-control bg-canvas p-3">
+            <div className="flex flex-col"><dt className="flex items-center gap-1.5 text-body text-muted"><Paperclip aria-hidden className="size-4" />Attachment</dt><dd className="m-0 text-body font-medium">{item.submission?.fileAttachmentUrl || "No file name"}</dd></div>
+            <div className="flex flex-col"><dt className="text-body text-muted">Student note</dt><dd className="m-0 text-body">{item.submission?.submissionText || "No note"}</dd></div>
+          </dl>
+          <Field label={`Score (0–${item.maxScore})`} required error={error || undefined}>
+            <Input type="number" inputMode="numeric" min={0} max={item.maxScore} value={score} onChange={(event) => setScore(event.target.value)} />
+          </Field>
+        </>
+      ) : attempt.isPending ? (
+        <SkeletonGroup label="Loading the attempt" className="flex flex-col gap-2"><Skeleton className="h-6 w-2/3" /><Skeleton className="h-20 w-full" /></SkeletonGroup>
+      ) : attempt.isError ? (
+        <p role="alert" className="m-0 text-body text-danger">{describeApiError(attempt.error).title}. <button type="button" onClick={() => void attempt.refetch()} className="min-h-touch border-0 bg-transparent font-sans font-semibold text-primary-700 underline">Try again</button></p>
       ) : (
-        <div className="flex flex-col gap-2 rounded-control bg-canvas p-3">
-          <p className="m-0 text-body"><strong className="font-semibold">Auto-score: {item.correct} / {item.questions.length} correct.</strong> The score below starts at the scaled value; adjust it if needed.</p>
-          <ol className="m-0 flex max-h-56 list-none flex-col gap-1 overflow-y-auto p-0">
-            {item.questions.map((question, index) => {
-              const right = item.answers[index] === question.correct;
-              return (
-                <li key={`${index}-${question.prompt}`} className="flex items-start gap-2 text-body">
-                  <span aria-hidden className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", right ? "bg-success-soft text-success" : "bg-danger-soft text-danger")}>
-                    {right ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+        <div className="flex flex-col gap-3">
+          <p className="m-0 text-body">The server scored every question except essays. Score each essay below; the total is added up for you.</p>
+          <ol className="m-0 flex list-none flex-col gap-3 p-0">
+            {(attempt.data?.questions ?? []).map((question, index) => (
+              <li key={question.id} className="flex flex-col gap-2 rounded-control bg-canvas p-3 text-body">
+                <span className="font-semibold">{index + 1}. {question.prompt}</span>
+                {question.type === "essay" ? (
+                  <>
+                    <p className="m-0 whitespace-pre-wrap">{answerOf(question.id)?.text || "No answer"}</p>
+                    <Field label={`Points for question ${index + 1} (0–${question.points})`} required error={error && !essayPoints[question.id] ? error : undefined}>
+                      <Input type="number" inputMode="decimal" min={0} max={question.points} value={essayPoints[question.id] ?? ""} onChange={(event) => setEssayPoints((current) => ({ ...current, [question.id]: event.target.value }))} />
+                    </Field>
+                  </>
+                ) : (
+                  <span className="flex items-center gap-2 text-muted">
+                    {(answerOf(question.id)?.pointsAwarded ?? 0) >= question.points ? <Check aria-hidden className="size-4 text-success" /> : <X aria-hidden className="size-4 text-danger" />}
+                    Scored {answerOf(question.id)?.pointsAwarded ?? 0} of {question.points}
                   </span>
-                  <span><span className="sr-only">{right ? "Correct: " : "Incorrect: "}</span>{index + 1}. {question.prompt}</span>
-                </li>
-              );
-            })}
+                )}
+              </li>
+            ))}
           </ol>
         </div>
       )}
-      <Field label={`Score (0–${item.maxScore})`} required error={error || undefined}>
-        <Input type="number" inputMode="numeric" min={0} max={item.maxScore} value={score} onChange={(event) => setScore(event.target.value)} />
-      </Field>
       <Field label="Feedback" hint="Optional. Students see it with their grade.">
         <Textarea rows={3} value={feedback} onChange={(event) => setFeedback(event.target.value)} placeholder="Optional feedback" />
       </Field>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit">Save grade</Button>
+        <Button type="submit" disabled={saving}>Save grade</Button>
       </div>
     </form>
   );

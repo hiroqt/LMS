@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, LayoutDashboard, Search } from "lucide-react";
+import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, Search } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
@@ -10,13 +10,15 @@ import { SidebarGroup } from "../../shared/layout/SidebarGroup";
 import { cn } from "../../shared/lib/cn";
 import { toneFor } from "../../shared/lib/tones";
 import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
+import { describeApiError } from "../../shared/api/http";
+import { Button } from "../../shared/ui/Button";
+import { EmptyState } from "../../shared/ui/EmptyState";
 import { IconButton } from "../../shared/ui/IconButton";
 import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
 import { Toaster } from "../../shared/ui/toast/Toaster";
-import { activeInstructors, classMark, searchInstructor, subjectOf } from "./api/selectors";
-import { useRoleStore, useRoleStoreSync } from "./api/store";
+import { classMark, searchInstructor, subjectOf } from "./api/selectors";
+import { useOverview, usePeople } from "./api/store";
 import { useInstructorWorkspace } from "./hooks/useInstructorWorkspace";
-import { useIsmsClassSync } from "./hooks/useIsmsClassSync";
 import { InstructorSessionContext, type InstructorSession } from "./instructorContext";
 import { instructorPaths } from "./paths";
 import OverviewPage from "./pages/OverviewPage";
@@ -160,32 +162,59 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   );
 }
 
-/** Root of the rebuilt Instructor UI (Phase 3). */
+const VIEWING_KEY = "tmcc-viewing-instructor";
+
+function remembered(): string {
+  try {
+    return sessionStorage.getItem(VIEWING_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Loading and error states before the workspace can render. */
+function Gate({ query, label }: { query: { isError: boolean; error: unknown; refetch: () => unknown }; label: string }) {
+  if (!query.isError) {
+    return (
+      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+        <SkeletonGroup label={label} className="flex flex-col gap-4"><Skeleton className="h-9 w-1/2" /><Skeleton className="h-28 w-full" /></SkeletonGroup>
+      </main>
+    );
+  }
+  const { title, detail } = describeApiError(query.error);
+  return (
+    <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+      <EmptyState icon={<CloudOff />} title={title} description={detail} action={<Button onClick={() => void query.refetch()}>Try again</Button>} />
+    </main>
+  );
+}
+
+/** Root of the Instructor UI. Data comes from the LMS API (D-032). */
 export default function InstructorApp(props: RoleAppProps) {
-  useRoleStoreSync();
   const navigate = useNavigate();
-  const store = useRoleStore();
-  const location = useLocation();
-  // A class link opens under the instructor who teaches that class, so a reload or a shared
-  // link to a class keeps showing it; otherwise the first active instructor is viewed.
-  const [instructorId, setInstructorId] = useState(() => {
-    const linked = sectionOf(location.pathname) === "classes" ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
-    const owner = store.classrooms.find((room) => room.id === linked && room.status === "active")?.instructorId;
-    const active = activeInstructors(store);
-    return active.find((item) => item.id === owner)?.id ?? active[0]?.id ?? "";
-  });
-  const isms = useIsmsClassSync(instructorId);
+  const people = usePeople();
+  const [chosen, setChosen] = useState(remembered);
+  const instructors = people.data?.instructors ?? [];
+  const instructorId = instructors.some((item) => item.id === chosen) ? chosen : instructors[0]?.id ?? "";
+  const overview = useOverview(instructorId);
   const session = useMemo<InstructorSession>(
     () => ({
       instructorId,
       setInstructorId: (id) => {
-        setInstructorId(id);
+        setChosen(id);
+        try {
+          sessionStorage.setItem(VIEWING_KEY, id);
+        } catch {
+          // Remembering the choice is a convenience only.
+        }
         navigate(instructorPaths.overview);
       },
-      isms,
     }),
-    [instructorId, navigate, isms],
+    [instructorId, navigate],
   );
+
+  if (!people.data) return <Gate query={people} label="Loading the instructor workspace" />;
+  if (!overview.data) return <Gate query={overview} label="Loading your classes" />;
 
   return (
     <Toaster>

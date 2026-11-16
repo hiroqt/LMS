@@ -5,7 +5,7 @@ import { Button } from "../../../../shared/ui/Button";
 import { Card } from "../../../../shared/ui/Card";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { createActivity, createExam, createMaterial } from "../../api/actions";
+import { useInstructorActions } from "../../api/actions";
 import type { ContentType } from "../../paths";
 import { RESOURCE_TYPES } from "./classUtils";
 import type { ClassTabProps } from "./shared";
@@ -23,7 +23,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
 
 const titles: Record<ContentType, string> = { material: "Upload class material", activity: "Create an assignment", exam: "Create an assessment" };
 
-function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabProps, "room" | "instructor" | "content"> & { type: ContentType; onDone: (saved: boolean) => void }) {
+function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { type: ContentType; onDone: (saved: boolean) => void }) {
   const toast = useToast();
   const [values, setValues] = useState<Record<string, string>>({ moduleId: content.modules[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", correctIndex: "0" });
   const [flags, setFlags] = useState({ allowLate: false, allowResubmission: false });
@@ -45,20 +45,27 @@ function ContentForm({ type, room, instructor, content, onDone }: Pick<ClassTabP
     return next;
   };
 
-  const submit = (event: FormEvent) => {
+  const actions = useInstructorActions();
+  const [saving, setSaving] = useState(false);
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const next = validate();
     setErrors(next);
     if (Object.values(next).some(Boolean)) return;
     const common = { moduleId: v("moduleId"), title: v("title"), instructions: v("instructions"), dueAt: v("dueAt"), points: Number(v("points")) };
-    const saved =
+    setSaving(true);
+    const result =
       type === "material"
-        ? createMaterial(instructor, room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
+        ? await actions.createMaterial(room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
         : type === "activity"
-          ? createActivity(instructor, { ...common, ...flags })
-          : createExam(instructor, room.id, { ...common, timeLimit: Number(v("timeLimit")), prompt: v("prompt"), options: [1, 2, 3, 4].map((n) => v(`option${n}`)), correctIndex: Number(v("correctIndex")) });
-    if (!saved) {
-      toast.show({ title: "Could not publish", description: "Browser storage is full or blocked.", tone: "danger" });
+          ? await actions.createActivity(room.id, { ...common, ...flags })
+          : await actions.createExam(room.id, { ...common, timeLimit: Number(v("timeLimit")), prompt: v("prompt"), options: [1, 2, 3, 4].map((n) => v(`option${n}`)), correctIndex: Number(v("correctIndex")) });
+    setSaving(false);
+    if (!result.ok) {
+      // Show the server's messages on the matching fields.
+      setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field === "maxPoints" ? "points" : field, messages[0]])));
+      toast.show({ title: "Could not publish", description: result.message, tone: "danger" });
       return;
     }
     toast.show({ title: `${type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"} published`, description: v("title").trim(), tone: "success" });
@@ -186,7 +193,7 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
   );
 }
 
-export function CreateContentTab({ room, instructor, content, goTab, open }: ClassTabProps & { open?: ContentType }) {
+export function CreateContentTab({ room, content, goTab, open }: ClassTabProps & { open?: ContentType }) {
   return (
     <div className="flex flex-col gap-4">
       <SectionHeading eyebrow="Class content" title="Create and organize" />
@@ -201,7 +208,6 @@ export function CreateContentTab({ room, instructor, content, goTab, open }: Cla
           key={open}
           type={open}
           room={room}
-          instructor={instructor}
           content={content}
           onDone={(saved) => goTab(saved ? (open === "material" ? "Materials" : "Classwork") : "Create content")}
         />

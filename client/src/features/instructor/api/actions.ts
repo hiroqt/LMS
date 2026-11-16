@@ -1,27 +1,23 @@
-import { commit } from "./store";
-import { DEFAULT_GRADEBOOK, type ReviewItem } from "./selectors";
-import type { AuditEvent, GradebookSetting, User } from "./types";
+import { useMemo } from "react";
+import { describeApiError, isApiError, sendJson } from "../../../shared/api/http";
+import type { Viewer } from "../../../shared/api/viewer";
+import { useInstructorSession } from "../hooks/useInstructorSession";
+import type { ReviewItem } from "./selectors";
+import { useRefreshOverview } from "./store";
+import type { GradebookSetting } from "./types";
 
 /*
- * Every write mirrors the classic Instructor UI (removed at cutover): same record shapes,
- * ids, defaults, and metadata-only audit events, so Student, Admin, and the
- * classic UI read them unchanged. Each returns false if storage refused it.
+ * Every Instructor change is an LMS API call (D-032). The server checks who may
+ * change what, validates, and writes a metadata-only audit row; on success the
+ * overview is refreshed so every screen shows the change.
  */
 
-const now = () => new Date().toISOString();
-const uid = () => crypto.randomUUID();
-
-function auditFor(instructor: User) {
-  return (category: string, action: string, target: string, targetId: string, summary: string): AuditEvent => ({
-    actorId: instructor.id,
-    actorName: `${instructor.firstName} ${instructor.lastName}`,
-    actorRole: "instructor",
-    category,
-    action,
-    target,
-    targetId,
-    summary,
-  });
+export interface ActionResult {
+  ok: boolean;
+  /** A plain-language reason when the change was not saved. */
+  message?: string;
+  /** The server's field errors, e.g. { title: ["Enter a title."] }. */
+  fieldErrors?: Record<string, string[]>;
 }
 
 export interface MaterialInput {
@@ -34,37 +30,6 @@ export interface MaterialInput {
   fileSize?: string;
 }
 
-export function createMaterial(instructor: User, classroomId: string, input: MaterialInput): boolean {
-  const id = `material-${uid()}`;
-  const ext = input.fileType || "pdf";
-  const fileName = input.fileName || `${input.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_")}.${ext}`;
-  return commit(
-    (current) => ({
-      ...current,
-      materials: [
-        ...current.materials,
-        {
-          id,
-          moduleId: input.moduleId || current.modules.find((item) => item.classroomId === classroomId)?.id || "",
-          classroomId,
-          title: input.title.trim(),
-          kind: input.kind || "Study guide",
-          description: input.description.trim(),
-          fileName,
-          fileType: ext,
-          fileSize: input.fileSize || "1.8 MB",
-          uploadedBy: `${instructor.firstName} ${instructor.lastName}`,
-          uploadedAt: now(),
-          downloads: 0,
-          status: "active",
-          createdAt: now(),
-        },
-      ],
-    }),
-    auditFor(instructor)("courses", "published", "Material", id, input.title.trim()),
-  );
-}
-
 export interface ActivityInput {
   moduleId: string;
   title: string;
@@ -73,31 +38,6 @@ export interface ActivityInput {
   points: number;
   allowLate: boolean;
   allowResubmission: boolean;
-}
-
-export function createActivity(instructor: User, input: ActivityInput): boolean {
-  const id = `activity-${uid()}`;
-  return commit(
-    (current) => ({
-      ...current,
-      activities: [
-        ...current.activities,
-        {
-          id,
-          moduleId: input.moduleId,
-          title: input.title.trim(),
-          instructions: input.instructions.trim(),
-          dueAt: input.dueAt ? new Date(input.dueAt).toISOString() : "",
-          maxScore: input.points || 10,
-          allowLate: input.allowLate,
-          allowResubmission: input.allowResubmission,
-          status: "active",
-          createdAt: now(),
-        },
-      ],
-    }),
-    auditFor(instructor)("courses", "published", "Coursework", id, input.title.trim()),
-  );
 }
 
 export interface ExamInput {
@@ -112,108 +52,108 @@ export interface ExamInput {
   correctIndex: number;
 }
 
-export function createExam(instructor: User, classroomId: string, input: ExamInput): boolean {
-  const id = `exam-${uid()}`;
-  return commit(
-    (current) => ({
-      ...current,
-      exams: [
-        ...current.exams,
-        {
-          id,
-          classroomId,
-          moduleId: input.moduleId,
-          title: input.title.trim(),
-          instructions: input.instructions.trim(),
-          dueAt: input.dueAt ? new Date(input.dueAt).toISOString() : "",
-          totalMarks: input.points || 10,
-          timeLimitMinutes: input.timeLimit || 0,
-          attempts: 1,
-          status: "active",
-          createdAt: now(),
-          questions: [{ prompt: input.prompt.trim(), options: input.options.filter(Boolean), correctIndex: input.correctIndex, points: input.points || 10 }],
-        },
-      ],
-    }),
-    auditFor(instructor)("courses", "published", "Assessment", id, input.title.trim()),
-  );
-}
+const classPath = (classroomId: string) => `/api/classes/${encodeURIComponent(classroomId)}`;
+/** A datetime-local value ("2026-11-30T15:00") as an instant; empty stays empty. */
+const instant = (value: string) => (value ? new Date(value).toISOString() : undefined);
 
-export function publishAnnouncement(instructor: User, classroomId: string, input: { title: string; message: string }): boolean {
-  const id = `announcement-${uid()}`;
-  return commit(
-    (current) => ({
-      ...current,
-      announcements: [
-        ...(current.announcements ?? []),
-        { id, classroomId, instructorId: instructor.id, title: input.title.trim(), message: input.message.trim(), createdAt: now(), status: "active" },
-      ],
-    }),
-    auditFor(instructor)("courses", "published", "Announcement", id, input.title.trim()),
-  );
-}
-
-export function setMaterialArchived(instructor: User, materialId: string, archived: boolean): boolean {
-  const status = archived ? "archived" : "active";
-  return commit(
-    (current) => ({ ...current, materials: current.materials.map((item) => (item.id === materialId ? { ...item, status } : item)) }),
-    auditFor(instructor)("courses", "updated", "Material", materialId, `Status set to ${status}`),
-  );
-}
-
-export function deleteMaterial(instructor: User, materialId: string, title: string): boolean {
-  return commit(
-    (current) => ({ ...current, materials: current.materials.filter((item) => item.id !== materialId) }),
-    auditFor(instructor)("courses", "deleted", "Material", materialId, title || "Class material"),
-  );
-}
-
-/** Saves a final score and optional feedback; the item leaves the review queue. */
-export function saveGrade(instructor: User, item: ReviewItem, score: number, feedback: string): boolean {
-  const who = `${item.student?.firstName || "Student"} ${item.student?.lastName || ""}`;
-  const audit = auditFor(instructor);
-  if (item.kind === "activity") {
-    return commit(
-      (current) => ({
-        ...current,
-        activitySubmissions: current.activitySubmissions.map((record) =>
-          record.id === item.id ? { ...record, grade: score, feedback: feedback.trim(), status: "graded", gradedAt: now(), gradedBy: instructor.id } : record,
-        ),
-      }),
-      audit("activity", "graded", "Assignment", item.id, `${who} · ${item.title}`),
-    );
+async function attempt(change: () => Promise<unknown>): Promise<ActionResult> {
+  try {
+    await change();
+    return { ok: true };
+  } catch (error) {
+    const { title, detail } = describeApiError(error);
+    return { ok: false, message: isApiError(error) && error.status === 400 ? "Check the highlighted fields." : `${title}. ${detail}`, fieldErrors: isApiError(error) ? error.fieldErrors : undefined };
   }
-  const studentId = item.student?.id ?? "s0";
-  return commit(
-    (current) => ({
-      ...current,
-      examSubmissions: [
-        ...current.examSubmissions.filter((record) => !(record.examId === item.id && record.studentId === studentId)),
-        {
-          id: item.existing?.id || `submission-${uid()}`,
-          examId: item.id,
-          classroomId: item.classroomId,
-          studentId,
-          status: "graded",
-          totalScore: score,
-          feedback: feedback.trim(),
-          answers: item.answers,
-          submittedAt: item.existing?.submittedAt || now(),
-          gradedAt: now(),
-          gradedBy: instructor.id,
-        },
-      ],
-    }),
-    audit("activity", "graded", "Assessment", item.id, `${who} · ${item.title}`),
-  );
 }
 
-export function setGradebookSetting(instructor: User, classroomId: string, key: keyof GradebookSetting, value: number): boolean {
-  return commit(
-    (current) => ({
-      ...current,
-      gradebookSettings: { ...current.gradebookSettings, [classroomId]: { ...(current.gradebookSettings[classroomId] ?? DEFAULT_GRADEBOOK), [key]: value } },
-    }),
-    auditFor(instructor)("courses", "updated", "Gradebook settings", classroomId, `${key} updated`),
-  );
+export function useInstructorActions() {
+  const { instructorId } = useInstructorSession();
+  const refresh = useRefreshOverview();
+
+  return useMemo(() => {
+    const viewer: Viewer = { id: instructorId, role: "instructor" };
+    const send = <T = unknown>(method: "POST" | "PUT" | "PATCH" | "DELETE", path: string, body?: unknown) => sendJson<T>(method, path, body, { viewer });
+    const run = async (change: () => Promise<unknown>) => {
+      const result = await attempt(change);
+      if (result.ok) await refresh();
+      return result;
+    };
+
+    return {
+      createMaterial: (classroomId: string, input: MaterialInput) =>
+        run(() => {
+          const type = input.fileType || "pdf";
+          return send("POST", `${classPath(classroomId)}/materials`, {
+            moduleId: Number(input.moduleId),
+            title: input.title,
+            kind: input.kind || "Study guide",
+            description: input.description,
+            fileName: input.fileName || `${input.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_")}.${type}`,
+            fileType: type,
+            fileSize: input.fileSize,
+          });
+        }),
+
+      createActivity: (classroomId: string, input: ActivityInput) =>
+        run(() =>
+          send("POST", `${classPath(classroomId)}/coursework`, {
+            type: "assignment",
+            moduleId: Number(input.moduleId),
+            title: input.title,
+            category: "Assignment",
+            instructions: input.instructions,
+            dueAt: instant(input.dueAt),
+            maxPoints: input.points || 10,
+            allowLate: input.allowLate,
+            allowResubmission: input.allowResubmission,
+            status: "published",
+          }),
+        ),
+
+      // An exam needs a questionnaire first: create it, add the question, then publish the exam.
+      createExam: (classroomId: string, input: ExamInput) =>
+        run(async () => {
+          const questionnaire = await send<{ id: number }>("POST", "/api/questionnaires", { title: input.title });
+          await send("PUT", `/api/questionnaires/${questionnaire.id}/questions`, {
+            questions: [{
+              type: "multiple_choice",
+              prompt: input.prompt,
+              points: input.points || 10,
+              options: input.options.map((text, index) => ({ text, isCorrect: index === input.correctIndex })).filter((option) => option.text.trim()),
+            }],
+          });
+          await send("POST", `${classPath(classroomId)}/coursework`, {
+            type: "exam",
+            moduleId: Number(input.moduleId),
+            title: input.title,
+            category: "Assessment",
+            instructions: input.instructions,
+            dueAt: instant(input.dueAt),
+            timeLimitMinutes: input.timeLimit || 0,
+            questionnaireId: questionnaire.id,
+            status: "published",
+          });
+        }),
+
+      publishAnnouncement: (classroomId: string, input: { title: string; message: string }) =>
+        run(() => send("POST", `${classPath(classroomId)}/announcements`, input)),
+
+      setMaterialArchived: (classroomId: string, materialId: string, archived: boolean) =>
+        run(() => send("PATCH", `${classPath(classroomId)}/materials/${materialId}`, { status: archived ? "archived" : "active" })),
+
+      deleteMaterial: (classroomId: string, materialId: string) =>
+        run(() => send("DELETE", `${classPath(classroomId)}/materials/${materialId}`)),
+
+      /** Assignments: one score. Exams: points for each essay; the server adds up the rest. */
+      saveGrade: (item: ReviewItem, score: number, feedback: string, answerPoints?: Record<string, number>) =>
+        run(() =>
+          send("PUT", `${classPath(item.classroomId)}/coursework/${item.courseworkId}/submissions/${item.id}/grade`,
+            item.kind === "activity" ? { points: score, feedback } : { feedback, answerPoints: answerPoints ?? {} }),
+        ),
+
+      /** Saved only as a whole; the server requires the two weights to add up to 100. */
+      saveGradebook: (classroomId: string, settings: GradebookSetting) =>
+        run(() => send("PUT", `${classPath(classroomId)}/gradebook`, settings)),
+    };
+  }, [instructorId, refresh]);
 }

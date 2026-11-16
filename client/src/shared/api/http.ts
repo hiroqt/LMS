@@ -1,3 +1,5 @@
+import { identityHeaders, type Viewer } from "./viewer";
+
 /**
  * Thin JSON-over-HTTP layer for the LMS API (`../server`). Feature `api/`
  * modules call `getJson`; screens read through TanStack Query hooks and show
@@ -26,6 +28,8 @@ export type ApiErrorKind = "network" | "timeout" | "isms-auth" | "isms-unavailab
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
+  /** Field errors from a 400 validation problem, e.g. { title: ["Enter a title."] }. */
+  readonly fieldErrors: Record<string, string[]>;
   /** HTTP status, or 0 when there was no response. */
   readonly status: number;
   /** RFC 7807 `title`, when the API sent one. */
@@ -34,7 +38,7 @@ export class ApiError extends Error {
   readonly detail: string | undefined;
   readonly url: string;
 
-  constructor(options: { kind: ApiErrorKind; status: number; url: string; title?: string; detail?: string; cause?: unknown }) {
+  constructor(options: { kind: ApiErrorKind; status: number; url: string; title?: string; detail?: string; fieldErrors?: Record<string, string[]>; cause?: unknown }) {
     super(options.detail ?? options.title ?? `${options.kind} error (${options.status}) for ${options.url}`, { cause: options.cause });
     this.name = "ApiError";
     this.kind = options.kind;
@@ -42,6 +46,7 @@ export class ApiError extends Error {
     this.title = options.title;
     this.detail = options.detail;
     this.url = options.url;
+    this.fieldErrors = options.fieldErrors ?? {};
   }
 }
 
@@ -55,14 +60,15 @@ export function kindForStatus(status: number): ApiErrorKind {
   return "http";
 }
 
-async function readProblem(response: Response): Promise<{ title?: string; detail?: string }> {
+async function readProblem(response: Response): Promise<{ title?: string; detail?: string; fieldErrors?: Record<string, string[]> }> {
   try {
     const body: unknown = await response.json();
     if (!body || typeof body !== "object") return {};
-    const { title, detail } = body as Record<string, unknown>;
+    const { title, detail, errors } = body as Record<string, unknown>;
     return {
       title: typeof title === "string" && title ? title : undefined,
       detail: typeof detail === "string" && detail ? detail : undefined,
+      fieldErrors: errors && typeof errors === "object" ? (errors as Record<string, string[]>) : undefined,
     };
   } catch {
     return {};
@@ -85,6 +91,10 @@ export interface GetJsonOptions {
   /** Cancels the request (TanStack Query passes one per query). */
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** Send the "viewing as" identity and test sandbox headers (workspace calls; D-032). */
+  identity?: boolean;
+  /** Who to send as; defaults to the current viewer. */
+  viewer?: Viewer | null;
 }
 
 /**
@@ -95,7 +105,22 @@ export interface GetJsonOptions {
  * Only CORS-safelisted headers are sent, so a cross-origin GET needs no
  * preflight; the API still has to allow the client's origin.
  */
-export async function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
+export function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>("GET", path, undefined, options);
+}
+
+export type WriteMethod = "POST" | "PUT" | "PATCH" | "DELETE";
+
+/**
+ * Sends a change to the LMS API with the viewer's identity. Resolves with the
+ * parsed body (undefined for 204); rejects with an ApiError whose
+ * `fieldErrors` carry the server's validation messages.
+ */
+export function sendJson<T>(method: WriteMethod, path: string, body?: unknown, options: Omit<GetJsonOptions, "identity"> = {}): Promise<T> {
+  return request<T>(method, path, body, { ...options, identity: true });
+}
+
+async function request<T>(method: "GET" | WriteMethod, path: string, body: unknown, options: GetJsonOptions): Promise<T> {
   const url = apiUrl(path, options.params);
   const controller = new AbortController();
   let timedOut = false;
@@ -111,7 +136,9 @@ export async function getJson<T>(path: string, options: GetJsonOptions = {}): Pr
   try {
     let response: Response;
     try {
-      response = await fetch(url, { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
+      const headers: Record<string, string> = { Accept: "application/json", ...(options.identity ? identityHeaders(options.viewer === undefined ? undefined : options.viewer) : {}) };
+      if (body !== undefined) headers["Content-Type"] = "application/json";
+      response = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal });
     } catch (cause) {
       if (outer?.aborted && !timedOut) throw cause;
       if (timedOut) throw new ApiError({ kind: "timeout", status: 0, url, cause });
@@ -123,6 +150,7 @@ export async function getJson<T>(path: string, options: GetJsonOptions = {}): Pr
       throw new ApiError({ kind: kindForStatus(response.status), status: response.status, url, ...problem });
     }
 
+    if (response.status === 204) return undefined as T;
     try {
       return (await response.json()) as T;
     } catch (cause) {
