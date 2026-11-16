@@ -86,7 +86,9 @@ test.describe("Adaptive layout (D-025)", () => {
     const main = page.getByRole("main");
     const sidebar = page.getByRole("complementary", { name: "Workspace" });
     const width = async (target: typeof main) => (await target.boundingBox())?.width ?? 0;
-    expect(await width(main)).toBeGreaterThanOrEqual(1920 - (await width(sidebar)) - 1);
+    // The body's width excludes the always-present scrollbar track (index.css).
+    const available = await page.evaluate(() => document.body.clientWidth);
+    expect(await width(main)).toBeGreaterThanOrEqual(available - (await width(sidebar)) - 1);
 
     // Wide: tasks, classes, and calendar share one row.
     const top = async (name: string) => (await page.getByRole("heading", { name }).boundingBox())?.y ?? 0;
