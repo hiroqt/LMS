@@ -5,7 +5,12 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Lms.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Lms.Api.Tests;
 
@@ -65,7 +70,14 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
         ["Isms:CacheTtlSeconds"] = "300",
         ["Isms:MaxStaleSeconds"] = "3600",
         ["Cors:AllowedOrigins:0"] = AllowedOrigin,
+        // Satisfies the startup check; the MySQL registration is replaced with SQLite below.
+        ["ConnectionStrings:LmsDb"] = "unused-in-tests",
+        // Tests run the sync themselves, so the background worker stays off.
+        ["Lms:Sync:Enabled"] = "false",
     };
+
+    // A temp-file SQLite database per factory (no MySQL server needed).
+    private readonly string _dbFile = Path.Combine(Path.GetTempPath(), $"lmsdb-test-{Guid.NewGuid():N}.db");
 
     private string _environment = "Testing";
 
@@ -93,6 +105,35 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
         {
             services.AddSingleton<TimeProvider>(Time);
             services.ConfigureHttpClientDefaults(http => http.ConfigurePrimaryHttpMessageHandler(() => Isms));
+            services.RemoveAll<DbContextOptions<LmsDbContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<LmsDbContext>>();
+            services.AddDbContext<LmsDbContext>(o => o.UseSqlite($"Data Source={_dbFile};Pooling=False"));
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        using var scope = host.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<LmsDbContext>().Database.EnsureCreated();
+        return host;
+    }
+
+    public async Task<T> WithDbAsync<T>(Func<LmsDbContext, Task<T>> action)
+    {
+        using var scope = Services.CreateScope();
+        return await action(scope.ServiceProvider.GetRequiredService<LmsDbContext>());
+    }
+
+    public async Task<T> WithServiceAsync<TService, T>(Func<TService, Task<T>> action) where TService : notnull
+    {
+        using var scope = Services.CreateScope();
+        return await action(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        try { File.Delete(_dbFile); } catch (IOException) { }
     }
 }

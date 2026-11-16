@@ -1,5 +1,8 @@
 using Lms.Api.Classes;
+using Lms.Api.Data;
 using Lms.Api.Isms;
+using Lms.Api.Sync;
+using Microsoft.EntityFrameworkCore;
 
 namespace Lms.Api.Endpoints;
 
@@ -14,6 +17,13 @@ public sealed record ClassTerm(int SchoolYearId, string SchoolYearName, int Seme
 
 /// <param name="Term">Set only when <c>term=current</c> was requested and ISMS flags a current term.</param>
 public sealed record ClassListResponse(IReadOnlyList<LmsClass> Items, string Source, DateTimeOffset SyncedAt, ClassTerm? Term);
+
+public sealed record LmsDatabaseStatus(bool Reachable, int PendingMigrations);
+
+public sealed record LmsSyncStatus(DateTimeOffset At, string? TermName, int Classes, int ActiveClasses, int Students, string? Error);
+
+/// <param name="Sync">Null until the first sync has run (or when the sync is turned off).</param>
+public sealed record LmsStatusResponse(LmsDatabaseStatus Database, LmsSyncStatus? Sync, DateTimeOffset CheckedAt);
 
 public sealed record IsmsStatusResponse(bool Reachable, bool Authorized, DateTimeOffset CheckedAt, string Detail);
 
@@ -34,13 +44,11 @@ public static class LmsEndpoints
                 ClassTerm? current = null;
                 if (string.Equals(term, "current", StringComparison.OrdinalIgnoreCase))
                 {
-                    var year = (await catalog.GetSchoolYearsAsync(ct)).Data.FirstOrDefault(y => y.IsCurrent);
-                    var semester = (await catalog.GetSemestersAsync(ct)).Data.FirstOrDefault(s => s.IsCurrent);
-                    if (year is not null && semester is not null)
+                    current = await IsmsTerms.ResolveCurrentAsync(catalog, ct);
+                    if (current is not null)
                     {
-                        current = new ClassTerm(year.Id, year.Name, semester.Id, semester.Name);
-                        schoolYearId = year.Id;
-                        semesterId = semester.Id;
+                        schoolYearId = current.SchoolYearId;
+                        semesterId = current.SemesterId;
                     }
                 }
 
@@ -102,6 +110,29 @@ public static class LmsEndpoints
             .WithSummary("Instructors from ISMS.")
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        api.MapGet("/lms/status", async (LmsDbContext db, SyncState sync, TimeProvider time, CancellationToken ct) =>
+            {
+                var reachable = false;
+                var pending = 0;
+                try
+                {
+                    reachable = await db.Database.CanConnectAsync(ct);
+                    if (reachable && db.Database.IsRelational() && db.Database.GetMigrations().Any())
+                        pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
+                }
+                catch (Exception) when (!ct.IsCancellationRequested)
+                {
+                    reachable = false;
+                }
+                var last = sync.Last;
+                return TypedResults.Ok(new LmsStatusResponse(
+                    new LmsDatabaseStatus(reachable, pending),
+                    last is null ? null : new LmsSyncStatus(last.At, last.TermName, last.Classes, last.ActiveClasses, last.Students, last.Error),
+                    time.GetUtcNow()));
+            })
+            .WithName("LmsStatus")
+            .WithSummary("Diagnostic: is the LMS database reachable and up to date, and how did the last ISMS sync go?");
 
         api.MapGet("/isms/status", async (IIsmsClient client, TimeProvider time, CancellationToken ct) =>
             {
