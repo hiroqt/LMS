@@ -179,6 +179,39 @@ Validation errors are 400 with field errors. Every change writes an `audit_log` 
 what, id) in the same transaction, never the text itself. The ISMS sync gives every offered class
 a starter module ("Unit 1 · Foundations") and default gradebook weights, once.
 
+## Coursework (Phase 2, step 3)
+
+**Questionnaires** are reusable question sets owned by one instructor; one questionnaire can back
+exams in several sections. Only the owner sees one (others get 404, students 403). Once any
+student has started an exam that uses it, its questions are locked (409) so recorded answers keep
+pointing at the questions they answered.
+
+| Question type | Send | Stored as |
+|---|---|---|
+| `multiple_choice` | `options: [{ text, isCorrect }]`, 2–10, exactly one correct | options |
+| `true_false` | `correctAnswer: true/false` | options "True" and "False" |
+| `essay` | prompt only (graded by the instructor) | — |
+| `enumeration` | `expectedAnswers: [...]`, 1–20 | expected answers |
+| `matching` | `pairs: [{ left, right }]`, 2–20 | option (left) + expected answer (right) with the same sort order |
+
+Every question has `prompt`, `points` (more than 0, at most 1000) and an optional
+`timeLimitSeconds` (0 means none).
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `/api/questionnaires` | The caller's questionnaires with question count, total points, `locked` |
+| POST | `/api/questionnaires` | `{ title, subjectId? }` |
+| GET / PATCH | `/api/questionnaires/{id}` | Full view with correct answers (owner only) / `{ title }` |
+| PUT | `/api/questionnaires/{id}/questions` | `{ questions: [...] }` replaces the whole list in one transaction; errors name the position, e.g. `questions[2].pairs` |
+| GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published work whose `availableFrom` has passed |
+| GET | `/api/classes/{classId}/coursework/{id}` | Same visibility |
+| POST | `/api/classes/{classId}/coursework` | `{ type (assignment or exam), moduleId, title, instructions?, maxPoints (assignments), dueAt?, availableFrom?, allowLate?, allowResubmission?, maxAttempts? (1–20), timeLimitMinutes? (0–600), questionnaireId (exams), status? }` |
+| PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived |
+
+An exam is worth the total points of its questionnaire and cannot be published without
+questions. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
+questions or answers from these routes; they get questions when they start an attempt (step 4).
+
 ## Caching
 
 `IIsmsCatalog` is the LMS's read-side copy of ISMS data. Today it is `MemoryIsmsCatalog`, which is
@@ -189,4 +222,4 @@ later without changing the endpoints.
 ## Not in this slice
 
 - Real sign-in. Content routes use the demo identity above; the ISMS, status and diagnostic routes are anonymous.
-- Coursework, exams, submissions and grading endpoints (Phase 2 steps 3 and 4). The client does not use the content endpoints yet (steps 5 and 6).
+- Submissions, exam attempts and grading (Phase 2 step 4). The client does not use the content endpoints yet (steps 5 and 6).
