@@ -9,6 +9,7 @@
 # Passwords below are obvious dev-only placeholders. Override them with
 # environment variables or an untracked isms-api/.env file, e.g.
 #   ISMS_DB_ROOT_PASSWORD=...  ISMS_API_RO_PASSWORD=...  ISMS_API_RW_PASSWORD=...
+#   LMS_API_RW_PASSWORD=...   (the LMS API's own database, lmsdb)
 name: isms-api-dev
 
 services:
@@ -20,6 +21,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${ISMS_DB_ROOT_PASSWORD:-dev_only_root_change_me}
       ISMS_API_RO_PASSWORD: ${ISMS_API_RO_PASSWORD:-dev_only_ro_change_me}
       ISMS_API_RW_PASSWORD: ${ISMS_API_RW_PASSWORD:-dev_only_rw_change_me}
+      LMS_API_RW_PASSWORD: ${LMS_API_RW_PASSWORD:-dev_only_lms_change_me}
       TZ: Asia/Manila
     command:
       - --character-set-server=utf8mb4
@@ -28,7 +30,7 @@ services:
       - "127.0.0.1:3307:3306"
     volumes:
       - isms-db-data:/var/lib/mysql
-      # Runs 01_schema.sql, 02_seed.sql, 03_users.sh in name order, once,
+      # Runs 01_schema.sql, 02_seed.sql, 03_users.sh, 04_lmsdb.sh in name order, once,
       # on an empty data volume. README.md in this folder is ignored.
       - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
