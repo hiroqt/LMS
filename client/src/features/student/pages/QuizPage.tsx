@@ -1,17 +1,21 @@
 import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, ShieldCheck } from "lucide-react";
 import { RadioGroup } from "radix-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { cn } from "../../../shared/lib/cn";
 import { formatCountdown, pad2 } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../shared/ui/Dialog";
-import { saveAnswer } from "../api/progressStore";
-import { submitExam } from "../api/submissions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
+import { describeApiError } from "../../../shared/api/http";
 import { BackLink } from "../../../shared/components/BackLink";
-import { useProgress } from "../hooks/useProgress";
+import { EmptyState } from "../../../shared/ui/EmptyState";
+import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
+import { useToast } from "../../../shared/ui/toast/useToast";
+import { failureMessage, saveAnswers, startAttempt, studentKeys, studentQueryOptions, submitAttempt, type Attempt, type ChosenAnswers } from "../api/student";
 import { useQuizSession } from "../hooks/useQuizSession";
-import { useStudentCatalog } from "../hooks/useStudentCatalog";
+import { useRefreshStudent, useStudentCatalog, useStudentViewer } from "../hooks/useStudentCatalog";
 import { studentPaths } from "../paths";
 
 /** Announces only milestones, not every second, so screen readers are not flooded (plan §7). */
@@ -22,22 +26,58 @@ function timerAnnouncement(seconds: number) {
   return null;
 }
 
-function Quiz({ assessmentId }: { assessmentId: string }) {
+function Quiz({ assessmentId, attempt }: { assessmentId: string; attempt: Attempt }) {
   const navigate = useNavigate();
+  const toast = useToast();
+  const queryClient = useQueryClient();
   const catalog = useStudentCatalog();
-  const progress = useProgress();
+  const viewer = useStudentViewer();
+  const refresh = useRefreshStudent();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId)!;
   const course = catalog.courses.find((item) => item.id === assessment.courseId);
-  const questions = catalog.questions[assessment.id] ?? [];
-  const answers = progress.answers[assessment.id] ?? {};
+  // Questions arrive without answers; the server keeps them (D-032).
+  const questions = attempt.questions.map((item) => ({ id: item.id, prompt: item.prompt, points: item.points, context: undefined as string | undefined, options: item.options.map((option) => option.text), optionIds: item.options.map((option) => option.id) }));
+  const [answers, setAnswers] = useState<Record<number, number>>(() =>
+    Object.fromEntries(attempt.answers.flatMap((answer) => {
+      const index = questions.findIndex((item) => item.id === answer.questionId);
+      const option = index < 0 ? -1 : questions[index]!.optionIds.indexOf(answer.optionId ?? -1);
+      return option >= 0 ? [[index, option]] : [];
+    })),
+  );
   const [confirming, setConfirming] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const submitting = useRef(false);
 
-  const finish = () => {
-    submitExam(assessment, progress.answers[assessment.id] ?? {});
+  const chosen = (current: Record<number, number>): ChosenAnswers =>
+    Object.entries(current).flatMap(([index, option]) => {
+      const item = questions[Number(index)];
+      const optionId = item?.optionIds[option];
+      return item && optionId !== undefined ? [{ questionId: item.id, optionId }] : [];
+    });
+
+  const saveAnswer = (_assessmentId: string, index: number, option: number) => {
+    const next = { ...answers, [index]: option };
+    setAnswers(next);
+    saveAnswers(viewer, assessment.courseId, assessment.id, attempt.id, chosen(next)).catch((failure: unknown) =>
+      toast.show({ title: "Your answer was not saved", description: failureMessage(failure), tone: "danger" }),
+    );
+  };
+
+  const finish = async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await submitAttempt(viewer, assessment.courseId, assessment.id, attempt.id, chosen(answers));
+    } catch (failure) {
+      submitting.current = false;
+      toast.show({ title: "Could not submit the assessment", description: failureMessage(failure), tone: "danger" });
+      return;
+    }
+    queryClient.removeQueries({ queryKey: studentKeys.attempt(viewer.id, assessment.id) });
+    await refresh();
     navigate(studentPaths.result(assessment.id), { replace: true });
   };
-  const { index, seconds, goToQuestion } = useQuizSession(questions.length, finish);
+  const { index, seconds, goToQuestion } = useQuizSession(questions.length, () => void finish());
   const question = questions[index];
   const answered = Object.keys(answers).length;
   const isLast = index === questions.length - 1;
@@ -48,12 +88,18 @@ function Quiz({ assessmentId }: { assessmentId: string }) {
     if (message) setAnnouncement(message);
   }, [seconds]);
 
+  // The latest save function, so the keyboard listener never uses stale answers.
+  const saveRef = useRef(saveAnswer);
+  useLayoutEffect(() => {
+    saveRef.current = saveAnswer;
+  });
+
   // Keyboard shortcuts: 1–4 pick an answer (plan §7). Ignored while typing or in the dialog.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (confirming || event.altKey || event.ctrlKey || event.metaKey || (event.target as HTMLElement).closest("input, textarea")) return;
       const option = Number.parseInt(event.key, 10) - 1;
-      if (question && option >= 0 && option < question.options.length) saveAnswer(assessment.id, index, option);
+      if (question && option >= 0 && option < question.options.length) saveRef.current(assessment.id, index, option);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -176,7 +222,7 @@ function Quiz({ assessmentId }: { assessmentId: string }) {
           footer={
             <>
               <DialogClose asChild><Button variant="secondary">Keep working</Button></DialogClose>
-              <Button onClick={finish}>Submit now<ArrowRight aria-hidden className="size-4" /></Button>
+              <Button onClick={() => void finish()}>Submit now<ArrowRight aria-hidden className="size-4" /></Button>
             </>
           }
         />
@@ -185,13 +231,41 @@ function Quiz({ assessmentId }: { assessmentId: string }) {
   );
 }
 
+/** Starts the attempt on the server, or resumes the open one. */
+function AttemptLoader({ assessmentId, classId }: { assessmentId: string; classId: string }) {
+  const navigate = useNavigate();
+  const viewer = useStudentViewer();
+  const attempt = useQuery({
+    queryKey: studentKeys.attempt(viewer.id, assessmentId),
+    queryFn: () => startAttempt(viewer, classId, assessmentId),
+    ...studentQueryOptions,
+    staleTime: Infinity,
+    gcTime: 0,
+  });
+  if (attempt.isPending) {
+    return <SkeletonGroup label="Starting your assessment" className="flex flex-col gap-4"><Skeleton className="h-9 w-1/2" /><Skeleton className="h-64 w-full" /></SkeletonGroup>;
+  }
+  if (attempt.isError) {
+    const title = failureMessage(attempt.error);
+    return (
+      <EmptyState
+        title="This assessment could not start"
+        description={title || describeApiError(attempt.error).detail}
+        action={<Button variant="secondary" onClick={() => navigate(studentPaths.assessment(assessmentId))}>Back to the assessment</Button>}
+      />
+    );
+  }
+  if (!attempt.data.questions.length) return <Navigate to={studentPaths.assessment(assessmentId)} replace />;
+  // Keyed so a new attempt always starts with fresh timers.
+  return <Quiz key={attempt.data.id} assessmentId={assessmentId} attempt={attempt.data} />;
+}
+
 export default function QuizPage() {
   const { assessmentId = "" } = useParams();
   const catalog = useStudentCatalog();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
-  if (!assessment || assessment.kind === "activity" || !catalog.questions[assessment.id]?.length) {
+  if (!assessment || assessment.kind === "activity") {
     return <Navigate to={assessment ? studentPaths.assessment(assessment.id) : studentPaths.tasks()} replace />;
   }
-  // Keyed so "Practice again" always starts with fresh timers.
-  return <Quiz key={assessment.id} assessmentId={assessment.id} />;
+  return <AttemptLoader key={assessment.id} assessmentId={assessment.id} classId={assessment.courseId} />;
 }

@@ -1,91 +1,136 @@
-import { academicEvents, featuredAnnouncements, students, studentSeed } from "../../../data.js";
-import { getStudentExtensions, readRoleData } from "../../../roles/shared/storage.js";
-import type { ActivitySubmission, ClassAnnouncement, ExamGrade, StudentCatalog } from "./types";
+import { academicEvents, courses as demoCourses, featuredAnnouncements } from "../../../data.js";
+import { meetingLabel, type Overview, type Submission } from "../../../shared/api/overview";
+import type { ActivitySubmission, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
 
-/** The demo student. The classic UI and the role store both use id s0. */
-export const STUDENT_ID = "s0";
-export const STUDENT = { id: STUDENT_ID, firstName: "Alex", name: "Alex Rivera", program: "BS Information Technology" } as const;
+/** Shown under the student's name; ISMS does not send a program yet. */
+export const STUDENT_SUBTITLE = "Student";
 
-interface Extensions {
-  synced: boolean;
-  activeCourseIds: string[];
-  courses: StudentCatalog["courses"];
-  assessments: StudentCatalog["assessments"];
-  materials: StudentCatalog["materials"];
-  questions: StudentCatalog["questions"];
-}
-
-interface RoleData {
-  subjects?: Array<{ id: string; code?: string }>;
-  classrooms?: Array<{ id: string; subjectId: string }>;
-  users?: Array<{ id: string; firstName: string; lastName: string }>;
-  announcements?: Array<{ id: string; classroomId: string; instructorId: string; title: string; message: string; createdAt: string; status?: string }>;
-  activitySubmissions?: Array<ActivitySubmission & { studentId: string }>;
-  examSubmissions?: Array<ExamGrade & { studentId: string; status: string }>;
-}
-
-function mergeById<T extends { id: string }>(base: T[], extra: T[]): T[] {
-  const ids = new Set(base.map((item) => item.id));
-  return [...base, ...extra.filter((item) => !ids.has(item.id))];
-}
+type DemoCourse = (typeof demoCourses)[number];
 
 /**
- * Builds the Student workspace from the seed plus the shared role store,
- * with the same rules as the classic merge at the bottom of data.js: when
- * role data exists, keep only actively enrolled classes, then add
- * instructor-created classes, assessments, assignments, and materials.
- *
- * Unlike the classic merge (once, at import), this runs on every read, so
- * instructor changes appear without a page reload.
+ * Room, next meeting, symbol and blurb for the fictional demo classes, which
+ * ISMS does not provide. Real ISMS classes fall back to their meetings.
  */
-export function buildStudentCatalog(): StudentCatalog {
-  const ext = getStudentExtensions() as Extensions;
-  const role = (readRoleData() ?? {}) as RoleData;
-  const active = new Set(ext.activeCourseIds);
-  const keep = <T>(items: T[], courseOf: (item: T) => string) => (ext.synced ? items.filter((item) => active.has(courseOf(item))) : items);
+const demoExtras = new Map<string, DemoCourse>(demoCourses.map((course) => [course.id, course]));
 
-  // Instructor-created classes carry no course code; take it from the class's subject.
-  const subjectCode = (classroomId: string) => role.subjects?.find((subject) => subject.id === role.classrooms?.find((room) => room.id === classroomId)?.subjectId)?.code;
-  const courses = mergeById(keep(studentSeed.courses as StudentCatalog["courses"], (item) => item.id), ext.courses).map((course) =>
-    course.code ? course : { ...course, code: subjectCode(course.id) },
-  );
-  const assessments = mergeById(keep(studentSeed.assessments as StudentCatalog["assessments"], (item) => item.courseId), ext.assessments);
-  const materials = mergeById(keep(studentSeed.materials as StudentCatalog["materials"], (item) => item.courseId), ext.materials);
-  const teacherOf = (classroomId: string) => courses.find((course) => course.id === classroomId)?.teacher ?? "Instructor";
+const handedIn = (submission: Submission) => submission.status !== "in_progress";
 
-  const announcements: ClassAnnouncement[] = (role.announcements ?? [])
-    .filter((item) => item.status !== "inactive")
-    .map((item) => {
-      const author = role.users?.find((user) => user.id === item.instructorId);
-      return {
-        id: item.id,
-        classroomId: item.classroomId,
-        title: item.title,
-        message: item.message,
-        createdAt: item.createdAt,
-        author: author ? `${author.firstName} ${author.lastName}` : teacherOf(item.classroomId),
-      };
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+function readTime(text: string | null): string {
+  const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min`;
+}
 
-  const activitySubmissions = Object.fromEntries(
-    (role.activitySubmissions ?? []).filter((item) => item.studentId === STUDENT_ID).map((item) => [item.activityId, item]),
-  );
-  const examGrades = Object.fromEntries(
-    (role.examSubmissions ?? []).filter((item) => item.studentId === STUDENT_ID && item.status === "graded").map((item) => [item.examId, item]),
-  );
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+/**
+ * Builds the Student workspace from the LMS API overview (D-032). The school
+ * calendar and featured news are school-wide and still come from data.js.
+ */
+export function toStudentCatalog(overview: Overview): StudentCatalog {
+  const courses: Course[] = overview.classes.map((room) => {
+    const extra = demoExtras.get(room.id);
+    const meeting = room.meetings[0];
+    return {
+      id: room.id,
+      code: room.subjectCode ?? undefined,
+      name: room.subjectName,
+      subject: extra?.subject ?? room.subjectName,
+      section: room.sectionName ?? "",
+      room: extra?.room ?? (meeting ? `Room ${meeting.roomId}` : "To be announced"),
+      teacher: extra?.teacher ?? room.instructorName,
+      count: room.studentCount,
+      next: extra?.next ?? (meetingLabel(room.meetings) || "Schedule to be announced"),
+      symbol: extra?.symbol ?? (room.subjectCode ?? room.subjectName).slice(0, 2),
+      about: extra?.about ?? "",
+    };
+  });
+  const teacherOf = (classId: string) => courses.find((course) => course.id === classId)?.teacher ?? "Instructor";
+
+  const coursework = overview.coursework.map((item) => ({ classId: item.classId, ...item.coursework }));
+  const submissionsOf = (courseworkId: number) => overview.submissions.filter((item) => item.courseworkId === courseworkId).map((item) => item.submission);
+
+  const activitySubmissions: Record<string, ActivitySubmission> = {};
+  const examGrades: Record<string, ExamGrade> = {};
+  const attempts: Record<string, AttemptSummary> = {};
+  const completed: string[] = [];
+  for (const work of coursework) {
+    const id = String(work.id);
+    const mine = submissionsOf(work.id);
+    const done = mine.filter(handedIn).sort((a, b) => b.attemptNumber - a.attemptNumber);
+    if (done.length) completed.push(id);
+    if (work.type === "assignment") {
+      const latest = done[0];
+      if (latest) {
+        activitySubmissions[id] = {
+          id: String(latest.id),
+          activityId: id,
+          submissionText: latest.text ?? "",
+          fileAttachmentUrl: latest.fileName ?? "",
+          status: latest.status,
+          submittedAt: latest.submittedAt ?? "",
+          grade: latest.status === "graded" ? latest.score : null,
+          feedback: latest.feedback ?? "",
+        };
+      }
+    } else {
+      attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done[0]?.id, used: mine.length };
+      const best = done.filter((item) => item.status === "graded" && item.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+      if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined };
+    }
+  }
+
+  const me = overview.me;
   return {
     courses,
-    assessments,
-    materials,
-    questions: { ...(studentSeed.questionsByAssessment as StudentCatalog["questions"]), ...ext.questions },
+    assessments: coursework.map((work) => ({
+      id: String(work.id),
+      courseId: work.classId,
+      title: work.title,
+      type: work.category ?? (work.type === "exam" ? "Exam" : "Assignment"),
+      description: work.description ?? work.instructions ?? "",
+      dueAt: work.dueAt ?? "",
+      questionCount: work.questionCount,
+      points: work.maxPoints,
+      timeLimit: work.timeLimitMinutes ? `${work.timeLimitMinutes} minutes` : "No time limit",
+      instructions: work.instructions ?? "",
+      kind: work.type === "assignment" ? ("activity" as const) : undefined,
+      allowLate: work.allowLate,
+      allowResubmission: work.allowResubmission,
+      maxAttempts: work.maxAttempts ?? 1,
+    })),
+    materials: overview.materials.map((material) => ({
+      id: String(material.id),
+      courseId: material.classId,
+      title: material.title,
+      kind: material.kind,
+      readTime: readTime(material.description),
+      summary: material.description ?? "",
+      added: shortDate(material.createdAt),
+      goal: material.description ?? "",
+      points: [],
+    })),
+    questions: {},
     academicEvents: academicEvents as StudentCatalog["academicEvents"],
     featured: featuredAnnouncements as StudentCatalog["featured"],
-    classmates: students as StudentCatalog["classmates"],
-    announcements,
+    classmates: [...new Map(overview.students.map((item) => [item.studentId, item])).values()].map((item) => ({
+      id: item.studentId,
+      name: `${item.firstName} ${item.lastName}`.trim(),
+      email: "",
+      role: item.studentId === me.id ? "You" : "Student",
+    })),
+    announcements: overview.announcements.map((item) => ({
+      id: String(item.id),
+      classroomId: item.classId,
+      title: item.title,
+      message: item.message,
+      createdAt: item.publishedAt,
+      author: item.postedByName ?? teacherOf(item.classId),
+    })),
     activitySubmissions,
     examGrades,
+    attempts,
+    completed,
+    me: { id: me.id, firstName: me.firstName || "there", name: `${me.firstName} ${me.lastName}`.trim() || me.id },
   };
 }
 

@@ -9,7 +9,8 @@ const timeFormat = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "
 const toDate = (value: string | number | Date) => (value instanceof Date ? value : new Date(value));
 
 /** "Oct 24, 2026, 11:59 PM", the classic due-date format. */
-export const formatDue = (value: string | number | Date) => dueFormat.format(toDate(value));
+/** "" means the instructor set no due date. */
+export const formatDue = (value: string | number | Date) => (value === "" ? "no due date" : dueFormat.format(toDate(value)));
 /** "October 2026" */
 export const formatMonth = (value: Date) => monthFormat.format(value);
 /** "Nov 3" */

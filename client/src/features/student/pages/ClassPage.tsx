@@ -86,7 +86,7 @@ function Stream({ course, catalog, completed, now, onTab }: { course: Course; ca
                 <li key={item.id}>
                   <button type="button" onClick={() => navigate(studentPaths.assessment(item.id))} className="flex min-h-touch w-full flex-col items-start justify-center rounded-control border-0 bg-transparent px-2 text-left font-sans hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus">
                     <span className="text-body font-medium text-ink">{item.title}</span>
-                    <span className="text-body text-muted">Due {formatDue(item.dueAt)}</span>
+                    <span className="text-body text-muted">{item.dueAt ? `Due ${formatDue(item.dueAt)}` : "No due date"}</span>
                   </button>
                 </li>
               ))}

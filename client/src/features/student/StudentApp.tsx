@@ -1,6 +1,6 @@
-import { BookOpen, CalendarDays, House, ListChecks, Megaphone, RotateCcw, Search } from "lucide-react";
+import { BookOpen, CalendarDays, CloudOff, House, ListChecks, Megaphone, Search } from "lucide-react";
 import { HelpSupport } from "../../shared/components/HelpSupport";
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
@@ -10,14 +10,15 @@ import { SidebarGroup } from "../../shared/layout/SidebarGroup";
 import { formatDue } from "../../shared/lib/format";
 import { cn } from "../../shared/lib/cn";
 import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
+import { describeApiError } from "../../shared/api/http";
+import { Button } from "../../shared/ui/Button";
 import { IconButton } from "../../shared/ui/IconButton";
 import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
 import { Toaster } from "../../shared/ui/toast/Toaster";
-import { courseCode, STUDENT } from "./api/catalog";
-import { resetProgress } from "./api/progressStore";
+import { courseCode, STUDENT_SUBTITLE } from "./api/catalog";
 import { dueSoon, searchWorkspace } from "./api/selectors";
 import { toneFor } from "../../shared/lib/tones";
-import { useSharedDataSync } from "./hooks/useStudentCatalog";
+import { useStudentOverview, useStudentPeople } from "./hooks/useStudentCatalog";
 import { useWorkspace } from "./hooks/useWorkspace";
 import TodayPage from "./pages/TodayPage";
 import { studentPaths } from "./paths";
@@ -55,9 +56,9 @@ function sectionOf(pathname: string): string {
   return "today";
 }
 
-function ScreenLoading() {
+function ScreenLoading({ label = "Loading" }: { label?: string }) {
   return (
-    <SkeletonGroup label="Loading" className="flex flex-col gap-4">
+    <SkeletonGroup label={label} className="flex flex-col gap-4">
       <Skeleton className="h-9 w-1/2" />
       <Skeleton className="h-28 w-full" />
       <Skeleton className="h-28 w-full" />
@@ -65,28 +66,10 @@ function ScreenLoading() {
   );
 }
 
-/** Root of the rebuilt Student UI (Phase 2). */
-export default function StudentApp({ onNavigateRole }: RoleAppProps) {
-  useSharedDataSync();
+function Workspace({ onNavigateRole }: RoleAppProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { catalog, completed, now } = useWorkspace();
-  const [reviewed, setReviewed] = useState<ReadonlySet<string>>(() => new Set());
-
-  const resetDemo = useCallback(() => {
-    resetProgress();
-    setReviewed(new Set());
-    navigate(studentPaths.today);
-  }, [navigate]);
-
-  const session = useMemo<StudentSession>(
-    () => ({
-      reviewed,
-      toggleReviewed: (id) => setReviewed((current) => new Set(current.has(id) ? [...current].filter((item) => item !== id) : [...current, id])),
-      resetDemo,
-    }),
-    [reviewed, resetDemo],
-  );
 
   const active = sectionOf(location.pathname);
   const go = (id: string) =>
@@ -141,8 +124,7 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
   );
 
   return (
-    <Toaster>
-      <StudentSessionContext.Provider value={session}>
+    <>
         <AppShell
           roleLabel="Student"
           navLabel="Main navigation"
@@ -170,13 +152,7 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
                 items={dueSoon(catalog.assessments, completed, now).map((item) => ({ id: item.id, title: item.title, meta: `Due ${formatDue(item.dueAt)}` }))}
                 onSelect={(item) => navigate(studentPaths.assessment(item.id))}
               />
-              <ProfileMenu
-                name={STUDENT.name}
-                subtitle={`${STUDENT.program} · Student`}
-                currentRole="student"
-                onSwitchRole={onNavigateRole}
-                actions={[{ label: "Reset demo data", icon: <RotateCcw />, onSelect: resetDemo }]}
-              />
+              <ProfileMenu name={catalog.me.name} subtitle={STUDENT_SUBTITLE} currentRole="student" onSwitchRole={onNavigateRole} />
             </>
           }
         >
@@ -196,6 +172,78 @@ export default function StudentApp({ onNavigateRole }: RoleAppProps) {
             </Routes>
           </Suspense>
         </AppShell>
+    </>
+  );
+}
+
+const VIEWING_KEY = "tmcc-viewing-student";
+
+function remembered(): string {
+  try {
+    return sessionStorage.getItem(VIEWING_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Loading and error states before the workspace can render. */
+function Gate({ query, label }: { query: { isError: boolean; error: unknown; refetch: () => unknown }; label: string }) {
+  if (!query.isError) {
+    return (
+      // Not a <main> landmark: the page is not ready yet (tests and screen readers wait for main).
+      <div aria-busy="true" className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+        <ScreenLoading label={label} />
+      </div>
+    );
+  }
+  const { title, detail } = describeApiError(query.error);
+  return (
+    <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+      {/* A whole-page error: its title is the page's heading. */}
+      <section aria-labelledby="workspace-error" className="flex flex-col items-center gap-3 rounded-card border border-dashed border-line-strong p-6 text-center">
+        <CloudOff aria-hidden className="size-8 text-muted" />
+        <h1 id="workspace-error" className="m-0 font-sans text-section font-semibold text-ink">{title}</h1>
+        <p className="m-0 max-w-prose text-body text-muted">{detail}</p>
+        <Button onClick={() => void query.refetch()}>Try again</Button>
+      </section>
+    </main>
+  );
+}
+
+/** Root of the Student UI. Data comes from the LMS API (D-032). */
+export default function StudentApp(props: RoleAppProps) {
+  const people = useStudentPeople();
+  const [chosen, setChosen] = useState(remembered);
+  const [reviewed, setReviewed] = useState<ReadonlySet<string>>(() => new Set());
+  const students = people.data?.students ?? [];
+  const studentId = students.some((item) => item.id === chosen) ? chosen : students[0]?.id ?? "";
+  const overview = useStudentOverview(studentId);
+
+  const session = useMemo<StudentSession>(
+    () => ({
+      studentId,
+      setStudentId: (id) => {
+        setChosen(id);
+        setReviewed(new Set());
+        try {
+          sessionStorage.setItem(VIEWING_KEY, id);
+        } catch {
+          // Remembering the choice is a convenience only.
+        }
+      },
+      reviewed,
+      toggleReviewed: (id) => setReviewed((current) => new Set(current.has(id) ? [...current].filter((item) => item !== id) : [...current, id])),
+    }),
+    [studentId, reviewed],
+  );
+
+  if (!people.data) return <Gate query={people} label="Loading the student workspace" />;
+  if (!overview.data) return <Gate query={overview} label="Loading your classes" />;
+
+  return (
+    <Toaster>
+      <StudentSessionContext.Provider value={session}>
+        <Workspace {...props} />
       </StudentSessionContext.Provider>
     </Toaster>
   );

@@ -1,4 +1,4 @@
-/** Shapes of the Student workspace data, matching src/data.js and the role store. */
+/** Shapes of the Student workspace data, built from the LMS API overview (D-032). */
 
 export interface Course {
   id: string;
@@ -30,6 +30,8 @@ export interface Assessment {
   kind?: "activity";
   allowLate?: boolean;
   allowResubmission?: boolean;
+  /** Exams: how many attempts are allowed (1 when not set). */
+  maxAttempts?: number;
 }
 
 export interface Material {
@@ -111,8 +113,22 @@ export interface StudentCatalog {
   announcements: ClassAnnouncement[];
   /** The demo student's (s0) assignment submissions, by activity id. */
   activitySubmissions: Record<string, ActivitySubmission>;
-  /** The demo student's graded exam submissions, by exam id. */
+  /** The student's graded exam result (highest graded attempt), by exam id. */
   examGrades: Record<string, ExamGrade>;
+  /** Exams: the student's attempts, by exam id. */
+  attempts: Record<string, AttemptSummary>;
+  /** Assessments the student has handed in. */
+  completed: string[];
+  /** The student being viewed. */
+  me: { id: string; firstName: string; name: string };
+}
+
+export interface AttemptSummary {
+  /** An attempt started but not handed in. */
+  openId?: number;
+  /** The most recent handed-in attempt. */
+  latestId?: number;
+  used: number;
 }
 
 /** Saved in gclass-student-workspace-v1; same shape as the classic UI (C-007). */

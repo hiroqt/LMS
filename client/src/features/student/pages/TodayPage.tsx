@@ -11,11 +11,12 @@ import { featuredSlides } from "../../../shared/lib/schoolNews";
 import { termStatus } from "../../../shared/lib/term";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { STUDENT } from "../api/catalog";
 import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting } from "../api/selectors";
 import type { Assessment, StudentCatalog } from "../api/types";
 import { ClassList } from "../components/ClassList";
 import { AssessmentTypeIcon } from "../components/visuals";
+import { useStudentPeople } from "../hooks/useStudentCatalog";
+import { useStudentSession } from "../hooks/useStudentSession";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -67,6 +68,7 @@ function ViewAll({ label = "View all", onClick }: { label?: string; onClick: () 
 
 /** Due-date pill, warmer as the deadline gets closer. */
 function DuePill({ item, now }: { item: Assessment; now: number }) {
+  if (!item.dueAt) return <span className="shrink-0 rounded-full bg-info-soft px-3 py-1 text-body font-medium whitespace-nowrap text-info">No due date</span>;
   const days = (new Date(item.dueAt).getTime() - now) / DAY;
   const tone = days <= 1 ? "bg-danger-soft text-danger" : days <= 3 ? "bg-warning-soft text-warning" : "bg-info-soft text-info";
   const date = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(item.dueAt));
@@ -191,6 +193,27 @@ function AnnouncementsPanel({ catalog, now, className }: { catalog: StudentCatal
 }
 
 /** The student dashboard: greeting, summary chips, then tasks, classes, calendar, and news. */
+/** Demo identity, not a sign-in (D-032): which student the workspace shows. */
+function ViewingAs() {
+  const people = useStudentPeople();
+  const { studentId, setStudentId } = useStudentSession();
+  const students = people.data?.students ?? [];
+  if (students.length < 2) return null;
+  return (
+    <label className="flex flex-col gap-1 font-sans text-body text-primary-100">
+      Viewing as student
+      <select
+        aria-label="Choose demo student"
+        value={studentId}
+        onChange={(event) => setStudentId(event.target.value)}
+        className="min-h-touch rounded-control border border-primary-300 bg-surface px-3 text-body-lg text-ink focus-visible:outline-3 focus-visible:outline-focus"
+      >
+        {students.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select>
+    </label>
+  );
+}
+
 export default function TodayPage() {
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
@@ -211,12 +234,13 @@ export default function TodayPage() {
         </p>
         <div className="flex flex-col gap-1">
           <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight outline-none sm:text-page">
-            {greeting(now)}, {STUDENT.firstName}
+            {greeting(now)}, {catalog.me.firstName}
           </h1>
           <p className="m-0 text-body text-primary-100">
             {next ? <>Next due: {next.title}, {formatDue(next.dueAt)}</> : "Nothing is due in the next few days."}
           </p>
         </div>
+        <ViewingAs />
       </header>
       <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 @4xl:col-span-7 sm:gap-4">
         <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" shortLabel="Classes" /></li>

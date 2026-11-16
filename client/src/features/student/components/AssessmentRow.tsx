@@ -30,11 +30,11 @@ export function AssessmentRow({ item, courseIndex, courseCode, completed, missin
         <strong className="text-card-title font-semibold">{item.title}</strong>
         {item.description && <span className="line-clamp-2 text-body text-muted">{item.description}</span>}
         <span className="text-body text-muted">{meta.join(" · ")}</span>
-        <span className="text-body text-muted sm:hidden">Due {formatDue(item.dueAt)}</span>
+        <span className="text-body text-muted sm:hidden">{item.dueAt ? `Due ${formatDue(item.dueAt)}` : "No due date"}</span>
       </span>
       <span className="hidden shrink-0 flex-col items-end gap-1 text-right sm:flex">
         <span className="text-body text-muted">Due</span>
-        <strong className="text-body font-semibold">{formatDue(item.dueAt)}</strong>
+        <strong className="text-body font-semibold">{item.dueAt ? formatDue(item.dueAt) : "No due date"}</strong>
       </span>
       {missing && <Badge tone="danger">Missing</Badge>}
       {completed && <Badge tone="success"><Check aria-hidden className="size-3.5" />Submitted</Badge>}
