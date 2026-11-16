@@ -1,3 +1,4 @@
+using Lms.Api.Content;
 using Lms.Api.Data;
 using Lms.Api.Endpoints;
 using Lms.Api.Isms;
@@ -23,6 +24,7 @@ builder.Services.AddScoped<IsmsReferenceSync>();
 builder.Services.AddSingleton<SyncState>();
 builder.Services.Configure<SyncOptions>(builder.Configuration.GetSection(SyncOptions.SectionName));
 builder.Services.AddHostedService<IsmsSyncWorker>();
+builder.Services.AddScoped<ClassAccess>();
 
 // CORS origins come from Cors:AllowedOrigins (only http://localhost:5173 in Development).
 // Read lazily so test hosts and environment overrides apply. Never allow-any-origin.
@@ -36,7 +38,7 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
 
     cors.AddDefaultPolicy(policy => policy
         .WithOrigins(origins)
-        .WithMethods(HttpMethods.Get)
+        .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch, HttpMethods.Delete)
         .AllowAnyHeader());
 });
 
@@ -58,6 +60,7 @@ else
 app.UseCors();
 
 app.MapLmsEndpoints();
+app.MapContentEndpoints();
 
 app.Run();
 
