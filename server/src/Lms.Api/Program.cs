@@ -58,9 +58,7 @@ else
 app.UseCors();
 
 app.MapLmsEndpoints();
-// The role picker and instructor header are demo selectors, not authentication.
-if (app.Environment.IsDevelopment())
-    
+
 app.Run();
 
 public partial class Program;
