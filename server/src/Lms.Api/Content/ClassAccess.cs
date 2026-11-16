@@ -33,6 +33,30 @@ public sealed class ClassAccess(LmsDbContext db)
         return (room, null);
     }
 
+    /// <summary>A student acting on their own work: on the class list, and the class still offered.</summary>
+    public async Task<(IsmsClass? Class, IResult? Denied)> ForStudentWorkAsync(string classId, CurrentUser user, CancellationToken ct)
+    {
+        var (room, denied) = await ForReadAsync(classId, user, ct);
+        if (denied is not null) return (null, denied);
+        if (!user.IsStudent)
+            return (null, TypedResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Only students on the class list can hand in work."));
+        if (!room!.IsActive)
+            return (null, TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This class is no longer offered in ISMS, so work can no longer be handed in."));
+        db.Actor = user.Id;
+        return (room, null);
+    }
+
+    /// <summary>The class's instructor reviewing or grading work. Allowed after ISMS stops offering the class.</summary>
+    public async Task<(IsmsClass? Class, IResult? Denied)> ForGradingAsync(string classId, CurrentUser user, CancellationToken ct)
+    {
+        var (room, denied) = await ForReadAsync(classId, user, ct);
+        if (denied is not null) return (null, denied);
+        if (!user.IsInstructor)
+            return (null, TypedResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Only the class's instructor can review and grade work."));
+        db.Actor = user.Id;
+        return (room, null);
+    }
+
     private static IResult NotFound() =>
         TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Class not found", detail: "No class with this id exists for you.");
 }

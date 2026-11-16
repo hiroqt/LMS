@@ -1,5 +1,6 @@
 using Lms.Api.Content;
 using Lms.Api.Coursework;
+using Lms.Api.Submissions;
 using Lms.Api.Data;
 using Lms.Api.Endpoints;
 using Lms.Api.Isms;
@@ -64,6 +65,8 @@ app.MapLmsEndpoints();
 app.MapContentEndpoints();
 app.MapQuestionnaireEndpoints();
 app.MapCourseworkEndpoints();
+app.MapSubmissionEndpoints();
+app.MapGradebookEndpoints();
 
 app.Run();
 
