@@ -19,7 +19,8 @@ Demonstrate a fictional college Information Technology LMS to developers and sch
 
 ## Boundaries and acceptance
 
-- Frontend-only React/Vite, fictional college data, no accounts, real uploads, backend, or cross-device persistence.
+- The role workspaces are frontend-only React/Vite with fictional college data: no accounts, real uploads, or cross-device persistence.
+- Subjects, instructors, and schedules belong to the school's ISMS. The LMS reads them through a separate ISMS API (`../isms-api`) and the LMS API (`../server`), never by connecting to the ISMS database. Phase 1 shows this at `/isms-link` only; the role workspaces move to the LMS API in later phases.
 - Role data and submissions persist in the current browser. Admin Reset Demo restores seed records after saving a separate local snapshot.
 - Exams support multiple choice, true/false, essay, enumeration, and matching. Essays need instructor grading; remaining types use simple local automatic grading. Both exam-wide and per-question timers can be disabled or configured; retry and correct-answer visibility settings are configurable.
 - Gradebook category weights and passing threshold are instructor-configurable. The illustrative overall uses graded work only.
