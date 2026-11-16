@@ -28,12 +28,15 @@ export function InstructorClassList({ store, rooms, view, onOpen }: { store: Rol
     );
   }
   return (
-    <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 2xl:grid-cols-3">
+    // Columns follow the width of the list itself, wherever it is placed.
+    <div className="@container">
+    <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 @xl:grid-cols-2 @4xl:grid-cols-3 @7xl:grid-cols-4">
       {rows.map(({ room, title, mark, students, coursework }, index) => (
         <li key={room.id}>
           <InstructorClassCard title={title} section={room.section} mark={mark} term={room.term} index={index} students={students} coursework={coursework} onOpen={() => onOpen(room)} />
         </li>
       ))}
     </ul>
+    </div>
   );
 }

@@ -212,7 +212,7 @@ export default function TodayPage() {
             {greeting(now)}, {STUDENT.firstName}
           </h1>
         </div>
-        <ul className="relative m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3 lg:max-w-[48rem]">
+        <ul className="relative m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3">
           <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" /></li>
           <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
           <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
@@ -221,8 +221,9 @@ export default function TodayPage() {
 
       <NewDesignIntro />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-6">
-        <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
+      <div className="grid grid-cols-1 gap-5 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-6">
+        {/* With enough room, tasks and classes sit side by side and the page has three columns. */}
+        <div className="flex min-w-0 flex-col gap-5 @7xl:grid @7xl:grid-cols-2 @7xl:items-start lg:gap-6">
           <TasksPanel catalog={catalog} completed={completed} now={now} />
           <section aria-labelledby="my-classes" className="flex flex-col gap-3">
             <SectionHeading
@@ -237,7 +238,7 @@ export default function TodayPage() {
               }
             />
             {courses.length ? (
-              <ClassList courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} gridClassName="grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" />
+              <ClassList courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
             ) : (
               <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
             )}

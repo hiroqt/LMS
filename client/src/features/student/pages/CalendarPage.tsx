@@ -49,7 +49,7 @@ export default function CalendarPage() {
         }
       />
       <p className="m-0 text-body text-muted">Mock academic schedule for demonstration. Replace these sample term dates and events with the official school calendar.</p>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card className="p-3 sm:p-4">
           <MonthGrid month={month} entries={monthEntries} now={now} label={`${formatMonth(month)} calendar`} size="full" />
         </Card>

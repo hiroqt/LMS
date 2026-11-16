@@ -73,7 +73,7 @@ function Overview({ onNews }: { onNews: () => void }) {
         </section>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 @3xl:grid-cols-4">
         <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
         <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
         <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
@@ -96,7 +96,7 @@ function Overview({ onNews }: { onNews: () => void }) {
         <InstructorClassList store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
       </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section aria-labelledby="needs-review" className="flex flex-col gap-4">
           <SectionHeading
             id="needs-review"
@@ -164,7 +164,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
   return (
     <div className="flex flex-col gap-6">
       <FeaturedNewsCarousel slides={featuredSlides(featuredAnnouncements, events, now)} onViewCalendar={onCalendar} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
           <SectionHeading id="teacher-news" icon={<Megaphone />} eyebrow="Your classes" title="Teacher announcements" count={announcements.length} />
           {announcements.length ? (
