@@ -36,7 +36,7 @@ flowchart TD
 
     IDENT --> SIDEBAR[Sidebar: Overview, Gradebook, expandable My classes]
     SIDEBAR -->|Choose existing class| A3((A))
-    SIDEBAR -->|+ Create class| K1((K))
+    ISMS[ISMS classes and class lists, read through the LMS API] --> K1((K))
     SIDEBAR -->|Gradebook| G1((G))
     A1 --> A4((A))
     A2 --> A4
@@ -44,10 +44,8 @@ flowchart TD
     A4 --> PICK[Choose a class; filter by All years or available year levels]
     PICK --> CLASS[Open class; choose among visible class tabs]
     K1 --> K2((K))
-    K2 --> NEWCLASS[Create class: choose subject and year 1–4; enter section]
-    NEWCLASS -->|Cancel| SIDEBAR
-    NEWCLASS -->|Create| CLASSCREATED[Create browser-local classroom, class code, starter module, and default grade settings]
-    CLASSCREATED --> CLASS
+    K2 --> SYNCED[Each current-term ISMS class appears under its instructor with a starter module and default grade settings]
+    SYNCED --> SIDEBAR
     CLASS --> HEADER[Class header: subject, year, section, term, enrolled count, and class code]
     HEADER --> TABS{Choose a class tab}
 
@@ -143,17 +141,17 @@ flowchart TD
 - **H** — instructor breadcrumbs return to Overview; role switching redirects to another workspace.
 - **I** — saved classwork reaches the Student demo submission path and returns to instructor review.
 - **J** — saving a grade updates the matching Student work detail; there is no standalone Student Grades page.
-- **K** — the sidebar's Create class action opens the class form, including when there are no assigned classrooms.
+- **K** — classes are not created in the LMS. They arrive from ISMS and appear in the sidebar and Classes page of the instructor who teaches them (D-031).
 
 ## Code-based details
 
-- **Initial state:** the page chooses the first active instructor by default. When several are active, a selector lets the demo user switch instructors. Active classrooms are filtered by the selected instructor. With no active classrooms, the normal dashboard is replaced by a no-classrooms message and an Admin link; the shared sidebar's **Create class** action remains available.
+- **Initial state:** the page chooses the first active instructor by default. When several are active, a selector lets the demo user switch instructors. Active classrooms are filtered by the selected instructor. With no active classrooms, the normal dashboard is replaced by a no-classrooms message and an Admin link; there is no Create class action; classes are assigned in ISMS.
 - **Overview:** the dashboard shows assigned classroom, awaiting review, active assessment, and active enrollment counts. Class cards show student and coursework counts. Year filters are **All years** plus year levels present in that instructor's assigned classrooms. The review panel previews at most three submissions. The calendar is a static current-month grid that marks academic events and class deadlines; dates are not links. Its **View announcements** control switches to News.
 - **News & announcements:** the featured school announcement carousel can be changed with its controls. The teacher list includes active class announcements; selecting one opens that class's Announcements tab. The school event list shows up to six upcoming entries. **View calendar** returns to the Overview calendar.
 - **Shared top bar:** search matches up to six displayed results from assigned classes, instructor materials, and assessments. A class result selects that class and opens Stream. A material or assessment result only changes to the Classes view; it does not open the specific result. Notifications contain up to five pending submissions and open the selected review. Breadcrumb home returns to Overview; the role switch navigates to Student, Instructor, or Admin.
 - **Classes:** year-level filters are also available on the Classes page, which shows a chooser for the visible classrooms. The class header includes the subject, section, term, enrolled count, and enrollment code. Stream shows a static welcome post, up to three work updates, up to two material updates, up to four upcoming due items, and the About panel. Stream links into Classwork, Materials, or Create content.
 - **Class tabs:** Classwork searches the selected class's assignment and assessment rows, and filters All, Assignments, and Assessments; rows show due date, points, and published status. People searches active enrolled student names and email addresses. Materials shows class resources. Announcements lists active class notices and provides a required title/message composer. Submissions lists only pending items for the selected class. Create content groups existing Materials, Assignments, and Assessments and shows their counts.
-- **Create class:** the form requests subject, year level (1–4), and section. Saving makes an active browser-local classroom assigned to the selected instructor, generates a class code, creates a starter module, sets default gradebook settings (40% activity, 60% exam, 60 passing score), and opens the new class. It does not enroll students.
+- **Classes from ISMS:** when the LMS API is reachable, the workspace reads the classes of the term ISMS flags as current and copies them into the browser role store: the instructor, the subject, the class (section, schedule, term), and, for the instructor being viewed, the class list as active enrollments. Copied records carry an `isms-` id and `source: "isms"`; demo and locally created records are untouched. A class seen for the first time gets a starter module and default gradebook settings (40% activity, 60% exam, 60 passing score). A class ISMS stops offering is hidden with its content kept, and a student ISMS stops listing is unenrolled. Modules, materials, assignments, assessments, announcements, and grades stay LMS-owned. When the API cannot be reached, the Classes page says so and shows the classes already saved in the browser. ISMS classes have no class code. Opening a class link views the instructor who teaches that class.
 - **Create content:** the forms require a title and module. Materials additionally have one of four resource types (Study guide, Reading, Video, Practice set) and an optional description. Assignments also support instructions, due date, points, accept-late-work, and allow-resubmission. Assessments support instructions, due date, points, time limit (0 means none), one required question, four required answer choices, and one correct answer. The current instructor form creates one multiple-choice question.
 - **Announcements:** posting requires a nonblank title and message (maximum 120 and 1,200 characters). Saving associates the notice with the selected class and instructor and timestamps it. It appears in the instructor News list and the connected Student class Stream. Cancel closes the composer.
 - **Submissions and grading:** the overview hero, review list, notification menu, and class Submissions tab enter the same review flow. Assignment records in the browser role store include the submitted text and an optional attachment filename; no file is uploaded. Assessment attempts are assembled from the Student progress key and instructor exam data, then locally auto-scored from saved answers. The instructor enters a required final score between zero and the item's maximum and may add feedback. Saving updates the activity or exam submission in the shared role store and removes it from the pending queue. The score and feedback appear in the matching Student work detail after the Student workspace reloads. Already-graded exams are omitted from the pending queue.
@@ -161,7 +159,7 @@ flowchart TD
 
 ## Completion and prototype limits
 
-- Class creation completes when the new classroom opens with its starter module and defaults; enrollment remains an Admin/student enrollment task.
+- ISMS classes are copied into browser storage, not a server database, so LMS work added to them still lives in one browser until the LMS database arrives. Admin can still create demo subjects and classrooms; those are local demo records, not ISMS records.
 - Announcement completion means the notice is stored locally and shown in the instructor News view and Student class Stream. Material, assignment, and assessment records are shared through browser-local role data and appear in their related class views.
 - A grade is complete when a valid score is saved. The submission is marked graded and removed from the pending queue. The Student sees the score and optional feedback in the matching work detail after returning to or refreshing the Student workspace; there is no standalone Student Grades page.
 - There is no authentication, server persistence, real file upload, cross-device sync, or protected instructor authorization. Student progress and role data use separate browser storage keys; exam review reads completed Student answers and stores the final grade in role data. Demo class codes, attachment names, submissions, and scores are not official records.

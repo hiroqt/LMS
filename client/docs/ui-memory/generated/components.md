@@ -63,9 +63,9 @@
 | --- | --- |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
-| `src/features/instructor/components/CreateClassDialog.tsx` | `CreateClassDialog` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
+| `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
