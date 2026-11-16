@@ -35,7 +35,9 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var existing = await db.IsmsClasses.ToDictionaryAsync(c => c.Id, ct);
+        // Only rows that can change: the ones offered now and the ones still active. Past terms stay untouched.
+        var offeredIds = offered.Select(c => c.Id).ToList();
+        var existing = await db.IsmsClasses.Where(c => c.IsActive || offeredIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, ct);
         foreach (var item in offered)
         {
             if (!existing.TryGetValue(item.Id, out var row))
@@ -60,7 +62,7 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
             row.SyncedAt = now.UtcDateTime;
         }
 
-        var offeredIds = offered.Select(c => c.Id).ToHashSet();
+        var offeredSet = offeredIds.ToHashSet();
         if (offered.Count == 0 && existing.Values.Any(c => c.IsActive))
         {
             // An empty answer is more likely an ISMS problem than every class ending at once.
@@ -68,7 +70,7 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
         }
         else
         {
-            foreach (var row in existing.Values.Where(c => c.IsActive && !offeredIds.Contains(c.Id)))
+            foreach (var row in existing.Values.Where(c => c.IsActive && !offeredSet.Contains(c.Id)))
                 row.IsActive = false;
         }
         await db.SaveChangesAsync(ct);
