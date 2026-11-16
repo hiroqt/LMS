@@ -118,7 +118,8 @@ public static class LmsEndpoints
                 try
                 {
                     reachable = await db.Database.CanConnectAsync(ct);
-                    if (reachable && db.Database.IsRelational() && db.Database.GetMigrations().Any())
+                    // Only MySQL is managed by migrations; demo and test databases are created from the model.
+                    if (reachable && db.Database.ProviderName == "MySql.EntityFrameworkCore" && db.Database.GetMigrations().Any())
                         pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
                 }
                 catch (Exception) when (!ct.IsCancellationRequested)

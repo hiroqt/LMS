@@ -14,7 +14,9 @@
     "test:e2e": "playwright test",
     "memory:sync": "node scripts/memory-sync.ts",
     "memory:check": "node scripts/memory-sync.ts --check",
-    "budget": "node scripts/bundle-budget.ts"
+    "budget": "node scripts/bundle-budget.ts",
+    "demo-seed": "node scripts/demo-seed.ts",
+    "demo-seed:check": "node scripts/demo-seed.ts --check"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.3.0",
