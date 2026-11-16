@@ -143,6 +143,8 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             ClassOwned(e, x => x.ClassId);
             e.Property(x => x.Type).HasMaxLength(20).IsRequired();
             e.Property(x => x.Title).HasMaxLength(TitleLength).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.Category).HasMaxLength(40);
             e.Property(x => x.MaxPoints).HasPrecision(8, 2);
             e.Property(x => x.Status).HasMaxLength(20).IsRequired();
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);

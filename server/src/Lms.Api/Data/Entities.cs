@@ -176,6 +176,10 @@ public sealed class Coursework : Audited
     public long ModuleId { get; set; }
     public string Type { get; set; } = CourseworkType.Assignment;
     public string Title { get; set; } = "";
+    /// <summary>One or two sentences shown on cards and lists.</summary>
+    public string? Description { get; set; }
+    /// <summary>The instructor's own label, e.g. "Quiz", "Long Quiz", "Exam", "Activity".</summary>
+    public string? Category { get; set; }
     public string? Instructions { get; set; }
     public decimal MaxPoints { get; set; } = 100;
     public DateTime? DueAt { get; set; }

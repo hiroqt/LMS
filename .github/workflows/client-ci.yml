@@ -2,7 +2,7 @@ name: Client CI
 
 on:
   pull_request:
-    paths: ["client/**", ".github/workflows/client-ci.yml"]
+    paths: ["client/**", "server/src/Lms.Api/Demo/**", ".github/workflows/client-ci.yml"]
   push:
     branches: [main]
     paths: ["client/**", ".github/workflows/client-ci.yml"]
@@ -35,6 +35,8 @@ jobs:
         run: npm run budget
       - name: Generated UI memory is up to date
         run: npm run memory:check
+      - name: API demo seed matches data.js
+        run: npm run demo-seed:check
 
   e2e:
     name: Flow parity (Playwright)
