@@ -7,12 +7,12 @@ using CourseworkRow = Lms.Api.Data.Coursework;
 namespace Lms.Api.Coursework;
 
 /// <param name="QuestionnaireId">Instructors only; null for students.</param>
-public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Instructions, decimal MaxPoints,
+public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
     long? QuestionnaireId, int QuestionCount, string Status);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
-public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Instructions, decimal? MaxPoints,
+public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
     DateTimeOffset? DueAt, DateTimeOffset? AvailableFrom, bool? AllowLate, bool? AllowResubmission, int? MaxAttempts,
     int? TimeLimitMinutes, long? QuestionnaireId, string? Status);
 
@@ -100,6 +100,8 @@ public static class CourseworkEndpoints
     private static async Task<IResult?> ApplyAsync(LmsDbContext db, CurrentUser user, string classId, CourseworkRow row, CourseworkInput input, Errors errors, CancellationToken ct)
     {
         if (input.Title is not null) row.Title = errors.Required("title", input.Title, ContentRules.TitleMax, "a title") ?? row.Title;
+        if (input.Description is not null) row.Description = errors.Optional("description", input.Description, 1000);
+        if (input.Category is not null) row.Category = errors.Optional("category", input.Category, 40);
         if (input.Instructions is not null) row.Instructions = errors.Optional("instructions", input.Instructions, ContentRules.DescriptionMax);
         if (input.ModuleId is { } moduleId)
         {
@@ -145,15 +147,15 @@ public static class CourseworkEndpoints
 
     private static string Label(CourseworkRow row) => row.Type == CourseworkType.Exam ? "Exam" : "Assignment";
 
-    private static async Task<Dictionary<long, int>> QuestionCountsAsync(LmsDbContext db, IEnumerable<CourseworkRow> rows, CancellationToken ct)
+    internal static async Task<Dictionary<long, int>> QuestionCountsAsync(LmsDbContext db, IEnumerable<CourseworkRow> rows, CancellationToken ct)
     {
         var ids = rows.Where(r => r.QuestionnaireId != null).Select(r => r.QuestionnaireId!.Value).Distinct().ToList();
         return await db.Questions.Where(q => ids.Contains(q.QuestionnaireId)).GroupBy(q => q.QuestionnaireId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
     }
 
-    private static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts) => new(
-        c.Id, c.ModuleId, c.Type, c.Title, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
+    internal static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts) => new(
+        c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
         c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
         c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status);
 }

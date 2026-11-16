@@ -159,6 +159,11 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("available_from");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("category");
+
                     b.Property<string>("ClassId")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -173,6 +178,11 @@ namespace Lms.Api.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("description");
 
                     b.Property<DateTime?>("DueAt")
                         .HasColumnType("datetime(6)")
