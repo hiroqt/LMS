@@ -36,7 +36,7 @@ const seed = {
     code: course.code,
     name: course.name,
     section: course.section,
-    instructorId: instructors[teacherNames.indexOf(course.teacher)].id,
+    instructorId: instructors[teacherNames.indexOf(course.teacher)]?.id ?? "",
   })),
   materials: materials.map((material) => ({
     classId: material.courseId,
@@ -52,7 +52,7 @@ const seed = {
     instructions: assessment.instructions,
     dueAt: assessment.dueAt,
     timeLimitMinutes: Number.parseInt(assessment.timeLimit, 10) || null,
-    questions: questionsByAssessment[assessment.id].map((question) => ({
+    questions: (questionsByAssessment[assessment.id] ?? []).map((question) => ({
       prompt: question.prompt,
       options: question.options,
       correct: question.correct,
