@@ -1,0 +1,41 @@
+name: API CI
+
+on:
+  pull_request:
+    paths: ["server/**", "isms-api/**", ".github/workflows/api-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["server/**", "isms-api/**", ".github/workflows/api-ci.yml"]
+
+concurrency:
+  group: api-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lms-api:
+    name: LMS API (build, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build Lms.slnx
+      - run: dotnet test Lms.slnx --no-build
+
+  isms-api:
+    name: ISMS API (build, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: isms-api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build Isms.slnx
+      - run: dotnet test Isms.slnx --no-build
