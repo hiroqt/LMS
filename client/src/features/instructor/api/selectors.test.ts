@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialData } from "../../../roles/shared/lmsData.js";
-import { activeInstructors, classMark, classroomsOf, classWork, gradebookAverages, reviewQueue, searchInstructor, subjectOf, suggestedScore, yearLevels, yearOf } from "./selectors";
+import { activeInstructors, classMark, classroomsOf, classWork, gradebookAverages, reviewQueue, searchInstructor, subjectOf, yearLevels, yearOf } from "./selectors";
 import type { RoleStore } from "./types";
 
 const seed = () => createInitialData() as RoleStore;
@@ -33,21 +33,24 @@ describe("instructor selectors", () => {
     expect(work.map((item) => [item.title, item.kind, item.points])).toEqual([["Dated", "Assessment", 10], ["Undated", "Assignment", 5]]);
   });
 
-  it("queues completed, ungraded exams with the classic auto-score suggestion", () => {
+  it("queues handed-in assignments without a grade and exam attempts waiting for essay scores", () => {
     const store = seed();
+    store.activities.push({ id: "7", moduleId: "module-1", title: "Lab report", maxScore: 20 });
+    store.activitySubmissions.push(
+      { id: "21", activityId: "7", classroomId: "biology", studentId: "s1", status: "submitted", grade: null },
+      { id: "22", activityId: "7", classroomId: "biology", studentId: "s2", status: "graded", grade: 18 },
+    );
+    store.examSubmissions.push(
+      { id: "31", examId: "biology-1", classroomId: "biology", studentId: "s1", status: "submitted" },
+      { id: "32", examId: "biology-1", classroomId: "biology", studentId: "s2", status: "graded", totalScore: 30 },
+      { id: "33", examId: "math-0", classroomId: "math", studentId: "s1", status: "submitted" },
+    );
     const rooms = classroomsOf(store, activeInstructors(store)[0]?.id);
-    const queue = reviewQueue(store, rooms, { completed: ["biology-1", "math-0"], answers: { "biology-1": { 0: 0 } } });
-    expect(queue.map((item) => item.id)).toEqual(["biology-1"]); // math-0 belongs to another instructor
-    const [item] = queue;
-    expect(item?.questions).toHaveLength(10);
-    expect(suggestedScore(item!)).toBe(Math.round(((item?.correct ?? 0) / 10) * 40));
-  });
-
-  it("leaves graded exams out of the queue", () => {
-    const store = seed();
-    store.examSubmissions.push({ id: "x", examId: "biology-1", classroomId: "biology", studentId: "s0", status: "graded", totalScore: 30 });
-    const rooms = classroomsOf(store, activeInstructors(store)[0]?.id);
-    expect(reviewQueue(store, rooms, { completed: ["biology-1"] })).toEqual([]);
+    const queue = reviewQueue(store, rooms);
+    // Graded work and another instructor's class (math) stay out.
+    expect(queue.map((item) => [item.id, item.kind, item.courseworkId])).toEqual([["21", "activity", "7"], ["31", "exam", "biology-1"]]);
+    expect(queue[0]?.student?.id).toBe("s1");
+    expect(queue[1]?.maxScore).toBe(40);
   });
 
   it("averages graded assignments by the activity's maximum (classic showed NaN%)", () => {

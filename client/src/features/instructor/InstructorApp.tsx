@@ -12,7 +12,6 @@ import { toneFor } from "../../shared/lib/tones";
 import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
 import { describeApiError } from "../../shared/api/http";
 import { Button } from "../../shared/ui/Button";
-import { EmptyState } from "../../shared/ui/EmptyState";
 import { IconButton } from "../../shared/ui/IconButton";
 import { Skeleton, SkeletonGroup } from "../../shared/ui/Skeleton";
 import { Toaster } from "../../shared/ui/toast/Toaster";
@@ -176,15 +175,22 @@ function remembered(): string {
 function Gate({ query, label }: { query: { isError: boolean; error: unknown; refetch: () => unknown }; label: string }) {
   if (!query.isError) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+      // Not a <main> landmark: the page is not ready yet (tests and screen readers wait for main).
+      <div aria-busy="true" className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
         <SkeletonGroup label={label} className="flex flex-col gap-4"><Skeleton className="h-9 w-1/2" /><Skeleton className="h-28 w-full" /></SkeletonGroup>
-      </main>
+      </div>
     );
   }
   const { title, detail } = describeApiError(query.error);
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
-      <EmptyState icon={<CloudOff />} title={title} description={detail} action={<Button onClick={() => void query.refetch()}>Try again</Button>} />
+      {/* A whole-page error: its title is the page's heading. */}
+      <section aria-labelledby="workspace-error" className="flex flex-col items-center gap-3 rounded-card border border-dashed border-line-strong p-6 text-center">
+        <CloudOff aria-hidden className="size-8 text-muted" />
+        <h1 id="workspace-error" className="m-0 font-sans text-section font-semibold text-ink">{title}</h1>
+        <p className="m-0 max-w-prose text-body text-muted">{detail}</p>
+        <Button onClick={() => void query.refetch()}>Try again</Button>
+      </section>
     </main>
   );
 }

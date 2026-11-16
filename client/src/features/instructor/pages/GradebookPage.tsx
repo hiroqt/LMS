@@ -27,6 +27,7 @@ export default function GradebookPage() {
   const room = rooms.find((item) => item.id === params.get("class")) ?? rooms[0];
   // Edits stay here until the weights add up to 100, which the server requires before saving.
   const [draft, setDraft] = useState<{ classId: string; values: GradebookSetting } | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const header = <PageHeader title="Gradebook" description="Set category weights and follow progress across your class." />;
   if (!room) return <>{header}<EmptyState title="No classrooms yet" description="Create a class to set up its gradebook." /></>;
 
@@ -36,8 +37,13 @@ export default function GradebookPage() {
     const values = { ...settings, [key]: value };
     setDraft({ classId: room.id, values });
     const valid = [values.activityWeight, values.examWeight, values.passingScore].every((n) => Number.isFinite(n) && n >= 0 && n <= 100);
-    if (!valid || values.activityWeight + values.examWeight !== 100) return;
+    if (!valid || values.activityWeight + values.examWeight !== 100) {
+      setSaveState("idle");
+      return;
+    }
+    setSaveState("saving");
     const result = await actions.saveGradebook(room.id, values);
+    setSaveState(result.ok ? "saved" : "idle");
     if (!result.ok) toast.show({ title: "Could not save the gradebook", description: result.message, tone: "danger" });
   };
   const averages = gradebookAverages(store, room.id);
@@ -60,6 +66,7 @@ export default function GradebookPage() {
           </Field>
         ))}
       </Card>
+      <p role="status" className="m-0 min-h-6 text-body text-muted">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}</p>
       {weightTotal !== 100 && (
         <p role="status" className="m-0 flex items-start gap-2 rounded-card border border-warning/30 bg-warning-soft p-3 text-body text-warning">
           <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
