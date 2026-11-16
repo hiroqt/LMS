@@ -273,3 +273,11 @@ At a 1024px window the dashboard used its two-column `lg:` grid inside 688px of 
 space, and a centered `max-w-6xl` left wide monitors mostly empty. Container queries on
 `<main>` fixed both. `container-type` makes an element the containing block for
 `position: fixed` children, so keep fixed UI (dialogs, bottom bar) outside `<main>`.
+
+### L-042 · Stretching a tile moves dead space inside it unless a child grows
+`2026-11-16` · hiro · scope: shared · confidence: high
+Equal-height columns first produced a calendar with 150px between entries: the tile
+stretched and `justify-between` spread four rows over it. Fix the grid so neighbors have
+similar natural heights (tasks beside calendar; classes on their own row), then let one
+child absorb the small remainder. A chip label that cannot fit ~90px gets a `shortLabel`
+for phones instead of breaking mid-word; the full label stays the accessible name.

@@ -243,3 +243,14 @@ width they actually have (`@xl:`, `@4xl:`, `@7xl:`), so the layout also responds
 the sidebar collapses. On a wide window the Student dashboard shows tasks, classes, and
 calendar side by side. Reading pages (material, quiz, result) keep their line-length
 limits. No journey changed.
+
+### D-026 · Dashboards are bento grids
+`2026-11-16` · hiro (user request) · scope: student, instructor, shared · confidence: high
+Both dashboards are one grid of tiles (`Panel`, stat chips, the greeting) with a single
+gutter (12px on phones, 16px from `sm`). Tiles stretch to their row so every row ends on
+one line, and the content inside a tile takes the extra height (list rows and class cards
+grow; an empty state centers). The greeting is a tile beside the stat chips instead of a
+header with empty space to its right. Student tiles read tasks, calendar, classes,
+announcements; with two columns the classes and the announcement take full-width rows,
+with three the calendar stacks over the announcement. Class card grids use
+`auto-fit`, so cards share a row with no empty cell beside them.
