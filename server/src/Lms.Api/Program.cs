@@ -36,9 +36,7 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
 
     cors.AddDefaultPolicy(policy => policy
         .WithOrigins(origins)
-        .WithMethods(builder.Environment.IsDevelopment()
-            ? [HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch, HttpMethods.Delete]
-            : [HttpMethods.Get])
+        .WithMethods(HttpMethods.Get)
         .AllowAnyHeader());
 });
 
@@ -62,8 +60,7 @@ app.UseCors();
 app.MapLmsEndpoints();
 // The role picker and instructor header are demo selectors, not authentication.
 if (app.Environment.IsDevelopment())
-    app.MapClassContentEndpoints();
-
+    
 app.Run();
 
 public partial class Program;
