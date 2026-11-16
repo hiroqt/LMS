@@ -148,3 +148,6 @@ Utilities win over those rules because they are `!important` (D-010), so never a
   the height is used by content, not by blank space under it.
 - Keep DOM order equal to reading order and place tiles with spans, not `order`.
 - Card grids: `grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))]`.
+- Vary tile size and weight by importance (D-027): one filled tile per dashboard, flat
+  tinted tiles for collections, white panels for lists. Titles use `text-card-title`,
+  details `text-body`.

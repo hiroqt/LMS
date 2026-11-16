@@ -50,8 +50,8 @@ Use as `text-<name>` (body minimum is `text-body`, 14px).
 | `label` | `0.75rem` |
 | `body` | `0.875rem` |
 | `body-lg` | `1rem` |
-| `card-title` | `0.9375rem` |
-| `section` | `1.125rem` |
+| `card-title` | `1.0625rem` |
+| `section` | `1.25rem` |
 | `page` | `1.75rem` |
 | `page-mobile` | `1.5rem` |
 | `display` | `2.5rem` |

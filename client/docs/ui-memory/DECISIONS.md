@@ -254,3 +254,17 @@ header with empty space to its right. Student tiles read tasks, calendar, classe
 announcements; with two columns the classes and the announcement take full-width rows,
 with three the calendar stacks over the announcement. Class card grids use
 `auto-fit`, so cards share a row with no empty cell beside them.
+
+### D-027 · Bento mosaic and a wider type scale
+`2026-11-16` · hiro (user request) · scope: student, instructor, shared · confidence: high
+Amends D-026 and the type scale in D-005.
+- **Type:** section headings are 20px and card titles 17px (were 18 and 15), so a title
+  is visibly larger than its 14px details. Item titles inside tiles use `text-card-title`.
+- **Mosaic:** each dashboard is one 12-column grid. Tiles differ in size and weight: a
+  filled green greeting tile (with the next deadline, or the review queue for
+  instructors), stat tiles, white panels, and flat tinted class tiles (`tile` on the
+  class cards). Student: tasks 7 | calendar 5, classes 7 | announcements 5; wide:
+  tasks 5 | calendar 3 | classes 4, then announcements across in three columns.
+- **Filling tiles with content:** announcements show up to three items; the instructor
+  calendar tile lists the month's upcoming dates under the grid.
+- `StatCard` lays itself out by its own width (container query), not the viewport.
