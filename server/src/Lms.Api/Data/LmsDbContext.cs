@@ -267,6 +267,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     private void Stamp()
     {
         var now = _time.GetUtcNow().UtcDateTime;
+        foreach (var entry in ChangeTracker.Entries<AuditLogEntry>())
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
+                entry.Entity.CreatedAt = now;
         foreach (var entry in ChangeTracker.Entries<Audited>())
         {
             if (entry.State == EntityState.Added)

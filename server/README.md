@@ -142,6 +142,43 @@ There is **no POST/PUT/PATCH/DELETE** for classes or subjects, because ISMS owns
 
 A 401 or 403 from ISMS is never hidden behind stale data, so a credentials problem shows up straight away.
 
+## Class content (Phase 2, step 2)
+
+Modules, materials and announcements are stored in `lmsdb`. ISMS classes are never created or
+edited here; the content hangs off the synced classes.
+
+**Who is asking (demo only).** Sign-in arrives in Phase 4. Until then the client sends the person
+it is "viewing as" in `X-Demo-User-Id` (an ISMS reference id, such as `EMP-0003` or `STU-0011`)
+and `X-Demo-Role` (`instructor` or `student`). Anyone can send any value, so this is **not
+authentication**. It is on only when `Lms:DemoIdentity:Enabled` is `true`, which
+`appsettings.Development.json` sets; everywhere else these routes answer 401. The server still
+enforces every rule below against that identity, so real sign-in only changes where the identity
+comes from.
+
+| Who | Can |
+|---|---|
+| The class's instructor (ISMS) | Read everything, including archived items; create and change content while ISMS still offers the class (409 after that) |
+| A student on the class's active ISMS class list | Read modules, active materials and active announcements; 403 on any change |
+| Anyone else | 404, as if the class did not exist |
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `/api/me/classes` | `{ role, items }`: the caller's active classes, with `termName` and `meetings` |
+| GET | `/api/classes/{classId}/modules` | Ordered by `sortOrder`. `parentModuleId` marks a submodule |
+| POST | `/api/classes/{classId}/modules` | `{ title, parentModuleId?, sortOrder? }`. Two levels at most; `sortOrder` defaults to the next number |
+| PATCH | `/api/classes/{classId}/modules/{id}` | `{ title?, sortOrder? }` |
+| GET | `/api/classes/{classId}/materials?moduleId=&page=&pageSize=` | Paged `{ items, page, pageSize, total }` |
+| POST | `/api/classes/{classId}/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }`. `kind` is one of the six types on the Instructor form. File name only; nothing is uploaded |
+| PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status? }`, where status is `active` or `archived` |
+| DELETE | `/api/classes/{classId}/materials/{id}` | 204 |
+| GET | `/api/classes/{classId}/announcements?page=&pageSize=` | Newest first, paged; `postedBy` is the instructor's ISMS id |
+| POST | `/api/classes/{classId}/announcements` | `{ title (≤120), message (≤1,200) }` |
+| PATCH | `/api/classes/{classId}/announcements/{id}` | `{ status }`: archive or restore |
+
+Validation errors are 400 with field errors. Every change writes an `audit_log` row (who, action,
+what, id) in the same transaction, never the text itself. The ISMS sync gives every offered class
+a starter module ("Unit 1 · Foundations") and default gradebook weights, once.
+
 ## Caching
 
 `IIsmsCatalog` is the LMS's read-side copy of ISMS data. Today it is `MemoryIsmsCatalog`, which is
@@ -151,5 +188,5 @@ later without changing the endpoints.
 
 ## Not in this slice
 
-- Login and authorization. The old empty `Auth` placeholders were removed. Every endpoint is anonymous.
-- Endpoints that read or write the LMS-owned tables. The tables exist; the endpoints arrive in the next Phase 2 steps.
+- Real sign-in. Content routes use the demo identity above; the ISMS, status and diagnostic routes are anonymous.
+- Coursework, exams, submissions and grading endpoints (Phase 2 steps 3 and 4). The client does not use the content endpoints yet (steps 5 and 6).

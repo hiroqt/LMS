@@ -86,7 +86,8 @@ public sealed class DatabaseTests : IDisposable
 
         var web = await _factory.WithDbAsync(db => db.IsmsClasses.SingleAsync(c => c.Id == Web));
         Assert.False(web.IsActive);
-        Assert.Equal(1, await _factory.WithDbAsync(db => db.Modules.CountAsync(m => m.ClassId == Web)));
+        // Its starter module and the instructor's own module are both still there.
+        Assert.Equal(2, await _factory.WithDbAsync(db => db.Modules.CountAsync(m => m.ClassId == Web)));
         var s1 = await _factory.WithDbAsync(db => db.IsmsClassStudents.SingleAsync(s => s.ClassId == Database && s.StudentId == "S-1"));
         Assert.False(s1.IsActive);
 
