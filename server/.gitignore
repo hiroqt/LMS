@@ -1,0 +1,4 @@
+# Build output for every project under server/ (the root .gitignore only covers server/bin and server/obj).
+bin/
+obj/
+TestResults/

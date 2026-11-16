@@ -1,6 +1,42 @@
-@server_HostAddress = http://localhost:5099
+### LMS API (server/src/Lms.Api) — run with `dotnet run --project src/Lms.Api`
+@lms = http://localhost:5200
 
-GET {{server_HostAddress}}/
+### Is ISMS reachable with the configured credentials? (never shows the key)
+GET {{lms}}/api/isms/status
 Accept: application/json
 
-###
+### All classes (section + subject + instructor offerings) from ISMS schedules
+GET {{lms}}/api/classes
+Accept: application/json
+
+### Classes filtered by instructor and term
+GET {{lms}}/api/classes?instructorId=EMP-7&schoolYearId=2026&semesterId=1
+Accept: application/json
+
+### Students in a class — use an "id" from GET /api/classes
+@classId = U0NILTEfMTAxH0VNUC03
+GET {{lms}}/api/classes/{{classId}}/students
+Accept: application/json
+
+### Subjects
+GET {{lms}}/api/subjects
+Accept: application/json
+
+### Instructors
+GET {{lms}}/api/instructors
+Accept: application/json
+
+### OpenAPI document (Development only)
+GET {{lms}}/openapi/v1.json
+Accept: application/json
+
+### CORS preflight from the Vite dev server (allowed in Development)
+OPTIONS {{lms}}/api/classes
+Origin: http://localhost:5173
+Access-Control-Request-Method: GET
+
+### Writes are deliberately absent: classes and subjects are owned by ISMS -> 405
+POST {{lms}}/api/classes
+Content-Type: application/json
+
+{}

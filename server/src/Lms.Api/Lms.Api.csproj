@@ -4,11 +4,17 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Lms.Api</RootNamespace>
+    <!-- Same id as the original server.csproj so existing user-secrets keep working. -->
     <UserSecretsId>eb62f3b3-caa2-438c-8cbe-a2dd5c3f4470</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Lms.Api.Tests" />
   </ItemGroup>
 
 </Project>
