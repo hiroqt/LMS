@@ -70,7 +70,7 @@ with a `code` field. Every list endpoint returns `{ "items": [...], "source": "i
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/classes?instructorId=&schoolYearId=&semesterId=` | classes: `id, scheduleId, subjectId, subjectCode, subjectName, sectionId, sectionName, instructorId, instructorName, schoolYearId, semesterId, meetings[{day,timeFrom,timeTo,roomId,modality}]` |
+| GET | `/api/classes?instructorId=&schoolYearId=&semesterId=&term=current` | classes: `id, scheduleId, subjectId, subjectCode, subjectName, sectionId, sectionName, instructorId, instructorName, schoolYearId, semesterId, meetings[{day,timeFrom,timeTo,roomId,modality}]` |
 | GET | `/api/classes/{id}/students` | `studentId, enrollmentId, firstName, middleName, lastName` |
 | GET | `/api/subjects` | ISMS subjects: `id, code, name, units, status` |
 | GET | `/api/instructors` | ISMS instructors: `id, employeeNo, firstName, middleName, lastName, suffix, honorific, departmentId, status` |
@@ -81,6 +81,10 @@ A **class** is one section + subject + instructor offering. ISMS schedule rows w
 de-duplicated. The class `id` is the base64url form of those three values. It is stable, safe to
 put in a URL, and decodes back to the ISMS schedule without a lookup table. Any id the LMS did
 not issue returns 404.
+
+`term=current` limits classes to the school year and semester that ISMS flags as current, and
+adds a `term` object (`schoolYearId, schoolYearName, semesterId, semesterName`) to the response.
+When ISMS flags no current term, nothing is filtered and `term` is `null`.
 
 There is **no POST/PUT/PATCH/DELETE** for classes or subjects, because ISMS owns them.
 

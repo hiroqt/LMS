@@ -4,7 +4,8 @@ namespace Lms.Api.Isms;
 
 public sealed record IsmsPage<T>(IReadOnlyList<T>? Items, int Page, int PageSize, int Total);
 
-public sealed record IsmsLookup(int Id, string Name, string? Status);
+/// <param name="IsCurrent">ISMS's own flag for the current school year or semester.</param>
+public sealed record IsmsLookup(int Id, string Name, string? Status, bool IsCurrent = false);
 
 public sealed record IsmsSubject(int Id, string? Code, string Name, int Units, string? Status);
 
