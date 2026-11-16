@@ -1,0 +1,42 @@
+# ISMS stand-in database for local development ONLY.
+#
+#   docker compose up -d          # first start creates + seeds everything
+#   docker compose down -v        # stop and wipe (next "up" re-seeds)
+#
+# Published on host port 3307 so it never collides with a MySQL already
+# listening on 3306. Bound to 127.0.0.1 so it is not reachable from the LAN.
+#
+# Passwords below are obvious dev-only placeholders. Override them with
+# environment variables or an untracked isms-api/.env file, e.g.
+#   ISMS_DB_ROOT_PASSWORD=...  ISMS_API_RO_PASSWORD=...  ISMS_API_RW_PASSWORD=...
+name: isms-api-dev
+
+services:
+  isms-db:
+    image: mysql:8.4
+    container_name: isms-db-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ISMS_DB_ROOT_PASSWORD:-dev_only_root_change_me}
+      ISMS_API_RO_PASSWORD: ${ISMS_API_RO_PASSWORD:-dev_only_ro_change_me}
+      ISMS_API_RW_PASSWORD: ${ISMS_API_RW_PASSWORD:-dev_only_rw_change_me}
+      TZ: Asia/Manila
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - isms-db-data:/var/lib/mysql
+      # Runs 01_schema.sql, 02_seed.sql, 03_users.sh in name order, once,
+      # on an empty data volume. README.md in this folder is ignored.
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h 127.0.0.1 -uroot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  isms-db-data:

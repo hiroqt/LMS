@@ -1,0 +1,54 @@
+# ISMS API demo. Run the API first:  dotnet run --project src/Isms.Api
+#
+# Create the two demo clients once (each key is printed ONCE), then paste the keys below:
+#   dotnet run --project src/Isms.Api -- clients create lms --name "LMS API" --permissions subject.view,instructor.view,schedule.view,student.view --expires-days 30
+#   dotnet run --project src/Isms.Api -- clients create subjects-demo --name "Subjects only demo" --permissions subject.view --expires-days 30
+#
+# Do not commit real keys into this file.
+
+@baseUrl = http://localhost:5100
+@clientId = lms
+@apiKey = paste-the-lms-key-here
+@limitedClientId = subjects-demo
+@limitedApiKey = paste-the-subjects-demo-key-here
+
+### 200: valid client with subject.view
+GET {{baseUrl}}/v1/subjects?page=1&pageSize=20
+X-Client-Id: {{clientId}}
+X-Api-Key: {{apiKey}}
+
+### 200: class offerings with grouped meetings
+GET {{baseUrl}}/v1/schedules?schoolYearId=2&semesterId=1
+X-Client-Id: {{clientId}}
+X-Api-Key: {{apiKey}}
+
+### 200: instructors (no personal fields)
+GET {{baseUrl}}/v1/instructors
+X-Client-Id: {{clientId}}
+X-Api-Key: {{apiKey}}
+
+### 401: wrong key (same generic body as any other credential failure)
+GET {{baseUrl}}/v1/subjects
+X-Client-Id: {{clientId}}
+X-Api-Key: this-is-not-the-right-key-0000000000000000
+
+### 403: a client that only holds subject.view calling /v1/instructors
+GET {{baseUrl}}/v1/instructors
+X-Client-Id: {{limitedClientId}}
+X-Api-Key: {{limitedApiKey}}
+
+### 200: the same limited client can read subjects
+GET {{baseUrl}}/v1/subjects
+X-Client-Id: {{limitedClientId}}
+X-Api-Key: {{limitedApiKey}}
+
+### Not available: there are no write routes (403 via the deny-by-default fallback)
+POST {{baseUrl}}/v1/subjects
+X-Client-Id: {{clientId}}
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{ "name": "nope" }
+
+### OpenAPI document (anonymous in Development only)
+GET {{baseUrl}}/openapi/v1.json

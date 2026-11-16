@@ -79,6 +79,13 @@
 | `src/features/instructor/pages/class/StreamTab.tsx` | `StreamTab` |
 | `src/features/instructor/pages/class/SubmissionsTab.tsx` | `SubmissionsTab` |
 | `src/features/instructor/pages/class/shared.tsx` | `ListSearch` |
+| `src/features/isms-link/IsmsLinkPage.tsx` | `IsmsLinkPage` |
+| `src/features/isms-link/components/ClassCard.tsx` | `ClassCard` |
+| `src/features/isms-link/components/ClassRoster.tsx` | `ClassRoster` |
+| `src/features/isms-link/components/ClassesPanel.tsx` | `ClassesPanel` |
+| `src/features/isms-link/components/QueryError.tsx` | `QueryError` |
+| `src/features/isms-link/components/StatusPanel.tsx` | `StatusPanel` |
+| `src/features/isms-link/components/SubjectsPanel.tsx` | `SubjectsPanel` |
 | `src/features/student/StudentApp.tsx` | `StudentApp` |
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
