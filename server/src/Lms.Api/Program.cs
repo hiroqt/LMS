@@ -1,4 +1,5 @@
 using Lms.Api.Content;
+using Lms.Api.Coursework;
 using Lms.Api.Data;
 using Lms.Api.Endpoints;
 using Lms.Api.Isms;
@@ -38,7 +39,7 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
 
     cors.AddDefaultPolicy(policy => policy
         .WithOrigins(origins)
-        .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch, HttpMethods.Delete)
+        .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete)
         .AllowAnyHeader());
 });
 
@@ -61,6 +62,8 @@ app.UseCors();
 
 app.MapLmsEndpoints();
 app.MapContentEndpoints();
+app.MapQuestionnaireEndpoints();
+app.MapCourseworkEndpoints();
 
 app.Run();
 
