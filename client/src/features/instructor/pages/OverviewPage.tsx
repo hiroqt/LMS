@@ -66,7 +66,7 @@ function Overview({ onNews }: { onNews: () => void }) {
           <div className="flex h-full flex-col justify-between gap-3 @lg:flex-row @lg:items-center">
             <div className="flex flex-col gap-1">
               <h2 id="teaching-greeting" className="m-0 text-page-mobile font-bold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
-              <p className="m-0 text-body-lg text-primary-100">
+              <p className="m-0 text-body text-primary-100">
                 {queue.length
                   ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
                   : "Your review queue is clear."}

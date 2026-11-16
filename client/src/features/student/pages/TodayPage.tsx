@@ -213,7 +213,7 @@ export default function TodayPage() {
           <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight outline-none sm:text-page">
             {greeting(now)}, {STUDENT.firstName}
           </h1>
-          <p className="m-0 text-body-lg text-primary-100">
+          <p className="m-0 text-body text-primary-100">
             {next ? <>Next due: {next.title}, {formatDue(next.dueAt)}</> : "Nothing is due in the next few days."}
           </p>
         </div>

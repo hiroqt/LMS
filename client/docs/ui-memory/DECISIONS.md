@@ -268,3 +268,8 @@ Amends D-026 and the type scale in D-005.
 - **Filling tiles with content:** announcements show up to three items; the instructor
   calendar tile lists the month's upcoming dates under the grid.
 - `StatCard` lays itself out by its own width (container query), not the viewport.
+
+### D-028 · Card titles are 16px
+`2026-11-16` · hiro (user request) · scope: shared · confidence: high
+17px card titles (D-027) read as too big. Card and item titles are 16px semibold over
+14px details; section headings stay 20px. The greeting tiles' second line is 14px.

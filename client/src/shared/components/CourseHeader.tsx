@@ -51,7 +51,7 @@ export function CourseHeader({ code, section, term, title, subject, facts, index
             <span>{term}</span>
           </p>
           <h1 tabIndex={-1} className="m-0 text-page-mobile font-bold tracking-tight outline-none sm:text-page">{title}</h1>
-          {subject && <p className="m-0 text-body-lg text-muted">{subject}</p>}
+          {subject && <p className="m-0 text-body text-muted">{subject}</p>}
         </div>
         <dl className="m-0 grid grid-cols-1 gap-3 border-t border-line pt-4 min-[400px]:grid-cols-2 lg:grid-cols-4">
           {facts.map((fact) => (
