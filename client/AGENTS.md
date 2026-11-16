@@ -11,7 +11,7 @@ The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`)
 
 ## Project Structure & Module Organization
 
-This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy files are `.jsx`). Two ASP.NET Core services sit beside it: `../isms-api` (read-only ISMS API guarded by API-client keys and permissions) and `../server` (the LMS API, which reads ISMS only through that API). Only the standalone `/isms-link` page reads the LMS API so far (D-030); the Student, Instructor, and Admin flows still use fictional, browser-local data.
+This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy files are `.jsx`). Two ASP.NET Core services sit beside it: `../isms-api` (read-only ISMS API guarded by API-client keys and permissions) and `../server` (the LMS API, which reads ISMS only through that API). Two things read the LMS API: the standalone `/isms-link` page (D-030) and the Instructor workspace, whose classes and class lists are copied from ISMS into the browser role store (D-031). Everything else, including all coursework and grades, is still fictional, browser-local data.
 
 - `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with the legacy `roles/shared/roleRouter.js` parser.
 - New code goes in `src/features/<role>/<feature>` and `src/shared/{ui,layout,components,hooks,lib,api,styles}`. See `docs/ui-memory/CONVENTIONS.md` (C-001).
@@ -73,4 +73,4 @@ Use Conventional Commit subjects with a scope (`feat(student): …`, `fix(instru
 
 ## Scope & Configuration
 
-Keep demo data fictional. The role workspaces are browser-local, with no user sign-in or server persistence yet; `/isms-link` reads ISMS data through the LMS API. Never commit real student or employee records, API keys, or connection strings: keys and passwords live in user-secrets or environment variables, and the stand-in ISMS database in `../isms-api/db` holds invented people only. Quiz state uses localStorage, so changes to its key or shape can affect saved browser progress.
+Keep demo data fictional. The role workspaces are browser-local, with no user sign-in or server persistence yet; `/isms-link` and the Instructor class list read ISMS data through the LMS API. Never commit real student or employee records, API keys, or connection strings: keys and passwords live in user-secrets or environment variables, and the stand-in ISMS database in `../isms-api/db` holds invented people only. Quiz state uses localStorage, so changes to its key or shape can affect saved browser progress.

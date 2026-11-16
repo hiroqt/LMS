@@ -7,6 +7,8 @@ export interface User {
   email?: string;
   role: string;
   status: string;
+  /** "isms" when the record is copied from ISMS (D-031); absent for demo and local records. */
+  source?: string;
 }
 
 export interface Subject {
@@ -14,6 +16,7 @@ export interface Subject {
   code: string;
   title: string;
   description?: string;
+  source?: string;
 }
 
 export interface Classroom {
@@ -26,6 +29,9 @@ export interface Classroom {
   enrollmentCode?: string;
   status: string;
   createdAt?: string;
+  source?: string;
+  /** Meeting days and times from ISMS, e.g. "MW 08:00–09:30". */
+  schedule?: string;
 }
 
 export interface Enrollment {
@@ -33,6 +39,7 @@ export interface Enrollment {
   classroomId: string;
   studentId: string;
   status: string;
+  source?: string;
 }
 
 export interface Module {

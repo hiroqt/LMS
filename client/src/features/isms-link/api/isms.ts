@@ -1,11 +1,12 @@
 import { getJson, shouldRetryApiRead } from "../../../shared/api/http";
-import type { ClassFilters, IsmsClass, IsmsInstructor, IsmsList, IsmsStatus, IsmsStudent, IsmsSubject } from "./types";
+import type { ClassFilters, IsmsClass, IsmsClassList, IsmsInstructor, IsmsList, IsmsStatus, IsmsStudent, IsmsSubject } from "./types";
 
 /** Every ISMS query key starts with "isms", so one invalidation refreshes the page. */
 export const ismsKeys = {
   all: ["isms"] as const,
   status: () => ["isms", "status"] as const,
   classes: (filters: ClassFilters) => ["isms", "classes", filters] as const,
+  currentClasses: () => ["isms", "classes", "current-term"] as const,
   students: (classId: string) => ["isms", "classes", classId, "students"] as const,
   subjects: () => ["isms", "subjects"] as const,
   instructors: () => ["isms", "instructors"] as const,
@@ -26,6 +27,10 @@ export const fetchIsmsStatus = (signal?: AbortSignal) => getJson<IsmsStatus>("/a
 
 export const fetchClasses = (filters: ClassFilters, signal?: AbortSignal) =>
   getJson<IsmsList<IsmsClass>>("/api/classes", { signal, params: { ...filters } });
+
+/** Classes of the term ISMS flags as current; `term` is null when ISMS flags none. */
+export const fetchCurrentClasses = (signal?: AbortSignal) =>
+  getJson<IsmsClassList>("/api/classes", { signal, params: { term: "current" } });
 
 export const fetchClassStudents = (classId: string, signal?: AbortSignal) =>
   getJson<IsmsList<IsmsStudent>>(`/api/classes/${encodeURIComponent(classId)}/students`, { signal });

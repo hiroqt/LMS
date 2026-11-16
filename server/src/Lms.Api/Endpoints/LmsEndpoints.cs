@@ -9,6 +9,12 @@ public sealed record IsmsListResponse<T>(IReadOnlyList<T> Items, string Source, 
     public static IsmsListResponse<T> From(IsmsSnapshot<IReadOnlyList<T>> snapshot) => new(snapshot.Data, "isms", snapshot.SyncedAt);
 }
 
+/// <summary>The term a class list was limited to, when the caller asked for the current one.</summary>
+public sealed record ClassTerm(int SchoolYearId, string SchoolYearName, int SemesterId, string SemesterName);
+
+/// <param name="Term">Set only when <c>term=current</c> was requested and ISMS flags a current term.</param>
+public sealed record ClassListResponse(IReadOnlyList<LmsClass> Items, string Source, DateTimeOffset SyncedAt, ClassTerm? Term);
+
 public sealed record IsmsStatusResponse(bool Reachable, bool Authorized, DateTimeOffset CheckedAt, string Detail);
 
 /// <summary>
@@ -21,8 +27,23 @@ public static class LmsEndpoints
     {
         var api = app.MapGroup("/api");
 
-        api.MapGet("/classes", async (string? instructorId, int? schoolYearId, int? semesterId, IIsmsCatalog catalog, CancellationToken ct) =>
+        api.MapGet("/classes", async (string? instructorId, int? schoolYearId, int? semesterId, string? term, IIsmsCatalog catalog, CancellationToken ct) =>
             {
+                // term=current limits the list to the school year and semester ISMS flags as
+                // current. When ISMS flags none, nothing is filtered and "term" is null.
+                ClassTerm? current = null;
+                if (string.Equals(term, "current", StringComparison.OrdinalIgnoreCase))
+                {
+                    var year = (await catalog.GetSchoolYearsAsync(ct)).Data.FirstOrDefault(y => y.IsCurrent);
+                    var semester = (await catalog.GetSemestersAsync(ct)).Data.FirstOrDefault(s => s.IsCurrent);
+                    if (year is not null && semester is not null)
+                    {
+                        current = new ClassTerm(year.Id, year.Name, semester.Id, semester.Name);
+                        schoolYearId = year.Id;
+                        semesterId = semester.Id;
+                    }
+                }
+
                 // The instructor filter is applied here, not sent to ISMS, so free text from the
                 // caller never becomes a cache key.
                 var schedules = await catalog.GetSchedulesAsync(new IsmsScheduleQuery(schoolYearId, semesterId), ct);
@@ -30,7 +51,7 @@ public static class LmsEndpoints
                 var classes = ClassMapper.FromSchedules(schedules.Data)
                     .Where(c => instructor is null || string.Equals(c.InstructorId, instructor, StringComparison.Ordinal))
                     .ToList();
-                return TypedResults.Ok(new IsmsListResponse<LmsClass>(classes, "isms", schedules.SyncedAt));
+                return TypedResults.Ok(new ClassListResponse(classes, "isms", schedules.SyncedAt, current));
             })
             .WithName("ListClasses")
             .WithSummary("Classes (section + subject + instructor offerings) from ISMS schedules.")

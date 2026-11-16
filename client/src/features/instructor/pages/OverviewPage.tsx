@@ -217,7 +217,7 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
   const [now] = useState(Date.now);
   const term = termStatus(events, now);
   const { instructors, instructor, rooms } = useInstructorWorkspace();
-  const { setInstructorId, openCreateClass } = useInstructorSession();
+  const { setInstructorId } = useInstructorSession();
   const [view, setView] = useState<"overview" | "news">("overview");
   const toggle = "inline-flex min-h-touch items-center gap-2 rounded-control border-0 px-4 font-sans text-body font-medium focus-visible:outline-3 focus-visible:outline-focus";
 
@@ -255,12 +255,9 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
         <EmptyState
           icon={<BookOpen />}
           title="No classrooms assigned yet"
-          description="Ask an admin to assign a classroom to this instructor, or create one now."
+          description="Classes are assigned in ISMS. Once the registrar schedules a class for this instructor, it appears here."
           action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={openCreateClass}>Create class</Button>
-              <Button variant="secondary" onClick={() => onNavigateRole("admin")}>Open Admin workspace</Button>
-            </div>
+            <Button variant="secondary" onClick={() => onNavigateRole("admin")}>Open Admin workspace</Button>
           }
         />
       ) : view === "overview" ? (

@@ -12,6 +12,8 @@ public sealed record IsmsSnapshot<T>(T Data, DateTimeOffset SyncedAt, bool IsSta
 /// </summary>
 public interface IIsmsCatalog
 {
+    Task<IsmsSnapshot<IReadOnlyList<IsmsLookup>>> GetSchoolYearsAsync(CancellationToken ct = default);
+    Task<IsmsSnapshot<IReadOnlyList<IsmsLookup>>> GetSemestersAsync(CancellationToken ct = default);
     Task<IsmsSnapshot<IReadOnlyList<IsmsSubject>>> GetSubjectsAsync(CancellationToken ct = default);
     Task<IsmsSnapshot<IReadOnlyList<IsmsInstructor>>> GetInstructorsAsync(CancellationToken ct = default);
     Task<IsmsSnapshot<IReadOnlyList<IsmsSchedule>>> GetSchedulesAsync(IsmsScheduleQuery query, CancellationToken ct = default);

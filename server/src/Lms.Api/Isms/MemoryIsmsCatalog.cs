@@ -19,6 +19,12 @@ internal sealed class MemoryIsmsCatalog(
 {
     private const string KeyPrefix = "isms:";
 
+    public Task<IsmsSnapshot<IReadOnlyList<IsmsLookup>>> GetSchoolYearsAsync(CancellationToken ct = default) =>
+        GetAsync("school-years", client.GetSchoolYearsAsync, ct);
+
+    public Task<IsmsSnapshot<IReadOnlyList<IsmsLookup>>> GetSemestersAsync(CancellationToken ct = default) =>
+        GetAsync("semesters", client.GetSemestersAsync, ct);
+
     public Task<IsmsSnapshot<IReadOnlyList<IsmsSubject>>> GetSubjectsAsync(CancellationToken ct = default) =>
         GetAsync("subjects", client.GetSubjectsAsync, ct);
 

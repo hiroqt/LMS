@@ -301,3 +301,13 @@ Workbox service worker does not touch cross-origin API calls (no matching route)
 lazy route moved `@tanstack/query-core` from the preloaded `storage` chunk into `index`:
 total eager JS was unchanged (124.3 → 124.0 KB gz) but `index` grew 99.2 → 103.7 KB gz,
 leaving 3.7 KB under its budget.
+
+### L-045 · Copying server data into the role store without a loop
+`2026-11-16` · hiro · scope: instructor · confidence: high
+Saving the role store fires `tmcc-lms-data`, which refetches every `["instructor"]` query.
+A sync that writes on each run would loop, so `mergeIsmsClasses` returns the same object
+when nothing changed and the hook writes only when it differs; ISMS query keys start with
+`["isms"]`, outside that invalidation. `useQueries` returns a new array every render, so
+its JSON is the effect dependency. The instructor being viewed was never persisted, so a
+reload of another instructor's class fell back to the first instructor; the initial
+instructor is now taken from the class in the URL.

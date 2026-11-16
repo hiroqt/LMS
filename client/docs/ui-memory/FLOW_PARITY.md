@@ -64,7 +64,7 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ✅ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ✅ |
 | COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ✅ |
-| K | Create class → opens; Cancel closes | ✔ `instructor-flow` K | ✅ |
+| K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |
 | E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
@@ -119,4 +119,5 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | `/isms-link` shows status, classes (instructor filter, student roster by keyboard), subjects, read-only note; zero axe violations, text ≥14px | ✔ `isms-link` `@all` (API mocked) |
 | API not running: plain error with retry per section | ✔ `isms-link` `@all`; offline and 502 in `IsmsLinkPage.test.tsx` |
 | No sideways scroll at 320px | ✔ `isms-link` `@mobile` |
+| Instructor Classes page names ISMS as the source; no Create class; zero axe violations | ✔ `instructor-isms` `@all` (API mocked) |
 | Against the real LMS API | ✖ manual, once `../server` is running |

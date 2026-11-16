@@ -90,6 +90,49 @@ public sealed class ApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Term_current_limits_classes_to_the_term_ISMS_flags_as_current()
+    {
+        Isms.Responder = StubIsmsHandler.Routes(new()
+        {
+            ["/v1/school-years"] = _ => StubIsmsHandler.Page(
+                new { id = 1, name = "2025-2026", status = "1", isCurrent = false },
+                new { id = 2, name = "2026-2027", status = "1", isCurrent = true }),
+            ["/v1/semesters"] = _ => StubIsmsHandler.Page(
+                new { id = 1, name = "1st Semester", status = "1", isCurrent = true },
+                new { id = 2, name = "2nd Semester", status = "1", isCurrent = false }),
+            ["/v1/schedules"] = _ => StubIsmsHandler.Page(Schedule("SCH 1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))),
+        });
+
+        var body = await JsonOf(await _factory.CreateClient().GetAsync("/api/classes?term=current"));
+
+        var query = Isms.RequestsTo("/v1/schedules").Single().RequestUri!.Query;
+        Assert.Contains("schoolYearId=2", query);
+        Assert.Contains("semesterId=1", query);
+        var term = body.GetProperty("term");
+        Assert.Equal("2026-2027", term.GetProperty("schoolYearName").GetString());
+        Assert.Equal("1st Semester", term.GetProperty("semesterName").GetString());
+    }
+
+    [Fact]
+    public async Task Term_current_filters_nothing_when_ISMS_flags_no_current_term()
+    {
+        Isms.Responder = StubIsmsHandler.Routes(new()
+        {
+            ["/v1/school-years"] = _ => StubIsmsHandler.Page(new { id = 1, name = "2025-2026", status = "1", isCurrent = false }),
+            ["/v1/semesters"] = _ => StubIsmsHandler.Page(new { id = 1, name = "1st Semester", status = "1", isCurrent = true }),
+            ["/v1/schedules"] = _ => StubIsmsHandler.Page(Schedule("SCH 1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))),
+        });
+
+        var body = await JsonOf(await _factory.CreateClient().GetAsync("/api/classes?term=current"));
+
+        var query = Isms.RequestsTo("/v1/schedules").Single().RequestUri!.Query;
+        Assert.DoesNotContain("schoolYearId", query);
+        Assert.DoesNotContain("semesterId", query);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, body.GetProperty("term").ValueKind);
+        Assert.Equal(1, body.GetProperty("items").GetArrayLength());
+    }
+
+    [Fact]
     public async Task Class_students_come_from_the_classes_ISMS_schedule()
     {
         Isms.Responder = StubIsmsHandler.Routes(new()

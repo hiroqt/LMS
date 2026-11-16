@@ -294,3 +294,20 @@ timeout, 502 ISMS sign-in, 503 ISMS down, other) and TanStack Query hooks in the
 Every server section has a skeleton, an empty state, and an error state with a retry that
 says plainly when the API is not running. ISMS queries use `networkMode: "always"` so an
 offline device gets an error instead of a paused skeleton (L-044).
+
+### D-031 · Instructor classes come from ISMS; the LMS no longer creates them
+`2026-11-16` · hiro (ISMS integration) · scope: instructor, isms-link, e2e · confidence: medium
+The school decided subjects, instructors, schedules, and class lists are ISMS's, so
+"Create class" is removed from the Instructor UI (sidebar, Classes page, Overview empty
+state) and flow connector **K** changes: `instructor-flow` K, `class-view`, and
+`instructor-new` were edited for this reason, and `instructor-isms` covers the new journey.
+Until the LMS has its own database (phase 2), the Instructor screens still read the
+browser role store, so `useIsmsClassSync` copies the current term's ISMS classes into it
+through the pure, idempotent `mergeIsmsClasses`: records get an `isms-` id and
+`source: "isms"`, demo and local records are never touched, a class ISMS drops is set
+inactive with its content kept, and class lists are loaded only for the instructor being
+viewed. Modules, coursework, announcements, and grades remain LMS-owned. Without the API
+the workspace keeps working on what the browser already has and the Classes page says so.
+Admin can still create demo subjects and classrooms (Admin is out of scope). `e2e/fixtures.ts`
+refuses the LMS API origin by default so a developer's running API cannot change a journey;
+specs that need ISMS data mock it. A class link now opens under the instructor who teaches it.

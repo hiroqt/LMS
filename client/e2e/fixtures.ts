@@ -11,6 +11,9 @@ export const test = base.extend<{ page: Page }>({
   // The fixture callback is named "run" because oxlint reads "use" as a React hook.
   page: async ({ page }, run) => {
     await page.clock.install({ time: DEMO_NOW });
+    // The LMS API is not part of this suite. Refusing its origin keeps a developer's running
+    // API from changing what the journeys see; specs that need it mock it with page.route.
+    await page.route("http://localhost:5200/**", (route) => route.abort("connectionrefused"));
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await run(page);
