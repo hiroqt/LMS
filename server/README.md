@@ -253,6 +253,33 @@ Gradebook rules are the prototype's: graded work only, the latest graded assignm
 the highest graded exam attempt, and an overall only once every weighted category has a grade.
 Phase 3 replaces the two fixed categories with teacher-defined grade components.
 
+## Demo mode
+
+`ASPNETCORE_ENVIRONMENT=Demo` runs the API on its own, with no MySQL and no ISMS API:
+
+```bash
+cd server
+ASPNETCORE_ENVIRONMENT=Demo dotnet run --project src/Lms.Api --no-launch-profile --urls http://localhost:5299
+```
+
+- **Data.** The fictional people, classes, materials and quizzes in `client/src/data.js`, exported
+  to `src/Lms.Api/Demo/demo-seed.json` by `npm run demo-seed` in `client/` (CI fails when they
+  differ). People and classes are served through a built-in fake ISMS, with the same ids as the
+  browser-local seed (`instructor-1`, student `s0`, class `biology`).
+- **Sandboxes.** Each `X-Demo-Sandbox` header value gets its own freshly seeded SQLite database
+  (without the header, the `default` one), so parallel browser tests never see each other's
+  changes. Files live in `Lms:Demo:DataDirectory` and are deleted at startup.
+- **Time.** Seed dates are read in `Lms:Demo:TimeZone` (Asia/Manila). `Lms:Demo:Now`, for example
+  `2026-10-23T09:00:00+08:00`, starts the server's clock at a fixed moment, as the browser tests do.
+- The demo identity is on, and CORS allows ports 5173 and 4173.
+
+Never run demo mode on a server other people can reach: anyone can say who they are.
+
+`GET /api/me/overview` returns everything a workspace shows in one call: classes with class size,
+modules, materials, announcements, coursework, submissions, class lists and gradebook settings.
+Students get only published, available work, active content and their own submissions.
+`GET /api/people` lists who the client can view as, when the demo identity is on.
+
 ## Caching
 
 `IIsmsCatalog` is the LMS's read-side copy of ISMS data. Today it is `MemoryIsmsCatalog`, which is
