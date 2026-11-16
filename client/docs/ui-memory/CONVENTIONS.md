@@ -132,3 +132,11 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Copy states facts. No taglines, no encouragement, no eyebrow that repeats the heading,
   no decorative illustration. If a line could sit on any product's page, delete it.
 - Cards have a uniform border. Do not add colored side or top stripes for identity.
+
+### C-017 · Adaptive layout (D-025)
+- Lay out page regions with container variants (`@4xl:grid-cols-…`), not viewport
+  ones (`lg:`). `<main>` is the container; a reusable list wraps itself in `@container`.
+- Reference widths: `@xl` two cards, `@4xl` two page columns or three cards, `@7xl`
+  three page columns or four cards.
+- Viewport variants remain right for the shell (sidebar, bottom bar) and for type and spacing.
+- Limit line length on prose (`max-w-prose`), never on the page.

@@ -266,3 +266,10 @@ adding a second action.
 The class list and Help link must render differently when the sidebar is collapsed, but
 they are built by the role app above `AppShell`. `sidebarExtra` and `sidebarFooter`
 accept `(collapsed) => ReactNode`; the phone drawer always passes `false`.
+
+### L-041 · Viewport breakpoints lie once the sidebar can change width
+`2026-11-16` · hiro · scope: shared · confidence: high
+At a 1024px window the dashboard used its two-column `lg:` grid inside 688px of real
+space, and a centered `max-w-6xl` left wide monitors mostly empty. Container queries on
+`<main>` fixed both. `container-type` makes an element the containing block for
+`position: fixed` children, so keep fixed UI (dialogs, bottom bar) outside `<main>`.

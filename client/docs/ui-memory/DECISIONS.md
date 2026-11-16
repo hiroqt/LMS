@@ -233,3 +233,13 @@ Amends D-023 at the user's request:
   must state a fact the reader can use (a count, a date) or be left out.
 These are display preferences in new localStorage keys; no journey changed and the
 existing specs pass unchanged. `e2e/class-view.spec.ts` covers the new controls.
+
+### D-025 · Pages fill the content area and adapt to it
+`2026-11-16` · hiro (user request) · scope: student, instructor, shared · confidence: high
+The page no longer sits in a 72rem column in the middle of the window. `<main>` fills
+the space beside the sidebar (capped at 120rem for very wide monitors) and is a CSS size
+container. Dashboards, class lists, and two-column pages choose their columns from the
+width they actually have (`@xl:`, `@4xl:`, `@7xl:`), so the layout also responds when
+the sidebar collapses. On a wide window the Student dashboard shows tasks, classes, and
+calendar side by side. Reading pages (material, quiz, result) keep their line-length
+limits. No journey changed.
