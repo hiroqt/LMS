@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
@@ -56,7 +55,12 @@ internal sealed class MemoryIsmsCatalog(
                 var data = await fetch(ct);
                 var snapshot = new IsmsSnapshot<T>(data, time.GetUtcNow());
                 // Kept past the TTL so it can be served stale; evicted once it is too old for that.
-                cache.Set(key, snapshot, ttl + maxStale + TimeSpan.FromSeconds(1));
+                // Size 1 counts the entry against the cache's SizeLimit, which bounds memory.
+                cache.Set(key, snapshot, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ttl + maxStale + TimeSpan.FromSeconds(1),
+                    Size = 1,
+                });
                 return snapshot;
             }
             catch (IsmsException ex) when (ex.AllowsStaleServe && previous is not null && time.GetUtcNow() - previous.SyncedAt <= ttl + maxStale)
@@ -83,10 +87,14 @@ internal sealed class MemoryIsmsCatalog(
     }
 }
 
-/// <summary>Per-cache-key fetch locks, shared across requests (the catalog itself is scoped).</summary>
+/// <summary>
+/// Fetch locks shared across requests (the catalog itself is scoped). A fixed set of locks is
+/// picked by key hash, so caller-chosen keys can never grow memory; two keys sharing a lock
+/// only means their fetches run one after the other.
+/// </summary>
 internal sealed class IsmsFetchLocks
 {
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+    private readonly SemaphoreSlim[] _locks = [.. Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1))];
 
-    public SemaphoreSlim For(string key) => _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+    public SemaphoreSlim For(string key) => _locks[(uint)string.GetHashCode(key, StringComparison.Ordinal) % (uint)_locks.Length];
 }

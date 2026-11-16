@@ -15,7 +15,8 @@ public static class IsmsServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<IsmsOptions>, IsmsOptionsValidator>();
 
         services.TryAddSingleton(TimeProvider.System);
-        services.AddMemoryCache();
+        // Bounded: every cached ISMS read counts as 1, so request parameters cannot grow memory.
+        services.AddMemoryCache(o => o.SizeLimit = 512);
         services.AddSingleton<IsmsFetchLocks>();
         services.AddScoped<IIsmsCatalog, MemoryIsmsCatalog>();
 

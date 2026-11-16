@@ -70,17 +70,23 @@ public sealed class ApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Classes_pass_filters_through_to_ISMS()
+    public async Task Classes_pass_term_filters_to_ISMS_and_filter_instructors_locally()
     {
-        Isms.Responder = _ => StubIsmsHandler.Page();
+        Isms.Responder = _ => StubIsmsHandler.Page(
+            Schedule("SCH 1", 101, "EMP-7", Meeting("MW", "08:00", "09:30")),
+            Schedule("SCH 1", 102, "EMP-9", Meeting("TTH", "08:00", "09:30")));
 
-        await _factory.CreateClient().GetAsync("/api/classes?instructorId=EMP-7&schoolYearId=2026&semesterId=2");
+        var response = await _factory.CreateClient().GetAsync("/api/classes?instructorId=EMP-7&schoolYearId=2026&semesterId=2");
 
         var query = Isms.RequestsTo("/v1/schedules").Single().RequestUri!.Query;
-        Assert.Contains("instructorId=EMP-7", query);
         Assert.Contains("schoolYearId=2026", query);
         Assert.Contains("semesterId=2", query);
         Assert.Contains("pageSize=200", query);
+        // Free text from the caller is never forwarded (it would become a cache key).
+        Assert.DoesNotContain("instructorId", query);
+        var items = (await JsonOf(response)).GetProperty("items");
+        Assert.Equal(1, items.GetArrayLength());
+        Assert.Equal("EMP-7", items[0].GetProperty("instructorId").GetString());
     }
 
     [Fact]
@@ -88,6 +94,7 @@ public sealed class ApiTests : IDisposable
     {
         Isms.Responder = StubIsmsHandler.Routes(new()
         {
+            ["/v1/schedules"] = _ => StubIsmsHandler.Page(Schedule("SCH 1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))),
             ["/v1/schedules/SCH%201/students"] = _ => StubIsmsHandler.Page(Student("S-1"), Student("S-2")),
         });
         var id = ClassId.Create("SCH 1", 101, "EMP-7");
@@ -104,6 +111,23 @@ public sealed class ApiTests : IDisposable
         Assert.Equal("B", first.GetProperty("middleName").GetString());
         Assert.Equal("Cruz", first.GetProperty("lastName").GetString());
         Assert.False(first.TryGetProperty("yearLevel", out _));
+    }
+
+    [Fact]
+    public async Task A_well_formed_id_for_a_class_ISMS_does_not_have_is_a_404_and_never_asks_for_students()
+    {
+        Isms.Responder = StubIsmsHandler.Routes(new()
+        {
+            ["/v1/schedules"] = _ => StubIsmsHandler.Page(Schedule("SCH 1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))),
+            ["/v1/schedules/SCH%201/students"] = _ => StubIsmsHandler.Page(Student("S-1")),
+        });
+        // Same schedule, but a subject and instructor that are not offered together.
+        var edited = ClassId.Create("SCH 1", 999, "EMP-0");
+
+        var response = await _factory.CreateClient().GetAsync($"/api/classes/{edited}/students");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Empty(Isms.RequestsTo("/v1/schedules/SCH%201/students"));
     }
 
     [Fact]

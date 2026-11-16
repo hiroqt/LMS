@@ -23,9 +23,13 @@ public static class LmsEndpoints
 
         api.MapGet("/classes", async (string? instructorId, int? schoolYearId, int? semesterId, IIsmsCatalog catalog, CancellationToken ct) =>
             {
-                var query = new IsmsScheduleQuery(schoolYearId, semesterId, string.IsNullOrWhiteSpace(instructorId) ? null : instructorId.Trim());
-                var schedules = await catalog.GetSchedulesAsync(query, ct);
-                var classes = ClassMapper.FromSchedules(schedules.Data);
+                // The instructor filter is applied here, not sent to ISMS, so free text from the
+                // caller never becomes a cache key.
+                var schedules = await catalog.GetSchedulesAsync(new IsmsScheduleQuery(schoolYearId, semesterId), ct);
+                var instructor = string.IsNullOrWhiteSpace(instructorId) ? null : instructorId.Trim();
+                var classes = ClassMapper.FromSchedules(schedules.Data)
+                    .Where(c => instructor is null || string.Equals(c.InstructorId, instructor, StringComparison.Ordinal))
+                    .ToList();
                 return TypedResults.Ok(new IsmsListResponse<LmsClass>(classes, "isms", schedules.SyncedAt));
             })
             .WithName("ListClasses")
@@ -41,6 +45,17 @@ public static class LmsEndpoints
                         statusCode: StatusCodes.Status404NotFound,
                         title: "Class not found",
                         detail: "The class id is not one this LMS issued. Get class ids from GET /api/classes.");
+                }
+
+                // Only ids of classes that exist in ISMS are looked up, so an edited id cannot be
+                // used to probe other schedules.
+                var schedules = await catalog.GetSchedulesAsync(new IsmsScheduleQuery(), ct);
+                if (!ClassMapper.FromSchedules(schedules.Data).Any(c => c.Id == id))
+                {
+                    return TypedResults.Problem(
+                        statusCode: StatusCodes.Status404NotFound,
+                        title: "Class not found",
+                        detail: "No class with this id exists in ISMS. Get class ids from GET /api/classes.");
                 }
 
                 var students = await catalog.GetScheduleStudentsAsync(parts.ScheduleId, ct);
