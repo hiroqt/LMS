@@ -43,3 +43,29 @@ Content-Type: application/json
 
 ### LMS database reachable and migrated, and the result of the last ISMS sync
 GET {{lms}}/api/lms/status
+
+### Class content as an instructor (demo identity, Development only).
+### Use an ISMS employee id that teaches classes, e.g. from GET /api/instructors.
+@instructor = EMP-0003
+GET {{lms}}/api/me/classes
+X-Demo-User-Id: {{instructor}}
+X-Demo-Role: instructor
+
+### Modules of one of those classes (paste a class id from the response above)
+@classId = replace-with-a-class-id
+GET {{lms}}/api/classes/{{classId}}/modules
+X-Demo-User-Id: {{instructor}}
+X-Demo-Role: instructor
+
+### Post an announcement
+POST {{lms}}/api/classes/{{classId}}/announcements
+X-Demo-User-Id: {{instructor}}
+X-Demo-Role: instructor
+Content-Type: application/json
+
+{ "title": "Lab on Thursday", "message": "Bring your laptops." }
+
+### The same class as a student on its class list
+GET {{lms}}/api/classes/{{classId}}/announcements
+X-Demo-User-Id: STU-0011
+X-Demo-Role: student
