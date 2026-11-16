@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { ArrowUpRight, CalendarDays, ChevronRight } from "lucide-react";
 import { SubjectIcon } from "../../../shared/components/SubjectIcon";
 import { cn } from "../../../shared/lib/cn";
 import { toneFor } from "../../../shared/lib/tones";
@@ -6,7 +6,26 @@ import { courseCode } from "../api/catalog";
 import type { Course } from "../api/types";
 
 /** A course: subject icon, title, code and section, and when it next meets. */
-export function ClassCard({ course, index, onOpen }: { course: Course; index: number; onOpen: () => void }) {
+export function ClassCard({ course, index, onOpen, tile = false }: { course: Course; index: number; onOpen: () => void; /** A flat tinted tile for dashboard mosaics. */ tile?: boolean }) {
+  if (tile) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn("group flex h-full w-full flex-col justify-between gap-4 rounded-card border-0 p-4 text-left font-sans transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none", toneFor(index))}
+      >
+        <span aria-hidden className="flex w-full items-start justify-between">
+          <span className="grid size-11 place-items-center rounded-control bg-surface"><SubjectIcon subject={`${course.name} ${course.subject}`} className="size-6" /></span>
+          <ArrowUpRight className="size-5" />
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <strong className="text-card-title leading-snug font-semibold text-ink">{course.name}</strong>
+          <span className="text-body">{course.section}</span>
+          <span className="text-body">{courseCode(course)} · Next class {course.next}</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <button
       type="button"

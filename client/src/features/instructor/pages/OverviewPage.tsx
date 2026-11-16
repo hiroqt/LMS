@@ -61,21 +61,21 @@ function Overview({ onNews }: { onNews: () => void }) {
   return (
     // A bento grid: tiles share one gutter and stretch to their row (D-026).
     <div className="flex flex-col gap-3 sm:gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 @7xl:grid-cols-[minmax(0,2fr)_minmax(0,4fr)]">
-        <section aria-labelledby="teaching-greeting" className="@container rounded-card border border-line bg-surface p-4 font-sans text-ink shadow-card sm:p-5">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
+        <section aria-labelledby="teaching-greeting" className="@container rounded-card bg-primary-700 p-5 font-sans text-white shadow-card @4xl:col-span-5 @7xl:col-span-4 sm:p-6">
           <div className="flex h-full flex-col justify-between gap-3 @lg:flex-row @lg:items-center">
             <div className="flex flex-col gap-1">
-              <h2 id="teaching-greeting" className="m-0 text-section font-bold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
-              <p className="m-0 text-body text-muted">
+              <h2 id="teaching-greeting" className="m-0 text-page-mobile font-bold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
+              <p className="m-0 text-body-lg text-primary-100">
                 {queue.length
                   ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
                   : "Your review queue is clear."}
               </p>
             </div>
-            <Button className="shrink-0 self-start @lg:self-center" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
+            <Button variant="secondary" className="shrink-0 self-start @lg:self-center" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
           </div>
         </section>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 @3xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 @4xl:col-span-7 @7xl:col-span-8 @7xl:grid-cols-4 sm:gap-4">
           <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
           <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
           <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
@@ -97,7 +97,7 @@ function Overview({ onNews }: { onNews: () => void }) {
             }
           >
             <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
-            <InstructorClassList store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
+            <InstructorClassList tile store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
           </Panel>
           <Panel
             id="needs-review"
@@ -120,7 +120,7 @@ function Overview({ onNews }: { onNews: () => void }) {
                         {(item.student?.firstName?.[0] ?? "A") + (item.student?.lastName?.[0] ?? "R")}
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <strong className="text-body font-semibold">{item.student?.firstName ?? "Alex"} {item.student?.lastName ?? "Rivera"}</strong>
+                        <strong className="text-card-title font-semibold">{item.student?.firstName ?? "Alex"} {item.student?.lastName ?? "Rivera"}</strong>
                         <span className="truncate text-body text-muted">{item.title} · {item.kind === "activity" ? "Assignment" : "Assessment"}</span>
                       </span>
                       <span className="text-body font-medium text-primary-700">Review</span>
@@ -136,6 +136,17 @@ function Overview({ onNews }: { onNews: () => void }) {
         <Panel id="month-review" icon={<CalendarDays />} title="Academic calendar">
           <p className="m-0 text-body text-muted">{formatMonth(new Date(now))} · {marks.filter((item) => item.kind === "event").length} academic dates · {marks.filter((item) => item.kind === "deadline").length} class deadlines</p>
           <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
+          <ul className="m-0 flex flex-1 list-none flex-col gap-2 p-0">
+            {marks.filter((item) => item.date.getTime() >= now - 24 * 60 * 60 * 1000).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 4).map((item) => (
+              <li key={item.id} className="flex items-center gap-3 rounded-control bg-canvas p-3">
+                <time dateTime={item.date.toISOString()} className="w-16 shrink-0 text-body font-semibold text-primary-700">{formatDay(item.date)}</time>
+                <span className="flex min-w-0 flex-col">
+                  <strong className="text-body font-semibold">{item.title}</strong>
+                  <span className="text-body text-muted">{item.kind === "deadline" ? "Class deadline" : "Academic date"}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
           <Button variant="secondary" className="mt-auto" onClick={onNews}><Megaphone aria-hidden className="size-4" />View announcements</Button>
         </Panel>
       </div>
