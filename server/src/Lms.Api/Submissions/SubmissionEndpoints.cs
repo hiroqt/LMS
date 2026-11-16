@@ -363,7 +363,7 @@ public static class SubmissionEndpoints
             showPoints ? a.PointsAwarded : null);
     }
 
-    private static async Task<List<SubmissionDto>> ToDtoAsync(LmsDbContext db, CourseworkRow cw, IReadOnlyList<Submission> rows, CancellationToken ct)
+    internal static async Task<List<SubmissionDto>> ToDtoAsync(LmsDbContext db, CourseworkRow cw, IReadOnlyList<Submission> rows, CancellationToken ct)
     {
         var ids = rows.Select(r => r.Id).ToList();
         var grades = await db.Grades.AsNoTracking().Where(g => ids.Contains(g.SubmissionId)).ToDictionaryAsync(g => g.SubmissionId, ct);
