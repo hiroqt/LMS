@@ -1,12 +1,11 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
-import { expect, test, type Page } from "./fixtures";
+import { API, expect, test, type Page } from "./fixtures";
 
-// /isms-link (D-030): the first server-backed page. The LMS API is not part of
-// this suite, so every request to it is mocked with page.route. The API is
-// cross-origin (http://localhost:5200 by default), so mocked responses carry
+// /isms-link (D-030): the first server-backed page. Its ISMS states (down,
+// unauthorised, …) cannot be produced by the Demo-mode API, so requests are mocked. The API is
+// cross-origin (the suite's Demo-mode API port), so mocked responses carry
 // the CORS header the real API must send too.
 
-const API = "http://localhost:5200";
 const syncedAt = "2026-10-23T08:30:00Z";
 const list = (items: unknown[]) => ({ items, source: "isms", syncedAt });
 
@@ -67,7 +66,7 @@ test.describe("ISMS connection (/isms-link)", () => {
     await expect(page.getByRole("heading", { level: 1, name: "ISMS connection" })).toBeVisible();
     const alert = page.getByRole("alert");
     await expect(alert).toContainText("The LMS API is not running");
-    await expect(alert).toContainText("No response from http://localhost:5200");
+    await expect(alert).toContainText(`No response from ${API}`);
     await expect(page.getByRole("button", { name: "Retry classes" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Retry subjects" })).toBeVisible();
     await expectNoAxeViolations(page);

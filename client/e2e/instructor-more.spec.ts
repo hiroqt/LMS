@@ -1,4 +1,4 @@
-import { expect, openRole, test, type Page } from "./fixtures";
+import { expect, openRole, test, type Page, seedHandedInAssignment } from "./fixtures";
 
 // Instructor journeys that FLOW_PARITY marked ✖, written against the classic
 // UI before Phase 3 rebuilds it. Letters refer to INSTRUCTOR_USER_FLOW.md.
@@ -17,29 +17,19 @@ async function createBlock(page: Page, note: string) {
 }
 
 /** Student submits an instructor-created exam so the instructor has something to review. */
-async function studentSubmitsExam(page: Page) {
-  await page.goto("/student");
-  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Tasks" }).click();
-  await page.getByRole("button", { name: /Long Quiz 01: Control Flow and Functions/ }).click();
-  await page.getByRole("button", { name: "Start assessment" }).click();
-  await page.getByRole("radiogroup", { name: "Choose an answer" }).getByRole("radio").first().click();
-  await page.getByRole("button", { name: "Submit assessment" }).click();
-  await page.getByRole("dialog", { name: "Submit this assessment?" }).getByRole("button", { name: /Submit now/ }).click();
-  await expect(page.getByText(/Assessment submitted/i)).toBeVisible();
-}
-
 test.describe("Instructor · review entry points (F)", () => {
-  test("a notification opens the pending submission in the class Submissions tab", async ({ page }) => {
-    await studentSubmitsExam(page);
+  // D-032: a multiple-choice exam is graded on submit, so a handed-in assignment is what waits.
+  test("a notification opens the pending submission in the class Submissions tab", async ({ page, sandbox }) => {
+    const { title } = await seedHandedInAssignment(page, sandbox);
     await openRole(page, "instructor");
     await page.getByRole("banner").getByRole("button", { name: /^Notifications/ }).click();
-    await page.getByRole("banner").getByRole("button", { name: /Long Quiz 01: Control Flow and Functions/ }).click();
+    await page.getByRole("banner").getByRole("button", { name: new RegExp(title) }).click();
     await expect(tab(page, /^Submissions/)).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("button", { name: "Save grade" })).toBeVisible();
   });
 
-  test("Review student work on Overview opens the review queue", async ({ page }) => {
-    await studentSubmitsExam(page);
+  test("Review student work on Overview opens the review queue", async ({ page, sandbox }) => {
+    await seedHandedInAssignment(page, sandbox);
     await openRole(page, "instructor");
     await expect(page.getByRole("main").getByText("Awaiting review")).toBeVisible();
     await page.getByRole("button", { name: "Review student work" }).click();
@@ -129,6 +119,8 @@ test.describe("Instructor · gradebook (G)", () => {
     await expect(activity).toHaveValue("40");
     await activity.fill("30");
     await page.getByRole("spinbutton", { name: "Exam weight" }).fill("70");
+    // Saved once the weights add up to 100 (D-032).
+    await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
     await page.reload();
     await page.getByRole("navigation", { name: "instructor navigation" }).getByRole("button", { name: "Gradebook" }).click();
     await expect(page.getByRole("spinbutton", { name: "Activity weight" })).toHaveValue("30");

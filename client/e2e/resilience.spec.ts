@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test, demoAssessment } from "./fixtures";
 
 // Phase 4: slow and lost connections, reduced motion, and forced colors.
 // Offline and Slow 3G need the production build (service worker, bundled
@@ -9,7 +9,9 @@ const preview = Boolean(process.env.E2E_PREVIEW);
 test.describe("Lost connection (production build)", () => {
   test.skip(!preview, "Needs the service worker from the production build (E2E_PREVIEW=1).");
 
-  test("after one visit, the rebuilt Student UI opens and works offline", async ({ page, context, browserName }) => {
+  // Changed with D-032: work is saved by the LMS API, so taking a quiz needs a connection until the
+  // persisted cache and outbox arrive (D-020). Offline, the cached app still opens and says why it waits.
+  test("after one visit, the Student UI opens offline and says it needs a connection", async ({ page, context, browserName }) => {
     test.skip(browserName !== "chromium", "Service worker control is only automated in Chromium.");
     await page.goto("/student");
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
@@ -21,19 +23,19 @@ test.describe("Lost connection (production build)", () => {
     });
 
     await context.setOffline(true);
-    await page.goto("/student/assessments/math-0/quiz");
-    await expect(page.getByRole("heading", { level: 1, name: /Quiz 02/ })).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "You’re offline." })).toBeVisible();
-    await page.getByRole("radiogroup", { name: "Choose an answer" }).getByRole("radio").first().click();
-    await expect(page.getByText("1 answered")).toBeVisible();
-
-    await page.reload();
-    await expect(page.getByRole("radiogroup", { name: "Choose an answer" }).getByRole("radio").first()).toHaveAttribute("aria-checked", "true");
+    await page.goto(`/student/assessments/${demoAssessment("math-0")}/quiz`);
+    await expect(page.getByRole("heading", { name: "You’re offline" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
     const poppins = await page.evaluate(async () => {
       await document.fonts.ready;
       return [...document.fonts].some((face) => face.family.replace(/"/g, "") === "Poppins" && face.status === "loaded");
     });
     expect(poppins, "Poppins is served from the cache offline").toBe(true);
+
+    // Back online, Try again loads the workspace without a reload.
+    await context.setOffline(false);
+    await page.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: /Quiz 02/ })).toBeVisible();
   });
 
   test("on Slow 3G the first visit shows content within 10 seconds", async ({ page, browserName }) => {

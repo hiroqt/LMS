@@ -1,5 +1,5 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
-import { expect, test, type Page } from "./fixtures";
+import { expect, test, type Page, seedHandedInAssignment } from "./fixtures";
 
 // The rebuilt Instructor UI (Phase 3): strict accessibility on every screen and
 // tab, a 320px sweep, and behavior new in the rebuild. Flow parity itself is
@@ -105,23 +105,17 @@ test.describe("Rebuilt Instructor behavior", () => {
     await expect(page.getByText("5 / 120 characters")).toBeVisible();
   });
 
-  test("a review link opens the submission ready to grade, with the auto-score suggested", async ({ page }) => {
-    await page.goto("/student");
-    await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Tasks" }).click();
-    await page.getByRole("button", { name: /Long Quiz 01: Control Flow and Functions/ }).click();
-    await page.getByRole("button", { name: "Start assessment" }).click();
-    await page.getByRole("button", { name: "Submit assessment" }).click();
-    await page.getByRole("button", { name: /Submit now/ }).click();
-
+  // D-032: review links carry the submission's id; a handed-in assignment waits for a grade.
+  test("a review link opens the submission ready to grade and keeps the score in range", async ({ page, sandbox }) => {
+    const { submissionId, title } = await seedHandedInAssignment(page, sandbox);
     await useNewInstructorUi(page);
-    await page.goto(`${CLASS}?tab=Submissions&review=biology-1`);
-    await expect(page.getByRole("heading", { name: "Long Quiz 01: Control Flow and Functions" })).toBeVisible();
-    await expect(page.getByText(/Auto-score: 0 \/ 10 correct/)).toBeVisible();
-    await expect(page.getByRole("spinbutton", { name: /Score/ })).toHaveValue("0");
-    await page.getByRole("spinbutton", { name: /Score/ }).fill("41");
+    await page.goto(`${CLASS}?tab=Submissions&review=${submissionId}`);
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    await expect(page.getByText("loops.pdf")).toBeVisible();
+    await page.getByRole("spinbutton", { name: /Score/ }).fill("11");
     await page.getByRole("button", { name: "Save grade" }).click();
-    await expect(page.getByText("Enter a score from 0 to 40.")).toBeVisible();
-    await page.getByRole("spinbutton", { name: /Score/ }).fill("40");
+    await expect(page.getByText("Enter a score from 0 to 10.")).toBeVisible();
+    await page.getByRole("spinbutton", { name: /Score/ }).fill("10");
     await page.getByRole("button", { name: "Save grade" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Grade saved" })).toBeVisible();
     await expect(tab(page, /^Submissions\s?0/)).toBeVisible();
