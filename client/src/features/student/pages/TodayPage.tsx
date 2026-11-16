@@ -1,7 +1,7 @@
 import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, Layers, ListChecks, Megaphone, Newspaper, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { SectionHeading } from "../../../shared/components/SectionHeading";
+import { Panel } from "../../../shared/components/Panel";
 import { StatCard } from "../../../shared/components/StatCard";
 import { ViewToggle } from "../../../shared/components/ViewToggle";
 import { useClassView } from "../../../shared/hooks/useClassView";
@@ -61,16 +61,6 @@ function NewDesignIntro() {
   );
 }
 
-/** A titled dashboard panel with an icon heading and a "View all" link. */
-function Panel({ id, icon, title, action, children }: { id: string; icon: ReactNode; title: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section aria-labelledby={id} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 shadow-card sm:p-5">
-      <SectionHeading id={id} icon={icon} title={title} action={action} />
-      {children}
-    </section>
-  );
-}
-
 function ViewAll({ label = "View all", onClick }: { label?: string; onClick: () => void }) {
   return <Button variant="ghost" className="-mr-2 shrink-0 px-2 text-primary-700" onClick={onClick}>{label}<ArrowRight aria-hidden className="size-4" /></Button>;
 }
@@ -85,20 +75,20 @@ function DuePill({ item, now }: { item: Assessment; now: number }) {
 
 const TILES = ["bg-accent-100 text-accent-700", "bg-info-soft text-info", "bg-success-soft text-success", "bg-primary-100 text-primary-700"];
 
-function TasksPanel({ catalog, completed, now }: { catalog: StudentCatalog; completed: string[]; now: number }) {
+function TasksPanel({ catalog, completed, now, className }: { catalog: StudentCatalog; completed: string[]; now: number; className?: string }) {
   const navigate = useNavigate();
   const items = dueSoon(catalog.assessments, completed, now, 4);
   const index = (id: string) => Math.max(catalog.courses.findIndex((entry) => entry.id === id), 0);
   return (
-    <Panel id="tasks-panel" icon={<ListChecks />} title="Tasks & Assessments" action={<ViewAll onClick={() => navigate(studentPaths.tasks())} />}>
+    <Panel id="tasks-panel" className={className} icon={<ListChecks />} title="Tasks & Assessments" action={<ViewAll onClick={() => navigate(studentPaths.tasks())} />}>
       {items.length ? (
-        <ul className="m-0 flex list-none flex-col divide-y divide-line p-0">
+        <ul className="m-0 flex flex-1 list-none flex-col divide-y divide-line p-0">
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="flex flex-1">
               <button
                 type="button"
                 onClick={() => navigate(studentPaths.assessment(item.id))}
-                className="flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent px-1 py-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus sm:gap-4"
+                className="flex min-h-touch w-full flex-1 items-center gap-3 rounded-control border-0 bg-transparent px-1 py-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus sm:gap-4"
               >
                 <span aria-hidden className={cn("grid size-11 shrink-0 place-items-center rounded-control", TILES[index(item.courseId) % TILES.length])}>
                   <AssessmentTypeIcon type={item.type} className="size-5" />
@@ -133,7 +123,7 @@ function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; c
   return (
     <Panel id="calendar-panel" icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
       {entries.length ? (
-        <ol className="m-0 flex list-none flex-col p-0">
+        <ol className="m-0 flex flex-1 list-none flex-col justify-between p-0">
           {entries.map((entry, position) => {
             const body = (
               <>
@@ -167,13 +157,13 @@ function CalendarPanel({ catalog, completed, now }: { catalog: StudentCatalog; c
   );
 }
 
-function AnnouncementsPanel({ catalog, now }: { catalog: StudentCatalog; now: number }) {
+function AnnouncementsPanel({ catalog, now, className }: { catalog: StudentCatalog; now: number; className?: string }) {
   const navigate = useNavigate();
   const latest = catalog.announcements[0];
   const featured = featuredSlides(catalog.featured, catalog.academicEvents, now)[0];
   const courseName = (id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
   return (
-    <Panel id="announcements-panel" icon={<Megaphone />} title="Announcements" action={<ViewAll onClick={() => navigate(studentPaths.news)} />}>
+    <Panel id="announcements-panel" className={className} icon={<Megaphone />} title="Announcements" action={<ViewAll onClick={() => navigate(studentPaths.news)} />}>
       {latest || featured ? (
         <article className="flex items-start gap-3">
           <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-control bg-primary-100 text-primary-700"><Newspaper className="size-5" /></span>
@@ -201,54 +191,54 @@ export default function TodayPage() {
   const [classView, setClassView] = useClassView();
 
   return (
-    <>
-      <header className="relative flex flex-col gap-5">
-        <div className="relative flex max-w-2xl flex-col gap-1.5">
+    // A bento grid: every tile shares one gutter and stretches to its row, so
+    // rows end on the same line at every width (D-026).
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)]">
+        <header className="flex flex-col justify-center gap-1 rounded-card border border-line bg-surface p-4 shadow-card sm:p-5">
           <p className="m-0 text-body text-muted">
             {formatFullDate(now)}
             {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
           </p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-page">
             {greeting(now)}, {STUDENT.firstName}
           </h1>
-        </div>
-        <ul className="relative m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3">
-          <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" /></li>
-          <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
-          <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
+        </header>
+        <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-4">
+          <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" shortLabel="Classes" /></li>
+          <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" shortLabel="Due soon" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
+          <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" shortLabel="Done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
         </ul>
-      </header>
+      </div>
 
       <NewDesignIntro />
 
-      <div className="grid grid-cols-1 gap-5 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-6">
-        {/* With enough room, tasks and classes sit side by side and the page has three columns. */}
-        <div className="flex min-w-0 flex-col gap-5 @7xl:grid @7xl:grid-cols-2 @7xl:items-start lg:gap-6">
-          <TasksPanel catalog={catalog} completed={completed} now={now} />
-          <section aria-labelledby="my-classes" className="flex flex-col gap-3">
-            <SectionHeading
-              id="my-classes"
-              icon={<Layers />}
-              title="My Classes"
-              action={
-                <div className="flex flex-wrap items-center gap-2">
-                  <ViewToggle view={classView} onChange={setClassView} />
-                  <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
-                </div>
-              }
-            />
-            {courses.length ? (
-              <ClassList courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
-            ) : (
-              <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
-            )}
-          </section>
-        </div>
-        <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
-          <CalendarPanel catalog={catalog} completed={completed} now={now} />
-          <AnnouncementsPanel catalog={catalog} now={now} />
-        </div>
+      {/* Reading order: tasks, calendar, classes, announcements. Two columns put the
+          class cards and the announcement in full-width rows; three columns stack the
+          calendar over the announcement between tasks and classes. */}
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-3 @7xl:grid-rows-[1fr_auto]">
+        <TasksPanel className="@7xl:row-span-2" catalog={catalog} completed={completed} now={now} />
+        <CalendarPanel catalog={catalog} completed={completed} now={now} />
+        <Panel
+          id="my-classes"
+          className="@4xl:col-span-2 @7xl:col-span-1 @7xl:row-span-2"
+          icon={<Layers />}
+          title="My Classes"
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <ViewToggle view={classView} onChange={setClassView} />
+              <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
+            </div>
+          }
+        >
+          {courses.length ? (
+            <ClassList fill courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
+          ) : (
+            <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
+          )}
+        </Panel>
+        <AnnouncementsPanel className="@4xl:col-span-2 @7xl:col-span-1" catalog={catalog} now={now} />
       </div>
-    </>
+    </div>
   );
 }

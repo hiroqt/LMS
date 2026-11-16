@@ -28,15 +28,13 @@ export function InstructorClassList({ store, rooms, view, onOpen }: { store: Rol
     );
   }
   return (
-    // Columns follow the width of the list itself, wherever it is placed.
-    <div className="@container">
-    <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 @xl:grid-cols-2 @4xl:grid-cols-3 @7xl:grid-cols-4">
+    // As many columns as fit; cards share the row evenly, so no cell is left empty beside them.
+    <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))] gap-3 p-0">
       {rows.map(({ room, title, mark, students, coursework }, index) => (
         <li key={room.id}>
           <InstructorClassCard title={title} section={room.section} mark={mark} term={room.term} index={index} students={students} coursework={coursework} onOpen={() => onOpen(room)} />
         </li>
       ))}
     </ul>
-    </div>
   );
 }
