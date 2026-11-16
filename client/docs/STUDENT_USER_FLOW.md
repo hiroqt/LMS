@@ -20,7 +20,7 @@ flowchart TD
     C -->|My classes| CL[Choose a class]
     C -->|Search| S[Search classes, assessments, and materials]
     C -->|Notifications bell| NO[Open upcoming assessment reminder]
-    C -->|Profile menu| P[Choose Reset demo data]
+    C -->|Today| P[Choose the demo student to view]
     C -->|Due this week summary| TW[Tasks: Due this week selected]
     C -->|Assessment done summary| TD[Tasks: Done selected]
     C -->|Week activities summary| CAL
@@ -60,7 +60,7 @@ flowchart TD
 
     AD[Assessment details] -->|Back to classwork| CW
     AD -->|Start assessment or practice again| Q[Timed question flow]
-    Q --> Q1[Choose an answer; it saves in this browser]
+    Q --> Q1[Choose an answer; it saves to the class record]
     Q1 -->|Previous, next, or question list| Q
     Q1 -->|Timer expires| Q2[Advance to next question]
     Q1 -->|Submit assessment| CONF{Confirm submission}
@@ -85,12 +85,12 @@ flowchart TD
 - The **academic calendar** is opened from the top bar or the dashboard. Assessment entries lead to assessment details; school events are informational entries.
 - **Tasks** groups assessments by due status. Selecting an assessment opens the same details view as calendar, notifications, search, and classwork.
 - A **class** opens on Stream. Its tabs provide Stream, Classwork, Materials, and People. Assessment and material detail back buttons return to their matching class tab.
-- During an assessment, each question has its own 60-second timer. Answers save to browser localStorage as the student works. Timeouts advance automatically; the final timeout submits. Manual submission asks for confirmation before showing the result.
-- Assessment completion and answers persist in this browser. Material review state lasts only for the current app session. Reset demo data clears the saved assessment progress and returns to Today.
+- Starting an assessment starts, or resumes, an attempt on the LMS API, which sends the questions without their answers. Each question has its own 60-second timer in the browser; the server enforces the exam's overall time limit and attempt limit. Answers save to the server as the student works. Timeouts advance automatically; the final timeout submits. Manual submission asks for confirmation before showing the result.
+- The server scores multiple-choice and true/false answers on submit; the result shows the score and which questions were right without revealing the correct options. Work handed in and grades are stored by the LMS API (D-032). Material review state lasts only for the current app session. Today's "Choose demo student" switches which student the workspace shows; this is a demo identity, not a sign-in.
 
 ## Prototype boundaries
 
-There is no authentication, server save, or cross-device sync. “Submit” records a local demo completion and displays a locally calculated result; instructor-created exams and saved instructor feedback are shared through browser storage. The academic calendar and class content are sample data, not an official TMCC schedule.
+There is no sign-in yet: the student is a demo identity chosen on Today, which the LMS API accepts only in Development and Demo mode. Work, attempts and grades are saved by the LMS API; attachments are file names only. The academic calendar is sample data, not an official TMCC schedule.
 
 ## Since the rebuild (2026-11-17)
 

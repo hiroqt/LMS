@@ -112,12 +112,12 @@ flowchart TD
     I2 --> F4
     F4 --> REVIEW[Choose a pending submission for this class]
     REVIEW -->|Assignment| ACTREVIEW[Review student text and supplied attachment filename]
-    REVIEW -->|Assessment| EXREVIEW[Review stored Student answers and local auto-score]
+    REVIEW -->|Assessment with essays| EXREVIEW[Review the server-scored attempt and score each essay]
     ACTREVIEW --> SCORE[Enter final score and optional feedback]
     EXREVIEW --> SCORE
     SCORE --> VALID{Score from 0 through maximum?}
     VALID -->|No| SCORE
-    VALID -->|Yes · Save grade| SAVEGRADE[Save grade and optional feedback to shared browser data]
+    VALID -->|Yes · Save grade| SAVEGRADE[Save grade and optional feedback through the LMS API]
     SAVEGRADE --> GRADED[Submission becomes graded and leaves pending queue]
     GRADED --> J1((J))
     J1 --> RESULT[Matching Student work detail shows the saved score and feedback]
@@ -151,18 +151,18 @@ flowchart TD
 - **Shared top bar:** search matches up to six displayed results from assigned classes, instructor materials, and assessments. A class result selects that class and opens Stream. A material or assessment result only changes to the Classes view; it does not open the specific result. Notifications contain up to five pending submissions and open the selected review. Breadcrumb home returns to Overview; the role switch navigates to Student, Instructor, or Admin.
 - **Classes:** year-level filters are also available on the Classes page, which shows a chooser for the visible classrooms. The class header includes the subject, section, term, enrolled count, and enrollment code. Stream shows a static welcome post, up to three work updates, up to two material updates, up to four upcoming due items, and the About panel. Stream links into Classwork, Materials, or Create content.
 - **Class tabs:** Classwork searches the selected class's assignment and assessment rows, and filters All, Assignments, and Assessments; rows show due date, points, and published status. People searches active enrolled student names and email addresses. Materials shows class resources. Announcements lists active class notices and provides a required title/message composer. Submissions lists only pending items for the selected class. Create content groups existing Materials, Assignments, and Assessments and shows their counts.
-- **Classes from ISMS:** when the LMS API is reachable, the workspace reads the classes of the term ISMS flags as current and copies them into the browser role store: the instructor, the subject, the class (section, schedule, term), and, for the instructor being viewed, the class list as active enrollments. Copied records carry an `isms-` id and `source: "isms"`; demo and locally created records are untouched. A class seen for the first time gets a starter module and default gradebook settings (40% activity, 60% exam, 60 passing score). A class ISMS stops offering is hidden with its content kept, and a student ISMS stops listing is unenrolled. Modules, materials, assignments, assessments, announcements, and grades stay LMS-owned. When the API cannot be reached, the Classes page says so and shows the classes already saved in the browser. ISMS classes have no class code. Opening a class link views the instructor who teaches that class.
+- **Classes from ISMS:** the LMS API syncs the current term's ISMS classes and class lists into its database; the workspace shows the classes of the instructor being viewed ("Choose demo instructor" on Overview, a demo identity, not a sign-in). A class seen for the first time gets a starter module and default gradebook settings (40% activity, 60% exam, 60 passing score). A class ISMS stops offering becomes read-only with its content kept. Modules, materials, assignments, assessments, announcements, and grades are LMS-owned and stored by the LMS API (D-032). ISMS classes have no class code.
 - **Create content:** the forms require a title and module. Materials additionally have one of four resource types (Study guide, Reading, Video, Practice set) and an optional description. Assignments also support instructions, due date, points, accept-late-work, and allow-resubmission. Assessments support instructions, due date, points, time limit (0 means none), one required question, four required answer choices, and one correct answer. The current instructor form creates one multiple-choice question.
 - **Announcements:** posting requires a nonblank title and message (maximum 120 and 1,200 characters). Saving associates the notice with the selected class and instructor and timestamps it. It appears in the instructor News list and the connected Student class Stream. Cancel closes the composer.
-- **Submissions and grading:** the overview hero, review list, notification menu, and class Submissions tab enter the same review flow. Assignment records in the browser role store include the submitted text and an optional attachment filename; no file is uploaded. Assessment attempts are assembled from the Student progress key and instructor exam data, then locally auto-scored from saved answers. The instructor enters a required final score between zero and the item's maximum and may add feedback. Saving updates the activity or exam submission in the shared role store and removes it from the pending queue. The score and feedback appear in the matching Student work detail after the Student workspace reloads. Already-graded exams are omitted from the pending queue.
-- **Gradebook:** select an active classroom and edit category weights and passing score. The panel reports graded counts and averages for activities and exams. It does not display a per-student weighted report, and the numeric controls do not enforce that weights total 100.
+- **Submissions and grading:** the overview hero, review list, notification menu, and class Submissions tab enter the same review flow. It holds handed-in assignments without a grade, and exam attempts with essays. Multiple-choice and true/false exams are graded by the server on submit, so they never wait for review. Assignments show the student's note and attachment file name; no file is uploaded. An exam review shows the server's points for each question and asks for points on each essay.
+- **Gradebook:** select an active classroom and edit category weights and passing score. Changes save once the activity and exam weights add up to 100 (Saving…/Saved); until then a warning says so. The panel reports graded counts and averages for activities and exams.
 
 ## Completion and prototype limits
 
-- ISMS classes are copied into browser storage, not a server database, so LMS work added to them still lives in one browser until the LMS database arrives. Admin can still create demo subjects and classrooms; those are local demo records, not ISMS records.
-- Announcement completion means the notice is stored locally and shown in the instructor News view and Student class Stream. Material, assignment, and assessment records are shared through browser-local role data and appear in their related class views.
+- Classes come from ISMS through the LMS API. Admin can still create demo subjects and classrooms in its browser-local demo data; those do not reach the Instructor or Student workspaces.
+- Announcement completion means the notice is stored by the LMS API and shown in the instructor News view and the Student class Stream.
 - A grade is complete when a valid score is saved. The submission is marked graded and removed from the pending queue. The Student sees the score and optional feedback in the matching work detail after returning to or refreshing the Student workspace; there is no standalone Student Grades page.
-- There is no authentication, server persistence, real file upload, cross-device sync, or protected instructor authorization. Student progress and role data use separate browser storage keys; exam review reads completed Student answers and stores the final grade in role data. Demo class codes, attachment names, submissions, and scores are not official records.
+- There is no sign-in yet (the instructor is a demo identity), no real file upload, and no class codes. The LMS API enforces who may see and change each class.
 
 ## Since the rebuild (2026-11-17)
 
@@ -171,8 +171,8 @@ The journeys above are unchanged and are verified by `e2e/instructor-flow.spec.t
 - **Every screen, tab, open form, and selected submission has a URL**, so notifications and "Review" open straight into grading.
 - **Search results open the matching class tab** (Materials or Classwork) instead of only the Classes view (D-017).
 - **Deleting a material asks first** in a dialog that names it. Forms and the announcement composer explain missing fields inline and show character counts.
-- **Grading** starts exam scores at the auto-score suggestion and shows per-question results; assignment scores start empty. Saving confirms with a message.
-- **Gradebook** notes (without blocking) when the weights do not add up to 100%, and its averages are correct (the classic page showed NaN% for graded assignments).
+- **Grading** shows the server's points per question for exams with essays and asks for each essay's points; assignment scores start empty. Saving confirms with a message.
+- **Gradebook** warns when the weights do not add up to 100% and saves only once they do (D-032); its averages are correct (the classic page showed NaN% for graded assignments).
 - The class header shows the **class code with a copy button**.
 - **Phones:** the drawer holds navigation and the class list and closes on any choice; search opens in a sheet.
 

@@ -22,7 +22,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | S, S1 | Search → class | ✔ `student-flow` C → S | ✅ |
 | S1 | Search → assessment / material | ✔ `shell` S1 | ✅ |
 | NO | Notification → assessment | ✔ `shell` NO | ✅ |
-| P | Profile → Reset demo data | ✔ `shell` P | ✅ |
+| P | Profile names the viewed student; Today switches student (D-032; Reset demo data removed) | ✔ `shell` P | ✅ |
 | ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | ✅ |
 | T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | ✅ |
 | T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | ✅ |
@@ -121,3 +121,14 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | No sideways scroll at 320px | ✔ `isms-link` `@mobile` |
 | Instructor Classes page names ISMS as the source; no Create class; zero axe violations | ✔ `instructor-isms` `@all` (API mocked) |
 | Against the real LMS API | ✖ manual, once `../server` is running |
+
+## Server-backed workspaces (D-032)
+
+| Check | Spec |
+| --- | --- |
+| Every Student and Instructor journey runs against the LMS API in Demo mode, one database per test | ✔ all specs (`playwright.config.ts`, `e2e/fixtures.ts`) |
+| Instructor publishes → student hands in → instructor grades → student sees feedback, all through the API | ✔ `instructor-flow` E → I → F → J |
+| A handed-in assignment reaches notifications, the Overview review button, and a review link | ✔ `instructor-more`, `instructor-new` |
+| Gradebook saves once the weights add up to 100 | ✔ `instructor-more` SETTINGS, `instructor-new` |
+| An exam's grade shows on the exam page and the result (D-015) | ✔ `student-new` |
+| Overview mapping: completed work, best exam attempt, archived content, review queue | ✔ `catalog.test.ts`, `store.test.ts` |

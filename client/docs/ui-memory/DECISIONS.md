@@ -311,3 +311,27 @@ the workspace keeps working on what the browser already has and the Classes page
 Admin can still create demo subjects and classrooms (Admin is out of scope). `e2e/fixtures.ts`
 refuses the LMS API origin by default so a developer's running API cannot change a journey;
 specs that need ISMS data mock it. A class link now opens under the instructor who teaches it.
+
+### D-032 · Student and Instructor read and write through the LMS API
+`2026-11-17` · hiro (Phase 2, steps 5–6) · scope: student, instructor, shared/api, e2e · confidence: medium
+Both workspaces now load one overview per person (`GET /api/me/overview`) and send every
+change to the LMS API, which checks who may do what, validates, scores exams, and audits.
+The screens kept their shapes: `features/instructor/api/store.ts` and
+`features/student/api/catalog.ts` map the overview into the store and catalog the screens
+already used. Browser storage is no longer a source for these roles (the progress key and the
+browser-side ISMS copy of D-031 are gone); Admin keeps its browser-local demo data.
+Until sign-in (Phase 4) the person is a **demo identity**, not authentication: the client sends
+`X-Demo-User-Id`/`X-Demo-Role` (`shared/api/viewer.ts`), chosen with "Choose demo instructor"
+(Overview) or "Choose demo student" (Today) and remembered for the tab; the API accepts it only
+in Development and Demo mode. Journeys that changed, with their specs: P (Reset demo data is
+gone; the profile names the viewed student and Today switches student, `shell`); multiple-choice
+exams are graded on submit, so the review queue holds handed-in assignments and attempts with
+essays (`instructor-more`, `instructor-new`); gradebook weights save only once they add up to 100
+and show Saving…/Saved; review links and assessment/material URLs carry database ids; the exam
+grade region is "Your grade" (D-015). Work with no due date reads "No due date" instead of an
+invented date. The browser tests run against the API in Demo mode (`playwright.config.ts`): a
+fictional seed exported from `data.js`, one database per test (`X-Demo-Sandbox`), Asia/Manila,
+and the API clock pinned to the fixtures' date; `e2e/fixtures.ts` turns old demo keys into ids.
+**Known regression:** a student can no longer take a quiz offline; the cached app opens and says
+it needs a connection (`resilience`). Offline work returns with the persisted cache and outbox (D-020).
+Admin now loads lazily like the other workspaces (L-047).
