@@ -212,6 +212,47 @@ An exam is worth the total points of its questionnaire and cannot be published w
 questions. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
 questions or answers from these routes; they get questions when they start an attempt (step 4).
 
+## Submissions and grading (Phase 2, step 4)
+
+Every rule is checked by the server: when work is available, due dates and late work, attempt
+limits, the exam time limit, and scoring. Correct answers reach only the class's instructor.
+
+**Exams (students).** `POST …/coursework/{id}/attempts` starts an attempt, or returns the open one
+(so a reload resumes it). The response holds the questions without answers: choices for multiple
+choice and true/false, how many items an enumeration expects, and for matching the left items with
+the right-hand items in alphabetical order. Answers are saved with `PUT …/attempts/{attemptId}/answers`
+and the attempt is handed in with `POST …/attempts/{attemptId}/submit` (answers may be sent with it).
+
+| Rule | Behaviour |
+|---|---|
+| Attempts | `maxAttempts` (1 when not set); 409 once used |
+| Due date | Starting or handing in after `dueAt` is refused unless `allowLate` |
+| Time limit | Saving stops at start + `timeLimitMinutes` (or the due date, when late work is not allowed), plus 60 seconds' grace; a later submit records the saved answers only |
+| Per-question time limits | Stored and sent to the client, but not enforced by the server yet |
+
+**Scoring.** Multiple choice and true/false are all or nothing. Enumeration ignores case, spacing
+and order and gives points in proportion to the expected answers given. Matching gives points in
+proportion to correct pairs. Essays wait for the instructor. An exam with no essays is graded on
+submit (`graded_by` = `auto`). Points are rounded to two decimals.
+
+**Assignments (students).** `POST …/coursework/{id}/submissions` with `{ text?, fileName? }` (file name
+only). A second hand-in needs `allowResubmission`. `late` is true when handed in after the due date.
+`GET …/coursework/{id}/my-submissions` lists the student's own work with score and feedback.
+
+**Grading (the class's instructor, also after ISMS stops offering the class).**
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `…/coursework/{id}/submissions` | Every attempt, plus `missing`: students on the class list who have handed nothing in |
+| GET | `…/coursework/{id}/submissions/{submissionId}` | The attempt with the correct answers beside the student's |
+| PUT | `…/coursework/{id}/submissions/{submissionId}/grade` | Assignments `{ points, feedback? }`. Exams `{ answerPoints: { questionId: points }, feedback? }`; every written essay needs points, and the score is the sum of all answers |
+| GET | `/api/classes/{classId}/gradebook` | Weights and each student's averages; a student sees only their own row |
+| PUT | `/api/classes/{classId}/gradebook` | `{ activityWeight, examWeight, passingScore }`; the weights must add up to 100 |
+
+Gradebook rules are the prototype's: graded work only, the latest graded assignment submission,
+the highest graded exam attempt, and an overall only once every weighted category has a grade.
+Phase 3 replaces the two fixed categories with teacher-defined grade components.
+
 ## Caching
 
 `IIsmsCatalog` is the LMS's read-side copy of ISMS data. Today it is `MemoryIsmsCatalog`, which is
@@ -222,4 +263,4 @@ later without changing the endpoints.
 ## Not in this slice
 
 - Real sign-in. Content routes use the demo identity above; the ISMS, status and diagnostic routes are anonymous.
-- Submissions, exam attempts and grading (Phase 2 step 4). The client does not use the content endpoints yet (steps 5 and 6).
+- The client does not use the content, coursework or submission endpoints yet (steps 5 and 6).
