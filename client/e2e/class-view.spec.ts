@@ -78,3 +78,24 @@ test.describe("Collapsible sidebar", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Introduction to Programming" })).toBeVisible();
   });
 });
+
+test.describe("Adaptive layout (D-025)", () => {
+  test("the page fills the area beside the sidebar and gains columns with room", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await openRole(page, "student");
+    const main = page.getByRole("main");
+    const sidebar = page.getByRole("complementary", { name: "Workspace" });
+    const width = async (target: typeof main) => (await target.boundingBox())?.width ?? 0;
+    expect(await width(main)).toBeGreaterThanOrEqual(1920 - (await width(sidebar)) - 1);
+
+    // Wide: tasks, classes, and calendar share one row.
+    const top = async (name: string) => (await page.getByRole("heading", { name }).boundingBox())?.y ?? 0;
+    expect(Math.abs((await top("Tasks & Assessments")) - (await top("Academic Calendar")))).toBeLessThan(60);
+    expect(Math.abs((await top("My Classes")) - (await top("Academic Calendar")))).toBeLessThan(60);
+
+    // Narrow window: the same panels stack instead of squeezing.
+    await page.setViewportSize({ width: 1024, height: 768 });
+    expect((await top("Academic Calendar")) - (await top("Tasks & Assessments"))).toBeGreaterThan(200);
+    await expectNoAxeViolations(page);
+  });
+});
