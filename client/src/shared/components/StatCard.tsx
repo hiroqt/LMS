@@ -17,7 +17,7 @@ export function StatCard({ icon, tone, value, label, onOpen }: StatCardProps) {
       <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-control sm:size-12 [&>svg]:size-5 sm:[&>svg]:size-6", tone)}>{icon}</span>
       <span className="flex w-full min-w-0 flex-col">
         <strong className="text-page-mobile leading-tight font-bold tabular-nums">{value}</strong>
-        <span className="text-body break-words text-muted lg:whitespace-nowrap">{label}</span>
+        <span className="text-body break-words text-muted">{label}</span>
       </span>
     </>
   );
