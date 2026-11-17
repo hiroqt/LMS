@@ -5,8 +5,8 @@ import { expire, goTo, msLeft, secondsLeft, startClock, type QuizClock } from ".
  * Drives the quiz timers. `onTimeUp` is called once when the last question's
  * time runs out; earlier expiries advance to the next question by themselves.
  */
-export function useQuizSession(questionCount: number, onTimeUp: () => void) {
-  const [clock, setClock] = useState<QuizClock>(() => startClock(questionCount, Date.now()));
+export function useQuizSession(questionSeconds: number[], onTimeUp: () => void) {
+  const [clock, setClock] = useState<QuizClock>(() => startClock(questionSeconds, Date.now()));
   const [now, setNow] = useState(Date.now);
   const submitted = useRef(false);
   const timeUp = useRef(onTimeUp);

@@ -1,4 +1,5 @@
-import { ListChecks, Lock } from "lucide-react";
+import { FileUp, ListChecks, Lock } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { describeApiError } from "../../../shared/api/http";
 import { PageHeader } from "../../../shared/layout/PageHeader";
@@ -7,8 +8,10 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
-import { setFacts, useQuestionSets } from "../api/questionSets";
+import { setFacts, useQuestionSets, type ImportResult } from "../api/questionSets";
 import { QuestionSetUses } from "../components/QuestionSetUses";
+import { ImportDialog } from "../components/questionEditor/ImportDialog";
+import { SaveImportDialog } from "../components/questionEditor/SaveImportDialog";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { instructorPaths } from "../paths";
 import { subjectLabel, subjectLabels } from "./questionSetUtils";
@@ -20,11 +23,23 @@ export default function QuestionSetsPage() {
   const sets = useQuestionSets();
   const labels = subjectLabels(store, rooms);
   const count = sets.data?.length;
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<ImportResult | null>(null);
   const header = (
-    <PageHeader
-      title="Question sets"
-      description={count === undefined ? "Questions you can reuse in exams for the same subject." : `${count} ${count === 1 ? "set" : "sets"}. A set can back exams in any of your classes for its subject.`}
-    />
+    <>
+      <PageHeader
+        title="Question sets"
+        description={count === undefined ? "Questions you can reuse in exams for the same subject." : `${count} ${count === 1 ? "set" : "sets"}. A set can back exams in any of your classes for its subject.`}
+        actions={<Button variant="secondary" icon={<FileUp aria-hidden className="size-4" />} onClick={() => setImporting(true)}>Import questions</Button>}
+      />
+      <ImportDialog open={importing} onOpenChange={setImporting} onImported={setImported} />
+      <SaveImportDialog
+        result={imported}
+        subjects={labels}
+        onClose={() => setImported(null)}
+        onCreated={(id) => navigate(instructorPaths.questionSet(id))}
+      />
+    </>
   );
 
   if (sets.isPending) {

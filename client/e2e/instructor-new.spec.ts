@@ -91,11 +91,15 @@ test.describe("Rebuilt Instructor behavior", () => {
 
   test("forms explain what is missing instead of failing silently", async ({ page }) => {
     await useNewInstructorUi(page);
+    // D-040: the old ?create=exam link opens the assessment builder.
     await page.goto(`${CLASS}?tab=Create+content&create=exam`);
-    await page.getByRole("button", { name: "Save and publish" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "New assessment" })).toBeVisible();
+    await page.getByRole("button", { name: "Publish" }).click();
     await expect(page.getByText("Enter a title.")).toBeVisible();
-    await expect(page.getByText("Enter the question.")).toBeVisible();
     await expect(page.getByRole("textbox", { name: /^Assessment title/ })).toHaveAttribute("aria-invalid", "true");
+    await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Quiz");
+    await page.getByRole("button", { name: "Publish" }).click();
+    await expect(page.getByText("Add at least one question before publishing.")).toBeVisible();
 
     await page.goto(`${CLASS}?tab=Announcements`);
     await page.getByRole("button", { name: "New announcement" }).click();

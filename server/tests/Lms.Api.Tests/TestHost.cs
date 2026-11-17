@@ -74,6 +74,8 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
         ["ConnectionStrings:LmsDb"] = "unused-in-tests",
         // Tests run the sync themselves, so the background worker stays off.
         ["Lms:Sync:Enabled"] = "false",
+        // Retention tests call AttemptRetention directly.
+        ["Lms:Retention:Enabled"] = "false",
         // Content endpoints need a "viewing as" identity; Development turns this on.
         ["Lms:DemoIdentity:Enabled"] = "true",
     };

@@ -307,3 +307,55 @@ All endpoints in this section are for the class's instructor only.
   - Scores, points, and grades stay.
 - This runs as a daily background job in the API; Demo mode leaves it off. Admin's browser-local
   Settings shows the value read-only until Admin moves to the API.
+
+## 8. Settled during the build (2026-11-17)
+
+Where the build differs from or adds to the sections above, this section wins. Full lists are in
+PRs #47–#51.
+
+- **Status codes:** validation refusals keep the API's existing `400` response with `errors`
+  (fields as named above). Only import refusals are `422`.
+- **Incomplete sets:** `allowIncomplete` still refuses anything that breaks the storage limits:
+  - lengths over the limit (prompt 4,000; choice, answer, or underlined phrase 1,000);
+  - counts over the maximum (10 choices, 10 or 20 answers, 20 pairs, 50 sections);
+  - `timeLimitSeconds` outside 0–3600.
+- **Matching pairs** in the instructor `QuestionDto` and `SubmissionDetail` are
+  `{ leftId, left, right }`. A copied set gets new left ids.
+- **`SubmissionDetail` answers** carry `text` (identification, modified true or false, essay),
+  `items`, `matches`, `matchNote`, and `decision`.
+- **Answer-key entries:** a modified true or false entry may send `correctAnswer` and
+  `expectedAnswers` together.
+- **Point overrides:** `answerPoints` on a waiting `review` answer settles it (decision
+  `accepted` when the points are above 0, otherwise `rejected`).
+- **Re-scoring:** recomputes auto-scored answers from the key. It keeps manual `answerPoints`
+  overrides (stored per answer), essay points, and spelling decisions, and skips anonymized
+  attempts.
+- **Keys are released only when the student can't start another attempt:** attempts are used up,
+  the exam is closed, or the due date has passed without late work. This applies on top of
+  `answerReview`.
+- **Saving questions to a set that a published exam uses** refuses incomplete questions, the same
+  as publishing does. Starting an attempt on an incomplete set is refused too.
+- **Near misses:**
+  - Skipped when either side is 3 characters or fewer or contains a digit.
+  - The threshold uses the accepted answer's accent-stripped length.
+  - Matching is always exact.
+  - A rejected near miss keeps its `matchNote` and scores 0.
+- **`answers_after_due` with no due date** shows keys once the exam is closed.
+- **Overview fields:** `/api/me/overview` coursework items carry `answerReview` and
+  `spellingMode`, plus the shuffle flags.
+- **Preview attempt:** carries the exam `title` and has `id: 0`.
+- **Clearing dates:** `CourseworkInput` gains `clearDueAt` and `clearAvailableFrom`. A null date
+  still means "unchanged".
+- **CORS** exposes `Content-Disposition`.
+- **Retention:**
+  - Orders terms by ISMS `(schoolYearId, semesterId)`.
+  - Touches only classes ISMS no longer offers.
+  - Can be turned off with `Lms:Retention:Enabled`.
+- **Import format rules:**
+  - Headings start with Test, Part, or Section, or a roman numeral naming a type, or are just a
+    type name.
+  - "(N points)" is a section total; "(N points each)" is per question.
+  - In Excel and CSV, matching pairs go in the Choice cells as `left = right`; rows starting
+    with `#` are notes.
+  - A non-UTF-8 CSV or text file is read as Windows-1252, with a warning.
+  - Only the first Excel sheet is read.

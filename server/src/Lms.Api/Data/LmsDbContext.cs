@@ -25,6 +25,7 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<Questionnaire> Questionnaires => Set<Questionnaire>();
+    public DbSet<QuestionSection> QuestionSections => Set<QuestionSection>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
     public DbSet<QuestionExpectedAnswer> QuestionExpectedAnswers => Set<QuestionExpectedAnswer>();
@@ -113,6 +114,16 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.HasIndex(x => x.OwnerInstructorId);
         });
 
+        b.Entity<QuestionSection>(e =>
+        {
+            e.ToTable("question_sections");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Directions).HasMaxLength(2000);
+            e.Property(x => x.DefaultPoints).HasPrecision(8, 2);
+            e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         b.Entity<Question>(e =>
         {
             e.ToTable("questions");
@@ -120,7 +131,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.Type).HasMaxLength(30).IsRequired();
             e.Property(x => x.Prompt).IsRequired();
             e.Property(x => x.Points).HasPrecision(8, 2);
+            e.Property(x => x.Underlined).HasMaxLength(1000);
             e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<QuestionSection>().WithMany().HasForeignKey(x => x.SectionId).OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<QuestionOption>(e =>
@@ -149,6 +162,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.Category).HasMaxLength(40);
             e.Property(x => x.MaxPoints).HasPrecision(8, 2);
             e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            // Existing exams keep today's behavior: which questions were right, strict spelling.
+            e.Property(x => x.AnswerReview).HasMaxLength(30).IsRequired().HasDefaultValue(AnswerReview.Results);
+            e.Property(x => x.SpellingMode).HasMaxLength(20).IsRequired().HasDefaultValue(SpellingMode.Strict);
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -170,6 +186,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.ToTable("submission_answers");
             e.HasKey(x => x.Id);
             e.Property(x => x.PointsAwarded).HasPrecision(8, 2);
+            e.Property(x => x.ManualPoints).HasPrecision(8, 2);
+            e.Property(x => x.MatchNote).HasMaxLength(20);
+            e.Property(x => x.SpellingDecision).HasMaxLength(20);
             e.HasOne<Submission>().WithMany().HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Question>().WithMany().HasForeignKey(x => x.QuestionId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<QuestionOption>().WithMany().HasForeignKey(x => x.SelectedOptionId).OnDelete(DeleteBehavior.Restrict);
