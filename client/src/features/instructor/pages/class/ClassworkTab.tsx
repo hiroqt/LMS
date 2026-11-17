@@ -93,10 +93,11 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                 <Button
                   variant="secondary"
                   loading={busy === item.id}
+                  aria-label={`${item.closed ? "Reopen" : "Close"} ${item.title}`}
                   onClick={() => void (item.closed ? reopen(item) : close(item))}
                   icon={item.closed ? <LockOpen aria-hidden className="size-4" /> : <Lock aria-hidden className="size-4" />}
                 >
-                  {item.closed ? "Reopen" : "Close"}<span className="sr-only"> {item.title}</span>
+                  {item.closed ? "Reopen" : "Close"}
                 </Button>
               </div>
               {refused[item.id] && (

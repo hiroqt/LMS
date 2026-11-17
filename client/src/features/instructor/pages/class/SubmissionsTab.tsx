@@ -166,7 +166,7 @@ function NotHandedInRow({ student, item, classroomId }: { student: User; item: W
     <li className="flex flex-col gap-2 rounded-control bg-canvas p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-body font-medium">{name}</span>
-        {!open && <Button variant="secondary" onClick={() => setOpen(true)}>Give a grade<span className="sr-only"> to {name}</span></Button>}
+        {!open && <Button variant="secondary" aria-label={`Give a grade to ${name}`} onClick={() => setOpen(true)}>Give a grade</Button>}
       </div>
       {open && (
         <form onSubmit={save} noValidate className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -175,7 +175,7 @@ function NotHandedInRow({ student, item, classroomId }: { student: User; item: W
           </Field>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={saving}>Save grade<span className="sr-only"> for {name}</span></Button>
+            <Button type="submit" loading={saving} aria-label={`Save grade for ${name}`}>Save grade</Button>
           </div>
         </form>
       )}
@@ -219,11 +219,11 @@ function NotHandedInPanel({ store, work, students, classroomId }: { store: RoleS
   };
 
   return (
-    <section aria-labelledby="not-handed-in" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5 font-sans">
+    <section aria-labelledby="not-handed-in" className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-5 font-sans">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <h3 id="not-handed-in" className="m-0 text-section font-semibold">Didn't hand in</h3>
-        <Field label="Assignment or assessment" className="sm:w-80">
-          <Select value={item.id} onChange={(event) => setChosenId(event.target.value)}>
+        <Field label="Assignment or assessment" className="w-full min-w-0 sm:w-80">
+          <Select value={item.id} onChange={(event) => setChosenId(event.target.value)} className="w-full min-w-0">
             {work.map((entry) => <option key={entry.id} value={entry.id}>{entry.title}{entry.closed ? " (closed)" : ""}</option>)}
           </Select>
         </Field>
@@ -234,7 +234,7 @@ function NotHandedInPanel({ store, work, students, classroomId }: { store: RoleS
           <ul aria-label={`Didn't hand in ${item.title}`} className="m-0 flex list-none flex-col gap-2 p-0">
             {missing.map((student) => <NotHandedInRow key={`${item.id}-${student.id}`} student={student} item={item} classroomId={classroomId} />)}
           </ul>
-          <Button variant="secondary" className="self-start" onClick={() => { setPoints("0"); setError(""); setConfirming(true); }}>Give 0 to everyone who didn't hand in</Button>
+          <Button variant="secondary" className="max-w-full shrink self-start whitespace-normal" onClick={() => { setPoints("0"); setError(""); setConfirming(true); }}>Give 0 to everyone who didn't hand in</Button>
         </>
       ) : (
         <p className="m-0 text-body">Everyone has handed in or has a grade.</p>
