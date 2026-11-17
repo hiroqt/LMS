@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { describeApiError, isApiError, sendJson } from "../../../shared/api/http";
 import type { Viewer } from "../../../shared/api/viewer";
@@ -42,16 +43,13 @@ export interface ActivityInput {
   allowResubmission: boolean;
 }
 
-export interface ExamInput {
+interface ExamSettings {
   moduleId: string;
   title: string;
   instructions: string;
   dueAt: string;
-  points: number;
   timeLimit: number;
-  prompt: string;
-  options: string[];
-  correctIndex: number;
+  attempts: number;
 }
 
 export interface AttendanceInput {
@@ -59,11 +57,22 @@ export interface AttendanceInput {
   entries: Array<{ studentId: string; daysPresent: number }>;
 }
 
+/**
+ * An exam either writes one new multiple-choice question (a new set for the class's
+ * subject) or uses one of the instructor's existing question sets (D-034). Either way
+ * the exam keeps its own dates, attempts, and time limit.
+ */
+export type ExamInput = ExamSettings &
+  (
+    | { source: "new"; subjectId?: number; points: number; prompt: string; options: string[]; correctIndex: number }
+    | { source: "existing"; questionSetId: number }
+  );
+
 const classPath = (classroomId: string) => `/api/classes/${encodeURIComponent(classroomId)}`;
 /** A datetime-local value ("2026-11-30T15:00") as an instant; empty stays empty. */
 const instant = (value: string) => (value ? new Date(value).toISOString() : undefined);
 
-async function attempt(change: () => Promise<unknown>): Promise<ActionResult> {
+export async function attempt(change: () => Promise<unknown>): Promise<ActionResult> {
   try {
     await change();
     return { ok: true };
@@ -76,6 +85,7 @@ async function attempt(change: () => Promise<unknown>): Promise<ActionResult> {
 export function useInstructorActions() {
   const { instructorId } = useInstructorSession();
   const refresh = useRefreshOverview();
+  const queryClient = useQueryClient();
 
   return useMemo(() => {
     const viewer: Viewer = { id: instructorId, role: "instructor" };
@@ -117,18 +127,23 @@ export function useInstructorActions() {
           }),
         ),
 
-      // An exam needs a questionnaire first: create it, add the question, then publish the exam.
-      createExam: (classroomId: string, input: ExamInput) =>
-        run(async () => {
-          const questionnaire = await send<{ id: number }>("POST", "/api/questionnaires", { title: input.title });
-          await send("PUT", `/api/questionnaires/${questionnaire.id}/questions`, {
-            questions: [{
-              type: "multiple_choice",
-              prompt: input.prompt,
-              points: input.points || 10,
-              options: input.options.map((text, index) => ({ text, isCorrect: index === input.correctIndex })).filter((option) => option.text.trim()),
-            }],
-          });
+      // An exam needs a question set: write a new one (create it, add the question) or reuse one, then publish the exam.
+      createExam: async (classroomId: string, input: ExamInput) => {
+        const result = await run(async () => {
+          let questionnaireId: number;
+          if (input.source === "existing") questionnaireId = input.questionSetId;
+          else {
+            const questionnaire = await send<{ id: number }>("POST", "/api/questionnaires", { title: input.title, subjectId: input.subjectId });
+            await send("PUT", `/api/questionnaires/${questionnaire.id}/questions`, {
+              questions: [{
+                type: "multiple_choice",
+                prompt: input.prompt,
+                points: input.points || 10,
+                options: input.options.map((text, index) => ({ text, isCorrect: index === input.correctIndex })).filter((option) => option.text.trim()),
+              }],
+            });
+            questionnaireId = questionnaire.id;
+          }
           await send("POST", `${classPath(classroomId)}/coursework`, {
             type: "exam",
             moduleId: Number(input.moduleId),
@@ -137,10 +152,15 @@ export function useInstructorActions() {
             instructions: input.instructions,
             dueAt: instant(input.dueAt),
             timeLimitMinutes: input.timeLimit || 0,
-            questionnaireId: questionnaire.id,
+            maxAttempts: input.attempts || 1,
+            questionnaireId,
             status: "published",
           });
-        }),
+        });
+        // The Question sets page lists the exams that use each set.
+        if (result.ok) await queryClient.invalidateQueries({ queryKey: ["instructor", "question-sets"] });
+        return result;
+      },
 
       /** A submodule sits one level under a module; the server refuses deeper nesting. */
       createSubmodule: (classroomId: string, parentId: string, title: string) =>
@@ -186,5 +206,5 @@ export function useInstructorActions() {
       saveAttendance: (classroomId: string, year: number, month: number, input: AttendanceInput) =>
         run(() => send("PUT", `${classPath(classroomId)}/attendance/${year}/${month}`, input)),
     };
-  }, [instructorId, refresh]);
+  }, [instructorId, refresh, queryClient]);
 }
