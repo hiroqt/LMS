@@ -33,7 +33,7 @@ interface SeededExam {
 }
 
 /** Creates a question set and a published exam in Introduction to Programming (class "biology"). */
-async function seedExam(page: Page, sandbox: string, options: { title: string; answerReview?: AnswerReview; spellingMode?: SpellingMode; questions?: unknown[] }): Promise<SeededExam> {
+async function seedExam(page: Page, sandbox: string, options: { title: string; answerReview?: AnswerReview; spellingMode?: SpellingMode; questions?: unknown[]; maxAttempts?: number }): Promise<SeededExam> {
   const set = await callApi<{ id: number }>(page, sandbox, INSTRUCTOR, "POST", "/api/questionnaires", { title: `${options.title} questions` });
   await callApi(page, sandbox, INSTRUCTOR, "PUT", `/api/questionnaires/${set.id}/questions`, { sections: SECTIONS, questions: options.questions ?? EVERY_TYPE });
   const [module] = await callApi<Array<{ id: number }>>(page, sandbox, INSTRUCTOR, "GET", "/api/classes/biology/modules");
@@ -45,7 +45,8 @@ async function seedExam(page: Page, sandbox: string, options: { title: string; a
     instructions: "Answer every question.",
     questionnaireId: set.id,
     status: "published",
-    maxAttempts: 2,
+    // Keys are shown only once no attempt is left (D-042), so one attempt unless a test says otherwise.
+    maxAttempts: options.maxAttempts ?? 1,
     dueAt: "2026-10-30T17:00:00+08:00",
     answerReview: options.answerReview ?? "results",
     spellingMode: options.spellingMode ?? "strict",
@@ -236,6 +237,13 @@ test.describe("Student · answer review modes (contract §4)", () => {
     await takeShortQuiz(page, exam);
     await expect(reviewItem(page, 1)).toContainText("Correct answer: const");
     await expect(reviewItem(page, 2)).toContainText("Correct answer: False");
+  });
+
+  test("answers right after submitting, with another attempt left: no key yet (D-042)", async ({ page, sandbox }) => {
+    const exam = await seedExam(page, sandbox, { title: "Review: attempt left", answerReview: "answers_after_submit", questions: SHORT, maxAttempts: 2 });
+    await takeShortQuiz(page, exam);
+    await expect(reviewItem(page, 1)).toContainText("Incorrect");
+    await expect(page.getByText(/Correct answer:/)).toHaveCount(0);
   });
 });
 
