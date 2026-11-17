@@ -26,8 +26,9 @@ public sealed record StudentQuestion(long Id, string Type, string Prompt, decima
 /// <param name="PointsAwarded">Shown to the student once the attempt is submitted, when the answer review allows.</param>
 /// <param name="MatchNote">How a typed answer matched: exact, typo, review, or null.</param>
 /// <param name="Decision">Instructors only: the spelling decision on a near miss.</param>
+/// <param name="ManualPoints">Instructors only: points the instructor gave an automatically scored question, kept by a re-score.</param>
 public sealed record AnswerDto(long QuestionId, long? OptionId, string? Text, IReadOnlyList<string> Items,
-    IReadOnlyDictionary<long, string> Matches, decimal? PointsAwarded, string? MatchNote = null, string? Decision = null);
+    IReadOnlyDictionary<long, string> Matches, decimal? PointsAwarded, string? MatchNote = null, string? Decision = null, decimal? ManualPoints = null);
 
 /// <param name="Deadline">When saving stops: the time limit, or the due date when late work is not allowed.</param>
 /// <param name="ScoreUpdatedAt">When a regrade last changed the score ("Your score was updated").</param>

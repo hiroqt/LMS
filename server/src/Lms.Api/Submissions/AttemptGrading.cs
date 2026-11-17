@@ -12,8 +12,9 @@ namespace Lms.Api.Submissions;
 public static class AttemptGrading
 {
     /// <summary>
-    /// Scores every automatically scored answer in place (essays keep their points), adding a row
-    /// for an unanswered question. Returns true when something still waits for the instructor.
+    /// Scores every automatically scored answer in place (essays keep their points, and an answer the
+    /// instructor gave points keeps them), adding a row for an unanswered question. Returns true when
+    /// something still waits for the instructor.
     /// </summary>
     public static bool Rescore(IReadOnlyList<ScoringKey> keys, List<SubmissionAnswer> answers, string spellingMode, long submissionId, Action<SubmissionAnswer> add)
     {
@@ -33,9 +34,9 @@ public static class AttemptGrading
                 add(answer);
                 answers.Add(answer);
             }
-            answer.PointsAwarded = result.Points;
+            answer.PointsAwarded = answer.ManualPoints is { } manual ? Math.Clamp(manual, 0, key.Question.Points) : result.Points;
             answer.MatchNote = result.MatchNote;
-            waiting |= result.Points is null;
+            waiting |= answer.PointsAwarded is null;
         }
         return waiting;
     }
@@ -62,11 +63,13 @@ public static class AttemptGrading
         return changed;
     }
 
-    /// <summary>Re-scores every handed-in attempt of the exam (or only <paramref name="submissionIds"/>). Returns how many were re-scored and how many changed.</summary>
+    /// <summary>Re-scores every handed-in attempt of the exam. Returns how many were re-scored and how many changed.</summary>
     public static async Task<(int Regraded, int Changed)> RegradeAsync(LmsDbContext db, CourseworkRow cw, IReadOnlyList<ScoringKey> keys, DateTime now, CancellationToken ct)
     {
-        // Handed-in attempts only: never one in progress or a "not handed in" grade (no submitted time).
-        var attempts = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.Status != SubmissionStatus.InProgress && s.SubmittedAt != null).ToListAsync(ct);
+        // Handed-in attempts only: never one in progress or a "not handed in" grade (no submitted time),
+        // and never an anonymized one, whose cleared answers would score 0.
+        var attempts = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.Status != SubmissionStatus.InProgress && s.SubmittedAt != null && s.AnonymizedAt == null)
+            .ToListAsync(ct);
         var changed = 0;
         foreach (var attempt in attempts)
             if (await ScoreAsync(db, cw, keys, attempt, now, regrade: true, ct)) changed++;

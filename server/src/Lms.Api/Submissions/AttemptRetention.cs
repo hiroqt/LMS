@@ -24,10 +24,10 @@ public sealed record RetentionResult(int Terms, int Submissions, int Answers);
 
 /// <summary>
 /// Anonymizes old attempts (contract §7): answer text, items and matches, and the submission's
-/// text are cleared; scores, points and grades stay. Terms are ordered by ISMS school year and
+/// text are cleared and the submission is marked anonymized; scores, points and grades stay. Terms are ordered by ISMS school year and
 /// semester ids (both increase over time), and only classes ISMS no longer offers are touched.
 /// </summary>
-public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions> options)
+public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions> options, TimeProvider time)
 {
     /// <summary>The known terms that are more than <paramref name="keep"/> terms behind <paramref name="current"/>.</summary>
     public static IReadOnlyList<Term> ExpiredTerms(IEnumerable<Term> known, Term current, int keep)
@@ -56,6 +56,9 @@ public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions>
         var texts = await submissions.Where(s => s.Text != null).ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, (string?)null), ct);
         var answers = await db.SubmissionAnswers.Where(a => a.AnswerText != null && submissions.Any(s => s.Id == a.SubmissionId))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.AnswerText, (string?)null), ct);
+        // Marked so no re-score ever reads the cleared answers as wrong ones.
+        var now = time.GetUtcNow().UtcDateTime;
+        await submissions.Where(s => s.AnonymizedAt == null).ExecuteUpdateAsync(s => s.SetProperty(x => x.AnonymizedAt, now), ct);
         if (texts + answers > 0)
         {
             // Metadata only: counts, never content.

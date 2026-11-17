@@ -45,13 +45,17 @@ public static class AccuracyEndpoints
                 errors.Add("decision", "Choose accepted or rejected.");
                 return errors.Result();
             }
-            var attempt = await db.Submissions.SingleOrDefaultAsync(s => s.Id == submissionId && s.CourseworkId == cw!.Id && s.SubmittedAt != null && s.Status != SubmissionStatus.InProgress, ct);
+            // An anonymized attempt is never re-scored: its cleared answers would score 0.
+            var attempt = await db.Submissions.SingleOrDefaultAsync(s => s.Id == submissionId && s.CourseworkId == cw!.Id && s.SubmittedAt != null && s.Status != SubmissionStatus.InProgress
+                && s.AnonymizedAt == null, ct);
             var answer = attempt is null ? null : await db.SubmissionAnswers.SingleOrDefaultAsync(a => a.SubmissionId == attempt.Id && a.QuestionId == questionId
                 && (a.MatchNote == MatchNote.Typo || a.MatchNote == MatchNote.Review), ct);
             if (answer is null) return ContentEndpoints.NotFound("Spelling note");
 
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             answer.SpellingDecision = input.Decision;
+            // The decision is the instructor's newer word on this answer, so it replaces points given to it earlier.
+            answer.ManualPoints = null;
             await db.SaveChangesAsync(ct);
             var keys = await SubmissionEndpoints.KeysAsync(db, cw!.QuestionnaireId!.Value, ct);
             // Only an attempt whose score students could already see counts as "updated".
@@ -69,8 +73,9 @@ public static class AccuracyEndpoints
             if (denied is not null) return denied;
             var handedIn = HandedIn(db, cw!.Id);
             var answers = await db.SubmissionAnswers.AsNoTracking().Where(a => handedIn.Select(s => s.Id).Contains(a.SubmissionId)).ToListAsync(ct);
+            var anonymized = (await handedIn.Where(s => s.AnonymizedAt != null).Select(s => s.Id).ToListAsync(ct)).ToHashSet();
             var keys = await SubmissionEndpoints.KeysAsync(db, cw.QuestionnaireId!.Value, ct);
-            return TypedResults.Ok(ItemAnalysis.Compute(keys, answers, await handedIn.CountAsync(ct)));
+            return TypedResults.Ok(ItemAnalysis.Compute(keys, answers, await handedIn.CountAsync(ct), anonymized));
         }).WithName("GetItemAnalysis");
 
         exam.MapGet("/preview", async Task<IResult> (string classId, long courseworkId, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>

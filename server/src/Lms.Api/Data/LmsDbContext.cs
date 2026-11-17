@@ -186,6 +186,7 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.ToTable("submission_answers");
             e.HasKey(x => x.Id);
             e.Property(x => x.PointsAwarded).HasPrecision(8, 2);
+            e.Property(x => x.ManualPoints).HasPrecision(8, 2);
             e.Property(x => x.MatchNote).HasMaxLength(20);
             e.Property(x => x.SpellingDecision).HasMaxLength(20);
             e.HasOne<Submission>().WithMany().HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);

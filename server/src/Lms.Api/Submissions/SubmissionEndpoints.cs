@@ -43,8 +43,10 @@ public static class SubmissionEndpoints
             var open = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress);
             if (open is not null) return TypedResults.Ok(await AttemptView.BuildAsync(db, cw, open, now, ct));
 
-            if (cw.DueAt is { } due && now > due && !cw.AllowLate) return Conflict("This exam is past its due date.");
-            if (mine.Count >= (cw.MaxAttempts ?? 1)) return Conflict("You have used every attempt for this exam.");
+            // Publishing refuses an incomplete set, but one saved before that rule could still reach here.
+            if (await db.Questions.AnyAsync(q => q.QuestionnaireId == cw.QuestionnaireId && q.Incomplete, ct))
+                return Conflict("This exam has unfinished questions, so it can't be started yet. Ask your instructor to finish them.");
+            if (CannotStart(cw, mine.Count, now) is { } reason) return Conflict(reason);
 
             var attempt = new Submission { CourseworkId = cw.Id, StudentId = user.Id, AttemptNumber = mine.Count + 1, Status = SubmissionStatus.InProgress, StartedAt = now };
             db.Submissions.Add(attempt);
@@ -204,6 +206,8 @@ public static class SubmissionEndpoints
                     var answer = answers.FirstOrDefault(a => a.QuestionId == questionId);
                     if (answer is null) { answer = new SubmissionAnswer { SubmissionId = row.Id, QuestionId = questionId }; db.SubmissionAnswers.Add(answer); answers.Add(answer); }
                     answer.PointsAwarded = Math.Round(points, 2);
+                    // An override of an automatically scored question survives a re-score (essays are never re-scored).
+                    if (key.Question.Type != QuestionType.Essay) answer.ManualPoints = answer.PointsAwarded;
                     // Points for a near miss waiting for review settle it; the decision keeps it settled when the attempt is re-scored.
                     if (answer.MatchNote == MatchNote.Review && answer.SpellingDecision is null)
                         answer.SpellingDecision = points > 0 ? SpellingDecision.Accepted : SpellingDecision.Rejected;
@@ -382,6 +386,19 @@ public static class SubmissionEndpoints
         if (cw is null) return (null, null);
         var query = track ? db.Submissions : db.Submissions.AsNoTracking();
         return (cw, await query.SingleOrDefaultAsync(s => s.Id == id && s.CourseworkId == cw.Id, ct));
+    }
+
+    /// <summary>
+    /// Why a student who has used <paramref name="attemptsUsed"/> attempts can't start another, or null
+    /// when they can: the exam is closed, past its due date without late work, or out of attempts.
+    /// Starting an attempt and releasing the keys (<see cref="Visibility"/>) both use this rule.
+    /// </summary>
+    public static string? CannotStart(CourseworkRow cw, int attemptsUsed, DateTime now)
+    {
+        if (cw.Status == CourseworkStatus.Closed) return ClosedExam;
+        if (cw.DueAt is { } due && now > due && !cw.AllowLate) return "This exam is past its due date.";
+        if (attemptsUsed >= (cw.MaxAttempts ?? 1)) return "You have used every attempt for this exam.";
+        return null;
     }
 
     /// <summary>When saving stops: the time limit, or the due date when late work is not allowed.</summary>

@@ -16,7 +16,8 @@ public static class ItemAnalysis
 
     /// <param name="answers">The answers of the handed-in attempts.</param>
     /// <param name="attempts">How many attempts were handed in.</param>
-    public static List<ItemAnalysisRow> Compute(IReadOnlyList<ScoringKey> keys, IReadOnlyList<SubmissionAnswer> answers, int attempts) =>
+    /// <param name="anonymized">Attempts whose answer text retention cleared: they keep their points but list no typed answers.</param>
+    public static List<ItemAnalysisRow> Compute(IReadOnlyList<ScoringKey> keys, IReadOnlyList<SubmissionAnswer> answers, int attempts, IReadOnlySet<long>? anonymized = null) =>
         keys.OrderBy(k => k.Question.SortOrder).Select(k =>
         {
             var q = k.Question;
@@ -24,8 +25,10 @@ public static class ItemAnalysis
             var given = mine.Where(a => HasAnswer(q.Type, a)).ToList();
             var scored = mine.Where(a => a.PointsAwarded is not null).Select(a => a.PointsAwarded!.Value).ToList();
             var correct = q.Points > 0 ? mine.Count(a => a.PointsAwarded >= q.Points) : 0;
-            var top = Top(k, given);
-            var flag = given.Count >= 3 && top.Any(t => !t.IsKey && t.Count * 2 >= given.Count) ? CheckKey : null;
+            var listed = q.Type is QuestionType.MultipleChoice or QuestionType.TrueFalse || anonymized is null
+                ? given : given.Where(a => !anonymized.Contains(a.SubmissionId)).ToList();
+            var top = Top(k, listed);
+            var flag = listed.Count >= 3 && top.Any(t => !t.IsKey && t.Count * 2 >= listed.Count) ? CheckKey : null;
             return new ItemAnalysisRow(q.Id, q.SortOrder, q.Type, q.Prompt, q.Points, given.Count,
                 attempts == 0 ? 0 : Math.Round((decimal)correct / attempts, 4),
                 scored.Count == 0 ? 0 : Math.Round(scored.Sum() / scored.Count, 2),

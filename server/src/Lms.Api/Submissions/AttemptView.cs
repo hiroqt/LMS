@@ -13,16 +13,17 @@ public sealed record Visibility(bool Points, bool Keys)
     /// <summary>
     /// Nothing before submitting. Then by answer review: score_only shows the score only; results
     /// adds points and match notes; answers_after_submit adds the keys; answers_after_due adds them
-    /// once the due date has passed or the exam is closed.
+    /// once the due date has passed or the exam is closed. Keys wait in any case until the student
+    /// can't start another attempt (<paramref name="canStartAnother"/>), so they never help a later one.
     /// </summary>
-    public static Visibility For(CourseworkRow cw, Submission attempt, DateTime now)
+    public static Visibility For(CourseworkRow cw, Submission attempt, DateTime now, bool canStartAnother)
     {
         if (attempt.Status == SubmissionStatus.InProgress) return new(false, false);
         return cw.AnswerReview switch
         {
             AnswerReview.ScoreOnly => new(false, false),
-            AnswerReview.AnswersAfterSubmit => new(true, true),
-            AnswerReview.AnswersAfterDue => new(true, cw.Status == CourseworkStatus.Closed || (cw.DueAt is { } due && now > due)),
+            AnswerReview.AnswersAfterSubmit => new(true, !canStartAnother),
+            AnswerReview.AnswersAfterDue => new(true, !canStartAnother && (cw.Status == CourseworkStatus.Closed || (cw.DueAt is { } due && now > due))),
             _ => new(true, false),
         };
     }
@@ -37,7 +38,10 @@ public static class AttemptView
         var keys = await SubmissionEndpoints.KeysAsync(db, cw.QuestionnaireId!.Value, ct);
         var answers = await db.SubmissionAnswers.AsNoTracking().Where(a => a.SubmissionId == attempt.Id).ToListAsync(ct);
         var grade = await db.Grades.AsNoTracking().SingleOrDefaultAsync(g => g.SubmissionId == attempt.Id, ct);
-        var see = Visibility.For(cw, attempt, now);
+        // An attempt still in progress counts as one the student can still take.
+        var mine = await db.Submissions.AsNoTracking().Where(s => s.CourseworkId == cw.Id && s.StudentId == attempt.StudentId).Select(s => s.Status).ToListAsync(ct);
+        var canStartAnother = mine.Contains(SubmissionStatus.InProgress) || SubmissionEndpoints.CannotStart(cw, mine.Count, now) is null;
+        var see = Visibility.For(cw, attempt, now, canStartAnother);
         return new AttemptDto(attempt.Id, attempt.AttemptNumber, attempt.Status, attempt.StartedAt, attempt.SubmittedAt, SubmissionEndpoints.Deadline(cw, attempt),
             grade?.Points, cw.MaxPoints, grade?.Feedback,
             Ordered(cw, sections, keys, attempt.Id).Select(k => ToStudentQuestion(k, see.Keys)).ToList(),
@@ -111,7 +115,7 @@ public static class AttemptView
     }
 
     /// <param name="showPoints">Points and the match note (students: per the answer review).</param>
-    /// <param name="instructor">Adds the spelling decision.</param>
+    /// <param name="instructor">Adds the spelling decision and the manual points.</param>
     public static AnswerDto ToAnswerDto(IReadOnlyList<ScoringKey> keys, SubmissionAnswer a, bool showPoints, bool instructor = false)
     {
         var type = keys.FirstOrDefault(k => k.Question.Id == a.QuestionId)?.Question.Type;
@@ -121,7 +125,8 @@ public static class AttemptView
             type == QuestionType.Matching ? Scoring.ReadMatches(a.AnswerText) : new Dictionary<long, string>(),
             showPoints ? a.PointsAwarded : null,
             showPoints ? a.MatchNote : null,
-            instructor ? a.SpellingDecision : null);
+            instructor ? a.SpellingDecision : null,
+            instructor ? a.ManualPoints : null);
     }
 }
 

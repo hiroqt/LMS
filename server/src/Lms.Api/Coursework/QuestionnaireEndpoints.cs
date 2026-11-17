@@ -102,11 +102,15 @@ public static class QuestionnaireEndpoints
             if (questions.Count > QuestionRules.MaxQuestions) errors.Add("questions", $"Use at most {QuestionRules.MaxQuestions} questions.");
             QuestionRules.ValidateSections(errors, sections);
             // With allowIncomplete only structural problems refuse the request; content problems mark the question incomplete.
+            // Not while a published exam uses the set: students could start it, so it is checked as publishing is.
+            var live = input.AllowIncomplete == true && await db.Coursework.AnyAsync(c => c.QuestionnaireId == id && c.Status == CourseworkStatus.Published, ct);
             for (var i = 0; i < questions.Count; i++)
             {
-                if (input.AllowIncomplete == true) QuestionRules.Structural(errors, i, questions[i], sections.Count);
+                if (input.AllowIncomplete == true && !live) QuestionRules.Structural(errors, i, questions[i], sections.Count);
                 else QuestionRules.Validate(errors, i, questions[i], sections.Count);
             }
+            if (live && questions.Any(q => QuestionRules.Problems(q).Count > 0))
+                errors.Add("questions", "This set is used by a published exam, so every question must be complete.");
             if (errors.Any) return errors.Result();
 
             db.Actor = user.Id;

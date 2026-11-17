@@ -1050,6 +1050,10 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("AnonymizedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("anonymized_at");
+
                     b.Property<int>("AttemptNumber")
                         .HasColumnType("int")
                         .HasColumnName("attempt_number");
@@ -1139,6 +1143,11 @@ namespace Lms.Api.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)")
                         .HasColumnName("created_by");
+
+                    b.Property<decimal?>("ManualPoints")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("manual_points");
 
                     b.Property<string>("MatchNote")
                         .HasMaxLength(20)
