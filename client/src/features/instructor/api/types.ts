@@ -108,6 +108,8 @@ export interface Exam {
   status?: string;
   /** See Activity.closed (D-036). */
   closed?: boolean;
+  /** Saved from the assessment builder without publishing; students cannot see it (D-040). */
+  draft?: boolean;
   gradedCount?: number;
   rosterCount?: number;
   createdAt?: string;

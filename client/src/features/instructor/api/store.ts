@@ -127,6 +127,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       timeLimitMinutes: item.timeLimitMinutes ?? 0,
       attempts: item.maxAttempts ?? 1,
       status: active(item.status),
+      draft: item.status === "draft",
       ...progress(item),
     })),
     activitySubmissions: overview.submissions.filter((item) => kindOf.get(item.courseworkId) === "assignment").map(({ courseworkId, classId, submission }) => ({

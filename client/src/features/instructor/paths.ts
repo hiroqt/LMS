@@ -17,7 +17,17 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
   },
+  /** The assessment builder (D-040). */
+  assessmentNew: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/new`,
+  assessmentEdit: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/${id}/edit`,
+  /** "Preview as student" (built by the preview page's own stream). */
+  assessmentPreview: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/${id}/preview`,
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,
+  /**
+   * The shell's page key. The builder's first save moves it from …/assessments/new to
+   * …/assessments/{id}/edit; that is the same page, so focus must stay where it is.
+   */
+  pageKey: (pathname: string) => pathname.replace(/\/assessments\/\d+\/edit$/, "/assessments/new"),
   gradebook: (classId?: string) => (classId ? `/instructor/gradebook?class=${encodeURIComponent(classId)}` : "/instructor/gradebook"),
 };

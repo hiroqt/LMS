@@ -1,4 +1,5 @@
-import { BookOpen, ClipboardList, FileUp, GraduationCap, Plus, X } from "lucide-react";
+import { BookOpen, ClipboardList, FileUp, GraduationCap, Pencil, Plus, X } from "lucide-react";
+import { Navigate, useNavigate } from "react-router";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { moduleChoices } from "../../../../shared/lib/moduleTree";
@@ -7,30 +8,11 @@ import { Card } from "../../../../shared/ui/Card";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { useInstructorActions } from "../../api/actions";
-import { QuestionSetPicker } from "../../components/QuestionSetPicker";
-import type { ContentType } from "../../paths";
+import { instructorPaths, type ContentType } from "../../paths";
 import { RESOURCE_TYPES } from "./classUtils";
 import type { ClassTabProps } from "./shared";
 
 type Errors = Record<string, string | undefined>;
-
-type QuestionSource = "new" | "existing";
-
-/** Write new questions (the default) or reuse one of the instructor's question sets (D-034). */
-function SourceChoice({ value, onChange }: { value: QuestionSource; onChange: (value: QuestionSource) => void }) {
-  const choices: Array<[QuestionSource, string]> = [["new", "Write new questions"], ["existing", "Use an existing question set"]];
-  return (
-    <fieldset className="m-0 flex flex-col gap-1 border-0 p-0 font-sans">
-      <legend className="mb-1 p-0 text-body font-medium text-ink">Questions</legend>
-      {choices.map(([id, label]) => (
-        <label key={id} className="flex min-h-touch cursor-pointer items-center gap-3 text-body text-ink">
-          <input type="radio" name="question-source" value={id} checked={value === id} onChange={() => onChange(id)} className="size-5 accent-primary-600" />
-          {label}
-        </label>
-      ))}
-    </fieldset>
-  );
-}
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -41,34 +23,26 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
   );
 }
 
-const titles: Record<ContentType, string> = { material: "Upload class material", activity: "Create an assignment", exam: "Create an assessment" };
+/** The inline forms; assessments have their own builder page (D-040). */
+type InlineType = Exclude<ContentType, "exam">;
 
-function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { type: ContentType; onDone: (saved: boolean) => void }) {
+const titles: Record<InlineType, string> = { material: "Upload class material", activity: "Create an assignment" };
+
+function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { type: InlineType; onDone: (saved: boolean) => void }) {
   const toast = useToast();
   const choices = moduleChoices(content.modules);
-  const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", attempts: "1", correctIndex: "0", questionSetId: "" });
+  const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide", points: "10" });
   const [flags, setFlags] = useState({ allowLate: false, allowResubmission: false });
   const [file, setFile] = useState<{ name: string; type: string; size: string } | null>(null);
   const [errors, setErrors] = useState<Errors>({});
-  const [source, setSource] = useState<QuestionSource>("new");
-  const reuse = type === "exam" && source === "existing";
   const set = (key: string) => (event: { target: { value: string } }) => setValues((current) => ({ ...current, [key]: event.target.value }));
   const v = (key: string) => values[key] ?? "";
 
   const validate = (): Errors => {
     const next: Errors = { title: v("title").trim() ? undefined : "Enter a title." };
-    if (type !== "material" && !reuse) {
+    if (type !== "material") {
       const points = Number(v("points"));
       next.points = v("points") && points > 0 ? undefined : "Enter points greater than 0.";
-    }
-    if (type === "exam") {
-      const attempts = Number(v("attempts"));
-      next.attempts = Number.isInteger(attempts) && attempts >= 1 && attempts <= 20 ? undefined : "Allow 1 to 20 attempts.";
-    }
-    if (reuse) next.questionSetId = v("questionSetId") ? undefined : "Choose a question set.";
-    else if (type === "exam") {
-      next.prompt = v("prompt").trim() ? undefined : "Enter the question.";
-      for (const n of [1, 2, 3, 4]) next[`option${n}`] = v(`option${n}`).trim() ? undefined : `Enter answer choice ${n}.`;
     }
     return next;
   };
@@ -86,28 +60,19 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
     const result =
       type === "material"
         ? await actions.createMaterial(room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
-        : type === "activity"
-          ? await actions.createActivity(room.id, { ...common, ...flags })
-          : await actions.createExam(room.id, {
-              ...common,
-              timeLimit: Number(v("timeLimit")),
-              attempts: Number(v("attempts")),
-              ...(reuse
-                ? { source: "existing" as const, questionSetId: Number(v("questionSetId")) }
-                : { source: "new" as const, subjectId: room.ismsSubjectId, prompt: v("prompt"), options: [1, 2, 3, 4].map((n) => v(`option${n}`)), correctIndex: Number(v("correctIndex")) }),
-            });
+        : await actions.createActivity(room.id, { ...common, ...flags });
     setSaving(false);
     if (!result.ok) {
       // Show the server's messages on the matching fields.
-      setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field === "maxPoints" ? "points" : field === "questionnaireId" ? "questionSetId" : field === "maxAttempts" ? "attempts" : field, messages[0]])));
+      setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field === "maxPoints" ? "points" : field, messages[0]])));
       toast.show({ title: "Could not publish", description: result.message, tone: "danger" });
       return;
     }
-    toast.show({ title: `${type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"} published`, description: v("title").trim(), tone: "success" });
+    toast.show({ title: `${type === "material" ? "Material" : "Assignment"} published`, description: v("title").trim(), tone: "success" });
     onDone(true);
   };
 
-  const label = type === "material" ? "Material title" : type === "activity" ? "Assignment title" : "Assessment title";
+  const label = type === "material" ? "Material title" : "Assignment title";
   return (
     <form onSubmit={submit} noValidate aria-labelledby="content-form-title" className="flex flex-col gap-4 rounded-card border border-primary-200 bg-surface p-5">
       <div className="flex flex-col gap-1">
@@ -163,56 +128,14 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
             <Field label="Due date" hint="Leave empty for no due date.">
               <Input type="datetime-local" value={v("dueAt")} onChange={set("dueAt")} />
             </Field>
-            {!reuse && (
-              <Field label="Points" required error={errors.points}>
-                <Input type="number" inputMode="numeric" min={1} value={v("points")} onChange={set("points")} />
-              </Field>
-            )}
+            <Field label="Points" required error={errors.points}>
+              <Input type="number" inputMode="numeric" min={1} value={v("points")} onChange={set("points")} />
+            </Field>
           </div>
-          {type === "activity" ? (
-            <div className="flex flex-col">
-              <Check label="Accept late work" checked={flags.allowLate} onChange={(value) => setFlags((current) => ({ ...current, allowLate: value }))} />
-              <Check label="Allow resubmission" checked={flags.allowResubmission} onChange={(value) => setFlags((current) => ({ ...current, allowResubmission: value }))} />
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Time limit (minutes, 0 for none)">
-                  <Input type="number" inputMode="numeric" min={0} value={v("timeLimit")} onChange={set("timeLimit")} />
-                </Field>
-                <Field label="Attempts allowed" required error={errors.attempts}>
-                  <Input type="number" inputMode="numeric" min={1} max={20} value={v("attempts")} onChange={set("attempts")} />
-                </Field>
-              </div>
-              <SourceChoice value={source} onChange={setSource} />
-              {reuse ? (
-                <QuestionSetPicker
-                  subjectId={room.ismsSubjectId}
-                  value={v("questionSetId")}
-                  onChange={(value) => setValues((current) => ({ ...current, questionSetId: value }))}
-                  error={errors.questionSetId}
-                />
-              ) : (
-              <>
-              <Field label="Question" required error={errors.prompt}>
-                <Input value={v("prompt")} onChange={set("prompt")} />
-              </Field>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {[1, 2, 3, 4].map((n) => (
-                  <Field key={n} label={`Answer choice ${n}`} required error={errors[`option${n}`]}>
-                    <Input value={v(`option${n}`)} onChange={set(`option${n}`)} />
-                  </Field>
-                ))}
-              </div>
-              <Field label="Correct answer">
-                <Select value={v("correctIndex")} onChange={set("correctIndex")}>
-                  {[1, 2, 3, 4].map((n) => <option key={n} value={n - 1}>Answer choice {n}</option>)}
-                </Select>
-              </Field>
-              </>
-              )}
-            </>
-          )}
+          <div className="flex flex-col">
+            <Check label="Accept late work" checked={flags.allowLate} onChange={(value) => setFlags((current) => ({ ...current, allowLate: value }))} />
+            <Check label="Allow resubmission" checked={flags.allowResubmission} onChange={(value) => setFlags((current) => ({ ...current, allowResubmission: value }))} />
+          </div>
         </>
       )}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -223,7 +146,14 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
   );
 }
 
-function Category({ title, note, icon, type, items, onCreate }: { title: string; note: string; icon: ReactNode; type: ContentType; items: string[]; onCreate: (type: ContentType) => void }) {
+interface CategoryItem {
+  key: string;
+  label: string;
+  /** A draft assessment opens in the builder. */
+  onEdit?: () => void;
+}
+
+function Category({ title, note, icon, type, items, onCreate }: { title: string; note: string; icon: ReactNode; type: ContentType; items: CategoryItem[]; onCreate: (type: ContentType) => void }) {
   const noun = type === "material" ? "material" : type === "activity" ? "assignment" : "assessment";
   return (
     <Card className="flex flex-col">
@@ -237,7 +167,16 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
       </header>
       {items.length ? (
         <ul className="m-0 flex list-none flex-col gap-1 p-4">
-          {items.map((item) => <li key={item} className="text-body">{item}</li>)}
+          {items.map((item) => (
+            <li key={item.key} className="flex flex-wrap items-center justify-between gap-x-3 text-body">
+              <span className="min-w-0">{item.label}</span>
+              {item.onEdit && (
+                <Button variant="ghost" className="max-w-full shrink whitespace-normal" icon={<Pencil aria-hidden className="size-4" />} onClick={item.onEdit}>
+                  Edit draft{" "}<span className="sr-only">{item.label}</span>
+                </Button>
+              )}
+            </li>
+          ))}
         </ul>
       ) : (
         <p className="m-0 p-4 text-body text-muted">No {noun}s added yet.</p>
@@ -247,14 +186,24 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
 }
 
 export function CreateContentTab({ room, content, goTab, open }: ClassTabProps & { open?: ContentType }) {
+  const navigate = useNavigate();
+  // Assessments have their own builder (D-040); the old ?create=exam link still leads there.
+  if (open === "exam") return <Navigate to={instructorPaths.assessmentNew(room.id)} replace />;
+  const create = (type: ContentType) => (type === "exam" ? navigate(instructorPaths.assessmentNew(room.id)) : goTab("Create content", { create: type }));
   return (
     <div className="flex flex-col gap-4">
       <SectionHeading title="Create and organize" />
       <p className="m-0 -mt-2 text-body text-muted">Choose what you want to share with this class.</p>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => `${item.title} · ${item.kind ?? "Material"}`)} onCreate={(type) => goTab("Create content", { create: type })} />
-        <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => item.title)} onCreate={(type) => goTab("Create content", { create: type })} />
-        <Category title="Assessments" note="Build and publish a quiz or exam" icon={<GraduationCap />} type="exam" items={content.exams.map((item) => item.title)} onCreate={(type) => goTab("Create content", { create: type })} />
+        <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => ({ key: item.id, label: `${item.title} · ${item.kind ?? "Material"}` }))} onCreate={create} />
+        <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => ({ key: item.id, label: item.title }))} onCreate={create} />
+        <Category title="Assessments" note="Build and publish a quiz or exam" icon={<GraduationCap />} type="exam" items={content.exams.map((item) => ({
+            key: item.id,
+            label: item.draft ? `${item.title} · Draft` : item.title,
+            onEdit: item.draft ? () => navigate(instructorPaths.assessmentEdit(room.id, item.id)) : undefined,
+          }))}
+          onCreate={create}
+        />
       </div>
       {open && (
         <ContentForm
