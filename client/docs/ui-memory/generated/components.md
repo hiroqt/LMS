@@ -55,6 +55,16 @@
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
+| `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
+| `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
+| `src/shared/components/quiz/EnumerationAnswer.tsx` | `EnumerationAnswer` |
+| `src/shared/components/quiz/EssayAnswer.tsx` | `EssayAnswer` |
+| `src/shared/components/quiz/IdentificationAnswer.tsx` | `IdentificationAnswer` |
+| `src/shared/components/quiz/MatchingAnswer.tsx` | `MatchingAnswer` |
+| `src/shared/components/quiz/ModifiedTrueFalseAnswer.tsx` | `ModifiedTrueFalseAnswer` |
+| `src/shared/components/quiz/QuestionAnswer.tsx` | `QuestionAnswer` |
+| `src/shared/components/quiz/QuestionPrompt.tsx` | `QuestionPrompt` |
+| `src/shared/components/quiz/QuestionResult.tsx` | `QuestionResult` |
 
 ## Features
 
@@ -92,6 +102,7 @@
 | `src/features/instructor/components/QuestionSetPicker.tsx` | `QuestionSetPicker` |
 | `src/features/instructor/components/QuestionSetUses.tsx` | `QuestionSetUses` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
+| `src/features/instructor/pages/AssessmentPreviewPage.tsx` | `AssessmentPreviewPage` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
@@ -119,6 +130,7 @@
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
+| `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |

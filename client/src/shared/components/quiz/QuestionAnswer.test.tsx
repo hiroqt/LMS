@@ -9,7 +9,7 @@ import { QuestionPrompt } from "./QuestionPrompt";
 import { QuestionResult } from "./QuestionResult";
 import type { AnswerChange, AnswerValue, QuizQuestion } from "./types";
 
-const base = { points: 2, timeLimitSeconds: null, options: [] } as const;
+const base = { points: 2, timeLimitSeconds: null, options: [] as QuizQuestion["options"] };
 const mc: QuizQuestion = { ...base, id: 1, type: "multiple_choice", prompt: "Pick", options: [{ id: 10, text: "var" }, { id: 11, text: "const" }] };
 const ident: QuizQuestion = { ...base, id: 2, type: "identification", prompt: "Father of computers" };
 const enumeration: QuizQuestion = { ...base, id: 3, type: "enumeration", prompt: "Colors", itemCount: 3 };
@@ -114,7 +114,7 @@ describe("QuestionAnswer", () => {
   it("matching: a select per left item, from the rights; a choice saves at once", async () => {
     const onChange = vi.fn();
     render(<Harness question={matching} onChange={onChange} />);
-    const keyboard = screen.getByRole("combobox", { name: "Keyboard, question 3" });
+    const keyboard = screen.getByRole("combobox", { name: "Keyboard (question 3)" });
     expect(screen.getAllByRole("combobox")).toHaveLength(2);
     await userEvent.selectOptions(keyboard, "input");
     expect(onChange).toHaveBeenLastCalledWith({ matches: { "30": "input" } }, "choice");

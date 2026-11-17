@@ -26,7 +26,7 @@ export function MatchingAnswer({ number, lefts, rights, value, onChange }: Match
           <div key={left.id} className="flex flex-col gap-1.5 @xl:flex-row @xl:items-center @xl:gap-4">
             <label htmlFor={`${id}-${key}`} className="text-body font-medium text-ink @xl:w-1/2">
               {left.text}
-              <span className="sr-only">, question {number}</span>
+              {" "}<span className="sr-only">(question {number})</span>
             </label>
             <Select
               id={`${id}-${key}`}

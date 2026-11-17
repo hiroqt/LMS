@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { describeGiven, describeKey, fromAnswer, isAnswered, outcomeOf, pointsOf, splitUnderlined, takesShortcuts, toAnswerInput, usesSpelling } from "./answers";
 import type { QuizQuestion } from "./types";
 
-const base = { points: 2, timeLimitSeconds: null, options: [] } as const;
+const base = { points: 2, timeLimitSeconds: null, options: [] as QuizQuestion["options"] };
 const mc: QuizQuestion = { ...base, id: 1, type: "multiple_choice", prompt: "Pick", options: [{ id: 10, text: "var" }, { id: 11, text: "const" }] };
 const ident: QuizQuestion = { ...base, id: 2, type: "identification", prompt: "Father of computers" };
 const enumeration: QuizQuestion = { ...base, id: 3, type: "enumeration", prompt: "Colors", itemCount: 3 };
