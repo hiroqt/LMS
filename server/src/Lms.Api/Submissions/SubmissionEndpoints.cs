@@ -207,6 +207,8 @@ public static class SubmissionEndpoints
                     var answer = answers.FirstOrDefault(a => a.QuestionId == questionId);
                     if (answer is null) { answer = new SubmissionAnswer { SubmissionId = row.Id, QuestionId = questionId }; db.SubmissionAnswers.Add(answer); answers.Add(answer); }
                     answer.PointsAwarded = Math.Round(points, 2);
+                    // An override of an automatically scored question survives a re-score (essays are never re-scored).
+                    if (key.Question.Type != QuestionType.Essay) answer.ManualPoints = answer.PointsAwarded;
                     // Points for a near miss waiting for review settle it; the decision keeps it settled when the attempt is re-scored.
                     if (answer.MatchNote == MatchNote.Review && answer.SpellingDecision is null)
                         answer.SpellingDecision = points > 0 ? SpellingDecision.Accepted : SpellingDecision.Rejected;

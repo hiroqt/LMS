@@ -52,6 +52,8 @@ public static class AccuracyEndpoints
 
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             answer.SpellingDecision = input.Decision;
+            // The decision is the instructor's newer word on this answer, so it replaces points given to it earlier.
+            answer.ManualPoints = null;
             await db.SaveChangesAsync(ct);
             var keys = await SubmissionEndpoints.KeysAsync(db, cw!.QuestionnaireId!.Value, ct);
             // Only an attempt whose score students could already see counts as "updated".

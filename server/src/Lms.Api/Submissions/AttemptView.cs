@@ -111,7 +111,7 @@ public static class AttemptView
     }
 
     /// <param name="showPoints">Points and the match note (students: per the answer review).</param>
-    /// <param name="instructor">Adds the spelling decision.</param>
+    /// <param name="instructor">Adds the spelling decision and the manual points.</param>
     public static AnswerDto ToAnswerDto(IReadOnlyList<ScoringKey> keys, SubmissionAnswer a, bool showPoints, bool instructor = false)
     {
         var type = keys.FirstOrDefault(k => k.Question.Id == a.QuestionId)?.Question.Type;
@@ -121,7 +121,8 @@ public static class AttemptView
             type == QuestionType.Matching ? Scoring.ReadMatches(a.AnswerText) : new Dictionary<long, string>(),
             showPoints ? a.PointsAwarded : null,
             showPoints ? a.MatchNote : null,
-            instructor ? a.SpellingDecision : null);
+            instructor ? a.SpellingDecision : null,
+            instructor ? a.ManualPoints : null);
     }
 }
 

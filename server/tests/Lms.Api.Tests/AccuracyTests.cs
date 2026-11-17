@@ -67,6 +67,32 @@ public sealed class AccuracyTests : AssessmentTestBase
     }
 
     [Fact]
+    public async Task A_rescore_keeps_the_instructors_point_overrides()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync(new { spellingMode = "review" });
+        var waiting = await TakeAsync(StudentA, exam, a => Answers(a, identification: "Babage"));
+        var attemptId = waiting.GetProperty("id").GetInt64();
+        long Q(string type) => QuestionOfType(waiting, type).GetProperty("id").GetInt64();
+
+        // Partial points settle the near miss; half a point overrides a right multiple-choice answer.
+        var graded = await Json(await Instructor.PutAsJsonAsync($"{Base}/{exam}/submissions/{attemptId}/grade", new
+        {
+            answerPoints = new Dictionary<string, decimal> { [Q("identification").ToString()] = 1m, [Q("multiple_choice").ToString()] = 0.5m },
+        }));
+        Assert.Equal(9.5m, graded.GetProperty("score").GetDecimal());
+
+        await Json(await Instructor.PatchAsJsonAsync($"{Base}/{exam}", new { spellingMode = "typos" }));
+        var after = await Json(await StudentA.GetAsync($"{Base}/{exam}/attempts/{attemptId}"));
+        Assert.Equal(9.5m, after.GetProperty("score").GetDecimal());
+
+        var detail = await Json(await Instructor.GetAsync($"{Base}/{exam}/submissions/{attemptId}"));
+        var answer = detail.GetProperty("answers").EnumerateArray().Single(a => a.GetProperty("questionId").GetInt64() == Q("identification"));
+        Assert.Equal(1m, answer.GetProperty("pointsAwarded").GetDecimal());
+        Assert.Equal(1m, answer.GetProperty("manualPoints").GetDecimal());
+    }
+
+    [Fact]
     public async Task Item_analysis_flags_a_key_that_most_students_disagree_with()
     {
         await SeedAsync();

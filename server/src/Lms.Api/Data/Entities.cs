@@ -279,6 +279,8 @@ public sealed class Submission : Audited
     public string? FileName { get; set; }
     /// <summary>When a regrade (a key fix or a spelling change) last changed this attempt's score.</summary>
     public DateTime? ScoreUpdatedAt { get; set; }
+    /// <summary>When retention cleared this attempt's text (contract §7); such an attempt is never re-scored.</summary>
+    public DateTime? AnonymizedAt { get; set; }
 }
 
 public sealed class SubmissionAnswer : Audited
@@ -293,6 +295,8 @@ public sealed class SubmissionAnswer : Audited
     public string? MatchNote { get; set; }
     /// <summary>The instructor's decision on a near miss: see <see cref="Data.SpellingDecision"/>.</summary>
     public string? SpellingDecision { get; set; }
+    /// <summary>Points the instructor gave an automatically scored question; a re-score keeps them.</summary>
+    public decimal? ManualPoints { get; set; }
 }
 
 public sealed class Grade : Audited
