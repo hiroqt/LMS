@@ -16,8 +16,9 @@ export function SpellingReviewView({ classId, examId, examTitle }: { classId: st
   const toast = useToast();
   const query = useSpellingReview(classId, examId);
   const decide = useSpellingDecision(classId, examId, {
-    onSuccess: (row) => toast.show({ title: row.decision === "rejected" ? "Marked wrong" : "Accepted", description: `${row.studentName} · question ${row.number} · ${row.pointsAwarded ?? 0} / ${row.points}`, tone: "success" }),
-    onError: (message, row) => toast.show({ title: `Could not save the decision for ${row.studentName}`, description: message, tone: "danger" }),
+    // One toast per answer: a saved retry replaces the error it fixed.
+    onSuccess: (row) => toast.show({ group: `spelling-${rowKey(row)}`, title: row.decision === "rejected" ? "Marked wrong" : "Accepted", description: `${row.studentName} · question ${row.number} · ${row.pointsAwarded ?? 0} / ${row.points}`, tone: "success" }),
+    onError: (message, row) => toast.show({ group: `spelling-${rowKey(row)}`, title: `Could not save the decision for ${row.studentName}`, description: message, tone: "danger" }),
   });
 
   if (query.isPending) {

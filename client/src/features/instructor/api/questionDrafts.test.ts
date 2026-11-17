@@ -210,6 +210,21 @@ describe("incomplete questions", () => {
     expect(saved[0]!.questions.map((draft) => draft.problems)).toEqual([[], ["Enter the question."]]);
   });
 
+  it("matches the server's problems to the questions as sent, even after a move or an edit during the save", () => {
+    const [a, b, c] = [blankQuestion("essay"), blankQuestion("essay"), blankQuestion("essay")];
+    const sent = [{ ...blankSection(), questions: [a, b, c] }];
+    const stored = (id: number, problems: string[]) => ({ ...questions[4]!, id, sortOrder: id, incomplete: problems.length > 0, problems });
+    const set: QuestionSet = { id: 1, title: "", subjectId: null, locked: false, usedBy: [], questions: [stored(1, ["Enter the question."]), stored(2, []), stored(3, ["Give it more than 0 and at most 1000 points."])] };
+    // While saving, b moved to the top, c was edited (which clears its problems), and d was added.
+    const editedC = { ...c, prompt: "Changed", problems: [] };
+    const d = blankQuestion("essay");
+    const now = [{ ...sent[0]!, questions: [b, a, editedC, d] }];
+    const result = applySaved(now, set, sent)[0]!.questions;
+    expect(result.map((draft) => draft.key)).toEqual([b.key, a.key, c.key, d.key]);
+    expect(result.map((draft) => draft.problems)).toEqual([[], ["Enter the question."], [], []]);
+    expect(result[2]).toBe(editedC);
+  });
+
   it("lists questions whose type was never chosen", () => {
     expect(untypedQuestions([{ ...blankSection(), questions: [blankQuestion("essay"), { ...blankQuestion("essay"), type: "" }] }])).toEqual([2]);
   });

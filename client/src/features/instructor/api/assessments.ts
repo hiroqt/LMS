@@ -157,14 +157,22 @@ export function courseworkErrors(fieldErrors: Record<string, string[]> | undefin
   return errors;
 }
 
-export function courseworkBody(settings: AssessmentSettings, questionnaireId: number, status: "draft" | "published") {
+/**
+ * The exam's create or patch body. A missing date means "unchanged" to the server (contract
+ * §8), so patching an existing exam whose date is now empty asks the server to clear it.
+ */
+export function courseworkBody(settings: AssessmentSettings, questionnaireId: number, status: "draft" | "published", existing = false) {
+  const dueAt = instant(settings.dueAt);
+  const availableFrom = instant(settings.availableFrom);
   return {
     moduleId: Number(settings.moduleId),
     title: settings.title.trim(),
     category: settings.category.trim() || "Quiz",
     instructions: settings.instructions,
-    dueAt: instant(settings.dueAt),
-    availableFrom: instant(settings.availableFrom),
+    dueAt,
+    availableFrom,
+    ...(existing && dueAt === undefined ? { clearDueAt: true } : {}),
+    ...(existing && availableFrom === undefined ? { clearAvailableFrom: true } : {}),
     timeLimitMinutes: Number(settings.timeLimit || "0"),
     maxAttempts: Number(settings.attempts),
     questionnaireId,
@@ -236,7 +244,7 @@ export async function saveAssessment(send: Sender, request: SaveRequest): Promis
     if (questionStep) return questionStep;
   }
 
-  const body = courseworkBody(settings, setId!, request.status);
+  const body = courseworkBody(settings, setId!, request.status, examId !== null);
   const examStep = await fail("exam", async () => {
     if (examId === null) examId = (await send<CourseworkDto>("POST", `${classPath(request.classId)}/coursework`, { type: "exam", ...body })).id;
     else await send("PATCH", `${classPath(request.classId)}/coursework/${examId}`, body);

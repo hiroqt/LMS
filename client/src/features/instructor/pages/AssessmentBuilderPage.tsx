@@ -21,7 +21,7 @@ import {
   type QuestionSource,
   type SettingsErrors,
 } from "../api/assessments";
-import { appendSections, applySaved, attentionFor, blankSection, firstErrorKey, flatten, fromImport, mapFieldErrors, summarize, toDraftSections, type DraftSection } from "../api/questionDrafts";
+import { appendSections, applySaved, attentionFor, blankSection, firstErrorKey, flatten, fromImport, mapFieldErrors, summarize, toDraftSections, type DraftSection, type MappedErrors } from "../api/questionDrafts";
 import { useQuestionSet, type ImportResult, type QuestionSet } from "../api/questionSets";
 import { classContent, subjectOf } from "../api/selectors";
 import type { Classroom } from "../api/types";
@@ -30,6 +30,7 @@ import { ImportDialog } from "../components/questionEditor/ImportDialog";
 import type { QuestionEditorHandle } from "../components/questionEditor/QuestionEditor";
 import { useGuardedNavigate } from "../hooks/useGuardedNavigate";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
+import { useEditRevision } from "../hooks/useEditRevision";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { instructorPaths } from "../paths";
 import { DetailsSection } from "./assessment/DetailsSection";
@@ -67,6 +68,7 @@ function startFromSaved(dto: CourseworkDto, set: QuestionSet | null, firstModule
 }
 
 const time = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const NO_ERRORS: MappedErrors = { questions: {}, sections: {}, general: [] };
 
 /** The assessment builder (D-040): …/assessments/new, or …/assessments/{id}/edit for a draft. */
 export default function AssessmentBuilderPage() {
@@ -148,11 +150,12 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
   const [reveal, setReveal] = useState(start?.reveal ?? false);
   const [imported, setImported] = useState<ImportResult | null>(null);
   const [importing, setImporting] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const { dirty, touch: markDirty, begin } = useEditRevision();
   const [saving, setSaving] = useState<SavingAction | null>(null);
   const [status, setStatus] = useState(start ? "Draft saved." : "");
   const [settingsErrors, setSettingsErrors] = useState<SettingsErrors>({});
-  const [questionErrors, setQuestionErrors] = useState<Record<string, string[]>>({});
+  // Keyed by question and section, mapped against the sections as they were sent.
+  const [questionErrors, setQuestionErrors] = useState<MappedErrors>(NO_ERRORS);
   const [publishProblem, setPublishProblem] = useState<string | undefined>();
   useUnsavedChanges(dirty);
 
@@ -161,10 +164,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
   const shown = usesSet ? (chosenSet.data ? toDraftSections(chosenSet.data) : []) : sections;
   const summary = summarize(shown);
   const attention = summary.attention.map((item) => ({ ...item, problem: attentionFor(flatten(shown).find((draft) => draft.key === item.key)!)[0] ?? "" }));
-  const mappedErrors = mapFieldErrors(questionErrors, sections);
 
   const touch = () => {
-    setDirty(true);
+    markDirty();
     setPublishProblem(undefined);
   };
   const changeSettings = (change: Partial<AssessmentSettings>) => {
@@ -208,6 +210,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     }
 
     setSaving(action);
+    // The editor stays editable while saving: remember what was sent.
+    const settle = begin();
+    const sent = sections;
     const outcome = await saveAssessment({
       classId: room.id,
       examId,
@@ -229,7 +234,7 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
       onCreated?.(String(outcome.examId));
       navigate(instructorPaths.assessmentEdit(room.id, outcome.examId), { replace: true });
     }
-    if (outcome.saved) setSections((current) => applySaved(current, outcome.saved!));
+    if (outcome.saved) setSections((current) => applySaved(current, outcome.saved!, sent));
 
     if (!outcome.ok) {
       const errors = outcome.fieldErrors ?? {};
@@ -239,8 +244,8 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
       } else if (outcome.stage === "questions") {
         if (usesSet) setSettingsErrors({ questions: outcome.message });
         else {
-          setQuestionErrors(errors);
-          const mapped = mapFieldErrors(errors, sections);
+          const mapped = mapFieldErrors(errors, sent);
+          setQuestionErrors(mapped);
           const key = firstErrorKey(mapped, sections);
           if (key) editor.current?.jumpTo(key, (mapped.questions[key] ?? mapped.sections[key])?.[0]?.field);
         }
@@ -255,8 +260,8 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
       return;
     }
 
-    setQuestionErrors({});
-    setDirty(false);
+    setQuestionErrors(NO_ERRORS);
+    settle();
     if (action === "publish") {
       toast.show({ title: "Assessment published", description: settings.title.trim(), tone: "success" });
       navigate(instructorPaths.classPage(room.id, "Classwork"));
@@ -284,7 +289,7 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
             }}
             sections={sections}
             onSections={changeSections}
-            errors={mappedErrors}
+            errors={questionErrors}
             reveal={reveal}
             imported={imported}
             onDismissImport={() => setImported(null)}

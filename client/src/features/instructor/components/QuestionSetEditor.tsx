@@ -7,6 +7,7 @@ import type { ActionResult } from "../api/actions";
 import { clearImport, peekImport } from "../api/importHandoff";
 import { appendSections, applySaved, firstErrorKey, fromImport, mapFieldErrors, summarize, toDraftSections, untypedQuestions, type DraftSection } from "../api/questionDrafts";
 import { QUESTION_TYPE_LABELS, type ImportResult, type QuestionSet } from "../api/questionSets";
+import { useEditRevision } from "../hooks/useEditRevision";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { ImportDialog } from "./questionEditor/ImportDialog";
 import { ImportSummary } from "./questionEditor/ImportSummary";
@@ -32,7 +33,7 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
   });
   const [imported, setImported] = useState<ImportResult | null>(handedOver ?? null);
   const [importing, setImporting] = useState(false);
-  const [dirty, setDirty] = useState(Boolean(handedOver));
+  const { dirty, touch, begin } = useEditRevision(Boolean(handedOver));
   const [reveal, setReveal] = useState(() => Boolean(handedOver) || set.questions.some((question) => question.incomplete));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
@@ -44,7 +45,7 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
   const summary = summarize(sections);
   const change = (next: DraftSection[]) => {
     setSections(next);
-    setDirty(true);
+    touch();
   };
 
   const submit = async (event: FormEvent) => {
@@ -64,6 +65,9 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
       return;
     }
     setSaving(true);
+    // The editor stays editable while saving: remember what was sent.
+    const settle = begin();
+    const sent = sections;
     const result = await onSave(title, sections);
     setSaving(false);
     setFieldErrors(result.fieldErrors ?? {});
@@ -74,8 +78,8 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
       if (key) editor.current?.jumpTo(key, (mapped.questions[key] ?? mapped.sections[key])?.[0]?.field);
       return;
     }
-    if (result.saved) setSections((current) => applySaved(current, result.saved!));
-    setDirty(false);
+    if (result.saved) setSections((current) => applySaved(current, result.saved!, sent));
+    settle();
     setStatus(`All changes saved at ${time()}.`);
     toast.show({ title: "Question set saved", description: title.trim(), tone: "success" });
   };
@@ -83,7 +87,7 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
   return (
     <form onSubmit={submit} noValidate aria-label="Edit question set" className="flex flex-col gap-4">
       <Field label="Set title" required error={fieldErrors.title?.[0]}>
-        <Input value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} />
+        <Input value={title} onChange={(event) => { setTitle(event.target.value); touch(); }} />
       </Field>
       {imported && <ImportSummary result={imported} onDismiss={() => setImported(null)} />}
       <QuestionEditor
@@ -113,7 +117,7 @@ export function QuestionSetEditor({ set, onSave }: QuestionSetEditorProps) {
           setSections((current) => appendSections(current, fromImport(result)));
           setImported(result);
           setReveal(true);
-          setDirty(true);
+          touch();
           toast.show({ title: "Questions imported", description: "Check them, then save the set.", tone: "success" });
         }}
       />

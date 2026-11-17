@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Eye, SpellCheck } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { describeApiError, getJson, isApiError, sendJson, shouldRetryApiRead } from "../../../shared/api/http";
 import type { Viewer } from "../../../shared/api/viewer";
@@ -58,11 +58,12 @@ export default function AssessmentPreviewPage() {
   const [values, setValues] = useState<Record<number, AnswerValue>>({});
   const [result, setResult] = useState<PreviewScore | null>(null);
   const [checking, setChecking] = useState(false);
+  const score = useRef<HTMLParagraphElement>(null);
 
   const title = exam?.title ?? "Preview as student";
   const back = <BackLink label="Back to the assessment builder" onBack={() => navigate(builderPath(classId, id))} />;
-  const banner = (
-    <p role="note" className="m-0 flex items-center gap-2 rounded-card border border-line bg-info-soft p-3 text-body text-ink">
+  const note = (
+    <p role="note" className="m-0 flex items-center gap-2">
       <Eye aria-hidden className="size-4 shrink-0 text-info" />
       <span><strong className="font-semibold">Preview: nothing is saved.</strong> This is what students see. Answers you give here are never recorded.</span>
     </p>
@@ -118,6 +119,11 @@ export default function AssessmentPreviewPage() {
     setChecking(true);
     try {
       setResult(await sendJson<PreviewScore>("POST", `${workPath(classId, id)}/preview/score`, { answers }, { viewer }));
+      // Every question grows a result, so start the review from the top, where the score is, as
+      // the student's result page does. Left in place, scroll anchoring could park a control half
+      // under the sticky top bar (axe target-size).
+      window.scrollTo({ top: 0 });
+      score.current?.focus({ preventScroll: true });
     } catch (failure) {
       toast.show({ title: "Could not check the answers", description: describeApiError(failure).detail, tone: "danger" });
     } finally {
@@ -132,7 +138,13 @@ export default function AssessmentPreviewPage() {
         title={title}
         description={`Preview as student · ${questions.length} ${questions.length === 1 ? "question" : "questions"} · ${totalPoints} ${totalPoints === 1 ? "point" : "points"}`}
       />
-      {banner}
+      <div className="flex flex-col rounded-card border border-line bg-info-soft p-3 text-body text-ink">
+        {note}
+        {/* Empty until the answers are checked; a margin only, so the live region is never hidden. */}
+        <p ref={score} role="status" tabIndex={-1} className="m-0 mt-2 text-body-lg font-semibold outline-none empty:mt-0">
+          {result ? `Score: ${pointsOf(result.score, result.maxPoints)}` : ""}
+        </p>
+      </div>
       {spellingMode && usesSpelling(questions) && (
         <p className="m-0 flex items-center gap-2 text-body text-ink"><SpellCheck aria-hidden className="size-4 shrink-0 text-muted" />{SPELLING_RULES[spellingMode]}.</p>
       )}
@@ -174,8 +186,7 @@ export default function AssessmentPreviewPage() {
         );
       })}
 
-      <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p role="status" className="m-0 text-body-lg font-semibold text-ink">{result ? `Score: ${pointsOf(result.score, result.maxPoints)}` : ""}</p>
+      <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
