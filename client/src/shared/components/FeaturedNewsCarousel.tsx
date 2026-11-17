@@ -34,7 +34,7 @@ export function FeaturedNewsCarousel({ slides, onViewCalendar }: { slides: Featu
     >
       {/* The image sits beside the text, not under it, so the text always has a solid background (C-019). */}
       <div aria-roledescription="slide" aria-label={`${position} of ${slides.length}`} className="grid grid-cols-1 @2xl:grid-cols-[3fr_2fr]">
-        <div className="flex min-h-56 flex-col justify-end gap-2 p-5 sm:p-7">
+        <div className="flex min-h-56 flex-col justify-center gap-2 p-5 sm:p-7">
           <h3 className="m-0 text-section font-semibold">{slide.title}</h3>
           <p className="m-0 text-body text-primary-100">{slide.category} · {formatLongDay(new Date(`${slide.date}T00:00:00`))}</p>
           <p className="m-0 max-w-prose text-body">{slide.summary}</p>

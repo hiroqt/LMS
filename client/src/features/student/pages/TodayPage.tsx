@@ -126,16 +126,12 @@ function CalendarPanel({ catalog, completed, now, className }: { catalog: Studen
     <Panel id="calendar-panel" className={className} icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
       {entries.length ? (
         <ol className="m-0 flex flex-1 list-none flex-col justify-between p-0">
-          {entries.map((entry, position) => {
+          {entries.map((entry) => {
             const body = (
               <>
                 <span className="flex w-14 shrink-0 flex-col items-center rounded-control bg-canvas py-1.5 leading-tight">
                   <span className="text-label font-semibold tracking-label text-muted uppercase">{new Intl.DateTimeFormat("en-US", { month: "short" }).format(entry.date)}</span>
                   <span className="text-section font-semibold tabular-nums">{entry.date.getDate()}</span>
-                </span>
-                <span aria-hidden className="relative flex w-3 shrink-0 items-center justify-center self-stretch">
-                  <span className={cn("absolute left-1/2 w-px -translate-x-1/2 bg-line", position === 0 ? "top-1/2" : "top-0", position === entries.length - 1 ? "bottom-1/2" : "bottom-0")} />
-                  <span className={cn("relative size-2.5 rounded-full ring-2 ring-surface", entry.assessment ? "bg-primary-600" : "bg-accent-400")} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <strong className="text-card-title font-semibold">{entry.title}</strong>

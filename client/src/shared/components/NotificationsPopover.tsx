@@ -24,7 +24,7 @@ export function NotificationsPopover({ heading, items, emptyText, onSelect }: No
         className="relative grid size-touch place-items-center rounded-control border-0 bg-transparent text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
       >
         <Bell aria-hidden className="size-5" />
-        {items.length > 0 && <span aria-hidden className="absolute top-2.5 right-2.5 size-2.5 rounded-full bg-accent-400 ring-2 ring-surface" />}
+        {items.length > 0 && <span aria-hidden className="absolute top-0.5 right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-primary-700 px-1 text-body leading-none font-semibold text-white tabular-nums">{items.length > 9 ? "9+" : items.length}</span>}
       </PopoverTrigger>
       <PopoverContent>
         <p className="m-0 px-2.5 pt-1.5 pb-2 text-body font-semibold">{heading}</p>

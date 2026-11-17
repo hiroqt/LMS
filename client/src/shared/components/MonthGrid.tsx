@@ -39,8 +39,6 @@ export function MonthGrid({ month, entries, now, label, size = "compact" }: Mont
             {cells.slice(week * 7, week * 7 + 7).map((day, weekday) => {
               const dayEntries = day === null ? [] : entries.filter((item) => item.date.getDate() === day);
               const isToday = day === today.getDate() && month.getMonth() === today.getMonth() && month.getFullYear() === today.getFullYear();
-              const hasAssessment = dayEntries.some((item) => item.kind === "deadline");
-              const hasEvent = dayEntries.some((item) => item.kind === "event");
               return (
                 <td key={weekday} className={cn("p-0.5 align-top", size === "full" && "h-16 sm:h-20")}>
                   {day !== null && (
@@ -53,12 +51,6 @@ export function MonthGrid({ month, entries, now, label, size = "compact" }: Mont
                     >
                       <span className="sr-only">{`${monthName} ${day}${dayEntries.length ? `, ${dayEntries.map((item) => item.title).join(", ")}` : ""}`}</span>
                       <time aria-hidden dateTime={`${month.getFullYear()}-${pad2(month.getMonth() + 1)}-${pad2(day)}`}>{day}</time>
-                      {dayEntries.length > 0 && (
-                        <span aria-hidden className="flex gap-1">
-                          {hasAssessment && <i className={cn("size-1.5 rounded-full", isToday ? "bg-white" : "bg-primary-600")} />}
-                          {hasEvent && <i className={cn("size-1.5 rounded-full", isToday ? "bg-accent-100" : "bg-accent-400")} />}
-                        </span>
-                      )}
                       {size === "full" && dayEntries.length > 0 && (
                         <span aria-hidden className="hidden text-body text-muted sm:block">{dayEntries.length} {dayEntries.length === 1 ? "item" : "items"}</span>
                       )}

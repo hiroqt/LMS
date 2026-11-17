@@ -15,6 +15,8 @@ const RULES: { name: string; pattern: RegExp; fix: string }[] = [
   { name: "pulse or keyframe animation", pattern: /animate-(pulse|ping|bounce)|@keyframes|animation:/, fix: "use a static skeleton or a 150 ms transition" },
   { name: "side line", pattern: /\bborder-[ls]-|border-left|border-inline-start/, fix: "use a uniform border and a soft tint" },
   { name: "status dot", pattern: /[-_]dot\b|\bdot[-_]/i, fix: "use an icon with text or a Badge" },
+  // A tiny filled circle: size-1 to size-3 together with rounded-full on one element.
+  { name: "status dot", pattern: /\bsize-(1|1\.5|2|2\.5|3)\b[^"]*\brounded-full\b|\brounded-full\b[^"]*\bsize-(1|1\.5|2|2\.5|3)\b/, fix: "use an icon with text or a Badge" },
   { name: "blur", pattern: /backdrop-blur|backdrop-filter/, fix: "use a solid bg-surface" },
 ];
 
