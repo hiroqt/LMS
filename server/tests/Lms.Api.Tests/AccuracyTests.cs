@@ -246,6 +246,41 @@ public sealed class AccuracyTests : AssessmentTestBase
     }
 
     [Fact]
+    public async Task Anonymized_attempts_are_never_rescored_and_leave_item_analysis_top_answers()
+    {
+        await SeedAsync();
+        var (exam, set) = await ExamAsync();
+        var done = await TakeAsync(StudentA, exam, a => Answers(a));
+        Assert.Equal(11m, done.GetProperty("score").GetDecimal());
+
+        // class-a's term (1, 1) ends and is more than 2 terms behind the current one, so retention anonymizes it.
+        await Factory.WithDbAsync(async db =>
+        {
+            (await db.IsmsClasses.SingleAsync(c => c.Id == "class-a")).IsActive = false;
+            db.IsmsClasses.AddRange(
+                new IsmsClass { Id = "class-b", ScheduleId = "SCH-2", SubjectName = "Computing 2", InstructorId = Teacher, InstructorName = "Ana Reyes", SchoolYearId = 2, SemesterId = 1 },
+                new IsmsClass { Id = "class-c", ScheduleId = "SCH-3", SubjectName = "Computing 3", InstructorId = Teacher, InstructorName = "Ana Reyes", SchoolYearId = 2, SemesterId = 2 },
+                new IsmsClass { Id = "class-d", ScheduleId = "SCH-4", SubjectName = "Computing 4", InstructorId = Teacher, InstructorName = "Ana Reyes", SchoolYearId = 3, SemesterId = 1, IsActive = true });
+            return await db.SaveChangesAsync();
+        });
+        await Factory.WithServiceAsync<AttemptRetention, RetentionResult>(r => r.RunAsync(CancellationToken.None));
+
+        var q = (await Json(await Instructor.GetAsync($"/api/questionnaires/{set}"))).GetProperty("questions").EnumerateArray().ToList();
+        var fixedKey = await Json(await Instructor.PutAsJsonAsync($"/api/questionnaires/{set}/answer-key", new
+        {
+            questions = new object[] { new { questionId = q[3].GetProperty("id").GetInt64(), expectedAnswers = new[] { "Charles Babbage", "Babbage", "Pascal" } } },
+        }));
+        Assert.Equal(0, fixedKey.GetProperty("regraded").GetInt32());
+        var detail = await Json(await Instructor.GetAsync($"{Base}/{exam}/submissions/{done.GetProperty("id").GetInt64()}"));
+        Assert.Equal(11m, detail.GetProperty("submission").GetProperty("score").GetDecimal());
+
+        // Typed answers are gone, so the modified true or false question lists none (not a bare "False").
+        var rows = (await Json(await Instructor.GetAsync($"{Base}/{exam}/item-analysis"))).EnumerateArray().ToList();
+        Assert.Equal(0, rows.Single(r => r.GetProperty("type").GetString() == "modified_true_false").GetProperty("topAnswers").GetArrayLength());
+        Assert.Equal("CPU", rows[0].GetProperty("topAnswers")[0].GetProperty("answer").GetString());   // choices keep theirs
+    }
+
+    [Fact]
     public async Task Only_the_owner_can_fix_a_key_and_essays_have_none()
     {
         await SeedAsync();

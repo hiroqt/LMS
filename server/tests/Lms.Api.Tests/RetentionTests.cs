@@ -71,6 +71,8 @@ public sealed class RetentionTests : IDisposable
             Assert.Equal(2m, answer.PointsAwarded);
             Assert.Null((await db.Submissions.SingleAsync(s => s.Id == oldEssay)).Text);
             Assert.Equal(18m, (await db.Grades.SingleAsync(g => g.SubmissionId == oldEssay)).Points);
+            Assert.NotNull((await db.Submissions.SingleAsync(s => s.Id == old)).AnonymizedAt);
+            Assert.Null((await db.Submissions.SingleAsync(s => s.Id == recent)).AnonymizedAt);
             Assert.Equal("Babbage", (await db.SubmissionAnswers.SingleAsync(a => a.SubmissionId == recent)).AnswerText);
             Assert.Equal("Babbage", (await db.SubmissionAnswers.SingleAsync(a => a.SubmissionId == current)).AnswerText);
             var audit = await db.AuditLog.SingleAsync(a => a.Category == "retention");
