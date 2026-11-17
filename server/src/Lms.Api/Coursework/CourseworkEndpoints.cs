@@ -21,7 +21,8 @@ public sealed record CourseworkDto(long Id, long ModuleId, string Type, string T
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
     DateTimeOffset? DueAt, DateTimeOffset? AvailableFrom, bool? AllowLate, bool? AllowResubmission, int? MaxAttempts,
     int? TimeLimitMinutes, long? QuestionnaireId, string? Status,
-    string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null);
+    string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null,
+    bool? ClearDueAt = null, bool? ClearAvailableFrom = null);
 
 /// <summary>
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
@@ -182,8 +183,11 @@ public static class CourseworkEndpoints
             if (await db.Modules.AnyAsync(m => m.Id == moduleId && m.ClassId == classId, ct)) row.ModuleId = moduleId;
             else errors.Add("moduleId", "Choose a module of this class.");
         }
-        if (input.DueAt is { } due) row.DueAt = due.UtcDateTime;
-        if (input.AvailableFrom is { } from) row.AvailableFrom = from.UtcDateTime;
+        // A null date means "unchanged"; clearDueAt / clearAvailableFrom remove one.
+        if (input.ClearDueAt == true) row.DueAt = null;
+        else if (input.DueAt is { } due) row.DueAt = due.UtcDateTime;
+        if (input.ClearAvailableFrom == true) row.AvailableFrom = null;
+        else if (input.AvailableFrom is { } from) row.AvailableFrom = from.UtcDateTime;
         if (input.AllowLate is { } late) row.AllowLate = late;
         if (input.AllowResubmission is { } again) row.AllowResubmission = again;
         if (input.MaxAttempts is { } attempts) { if (attempts is < 1 or > 20) errors.Add("maxAttempts", "Allow 1 to 20 attempts."); else row.MaxAttempts = attempts; }

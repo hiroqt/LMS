@@ -79,6 +79,35 @@ public sealed class GradingContractTests : AssessmentTestBase
         Assert.Equal("accepted", answer.GetProperty("decision").GetString());
     }
 
+    // ------------------------------------------------------------ builder client (PR #50)
+
+    [Fact]
+    public async Task A_patch_can_clear_the_due_date_and_availability()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync(new { dueAt = Factory.Time.Now.AddDays(3), availableFrom = Factory.Time.Now.AddDays(-1) });
+        var dated = await Json(await Instructor.GetAsync($"{Base}/{exam}"));
+        Assert.NotEqual(JsonValueKind.Null, dated.GetProperty("dueAt").ValueKind);
+
+        // A null date is still "unchanged".
+        var unchanged = await Json(await Instructor.PatchAsJsonAsync($"{Base}/{exam}", new { dueAt = (DateTimeOffset?)null, title = "Renamed" }));
+        Assert.NotEqual(JsonValueKind.Null, unchanged.GetProperty("dueAt").ValueKind);
+
+        var cleared = await Json(await Instructor.PatchAsJsonAsync($"{Base}/{exam}", new { clearDueAt = true, clearAvailableFrom = true }));
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("dueAt").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("availableFrom").ValueKind);
+        Assert.Equal("Renamed", cleared.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Cors_exposes_content_disposition()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/lms/status");
+        request.Headers.Add("Origin", LmsApiFactory.AllowedOrigin);
+        var response = await Factory.CreateClient().SendAsync(request);
+        Assert.Contains("Content-Disposition", response.Headers.GetValues("Access-Control-Expose-Headers").Single());
+    }
+
     // ------------------------------------------------------------ student client (PR #49)
 
     [Fact]

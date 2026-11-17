@@ -59,7 +59,9 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
     cors.AddDefaultPolicy(policy => policy
         .WithOrigins(origins)
         .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete)
-        .AllowAnyHeader());
+        .AllowAnyHeader()
+        // Lets the browser read the import template's file name.
+        .WithExposedHeaders("Content-Disposition"));
 });
 
 var app = builder.Build();
