@@ -14,13 +14,15 @@ export interface TopbarSearchProps<T extends TopbarSearchResult> {
   search: (query: string) => T[];
   onSelect: (result: T) => void;
   autoFocus?: boolean;
+  /** Hint inside the empty field. */
+  placeholder?: string;
 }
 
 /**
  * Workspace search in the top bar. Results appear as buttons under the field
  * as you type, with a live count for screen readers. Esc clears and closes.
  */
-export function TopbarSearch<T extends TopbarSearchResult>({ label, search, onSelect, autoFocus }: TopbarSearchProps<T>) {
+export function TopbarSearch<T extends TopbarSearchResult>({ label, search, onSelect, autoFocus, placeholder = "Search classes, work, materials" }: TopbarSearchProps<T>) {
   const [query, setQuery] = useState("");
   const listId = useId();
   const results = search(query);
@@ -42,7 +44,7 @@ export function TopbarSearch<T extends TopbarSearchResult>({ label, search, onSe
         aria-label={label}
         autoFocus={autoFocus}
         aria-controls={open ? listId : undefined}
-        placeholder="Search classes, work, materials"
+        placeholder={placeholder}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         className="min-h-touch w-full rounded-control border border-line-strong bg-canvas pr-10 pl-9 text-body-lg text-ink placeholder:text-muted focus-visible:bg-surface focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-focus [&::-webkit-search-cancel-button]:hidden"
