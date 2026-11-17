@@ -351,6 +351,22 @@ Materials filter on a module includes its submodules' materials. Ordering and la
 connector MODULES and student node MODS, both in `submodules`; the new tab does not change any
 existing spec.
 
+### D-034 · Exams can reuse a question set; a locked set is changed by copying it
+`2026-11-17` · hiro (Phase 3a, PR B) · scope: instructor, server, e2e · confidence: medium
+(D-033 is taken by the submodules branch.) A question set (the API's questionnaire) belongs to
+one instructor and one subject they teach, and can back exams in any of their classes for that
+subject; the server refuses another instructor's set, a subject they do not teach, and a set for
+another subject. The assessment form adds **Questions**: "Write new questions" (the previous
+journey, now saving the set under the class's subject) or "Use an existing question set", which
+hides Points because the exam is worth the set's points. Each exam keeps its own dates, attempts
+("Attempts allowed", default 1, the server's previous default) and time limit. A new **Question
+sets** page in the Instructor navigation lists each set's questions, points, the exams that use it,
+and a Locked badge. Once a student has started any exam that uses a set it is read-only, because
+recorded answers point at its questions; **Make a copy** (`POST /api/questionnaires/{id}/copy`)
+makes an unlocked deep copy to edit instead. The editor sends the whole question list at once and
+can add multiple-choice questions only; other types are edited in place. Existing specs are
+unchanged; `question-sets` covers the new journeys.
+
 ### D-035 · Monthly attendance is recorded per class, not counted in grades
 `2026-11-17` · hiro (Phase 3a) · scope: instructor, student, shared/api, server, e2e · confidence: medium
 Attendance is monthly totals, not a daily roll call: for each class and month the instructor

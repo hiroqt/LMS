@@ -78,6 +78,9 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ✅ |
 | J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ✅ |
 | J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | ✅ |
+| E: assessment (reuse) | Assessment uses an existing question set; Points hidden; set lists both exams (D-034) | ✔ `question-sets` QS → E | ✅ |
+| QS | Question sets page: count, points, exams using each, Locked badge; edit an unlocked set | ✔ `question-sets`, `QuestionSetEditor.test.tsx` | ✅ |
+| QS (locked) | Locked set is read-only with an explanation; Make a copy gives an editable copy; original unchanged | ✔ `question-sets` | ✅ |
 | G | Gradebook loads | ✔ `instructor-flow` G | ✅ |
 | SETTINGS | Edit weights and passing score (persisted) | ✔ `instructor-more` | ✅ |
 | Mobile | Drawer → class at phone width | ✔ `@mobile` | ✅ |
@@ -137,3 +140,5 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | An exam's grade shows on the exam page and the result (D-015) | ✔ `student-new` |
 | Overview mapping: completed work, best exam attempt, archived content, review queue | ✔ `catalog.test.ts`, `store.test.ts` |
 | Submodules: instructor builds them, student sees them nested; Modules tabs pass axe and fit 320px (D-033) | ✔ `submodules` (`@all` for axe and 320px); tree rules in `moduleTree.test.ts` |
+| Question sets: copy is deep and owner-only; an exam uses only the instructor's own set for its class's subject (D-034) | ✔ `CourseworkTests` (server), `questionSets.test.ts` |
+| Question sets pages: zero axe violations, text ≥14px, no sideways scroll at 320px, reachable from the drawer | ✔ `question-sets` `@all`, `@mobile` |
