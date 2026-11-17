@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { test as base, expect, type Page } from "@playwright/test";
 
 /** The Demo-mode LMS API the suite runs against (playwright.config.ts). */
-export const API = "http://localhost:5299";
+export const API = `http://localhost:${process.env.E2E_API_PORT ?? 5299}`;
 
 /**
  * The demo data is dated around October 2026, and the app reads the real
