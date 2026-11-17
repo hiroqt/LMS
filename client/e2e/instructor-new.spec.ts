@@ -6,7 +6,7 @@ import { expect, test, type Page, seedHandedInAssignment } from "./fixtures";
 // proven by the unchanged flow specs in the instructor-new / both-new projects.
 
 const CLASS = "/instructor/classes/biology";
-const TABS = ["", "?tab=Classwork", "?tab=Announcements", "?tab=Materials", "?tab=People", "?tab=Submissions", "?tab=Create+content"];
+const TABS = ["", "?tab=Classwork", "?tab=Announcements", "?tab=Materials", "?tab=People", "?tab=Attendance", "?tab=Submissions", "?tab=Create+content"];
 
 async function useNewInstructorUi(page: Page) {
   await page.goto("/instructor");

@@ -36,7 +36,7 @@ test.describe("Rebuilt Student screens: zero axe violations, text ≥14px", () =
   test("a class on every tab, and a material @all", async ({ page }) => {
   test.slow(); // many page loads, each with a full axe scan (L-030)
     await useNewStudentUi(page);
-    for (const tab of ["", "?tab=Classwork", "?tab=Materials", "?tab=People"]) {
+    for (const tab of ["", "?tab=Classwork", "?tab=Materials", "?tab=People", "?tab=Attendance"]) {
       await page.goto(`/student/classes/biology${tab}`);
       await check(page);
     }
@@ -64,7 +64,7 @@ test("no rebuilt Student page scrolls sideways at 320px @mobile", async ({ page 
   await page.setViewportSize({ width: 320, height: 640 });
   const pages = [
     "/student", "/student/tasks", "/student/calendar", "/student/classes", "/student/classes/biology?tab=Classwork",
-    "/student/classes/biology?tab=People", `/student/materials/${demoMaterial("biology-material-0")}`, `/student/assessments/${demoAssessment("math-0")}`, `/student/assessments/${demoAssessment("math-0")}/quiz`,
+    "/student/classes/biology?tab=People", "/student/classes/biology?tab=Attendance", `/student/materials/${demoMaterial("biology-material-0")}`, `/student/assessments/${demoAssessment("math-0")}`, `/student/assessments/${demoAssessment("math-0")}/quiz`,
   ];
   for (const path of pages) {
     await page.goto(path);
