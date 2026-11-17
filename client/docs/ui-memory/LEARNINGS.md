@@ -481,3 +481,35 @@ down a long page can render outside the viewport, so cap them with
 `max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto`. Specs that need an
 exam "after its due date" should `PATCH` `dueAt` into the past, because closing answers 409 until
 everyone is graded (D-036).
+
+### L-067 · An editor that stays open while saving needs a revision, not a boolean
+`2026-11-17` · hiro · scope: instructor · confidence: high
+The assessment builder and the question set editor stay editable during a save, so clearing
+`dirty` when the save resolves marks later edits as saved. Use `useEditRevision`: `begin()` at the
+start of a save returns `settle()`, which clears `dirty` only if nothing changed since. Results
+that come back per question (`applySaved`, field errors) are matched to the sections as they were
+sent, by key, never by today's position. A missing date in a coursework patch means "unchanged":
+send `clearDueAt`/`clearAvailableFrom` to empty one (contract §8).
+
+### L-068 · A sticky top bar can make axe fail `target-size` on a full-size control
+`2026-11-17` · hiro · scope: instructor, a11y · confidence: high
+axe counts a control partly covered by the shell's sticky header as too small ("partially
+obscured": a 44px select with 11.5px showing). It depends on the scroll position, so content
+that grows above a button (results after Check answers) can park a control under the bar through
+scroll anchoring. Don't pad the control: start the review from the top, as the preview now does
+(score at the top, scroll there, focus it). Log each node's `any[].relatedNodes` to see what
+covers the target.
+
+### L-069 · Error toasts stay, so a fixed error must be replaced
+`2026-11-17` · hiro · scope: shared · confidence: high
+Danger toasts never time out, and the stack sits bottom right, over a table's last column. After
+a retry succeeds, a stale "Could not save" stays and blocks the next row's buttons (the grading
+SPELL spec timed out on a click). Give retryable actions a toast `group` (per row) so the success
+toast replaces the error.
+
+### L-070 · A card header row needs to wrap at 320px
+`2026-11-17` · hiro · scope: instructor · confidence: high
+A `flex` header with an icon, a `flex-1` title, and a `shrink-0` button can't shrink below the
+title's longest word, so the button slides past the card. Local WebKit had 8px to spare; another
+run overflowed by 2px. Use `flex-wrap`, `min-w-0` and a `basis-*` on the title, and let the button
+drop under it.
