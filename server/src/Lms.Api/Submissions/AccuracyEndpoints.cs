@@ -127,7 +127,8 @@ public static class AccuracyEndpoints
     /// <summary>Every typo and review answer of the exam (or just one), by question number then student.</summary>
     private static async Task<List<SpellingReviewRow>> ReviewRowsAsync(LmsDbContext db, CourseworkRow cw, (long SubmissionId, long QuestionId)? only, CancellationToken ct)
     {
-        var handedIn = HandedIn(db, cw.Id);
+        // An anonymized attempt has no answers left to judge, so it is never listed or decided.
+        var handedIn = HandedIn(db, cw.Id).Where(s => s.AnonymizedAt == null);
         if (only is { } one) handedIn = handedIn.Where(s => s.Id == one.SubmissionId);
         var attempts = await handedIn.ToDictionaryAsync(s => s.Id, ct);
         var ids = attempts.Keys.ToList();

@@ -12,6 +12,25 @@ namespace Lms.Api.Tests;
 public sealed class AccuracyTests : AssessmentTestBase
 {
     [Fact]
+    public async Task An_anonymized_attempt_leaves_the_spelling_review_list()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync(new { spellingMode = "review" });
+        var waiting = await TakeAsync(StudentA, exam, a => Answers(a, identification: "Babage"));
+        var attemptId = waiting.GetProperty("id").GetInt64();
+        Assert.Equal(1, (await Json(await Instructor.GetAsync($"{Base}/{exam}/spelling-review"))).GetArrayLength());
+
+        await Factory.WithDbAsync(async db =>
+        {
+            var attempt = await db.Submissions.SingleAsync(s => s.Id == attemptId);
+            attempt.AnonymizedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return 0;
+        });
+        Assert.Equal(0, (await Json(await Instructor.GetAsync($"{Base}/{exam}/spelling-review"))).GetArrayLength());
+    }
+
+    [Fact]
     public async Task The_instructor_decides_near_misses_and_the_attempt_is_graded()
     {
         await SeedAsync();
