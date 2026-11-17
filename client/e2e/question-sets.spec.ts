@@ -22,17 +22,18 @@ test.describe("Instructor · question sets (QS)", () => {
     await tab(page, /^Create content/).click();
     await page.locator("header").filter({ hasText: "Build and publish a quiz or exam" }).getByRole("button", { name: /Create/ }).click();
 
+    // D-040: the assessment builder replaces the inline form; "Use a question set" is the same journey.
     await page.getByRole("textbox", { name: /Assessment title/ }).fill("Make-up quiz: variables");
     await page.getByRole("spinbutton", { name: /Attempts allowed/ }).fill("2");
-    await page.getByRole("radio", { name: "Use an existing question set" }).check();
-    // The set brings its own points, so there is nothing to type for them or the questions.
+    await page.getByRole("radio", { name: /^Use a question set/ }).check();
+    // The set brings its own points and questions, so there is nothing to type for them.
     await expect(page.getByRole("spinbutton", { name: /^Points/ })).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: /^Question/ })).toHaveCount(0);
-    await page.getByRole("button", { name: "Save and publish" }).click();
-    await expect(page.getByText("Choose a question set.")).toBeVisible();
+    await page.getByRole("button", { name: "Publish" }).click();
+    await expect(page.getByText("Choose a question set before publishing.")).toBeVisible();
 
     await page.getByRole("combobox", { name: /Question set/ }).selectOption({ label: `${SET} · 5 questions · 20 points` });
-    await page.getByRole("button", { name: "Save and publish" }).click();
+    await page.getByRole("button", { name: "Publish" }).click();
     await expect(tab(page, /^Classwork\s?4/)).toBeVisible();
     await expect(page.getByRole("main").getByText("Make-up quiz: variables")).toBeVisible();
 
