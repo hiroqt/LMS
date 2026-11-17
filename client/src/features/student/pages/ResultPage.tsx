@@ -1,6 +1,7 @@
 import { ArrowRight, Check, ClipboardCheck, ShieldCheck, X } from "lucide-react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { cn } from "../../../shared/lib/cn";
+import { Badge } from "../../../shared/ui/Badge";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { useQuery } from "@tanstack/react-query";
@@ -43,9 +44,9 @@ export default function ResultPage() {
       <Card className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5 sm:p-8">
         <header className="flex flex-col items-center gap-2 text-center">
           <span aria-hidden className="grid size-14 place-items-center rounded-full bg-success-soft text-success"><ClipboardCheck className="size-7" /></span>
-          <p className="m-0 text-label font-semibold tracking-wide text-success uppercase">Assessment submitted</p>
           <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold outline-none sm:text-page">You did it, {catalog.me.firstName}!</h1>
           <p className="m-0 text-body-lg text-muted">Your {assessment.type.toLowerCase()} for {course?.name ?? "your class"} has been submitted.</p>
+          <Badge tone="success">Assessment submitted</Badge>
         </header>
 
         <div className="flex flex-col items-center gap-4 rounded-card bg-primary-50 p-5 sm:flex-row">
@@ -54,7 +55,6 @@ export default function ResultPage() {
             <span className="text-body text-muted">score</span>
           </p>
           <div className="flex flex-col gap-1 text-center sm:text-left">
-            <p className="m-0 text-label font-semibold tracking-wide text-muted uppercase">Your result</p>
             <p className="m-0 text-section font-semibold">{score} / {questions.length} correct</p>
             <p className="m-0 text-body">
               {percent >= 80 ? "Excellent work. You’ve got a strong grasp of this topic." : percent >= 50 ? "Nice work. Review the questions below to keep building your understanding." : "Keep practicing. Revisit the class materials and try again."}

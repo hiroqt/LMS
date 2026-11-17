@@ -2,7 +2,7 @@ import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
-import { cn } from "../../../shared/lib/cn";
+import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
 import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
@@ -53,7 +53,6 @@ function Stream({ course, catalog, completed, now, onTab }: { course: Course; ca
         ) : (
           <Card className="flex flex-col gap-2 p-5">
             <p className="m-0 text-body text-muted">{course.teacher} · Posted an announcement</p>
-            <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">This week in {course.subject}</p>
             <h2 className="m-0 font-sans text-section font-semibold">Welcome to another week of learning!</h2>
             <p className="m-0 text-body">We’re building on what we learned last week. Check the classwork tab for this week’s activities and take a look at the study notes before our next class.</p>
             <Button variant="ghost" className="self-start" onClick={() => onTab("Classwork")}>Explore this week’s work<ArrowRight aria-hidden className="size-4" /></Button>
@@ -127,23 +126,13 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
         <SectionHeading title="Classwork" />
         <ListSearch label="Search classwork" placeholder="Find classwork" value={query} onChange={setQuery} />
       </div>
-      <div role="group" aria-label="Filter classwork" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+      <FilterChipGroup label="Filter classwork">
         {WORK_FILTERS.map((item) => (
-          <button
-            key={item}
-            type="button"
-            aria-pressed={filter === item}
-            onClick={() => setFilter(item)}
-            className={cn(
-              "inline-flex min-h-touch shrink-0 items-center gap-2 rounded-full border px-4 font-sans text-body font-medium focus-visible:outline-3 focus-visible:outline-focus",
-              filter === item ? "border-primary-600 bg-primary-600 text-white" : "border-line-strong bg-surface text-ink hover:bg-primary-50",
-            )}
-          >
+          <FilterChip key={item} selected={filter === item} count={["Quiz", "Long Quiz", "Exam"].includes(item) ? count(item) : undefined} onClick={() => setFilter(item)}>
             {item}
-            {["Quiz", "Long Quiz", "Exam"].includes(item) && <span className={cn("rounded-full px-2 font-semibold", filter === item ? "bg-primary-800" : "bg-canvas")}>{count(item)}</span>}
-          </button>
+          </FilterChip>
         ))}
-      </div>
+      </FilterChipGroup>
       {filter !== "Materials" && (
         <section aria-labelledby="work-list" className="flex flex-col gap-3">
           <h3 id="work-list" className="m-0 font-sans text-card-title font-semibold">{filter === "All work" ? "Assessments" : filter} <span className="font-normal text-muted">· {shownWork.length}</span></h3>
@@ -180,10 +169,9 @@ function MaterialGrid({ materials }: { materials: StudentCatalog["materials"] })
             onClick={() => navigate(studentPaths.material(item.id))}
             className="flex h-full w-full flex-col items-start gap-2 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
           >
-            <span className="text-label font-semibold tracking-wide text-primary-700 uppercase">{item.kind}</span>
             <strong className="text-card-title font-semibold">{item.title}</strong>
             <span className="line-clamp-3 text-body text-muted">{item.summary}</span>
-            <span className="mt-auto text-body text-muted">{item.readTime} read · {item.added}</span>
+            <span className="mt-auto text-body text-muted">{item.kind} · {item.readTime} read · {item.added}</span>
           </button>
         </li>
       ))}
@@ -234,7 +222,7 @@ function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog 
               </h3>
               {(entries.length > 0 || submodules.length === 0) && <ModuleEntries label={module.title} entries={entries} />}
               {submodules.length > 0 && (
-                <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 border-l-2 border-primary-200 p-0 pl-4">
+                <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 p-0 pl-4 sm:pl-6">
                   {submodules.map((sub) => (
                     <li key={sub.module.id}>
                       <section aria-labelledby={`module-${sub.module.id}`} className="flex flex-col gap-3">
@@ -281,7 +269,7 @@ function People({ course, catalog }: { course: Course; catalog: StudentCatalog }
       <Card className="flex items-center gap-3 p-4">
         <span aria-hidden className="grid size-10 place-items-center rounded-control bg-primary-100 text-primary-700"><GraduationCap className="size-5" /></span>
         <div className="flex flex-col">
-          <span className="text-label font-semibold tracking-wide text-muted uppercase">Your teacher</span>
+          <span className="text-body text-muted">Your teacher</span>
           <strong className="text-body font-semibold">{course.teacher}</strong>
         </div>
       </Card>

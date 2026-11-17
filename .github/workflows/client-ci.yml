@@ -29,6 +29,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - name: No disallowed decoration (C-019)
+        run: npm run style:check
       - run: npm run test:unit
       - run: npm run build
       - name: Performance budget

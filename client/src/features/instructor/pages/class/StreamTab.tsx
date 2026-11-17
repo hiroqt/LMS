@@ -17,7 +17,6 @@ export function StreamTab({ room, subject, instructor, content, goTab }: ClassTa
       <div className="flex flex-col gap-4">
         <Card className="flex flex-col gap-2 p-5">
           <p className="m-0 text-body text-muted">{name} · Class announcement</p>
-          <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">Welcome to {subject?.code ?? "class"}</p>
           <h2 className="m-0 font-sans text-section font-semibold">{subject?.title ?? "This class"} is ready for the term</h2>
           <p className="m-0 text-body">{subject?.description ?? "Course information and resources for this classroom."} Use the class tabs to share resources, organize coursework, and keep track of student progress.</p>
           <Button className="mt-1 self-start" onClick={() => goTab("Create content")}>Post class content<ArrowRight aria-hidden className="size-4" /></Button>

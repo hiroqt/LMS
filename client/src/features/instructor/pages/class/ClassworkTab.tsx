@@ -2,6 +2,7 @@ import { ArrowRight, ClipboardList, GraduationCap, Lock, LockOpen, Plus } from "
 import { useState } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { cn } from "../../../../shared/lib/cn";
+import { FilterChip, FilterChipGroup } from "../../../../shared/ui/FilterChip";
 import { Badge } from "../../../../shared/ui/Badge";
 import { Button } from "../../../../shared/ui/Button";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
@@ -56,26 +57,13 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
           <Button onClick={() => goTab("Create content")} icon={<Plus aria-hidden className="size-4" />}>Create</Button>
         </div>
       </div>
-      <div role="group" aria-label="Filter classwork" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
-        {FILTERS.map((filter) => {
-          const count = filter.id === "All" ? work.length : work.filter((item) => item.kind === filter.id).length;
-          return (
-            <button
-              key={filter.id}
-              type="button"
-              aria-pressed={type === filter.id}
-              onClick={() => setType(filter.id)}
-              className={cn(
-                "inline-flex min-h-touch shrink-0 items-center gap-2 rounded-full border px-4 font-sans text-body font-medium focus-visible:outline-3 focus-visible:outline-focus",
-                type === filter.id ? "border-primary-600 bg-primary-600 text-white" : "border-line-strong bg-surface text-ink hover:bg-primary-50",
-              )}
-            >
-              {filter.label}{" "}
-              <span className={cn("rounded-full px-2 font-semibold", type === filter.id ? "bg-primary-800" : "bg-canvas")}>{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      <FilterChipGroup label="Filter classwork">
+        {FILTERS.map((filter) => (
+          <FilterChip key={filter.id} selected={type === filter.id} count={filter.id === "All" ? work.length : work.filter((item) => item.kind === filter.id).length} onClick={() => setType(filter.id)}>
+            {filter.label}
+          </FilterChip>
+        ))}
+      </FilterChipGroup>
       {shown.length ? (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {shown.map((item) => (

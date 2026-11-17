@@ -24,13 +24,9 @@
   /* Typography: Poppins everywhere. */
   --font-sans: Poppins, "Poppins Fallback", "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Type scale, by purpose. Body text never goes below 14px; 12px exists
-     only as `text-label` for short uppercase eyebrows. Tailwind's text-xs
-     (12px) is removed so it cannot be used for body copy by accident. */
+  /* Type scale, by purpose. Text never goes below 14px: Tailwind's text-xs
+     (12px) is removed, and labels are sentence case at text-body (C-019). */
   --text-xs: initial;
-  --text-label: 0.75rem;
-  --text-label--line-height: 1rem;
-  --text-label--letter-spacing: 0.06em;
   --text-body: 0.875rem;
   --text-body--line-height: 1.375rem;
   --text-body-lg: 1rem;
@@ -95,10 +91,6 @@
   /* Course-code chips and term-track week cells. */
   --radius-chip: 6px;
   --radius-tick: 3px;
-
-  /* Tracking for uppercase eyebrows and course codes (academic labelling). */
-  --tracking-label: 0.12em;
-  --tracking-code: 0.08em;
   /* Cards are flat (border only). Only overlays cast a shadow (C-019). */
   --shadow-popover: 0 16px 40px rgb(36 49 45 / 0.14);
 

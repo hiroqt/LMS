@@ -72,7 +72,6 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
           {list.map((item) => (
             <li key={item.id}>
               <Card className="flex flex-col gap-1 p-5">
-                <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">Class announcement</p>
                 <h3 className="m-0 font-sans text-card-title font-semibold">{item.title}</h3>
                 <p className="m-0 text-body whitespace-pre-line">{item.message}</p>
                 <p className="m-0 text-body text-muted">{instructor.firstName} {instructor.lastName} · {formatDue(item.createdAt)}</p>

@@ -96,12 +96,11 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
                     {archived && <Badge tone="warning">Archived</Badge>}
                   </span>
                 </div>
-                <span className="text-label font-semibold tracking-wide text-primary-700 uppercase">{item.kind ?? "Class material"}</span>
                 <button type="button" onClick={() => setInspect(item)} className="self-start rounded-control border-0 bg-transparent p-0 text-left text-card-title font-semibold text-ink underline-offset-4 hover:underline focus-visible:outline-3 focus-visible:outline-focus">
                   {item.title}
                 </button>
                 <p className="m-0 line-clamp-2 text-body text-muted">{item.description || "Classroom learning reference and study material."}</p>
-                <p className="m-0 text-body text-muted">{item.fileSize ?? "1.8 MB"} · {item.downloads ?? 0} downloads · {moduleTitle(item.moduleId)}</p>
+                <p className="m-0 text-body text-muted">{item.kind ?? "Class material"} · {item.fileSize ?? "1.8 MB"} · {item.downloads ?? 0} downloads · {moduleTitle(item.moduleId)}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-1">
                   <Button variant="secondary" icon={<Download aria-hidden className="size-4" />} aria-label={`Download ${item.title}`} onClick={() => download(item, { section: room.section, subject: subject?.title ?? "", module: moduleTitle(item.moduleId) })}>Download</Button>
                   <Button variant="ghost" icon={archived ? <ArchiveRestore aria-hidden className="size-4" /> : <Archive aria-hidden className="size-4" />} aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => archive(item)}>

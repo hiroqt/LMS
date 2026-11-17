@@ -381,3 +381,18 @@ before suspecting a change.
 so fast loads never flash it, with no JavaScript timer and no `@keyframes` (C-019). Browsers
 without `@starting-style` and reduced-motion users see it at once. Playwright still counts a
 transparent element as visible, so specs that wait for a loading state are unaffected.
+
+### L-054 · A space inside the count pill does not reach the accessible name
+`2026-11-17` · hiro · scope: shared/ui · confidence: high
+`<span> {count}</span>` after a label gave the name "Missing3": the space inside the span is
+trimmed. `FilterChip` puts `{" "}` between the label and the pill, so the name is "Missing 3".
+Specs match chip names by prefix (`/^Missing/`), so either form passes them; the primitive test
+pins the spaced form.
+
+### L-055 · Local iPhone WebKit runs can stop accepting clicks
+`2026-11-17` · hiro · scope: e2e · confidence: medium
+Partway through a session, every `iphone-webkit` spec that taps the top bar timed out with
+"`<html>` intercepts pointer events", on this branch and on a clean `main` worktree alike, after
+the same specs had passed an hour earlier. It is the local headless WebKit, not the UI: compare
+against `main` (a worktree with `E2E_PORT`/`E2E_API_PORT`) before chasing it; CI's Linux WebKit
+is the reference.

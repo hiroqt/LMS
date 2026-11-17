@@ -170,7 +170,7 @@ export default function AssessmentPage() {
         <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="flex flex-col gap-4 p-5">
             <div className="flex items-center justify-between">
-              <h2 id="assessment-details" className="m-0 text-label font-semibold tracking-wide text-muted uppercase">Assessment details</h2>
+              <h2 id="assessment-details" className="m-0 font-sans text-card-title font-semibold text-ink">Assessment details</h2>
               <Badge tone={isClosed ? "neutral" : isCompleted && !notHandedIn ? "success" : "brand"}>{isClosed ? "Closed" : notHandedIn ? "Not handed in" : isCompleted ? "Submitted" : "Open"}</Badge>
             </div>
             <dl className="m-0 grid grid-cols-2 gap-3">

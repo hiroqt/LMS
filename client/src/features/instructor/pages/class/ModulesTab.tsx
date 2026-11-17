@@ -128,7 +128,7 @@ export function ModulesTab({ room, content, goTab }: ClassTabProps) {
                 </div>
                 <ContentList label={module.title} items={placed.get(module.id) ?? []} onMove={openMove} />
                 {submodules.length > 0 && (
-                  <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 border-l-2 border-primary-200 p-0 pl-4">
+                  <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 p-0 pl-4 sm:pl-6">
                     {submodules.map((sub, index) => (
                       <li key={sub.id}>
                         <section aria-labelledby={`module-${sub.id}`} className="flex flex-col gap-3">

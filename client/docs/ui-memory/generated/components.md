@@ -14,6 +14,7 @@
 | `src/shared/ui/Dialog.tsx` | `DialogContent`, `Dialog`, `DialogTrigger`, `DialogClose` |
 | `src/shared/ui/EmptyState.tsx` | `EmptyState` |
 | `src/shared/ui/Field.tsx` | `Field`, `Input`, `Textarea`, `Select` |
+| `src/shared/ui/FilterChip.tsx` | `FilterChipGroup`, `FilterChip` |
 | `src/shared/ui/IconButton.tsx` | `IconButton` |
 | `src/shared/ui/Menu.tsx` | `MenuContent`, `MenuItem`, `MenuLabel`, `MenuSeparator`, `Menu`, `MenuTrigger`, `MenuGroup` |
 | `src/shared/ui/Popover.tsx` | `PopoverContent`, `Popover`, `PopoverTrigger`, `PopoverClose` |

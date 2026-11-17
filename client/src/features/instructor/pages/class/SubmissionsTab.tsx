@@ -82,8 +82,8 @@ function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor:
   return (
     <form onSubmit={submit} noValidate aria-labelledby="grading-title" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
       <div className="flex flex-col gap-1">
-        <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{item.kind === "activity" ? "Assignment" : "Assessment"} · {student}</p>
         <h3 id="grading-title" className="m-0 font-sans text-section font-semibold">{item.title}</h3>
+        <p className="m-0 text-body text-muted">{item.kind === "activity" ? "Assignment" : "Assessment"} · {student}</p>
       </div>
       {item.kind === "activity" ? (
         <>

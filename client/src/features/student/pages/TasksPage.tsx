@@ -1,7 +1,7 @@
 import { AlarmClock, CalendarDays, Check, ListChecks } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { PageHeader } from "../../../shared/layout/PageHeader";
-import { cn } from "../../../shared/lib/cn";
+import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { courseCode } from "../api/catalog";
 import { isTaskStatus, taskGroups, type TaskStatus } from "../api/selectors";
@@ -38,28 +38,18 @@ export default function TasksPage() {
       <PageHeader title="Tasks" description="See due dates, missing work, and completed assessments." />
 
       {/* Visible filter instead of the classic dropdown: one tap, counts always shown. */}
-      <div role="group" aria-label="Filter by status" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+      <FilterChipGroup label="Filter by status">
         {groups.map((item) => {
           const Icon = icons[item.status];
           const selected = item.status === status;
           return (
-            <button
-              key={item.status}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => navigate(studentPaths.tasks(item.status), { replace: true })}
-              className={cn(
-                "inline-flex min-h-touch shrink-0 items-center gap-2 rounded-full border px-4 font-sans text-body font-medium focus-visible:outline-3 focus-visible:outline-focus",
-                selected ? "border-primary-600 bg-primary-600 text-white" : "border-line-strong bg-surface text-ink hover:bg-primary-50",
-              )}
-            >
+            <FilterChip key={item.status} selected={selected} count={item.items.length} onClick={() => navigate(studentPaths.tasks(item.status), { replace: true })}>
               <Icon aria-hidden className="size-4" />
               {item.status}
-              <span className={cn("rounded-full px-2 text-body font-semibold", selected ? "bg-primary-800" : "bg-canvas")}>{item.items.length}</span>
-            </button>
+            </FilterChip>
           );
         })}
-      </div>
+      </FilterChipGroup>
 
       <section aria-labelledby="task-group" className="flex flex-col gap-3">
         <div className="flex flex-col gap-0.5">
@@ -70,7 +60,7 @@ export default function TasksPage() {
           <ol className="m-0 flex list-none flex-col gap-5 p-0">
             {byDay(group.items).map(([day, items]) => (
               <li key={day} className="flex flex-col gap-2">
-                <h3 className="m-0 text-label font-semibold tracking-label text-primary-700 uppercase">{dayLabel(day)}</h3>
+                <h3 className="m-0 font-sans text-body font-semibold text-ink">{dayLabel(day)}</h3>
                 <ul className="m-0 flex list-none flex-col gap-3 p-0">
                   {items.map((item) => {
                     const index = courseIndex(item.courseId);

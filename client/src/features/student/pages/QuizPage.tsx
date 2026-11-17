@@ -117,9 +117,8 @@ function Quiz({ assessmentId, attempt }: { assessmentId: string; attempt: Attemp
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex flex-col gap-5">
           <header className="flex flex-col gap-1">
-            <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{assessment.type} · {course?.name}</p>
             <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold text-ink outline-none sm:text-page">{assessment.title}</h1>
-            <p className="m-0 text-body text-muted">{course?.section} · {assessment.points} points</p>
+            <p className="m-0 text-body text-muted">{assessment.type} · {course?.name} · {course?.section} · {assessment.points} points</p>
           </header>
           <p aria-live="polite" className="sr-only">{announcement}</p>
 
@@ -140,7 +139,7 @@ function Quiz({ assessmentId, attempt }: { assessmentId: string; attempt: Attemp
           </div>
 
           <section aria-labelledby="question-prompt" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-            <p className="m-0 flex justify-between text-body text-muted"><span className="font-semibold tracking-wide uppercase">Question {pad2(index + 1)}</span><span>{question.points} points</span></p>
+            <p className="m-0 flex justify-between text-body text-muted"><span className="font-semibold">Question {pad2(index + 1)}</span><span>{question.points} points</span></p>
             <h2 id="question-prompt" className="m-0 font-sans text-section font-semibold text-ink">{question.prompt}</h2>
             {question.context && <p className="m-0 rounded-control bg-canvas p-3 text-body">{question.context}</p>}
             <RadioGroup.Root

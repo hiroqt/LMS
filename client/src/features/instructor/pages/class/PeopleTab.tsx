@@ -13,8 +13,8 @@ export function PeopleTab({ room, content }: ClassTabProps) {
         <ListSearch label="Search students" placeholder="Find a student" value={query} onChange={setQuery} />
       </div>
       <dl className="m-0 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-card border border-line bg-surface p-4"><dt className="text-label font-semibold tracking-wide text-muted uppercase">Class section</dt><dd className="m-0 text-body font-semibold">{room.section}</dd></div>
-        <div className="rounded-card border border-line bg-surface p-4"><dt className="text-label font-semibold tracking-wide text-muted uppercase">Enrolled students</dt><dd className="m-0 text-body font-semibold">{content.students.length} students</dd></div>
+        <div className="rounded-card border border-line bg-surface p-4"><dt className="text-body text-muted">Class section</dt><dd className="m-0 text-body font-semibold">{room.section}</dd></div>
+        <div className="rounded-card border border-line bg-surface p-4"><dt className="text-body text-muted">Enrolled students</dt><dd className="m-0 text-body font-semibold">{content.students.length} students</dd></div>
       </dl>
       <Card className="p-2">
         {shown.length ? (

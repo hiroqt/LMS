@@ -43,7 +43,6 @@ export default function DesignSystemPage() {
         <SkipLink />
         <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-8 outline-none sm:px-6">
           <header className="flex flex-col gap-1">
-            <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">For developers</p>
             <h1 className="m-0 text-page-mobile font-semibold sm:text-page">TMCC design system</h1>
             <p className="m-0 max-w-prose text-body-lg text-muted">
               Primitives from <code>src/shared/ui</code>. Rules live in <code>docs/ui-memory/CONVENTIONS.md</code> (C-003, C-004, C-008).

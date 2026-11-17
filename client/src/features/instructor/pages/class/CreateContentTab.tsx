@@ -111,7 +111,6 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
   return (
     <form onSubmit={submit} noValidate aria-labelledby="content-form-title" className="flex flex-col gap-4 rounded-card border border-primary-200 bg-surface p-5">
       <div className="flex flex-col gap-1">
-        <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{type === "material" ? "Material" : type === "activity" ? "Assignment" : "Assessment"}</p>
         <h3 id="content-form-title" className="m-0 font-sans text-section font-semibold">{titles[type]}</h3>
         <p className="m-0 text-body text-muted">This content will be shared with {room.section}.</p>
       </div>
