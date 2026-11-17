@@ -409,3 +409,11 @@ A Radix tab panel is labelled by its tab, so `getByLabel(/^subject/i)` matched b
 "Subjects" panel and the "Subject" select in the classroom dialog, and `selectOption` hung until
 the test timed out with no call log. Use `getByRole("combobox", { name })`: role queries skip
 hidden elements. Also, `allTextContents()` does not wait; assert the element is visible first.
+
+### L-058 · An sr-only label inside a scroll frame can widen the page in WebKit
+`2026-11-17` · hiro · scope: admin, shared · confidence: high
+CI's iPhone WebKit found `/admin/users` 209px too wide at 320px while Chromium was fine: the
+visually hidden "Actions" header (`sr-only` is `position: absolute`) had no positioned ancestor
+inside the table's `overflow-x-auto` frame, so it escaped the scroll clipping and WebKit counted
+its offset in the page width. Give any scroll frame that can hold `sr-only` text `relative`.
+Only the 320px sweep caught it; local WebKit could still measure even while clicks failed (L-055).
