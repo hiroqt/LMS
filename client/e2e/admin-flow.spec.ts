@@ -74,6 +74,13 @@ test.describe("Admin", () => {
     const row = page.getByRole("row", { name: /CS201/ });
     await expect(row).toContainText("Data Structures");
 
+    // Reopening the form starts empty, with no leftover error.
+    await page.getByRole("button", { name: /add subject/i }).click();
+    await expect(page.getByLabel(/^subject code/i)).toHaveValue("");
+    await expect(page.getByText("That subject code already exists in catalog.")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
     // Destructive actions confirm in a dialog that names the item (C-013, D-038).
     await row.getByRole("button", { name: /^delete/i }).click();
     await page.getByRole("dialog", { name: "Delete CS201?" }).getByRole("button", { name: "Delete subject" }).click();
@@ -90,6 +97,10 @@ test.describe("Admin", () => {
     await expect(page.getByLabel(/^enrollment code/i)).not.toHaveValue("");
     await page.getByRole("button", { name: /^save record$/i }).click();
     await expect(page.getByRole("row", { name: /BSIT 1-Z/ })).toContainText(/active/i);
+    await page.getByRole("button", { name: /add classroom/i }).click();
+    await expect(page.getByLabel(/^section name/i)).toHaveValue("");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await openPage(page, /^enrollments$/i, "Courses");
     for (const attempt of ["first", "duplicate"]) {

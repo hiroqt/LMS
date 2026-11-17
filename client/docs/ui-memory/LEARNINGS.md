@@ -417,3 +417,18 @@ visually hidden "Actions" header (`sr-only` is `position: absolute`) had no posi
 inside the table's `overflow-x-auto` frame, so it escaped the scroll clipping and WebKit counted
 its offset in the page width. Give any scroll frame that can hold `sr-only` text `relative`.
 Only the 320px sweep caught it; local WebKit could still measure even while clicks failed (L-055).
+
+### L-059 · A dialog opened by its `open` prop never calls `onOpenChange(true)`
+`2026-11-17` · hiro · scope: admin, shared · confidence: high
+Subjects and Classrooms reset their create form inside `onOpenChange(true)`, but the dialog is
+opened by a header button and by `?create=1`, which set the `open` prop. Radix only calls
+`onOpenChange` from its own trigger and close controls, so the reset never ran: a saved code
+reappeared and failed as a duplicate, and an old error survived Cancel. Reset a controlled form
+on close (Save, Cancel, and Esc all pass through it), and give a select with a computed default
+`value={form.x || fallback}` so the shown option is the one that is saved.
+
+### L-060 · Removing a decoration can remove the only visible cue
+`2026-11-17` · hiro · scope: shared · confidence: high
+The calendar dots were decoration by C-019, but they were also the only cue on today's cell and
+the only non-color cue elsewhere; a tint alone fails WCAG 1.4.1 and vanishes in forced colors.
+Days with items now underline their number. When a rule removes something, ask what it said.

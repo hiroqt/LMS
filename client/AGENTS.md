@@ -13,10 +13,10 @@ The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`)
 
 This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy files are `.jsx`). Two ASP.NET Core services sit beside it: `../isms-api` (read-only ISMS API guarded by API-client keys and permissions) and `../server` (the LMS API, which reads ISMS only through that API and stores LMS data in MySQL). The Student and Instructor workspaces read and write through the LMS API (D-032); Admin keeps fictional, browser-local demo data.
 
-- `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with the legacy `roles/shared/roleRouter.js` parser.
+- `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with `app/router/roleRouter.js`, which keeps every legacy URL form working (D-004).
 - New code goes in `src/features/<role>/<feature>` and `src/shared/{ui,layout,components,hooks,lib,api,styles}`. See `docs/ui-memory/CONVENTIONS.md` (C-001).
-- Admin: `src/features/admin` (screens on `AppShell` and `shared/ui`; browser-local data modules in `features/admin/data`). Still legacy until revamp v2 phase 4: the unknown-path page in `src/components/shared`, `src/icons.jsx`, `src/index.css`, and `src/roles/shared/roleRouter.js`.
-- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens; no preflight while Admin is legacy, D-022) and `fonts.css` (self-hosted Poppins). The legacy `src/index.css` still loads until phase 4.
+- Admin: `src/features/admin` (screens on `AppShell` and `shared/ui`; browser-local data modules in `features/admin/data`).
+- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 with preflight, the tokens, and page base styles; D-039) and `fonts.css` (self-hosted Poppins). There is no other stylesheet.
 - `e2e/`: Playwright flow-parity specs. `public/`: static assets. Project scope and data flow: `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/CODEBASE_MAP.md`, and the role flow docs.
 
 ## Build, Test, and Development Commands

@@ -38,8 +38,9 @@ export function SubjectsTab({ creating, onCreatingChange }: { creating: boolean;
     setPage(1);
   };
 
+  // Reset on close (Save, Cancel, Esc): the dialog is opened by the header button and ?create=1, not from here.
   const openCreate = (open: boolean) => {
-    if (open) {
+    if (!open) {
       setForm({ code: "", title: "", description: "" });
       setError("");
     }

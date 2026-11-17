@@ -17,7 +17,7 @@
     "budget": "node scripts/bundle-budget.ts",
     "demo-seed": "node scripts/demo-seed.ts",
     "demo-seed:check": "node scripts/demo-seed.ts --check",
-    "style:check": "node scripts/style-guard.ts src/app src/shared src/features"
+    "style:check": "node scripts/style-guard.ts"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.3.0",

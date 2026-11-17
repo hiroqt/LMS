@@ -2,8 +2,8 @@
 
 ## Active three-role prototype
 
-- `src/main.tsx` — mounts `src/app/providers/AppProviders.tsx` (TanStack Query client tuned for slow connections) and `src/app/router/AppRouter.tsx` (React Router), which resolves `/student`, `/instructor`, and `/admin` through `roles/shared/roleRouter.js` so legacy URL forms keep working.
-- `src/shared/styles/` — `tailwind.css` (Tailwind v4 design tokens, no preflight yet, scanning only `app/`, `shared/`, `features/`), `fonts.css` (self-hosted Poppins), and `tokens.test.ts` (WCAG contrast checks).
+- `src/main.tsx` — mounts `src/app/providers/AppProviders.tsx` (TanStack Query client tuned for slow connections) and `src/app/router/AppRouter.tsx` (React Router), which resolves `/student`, `/instructor`, and `/admin` through `app/router/roleRouter.js` so legacy URL forms keep working; unknown paths get `app/router/UnknownRolePage.tsx`.
+- `src/shared/styles/` — `tailwind.css` (Tailwind v4 with preflight, the design tokens, and page base styles; D-039), `fonts.css` (self-hosted Poppins 400/500/600).
 - `src/shared/ui` — design-system primitives (Button, Field, Dialog, Tabs, Menu, Card, Badge, EmptyState, Skeleton, Toaster); reference page at `/ui-kit` (`src/features/design-system`).
 - `src/shared/layout` — `AppShell` (sidebar, Student bottom bar, Instructor drawer, skip link, connection banner, focus on navigation) and `PageHeader`. `src/shared/hooks` — `useNetworkStatus`, `useMediaQuery`.
 - `src/features/student/` — the rebuilt Student UI: `api/` (catalog, selectors, progress store, submissions), `hooks/` (catalog query, progress, quiz clock), `pages/` (Today, Tasks, Calendar, Classes, Class, Assessment, Quiz, Result, Material), `paths.ts` (URLs).
@@ -11,13 +11,10 @@
 - `src/shared/components/` also holds dashboard pieces both roles use (StatCard, SectionHeading, BackLink, MonthGrid, FeaturedNewsCarousel).
 - `e2e/` — Playwright flow-parity, routing, platform, and accessibility-baseline specs (`playwright.config.ts`).
 - `docs/ui-memory/` — shared revamp memory: decisions, conventions, learnings, flow-parity status, and generated inventories (`scripts/memory-sync.ts`).
-- `src/roles/shared/RoleWorkspace.jsx` / `.css` / `shellCompat.css` — shared responsive Instructor/Admin shell, collapsible sidebar, mobile drawer, and role switching.
-- `src/components/shared/` — reusable avatar, breadcrumbs, global search, and notifications used by Student, Instructor, and Admin.
-- `src/roles/shared/lmsData.js` / `storage.js` — ERD-shaped fictional records and browser-local shared state.
-- `src/roles/admin/Admin.jsx`, `AdminDirectory.jsx`, `AdminOverview.jsx`, `AdminSystemConfiguration.jsx`, `AdminAcademicTerms.jsx`, `AdminRoleManagement.jsx`, `AdminAuditLogs.jsx`, `AdminReports.jsx`, `adminDashboardData.js`, `pagination.js`, and admin CSS — shared-shell System Administration group, local settings and backups, academic terms, demo permission matrix, metadata-only paginated audit history, CSV exports, and the Admin overview with sidebar search, illustrated KPI cards, one wide chart, and aligned supporting charts. Its layout reference is documented in `.agents/skills/admin-dashboard-design/SKILL.md`.
+- `src/features/admin/` — the Admin workspace (D-038): `AdminApp.tsx` (shell, routes, search, notifications), `pages/`, `components/` (table, toolbar, pagination, dialogs, dashboard bars), and `data/` (the browser-local, ERD-shaped demo records, audit log, backups, and reports in plain JavaScript, with `types.ts`).
 - `docs/PROJECT_BRIEF.md` / `docs/ARCHITECTURE.md` — experience requirements, data flow, ERD mapping, and boundaries.
 - `docs/lms-erd.png` — supplied LMS database schema reference.
 
 ## Seed data
 
-- `src/data.js` and `public/*-banner.jpg` hold the fictional classes, assessments, questions, materials, school calendar, and featured news. The rebuilt UIs read them through their feature `api/` modules; `roles/shared/lmsData.js` seeds the shared role store from them.
+- `src/data.js` and `public/*-banner.jpg` hold the fictional classes, assessments, questions, materials, school calendar, and featured news. The rebuilt UIs read them through their feature `api/` modules; `features/admin/data/lmsData.js` seeds Admin's browser-local store from them.

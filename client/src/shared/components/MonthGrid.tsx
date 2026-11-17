@@ -16,7 +16,8 @@ export interface MonthGridProps {
 /**
  * Month table. Each day has a visually hidden label with its date and what
  * is on it ("October 2026 24, Quiz 02: Relational Data and Keys"), so
- * screen-reader users get the same information as the dots.
+ * screen-reader users get the same information. A day with items has its number
+ * underlined, a cue that does not depend on color (WCAG 1.4.1, forced colors).
  */
 export function MonthGrid({ month, entries, now, label, size = "compact" }: MonthGridProps) {
   const cells = monthGrid(month, size === "full" ? 42 : 0);
@@ -50,7 +51,7 @@ export function MonthGrid({ month, entries, now, label, size = "compact" }: Mont
                       )}
                     >
                       <span className="sr-only">{`${monthName} ${day}${dayEntries.length ? `, ${dayEntries.map((item) => item.title).join(", ")}` : ""}`}</span>
-                      <time aria-hidden dateTime={`${month.getFullYear()}-${pad2(month.getMonth() + 1)}-${pad2(day)}`}>{day}</time>
+                      <time aria-hidden dateTime={`${month.getFullYear()}-${pad2(month.getMonth() + 1)}-${pad2(day)}`} className={cn(dayEntries.length > 0 && "font-semibold underline decoration-2 underline-offset-4")}>{day}</time>
                       {size === "full" && dayEntries.length > 0 && (
                         <span aria-hidden className="hidden text-body text-muted sm:block">{dayEntries.length} {dayEntries.length === 1 ? "item" : "items"}</span>
                       )}

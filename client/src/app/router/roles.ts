@@ -1,4 +1,4 @@
-import { VALID_ROLES, getRoleUrl, parseRoleFromLocation } from "../../roles/shared/roleRouter.js";
+import { VALID_ROLES, getRoleUrl, parseRoleFromLocation } from "./roleRouter.js";
 
 export type Role = "student" | "instructor" | "admin";
 

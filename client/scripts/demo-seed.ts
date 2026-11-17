@@ -15,7 +15,7 @@ import { assessments, courses, materials, questionsByAssessment, students } from
 const target = fileURLToPath(new URL("../../server/src/Lms.Api/Demo/demo-seed.json", import.meta.url));
 
 const honorific = /^(Ms\.|Mr\.|Dr\.|Prof\.)\s*/;
-// Same ids as the browser-local seed (roles/shared/lmsData.js): instructor-1…, s0…
+// Same ids as the browser-local seed (features/admin/data/lmsData.js): instructor-1…, s0…
 const teacherNames = [...new Set(courses.map((course) => course.teacher))];
 const instructors = teacherNames.map((name, index) => {
   const [firstName, ...rest] = name.replace(honorific, "").split(" ");
