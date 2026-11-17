@@ -93,7 +93,12 @@ public static class AttendanceEndpoints
                 else existing.DaysPresent = entry.DaysPresent!.Value;
             }
             // When the month is new, its id is known only after the first save inside the transaction.
-            await ContentEndpoints.SaveWithAuditAsync(db, user, null, action, "Attendance", () => row.Id, ct, "attendance");
+            try { await ContentEndpoints.SaveWithAuditAsync(db, user, null, action, "Attendance", () => row.Id, ct, "attendance"); }
+            // Two first saves of the same month at once: the unique index refuses the second.
+            catch (DbUpdateException)
+            {
+                return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This month was saved by someone else at the same moment. Reload and try again.");
+            }
             return TypedResults.Ok(ToDto(row, user));
         }).WithName("SetAttendanceMonth");
 
