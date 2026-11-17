@@ -130,7 +130,7 @@ function CalendarPanel({ catalog, completed, now, className }: { catalog: Studen
             const body = (
               <>
                 <span className="flex w-14 shrink-0 flex-col items-center rounded-control bg-canvas py-1.5 leading-tight">
-                  <span className="text-label font-semibold tracking-label text-muted uppercase">{new Intl.DateTimeFormat("en-US", { month: "short" }).format(entry.date)}</span>
+                  <span className="text-body text-muted">{new Intl.DateTimeFormat("en-US", { month: "short" }).format(entry.date)}</span>
                   <span className="text-section font-semibold tabular-nums">{entry.date.getDate()}</span>
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
