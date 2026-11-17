@@ -43,6 +43,9 @@ public static class SubmissionEndpoints
             var open = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress);
             if (open is not null) return TypedResults.Ok(await AttemptView.BuildAsync(db, cw, open, now, ct));
 
+            // Publishing refuses an incomplete set, but one saved before that rule could still reach here.
+            if (await db.Questions.AnyAsync(q => q.QuestionnaireId == cw.QuestionnaireId && q.Incomplete, ct))
+                return Conflict("This exam has unfinished questions, so it can't be started yet. Ask your instructor to finish them.");
             if (cw.DueAt is { } due && now > due && !cw.AllowLate) return Conflict("This exam is past its due date.");
             if (mine.Count >= (cw.MaxAttempts ?? 1)) return Conflict("You have used every attempt for this exam.");
 

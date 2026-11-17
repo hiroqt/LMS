@@ -68,6 +68,30 @@ public sealed class AttemptTests : AssessmentTestBase
     }
 
     [Fact]
+    public async Task A_set_used_by_a_published_exam_refuses_incomplete_questions_and_an_incomplete_set_cannot_be_started()
+    {
+        await SeedAsync();
+        var (exam, set) = await ExamAsync();
+        var saved = await Instructor.PutAsJsonAsync($"/api/questionnaires/{set}/questions", new
+        {
+            allowIncomplete = true,
+            questions = new object[] { new { type = "essay", prompt = "Fine", points = 2 }, new { type = "identification", prompt = "No answers yet", points = 1 } },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, saved.StatusCode);
+        var errors = (await Problem(saved)).GetProperty("errors");
+        Assert.True(errors.TryGetProperty("questions[1].expectedAnswers", out _));
+        Assert.Equal("This set is used by a published exam, so every question must be complete.", errors.GetProperty("questions")[0].GetString());
+        Assert.False(await Factory.WithDbAsync(db => db.Questions.AnyAsync(q => q.QuestionnaireId == set && q.Incomplete)));
+
+        // A set that is incomplete anyway (saved before this rule) cannot be started.
+        await Factory.WithDbAsync(db => db.Questions.Where(q => q.QuestionnaireId == set && q.Type == QuestionType.Identification)
+            .ExecuteUpdateAsync(s => s.SetProperty(q => q.Incomplete, true)));
+        var start = await StudentA.PostAsync($"{Base}/{exam}/attempts", null);
+        Assert.Equal(HttpStatusCode.Conflict, start.StatusCode);
+        Assert.Contains("unfinished", (await Problem(start)).GetProperty("title").GetString());
+    }
+
+    [Fact]
     public async Task Keys_never_reach_a_student_before_submitting_and_follow_the_answer_review_after()
     {
         await SeedAsync();
