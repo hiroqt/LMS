@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialData } from "../../../roles/shared/lmsData.js";
-import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, reviewQueue, searchInstructor, subjectOf, yearLevels, yearOf } from "./selectors";
+import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, gradedLabel, notHandedInGrades, reviewQueue, searchInstructor, studentsWithoutWork, subjectOf, yearLevels, yearOf } from "./selectors";
+import type { User } from "./types";
 import type { RoleStore } from "./types";
 
 const seed = () => createInitialData() as RoleStore;
@@ -81,5 +82,27 @@ describe("instructor selectors", () => {
       { kind: "exam", id: "e1", title: "Joins quiz", label: "Assessment", archived: false },
     ]);
     expect([...grouped.keys()]).toEqual(["2", "1"]);
+  });
+
+  it("carries closed and graded progress, and labels it", () => {
+    const [item] = classWork({ activities: [{ id: "a", moduleId: "m", title: "Lab", maxScore: 5, closed: true, gradedCount: 12, rosterCount: 30 }], exams: [] });
+    expect(item).toMatchObject({ closed: true, gradedCount: 12, rosterCount: 30 });
+    expect(gradedLabel(item!)).toBe("12 of 30 graded");
+  });
+
+  it("finds students with no work and no not-handed-in grade, per assignment or assessment", () => {
+    const people: User[] = ["s0", "s1", "s2"].map((id) => ({ id, firstName: id, lastName: "", role: "student", status: "active" }));
+    const store = {
+      activitySubmissions: [
+        { id: "1", activityId: "7", classroomId: "c", studentId: "s0", status: "submitted", grade: null },
+        { id: "2", activityId: "7", classroomId: "c", studentId: "s2", status: "graded", grade: 0, notHandedIn: true },
+        { id: "3", activityId: "8", classroomId: "c", studentId: "s1", status: "graded", grade: 4 },
+      ],
+      examSubmissions: [{ id: "4", examId: "7", classroomId: "c", studentId: "s1", status: "graded", totalScore: 3 }],
+    };
+    expect(studentsWithoutWork(store, { id: "7", kind: "Assignment" }, people).map((s) => s.id)).toEqual(["s1"]);
+    expect(studentsWithoutWork(store, { id: "7", kind: "Assessment" }, people).map((s) => s.id)).toEqual(["s0", "s2"]);
+    expect(notHandedInGrades(store, { id: "7", kind: "Assignment" }, people)).toEqual([{ student: people[2], score: 0 }]);
+    expect(notHandedInGrades(store, { id: "7", kind: "Assessment" }, people)).toEqual([]);
   });
 });

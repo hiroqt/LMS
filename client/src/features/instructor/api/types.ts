@@ -80,6 +80,11 @@ export interface Activity {
   allowLate?: boolean;
   allowResubmission?: boolean;
   status?: string;
+  /** Closed with the close action once every student was graded (D-036). */
+  closed?: boolean;
+  /** Students on the class list with a grade, and how many are on it (from the server). */
+  gradedCount?: number;
+  rosterCount?: number;
   createdAt?: string;
 }
 
@@ -101,6 +106,10 @@ export interface Exam {
   timeLimitMinutes?: number;
   attempts?: number;
   status?: string;
+  /** See Activity.closed (D-036). */
+  closed?: boolean;
+  gradedCount?: number;
+  rosterCount?: number;
   createdAt?: string;
   questions?: ExamQuestion[];
 }
@@ -116,6 +125,8 @@ export interface ActivitySubmission {
   submittedAt?: string;
   grade: number | null;
   feedback?: string;
+  /** A grade given to a student who handed in nothing (D-036). */
+  notHandedIn?: boolean;
 }
 
 export interface ExamSubmission {
@@ -130,6 +141,7 @@ export interface ExamSubmission {
   submittedAt?: string;
   gradedAt?: string;
   gradedBy?: string;
+  notHandedIn?: boolean;
 }
 
 export interface Announcement {

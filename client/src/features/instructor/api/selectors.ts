@@ -76,14 +76,49 @@ export interface WorkItem {
   dueAt?: string;
   points: number;
   status?: string;
+  /** Closed once every student was graded (D-036). */
+  closed: boolean;
+  gradedCount: number;
+  rosterCount: number;
 }
 
 /** Assignments and assessments of a class, soonest due first; undated last. */
 export function classWork(content: Pick<ClassContent, "activities" | "exams">): WorkItem[] {
+  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
   return [
-    ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status })),
-    ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status })),
+    ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status, ...progress(item) })),
+    ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status, ...progress(item) })),
   ].sort((a, b) => (a.dueAt || "9999").localeCompare(b.dueAt || "9999"));
+}
+
+/** "12 of 30 graded". */
+export function gradedLabel(item: Pick<WorkItem, "gradedCount" | "rosterCount">): string {
+  return `${item.gradedCount} of ${item.rosterCount} graded`;
+}
+
+/**
+ * Students on the class list with no handed-in work and no "not handed in" grade for
+ * this assignment or assessment (D-036). An exam attempt still in progress is not in
+ * the instructor's data, so the server has the last word and refuses those.
+ */
+export function studentsWithoutWork(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions">, item: Pick<WorkItem, "id" | "kind">, students: User[]): User[] {
+  const done = new Set(
+    item.kind === "Assignment"
+      ? store.activitySubmissions.filter((record) => record.activityId === item.id).map((record) => record.studentId)
+      : store.examSubmissions.filter((record) => record.examId === item.id).map((record) => record.studentId),
+  );
+  return students.filter((student) => !done.has(student.id));
+}
+
+/** Students given a grade without handing anything in, with that grade. */
+export function notHandedInGrades(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions">, item: Pick<WorkItem, "id" | "kind">, students: User[]): Array<{ student: User; score: number | null }> {
+  const records = item.kind === "Assignment"
+    ? store.activitySubmissions.filter((record) => record.activityId === item.id && record.notHandedIn).map((record) => ({ studentId: record.studentId, score: record.grade }))
+    : store.examSubmissions.filter((record) => record.examId === item.id && record.notHandedIn).map((record) => ({ studentId: record.studentId, score: record.totalScore ?? null }));
+  return records.flatMap((record) => {
+    const student = students.find((user) => user.id === record.studentId);
+    return student ? [{ student, score: record.score }] : [];
+  });
 }
 
 export interface ModuleItem {

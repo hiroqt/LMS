@@ -119,7 +119,16 @@ export default function ClassPage() {
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>
         <TabsContent value={slug("Attendance")}><AttendanceTab {...props} /></TabsContent>
         <TabsContent value={slug("Submissions")}>
-          <SubmissionsTab items={submissions} selectedId={review} instructor={instructor} onSelect={(id) => goTab("Submissions", { review: id })} />
+          <SubmissionsTab
+            items={submissions}
+            selectedId={review}
+            instructor={instructor}
+            onSelect={(id) => goTab("Submissions", { review: id })}
+            store={store}
+            work={classWork(content)}
+            students={content.students}
+            classroomId={room.id}
+          />
         </TabsContent>
         <TabsContent value={slug("Create content")}><CreateContentTab {...props} open={isContentType(create) ? create : undefined} /></TabsContent>
       </Tabs>
