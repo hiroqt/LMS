@@ -117,8 +117,9 @@ public static class DemoSeeder
 
         foreach (var w in seed.Coursework)
         {
-            var owner = seed.Classes.Single(c => c.Id == w.ClassId).InstructorId;
-            var questionnaire = new Questionnaire { OwnerInstructorId = owner, Title = w.Title, CreatedBy = owner };
+            var room = seed.Classes.Single(c => c.Id == w.ClassId);
+            var owner = room.InstructorId;
+            var questionnaire = new Questionnaire { OwnerInstructorId = owner, SubjectId = room.SubjectId, Title = w.Title, CreatedBy = owner };
             db.Questionnaires.Add(questionnaire);
             await db.SaveChangesAsync();
             for (var i = 0; i < w.Questions.Count; i++)

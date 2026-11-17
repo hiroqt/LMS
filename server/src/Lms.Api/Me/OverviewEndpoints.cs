@@ -12,7 +12,7 @@ using CourseworkRow = Lms.Api.Data.Coursework;
 namespace Lms.Api.Me;
 
 public sealed record Person(string Id, string FirstName, string LastName, string Role);
-public sealed record ClassSummary(string Id, string? SubjectCode, string SubjectName, string? SectionName, string InstructorId,
+public sealed record ClassSummary(string Id, int SubjectId, string? SubjectCode, string SubjectName, string? SectionName, string InstructorId,
     string InstructorName, string? TermName, int StudentCount, IReadOnlyList<ClassMeeting> Meetings);
 public sealed record ModuleItem(long Id, string ClassId, long? ParentModuleId, string Title, int SortOrder);
 public sealed record MaterialItem(long Id, string ClassId, long ModuleId, string Title, string Kind, string? Description,
@@ -101,7 +101,7 @@ public static class OverviewEndpoints
 
             return TypedResults.Ok(new Overview(
                 me,
-                classes.Select(c => new ClassSummary(c.Id, c.SubjectCode, c.SubjectName, c.SectionName, c.InstructorId, c.InstructorName, c.TermName,
+                classes.Select(c => new ClassSummary(c.Id, c.SubjectId, c.SubjectCode, c.SubjectName, c.SectionName, c.InstructorId, c.InstructorName, c.TermName,
                     roster.Count(s => s.ClassId == c.Id), JsonSerializer.Deserialize<List<ClassMeeting>>(c.MeetingsJson, JsonSerializerOptions.Web) ?? [])).ToList(),
                 modules.Select(m => new ModuleItem(m.Id, m.ClassId, m.ParentModuleId, m.Title, m.SortOrder)).ToList(),
                 materials.Select(m => new MaterialItem(m.Id, m.ClassId, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt)).ToList(),
