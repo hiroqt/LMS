@@ -34,7 +34,8 @@ public sealed record AnswerDto(long QuestionId, long? OptionId, string? Text, IR
 public sealed record AttemptDto(long Id, int AttemptNumber, string Status, DateTime? StartedAt, DateTime? SubmittedAt,
     DateTime? Deadline, decimal? Score, decimal MaxPoints, string? Feedback,
     IReadOnlyList<StudentQuestion> Questions, IReadOnlyList<AnswerDto> Answers,
-    string AnswerReview, string SpellingMode, DateTime? ScoreUpdatedAt, IReadOnlyList<StudentSection> Sections);
+    string AnswerReview, string SpellingMode, DateTime? ScoreUpdatedAt, IReadOnlyList<StudentSection> Sections,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Title = null);
 
 /// <summary>One answer. Use the field for the question's type: optionId (multiple choice, true/false),
 /// text (essay, identification), optionId and text (modified true or false: the correction when False),

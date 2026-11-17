@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Lms.Api.Tests;
 
-/// <summary>Additions requested by the grading client (PR #48).</summary>
+/// <summary>Additions requested by the grading client (PR #48) and the student client (PR #49).</summary>
 public sealed class GradingContractTests : AssessmentTestBase
 {
     [Fact]
@@ -77,5 +77,34 @@ public sealed class GradingContractTests : AssessmentTestBase
             .Single(a => a.GetProperty("questionId").GetInt64() == pending);
         Assert.Equal(1.5m, answer.GetProperty("pointsAwarded").GetDecimal());
         Assert.Equal("accepted", answer.GetProperty("decision").GetString());
+    }
+
+    // ------------------------------------------------------------ student client (PR #49)
+
+    [Fact]
+    public async Task The_overview_carries_the_exam_settings()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync(new { answerReview = "score_only", spellingMode = "typos", shuffleChoices = true });
+        JsonElement Item(JsonElement overview) => overview.GetProperty("coursework").EnumerateArray()
+            .Single(c => c.GetProperty("coursework").GetProperty("id").GetInt64() == exam).GetProperty("coursework");
+
+        var student = Item(await Json(await StudentA.GetAsync("/api/me/overview")));
+        Assert.Equal("score_only", student.GetProperty("answerReview").GetString());
+        Assert.Equal("typos", student.GetProperty("spellingMode").GetString());
+
+        var instructor = Item(await Json(await Instructor.GetAsync("/api/me/overview")));
+        Assert.Equal("typos", instructor.GetProperty("spellingMode").GetString());
+        Assert.False(instructor.GetProperty("shuffleQuestions").GetBoolean());
+        Assert.True(instructor.GetProperty("shuffleChoices").GetBoolean());
+    }
+
+    [Fact]
+    public async Task The_preview_carries_the_exam_title_and_attempts_do_not()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync();
+        Assert.Equal("Midterm exam", (await Json(await Instructor.GetAsync($"{Base}/{exam}/preview"))).GetProperty("title").GetString());
+        Assert.False((await Json(await StudentA.PostAsync($"{Base}/{exam}/attempts", null))).TryGetProperty("title", out _));
     }
 }

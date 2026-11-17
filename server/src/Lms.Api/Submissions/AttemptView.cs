@@ -45,14 +45,14 @@ public static class AttemptView
             cw.AnswerReview, cw.SpellingMode, attempt.ScoreUpdatedAt, ToSections(sections));
     }
 
-    /// <summary>An attempt built from the questions for the instructor's preview: nothing saved, no keys.</summary>
+    /// <summary>An attempt built from the questions for the instructor's preview: nothing saved, no keys, and the exam's title.</summary>
     public static async Task<AttemptDto> PreviewAsync(LmsDbContext db, CourseworkRow cw, DateTime now, CancellationToken ct)
     {
         var sections = await QuestionStore.SectionsAsync(db, cw.QuestionnaireId!.Value, ct);
         var keys = await SubmissionEndpoints.KeysAsync(db, cw.QuestionnaireId!.Value, ct);
         return new AttemptDto(0, 0, SubmissionStatus.InProgress, now, null, null, null, cw.MaxPoints, null,
             Ordered(cw, sections, keys, 0).Select(k => ToStudentQuestion(k, false)).ToList(), [],
-            cw.AnswerReview, cw.SpellingMode, null, ToSections(sections));
+            cw.AnswerReview, cw.SpellingMode, null, ToSections(sections), cw.Title);
     }
 
     public static IReadOnlyList<StudentSection> ToSections(IEnumerable<QuestionSection> sections) =>
