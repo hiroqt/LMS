@@ -47,7 +47,6 @@ Use as `text-<name>` (body minimum is `text-body`, 14px).
 | Token | Value |
 | --- | --- |
 | `xs` | `removed` |
-| `label` | `0.75rem` |
 | `body` | `0.875rem` |
 | `body-lg` | `1rem` |
 | `card-title` | `1rem` |
