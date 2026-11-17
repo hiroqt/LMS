@@ -404,3 +404,15 @@ passed; work with no due date, or already closed, can be graded at any time. It 
 gradebook like any graded work (a 0 lowers the average). To let that student hand in, there is no
 undo yet; the instructor corrects the grade instead. Journeys added, none changed: instructor
 CLOSE and NHI, student CLOSED, all in `close-activities`.
+### D-037 · UI revamp v2: no decoration, Admin joins the shared system
+`2026-11-17` · hiro (user request) · scope: all · confidence: high
+Supersedes D-001 (Admin out of scope) and amends D-005 (12px uppercase labels) and D-024.
+The user asked for one simple, modern UI across every role with **no gradients, no
+eyebrows, no pulse animations, no status dots, and no vertical side lines on cards**, without
+breaking working code. Plan: [`../UI_REVAMP_V2_PLAN.md`](../UI_REVAMP_V2_PLAN.md); rules: C-019.
+Also gone: uppercase letter-spaced labels, `backdrop-blur`, and shadows on flat cards (only
+overlays cast one). Kept: `·` metadata separators, round number badges in quizzes and
+results, avatars, count pills, and the functional button spinner. Admin is rebuilt in
+`features/admin` on `AppShell` and `shared/ui` with its journeys unchanged; then the legacy
+shell and CSS are deleted and preflight is turned on (closes D-003, D-010, D-022).
+`npm run style:check` enforces the rules. Dark mode is out of scope.

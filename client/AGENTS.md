@@ -2,7 +2,7 @@
 
 ## UI revamp and shared memory (read first)
 
-The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`) and cut over on 2026-11-17 (D-021): they are the only Student and Instructor UIs. Admin is out of scope and keeps its current UI.
+The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`) and cut over on 2026-11-17 (D-021): they are the only Student and Instructor UIs. Revamp v2 (`docs/UI_REVAMP_V2_PLAN.md`, D-037) removes decoration everywhere (no gradients, eyebrows, pulse animations, status dots, or side lines on cards; `npm run style:check`) and rebuilds Admin on the same shared system. Until its phase lands, Admin keeps its current UI.
 
 - **Before UI work**, read `docs/ui-memory/CONVENTIONS.md`, skim `docs/ui-memory/DECISIONS.md` and `LEARNINGS.md`, and check `docs/ui-memory/generated/components.md` for something to reuse. The checklist is `.agents/skills/ui-memory/SKILL.md`.
 - **In the same PR**, record what you learned (`LEARNINGS.md`) and any choice others must follow (`DECISIONS.md`), update `FLOW_PARITY.md`, and run `npm run memory:sync`. CI fails when generated memory is stale.
