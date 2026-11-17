@@ -50,9 +50,10 @@ export function ClassroomsTab({ creating, onCreatingChange }: { creating: boolea
   };
   const filtered = Boolean(query) || year !== "all" || status !== "all" || assignment !== "all";
 
+  // Reset on close (Save, Cancel, Esc): the dialog is opened by the header button and ?create=1, not from here.
   const openCreate = (open: boolean) => {
-    if (open) {
-      setForm({ ...emptyForm, term });
+    if (!open) {
+      setForm(emptyForm);
       setError("");
     }
     onCreatingChange(open);
@@ -169,7 +170,7 @@ export function ClassroomsTab({ creating, onCreatingChange }: { creating: boolea
             </Select>
           </Field>
           <Field label="Term">
-            <Select value={form.term} onChange={(event) => setForm({ ...form, term: event.target.value })}>
+            <Select value={form.term || term} onChange={(event) => setForm({ ...form, term: event.target.value })}>
               {(terms.length ? terms : [{ id: "current-term", name: term, status: "current" as const }]).map((item) => (
                 <option key={item.id} value={item.name}>{item.name}{item.status === "current" ? " · Current" : " · Planned"}</option>
               ))}
