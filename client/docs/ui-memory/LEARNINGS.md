@@ -331,3 +331,12 @@ preloaded chunk into `index` and the entry passed 105 KB with no code added. Com
 source-map `sources` between `main` and the branch shows such moves at once. The fix was real,
 not a budget change: Admin now loads lazily like the other workspaces, so a student or instructor
 no longer downloads Admin code before the first screen.
+
+### L-048 · A client check that mirrors the server hides itself from a journey spec
+`2026-11-17` · hiro · scope: instructor, e2e · confidence: high
+The Attendance tab checks days present before saving, with the same message the server sends.
+Removing the client check left `e2e/attendance.spec.ts` green, because the server's 400 came back
+as `entries[i].daysPresent` and the tab mapped it to the same field error. That is the wanted
+behavior, but the journey proves the outcome, not which layer caught it; the limits themselves are
+pinned by `shared/lib/attendance.test.ts` and the server tests. Map indexed server errors back to
+the rows actually sent, not to the class list order.
