@@ -30,6 +30,7 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(classId)}/assessments/${encodeURIComponent(examId)}/grading${query ? `?${query}` : ""}`;
   },
+  assessmentPreview: (classId: string, id: string | number) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/${id}/preview`,
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,
   gradebook: (classId?: string) => (classId ? `/instructor/gradebook?class=${encodeURIComponent(classId)}` : "/instructor/gradebook"),

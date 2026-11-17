@@ -1,5 +1,6 @@
 import { describeApiError, getJson, isApiError, sendJson, shouldRetryApiRead } from "../../../shared/api/http";
 import type { Viewer } from "../../../shared/api/viewer";
+import type { AnswerInput, AnswerReview, QuizAnswer, QuizQuestion, QuizSection, SpellingMode } from "../../../shared/components/quiz/types";
 
 /** LMS API calls for the Student workspace (D-032). The server enforces every rule. */
 
@@ -12,23 +13,10 @@ export const studentKeys = {
 
 export const studentQueryOptions = { retry: shouldRetryApiRead, networkMode: "always" } as const;
 
-export interface AttemptQuestion {
-  id: number;
-  type: string;
-  prompt: string;
-  points: number;
-  timeLimitSeconds: number | null;
-  options: Array<{ id: number; text: string }>;
-}
+export type AttemptQuestion = QuizQuestion;
+export type AttemptAnswer = QuizAnswer;
 
-export interface AttemptAnswer {
-  questionId: number;
-  optionId: number | null;
-  text: string | null;
-  pointsAwarded: number | null;
-}
-
-/** An exam attempt as the student sees it: questions without answers. */
+/** An exam attempt as the student sees it: questions without answers until the review allows (contract §4). */
 export interface Attempt {
   id: number;
   attemptNumber: number;
@@ -39,6 +27,12 @@ export interface Attempt {
   score: number | null;
   maxPoints: number;
   feedback: string | null;
+  /** Missing on attempts from an API without assessment settings: read as the defaults. */
+  answerReview?: AnswerReview;
+  spellingMode?: SpellingMode;
+  /** Set when a key fix or spelling change re-scored this attempt (D-042). */
+  scoreUpdatedAt?: string | null;
+  sections?: QuizSection[];
   questions: AttemptQuestion[];
   answers: AttemptAnswer[];
 }
@@ -52,7 +46,8 @@ export const startAttempt = (viewer: Viewer, classId: string, assessmentId: stri
 export const fetchAttempt = (viewer: Viewer, classId: string, assessmentId: string, attemptId: number, signal?: AbortSignal) =>
   getJson<Attempt>(`${workPath(classId, assessmentId)}/attempts/${attemptId}`, { identity: true, viewer, signal });
 
-export type ChosenAnswers = Array<{ questionId: number; optionId: number }>;
+/** Answers to save: per type, `optionId`, `text`, `items`, or `matches` (contract §1). */
+export type ChosenAnswers = AnswerInput[];
 
 export const saveAnswers = (viewer: Viewer, classId: string, assessmentId: string, attemptId: number, answers: ChosenAnswers) =>
   sendJson<Attempt>("PUT", `${workPath(classId, assessmentId)}/attempts/${attemptId}/answers`, { answers }, { viewer });
