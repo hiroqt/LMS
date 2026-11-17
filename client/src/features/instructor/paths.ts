@@ -6,6 +6,11 @@ export const isClassTab = (value: unknown): value is ClassTab => CLASS_TABS.incl
 export type ContentType = "material" | "activity" | "exam";
 export const isContentType = (value: unknown): value is ContentType => value === "material" || value === "activity" || value === "exam";
 
+/** The views of an exam's grading page; each has its own URL (`?view=`). */
+export const GRADING_VIEWS = ["submissions", "spelling-review", "item-analysis"] as const;
+export type GradingView = (typeof GRADING_VIEWS)[number];
+export const isGradingView = (value: unknown): value is GradingView => GRADING_VIEWS.includes(value as GradingView);
+
 export const instructorPaths = {
   overview: "/instructor",
   classes: (year?: number | "all") => (year && year !== "all" ? `/instructor/classes?year=${year}` : "/instructor/classes"),
@@ -16,6 +21,14 @@ export const instructorPaths = {
     if (extra.create) params.set("create", extra.create);
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
+  },
+  /** One exam's grading: its attempts, the spelling review list, and item analysis. */
+  examGrading: (classId: string, examId: string, view: GradingView = "submissions", extra: { review?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (view !== "submissions") params.set("view", view);
+    if (extra.review) params.set("review", extra.review);
+    const query = params.toString();
+    return `/instructor/classes/${encodeURIComponent(classId)}/assessments/${encodeURIComponent(examId)}/grading${query ? `?${query}` : ""}`;
   },
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,

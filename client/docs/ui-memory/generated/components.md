@@ -85,15 +85,19 @@
 | `src/features/admin/pages/courses/SubjectsTab.tsx` | `SubjectsTab` |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
+| `src/features/instructor/components/AnswerBesideKey.tsx` | `QuestionPrompt`, `AnswerBesideKey` |
+| `src/features/instructor/components/AnswerKeyDialog.tsx` | `AnswerKeyDialog` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
+| `src/features/instructor/components/MatchNoteLabel.tsx` | `MatchNoteLabel` |
 | `src/features/instructor/components/QuestionSetEditor.tsx` | `QuestionSetEditor`, `QuestionSetView` |
 | `src/features/instructor/components/QuestionSetPicker.tsx` | `QuestionSetPicker` |
 | `src/features/instructor/components/QuestionSetUses.tsx` | `QuestionSetUses` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
+| `src/features/instructor/pages/ExamGradingPage.tsx` | `ExamGradingPage` |
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
@@ -106,8 +110,11 @@
 | `src/features/instructor/pages/class/ModulesTab.tsx` | `ModulesTab` |
 | `src/features/instructor/pages/class/PeopleTab.tsx` | `PeopleTab` |
 | `src/features/instructor/pages/class/StreamTab.tsx` | `StreamTab` |
-| `src/features/instructor/pages/class/SubmissionsTab.tsx` | `SubmissionsTab` |
+| `src/features/instructor/pages/class/SubmissionsTab.tsx` | `GradeForm`, `SubmissionsTab` |
 | `src/features/instructor/pages/class/shared.tsx` | `ListSearch` |
+| `src/features/instructor/pages/grading/ExamSubmissionsView.tsx` | `ExamSubmissionsView` |
+| `src/features/instructor/pages/grading/ItemAnalysisView.tsx` | `ItemAnalysisView` |
+| `src/features/instructor/pages/grading/SpellingReviewView.tsx` | `SpellingReviewView` |
 | `src/features/isms-link/IsmsLinkPage.tsx` | `IsmsLinkPage` |
 | `src/features/isms-link/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/isms-link/components/ClassRoster.tsx` | `ClassRoster` |
