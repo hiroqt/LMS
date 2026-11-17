@@ -95,7 +95,7 @@ public sealed class AttemptTests : AssessmentTestBase
     public async Task Keys_never_reach_a_student_before_submitting_and_follow_the_answer_review_after()
     {
         await SeedAsync();
-        var (exam, _) = await ExamAsync(new { answerReview = "answers_after_submit" });
+        var (exam, _) = await ExamAsync(new { answerReview = "answers_after_submit", maxAttempts = 1 });
         var attempt = await Json(await StudentA.PostAsync($"{Base}/{exam}/attempts", null));
         var raw = await (await StudentA.GetAsync($"{Base}/{exam}/attempts/{attempt.GetProperty("id").GetInt64()}")).Content.ReadAsStringAsync();
         Assert.DoesNotContain("Babbage", raw);
@@ -124,6 +124,30 @@ public sealed class AttemptTests : AssessmentTestBase
     }
 
     [Fact]
+    public async Task Keys_wait_until_the_student_cannot_start_another_attempt()
+    {
+        await SeedAsync();
+        var (exam, _) = await ExamAsync(new { answerReview = "answers_after_submit", maxAttempts = 2 });
+        var first = await TakeAsync(StudentA, exam, a => Answers(a));
+        NoKeys(first);
+        Assert.NotEqual(JsonValueKind.Null, first.GetProperty("answers")[0].GetProperty("pointsAwarded").ValueKind);   // points still show
+
+        // The last attempt in progress: the first one still shows no keys.
+        var second = await Json(await StudentA.PostAsync($"{Base}/{exam}/attempts", null));
+        NoKeys(await Json(await StudentA.GetAsync($"{Base}/{exam}/attempts/{first.GetProperty("id").GetInt64()}")));
+        var done = await Json(await StudentA.PostAsJsonAsync($"{Base}/{exam}/attempts/{second.GetProperty("id").GetInt64()}/submit", new { answers = Answers(second) }));
+        Assert.NotEqual(JsonValueKind.Null, QuestionOfType(done, "identification").GetProperty("key").ValueKind);
+        var again = await Json(await StudentA.GetAsync($"{Base}/{exam}/attempts/{first.GetProperty("id").GetInt64()}"));
+        Assert.NotEqual(JsonValueKind.Null, QuestionOfType(again, "identification").GetProperty("key").ValueKind);
+
+        // After the due date with late work allowed and attempts left: still no keys.
+        var (late, _) = await ExamAsync(new { answerReview = "answers_after_due", dueAt = Factory.Time.Now.AddDays(1), allowLate = true });
+        var mine = await TakeAsync(StudentA, late, a => Answers(a));
+        Factory.Time.Now = Factory.Time.Now.AddDays(2);
+        NoKeys(await Json(await StudentA.GetAsync($"{Base}/{late}/attempts/{mine.GetProperty("id").GetInt64()}")));
+    }
+
+    [Fact]
     public async Task Score_only_hides_points_and_notes()
     {
         await SeedAsync();
@@ -147,7 +171,7 @@ public sealed class AttemptTests : AssessmentTestBase
         NoKeys(done);
         Assert.All(done.GetProperty("answers").EnumerateArray(), a => Assert.NotEqual(JsonValueKind.Null, a.GetProperty("pointsAwarded").ValueKind));
 
-        var (afterDue, _) = await ExamAsync(new { answerReview = "answers_after_due", dueAt = Factory.Time.Now.AddDays(1), allowLate = true });
+        var (afterDue, _) = await ExamAsync(new { answerReview = "answers_after_due", dueAt = Factory.Time.Now.AddDays(1), allowLate = true, maxAttempts = 1 });
         var mine = await TakeAsync(StudentA, afterDue, a => Answers(a));
         NoKeys(mine);
         Factory.Time.Now = Factory.Time.Now.AddDays(2);
