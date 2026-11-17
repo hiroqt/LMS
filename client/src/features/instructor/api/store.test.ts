@@ -31,6 +31,13 @@ describe("toRoleStore", () => {
     expect(gradebookAverages(s, "class-a").activities).toEqual({ graded: 2, average: 65 });
   });
 
+  it("carries attendance by month with days present by student", () => {
+    expect(store().attendance).toEqual([
+      { classroomId: "class-a", year: 2026, month: 10, schoolDays: 20, daysPresent: { "STU-1": 18, "STU-2": 15 } },
+      { classroomId: "class-a", year: 2026, month: 9, schoolDays: 22, daysPresent: { "STU-2": 22 } },
+    ]);
+  });
+
   it("queues only handed-in, ungraded work", () => {
     const s = store();
     s.activitySubmissions.push({ id: "13", activityId: "1", classroomId: "class-a", studentId: "STU-2", status: "submitted", grade: null });

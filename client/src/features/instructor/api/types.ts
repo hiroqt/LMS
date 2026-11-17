@@ -144,6 +144,15 @@ export interface GradebookSetting {
   passingScore: number;
 }
 
+export interface AttendanceRecord {
+  classroomId: string;
+  year: number;
+  month: number;
+  schoolDays: number;
+  /** Days present by student id. */
+  daysPresent: Record<string, number>;
+}
+
 export interface RoleStore {
   users: User[];
   subjects: Subject[];
@@ -157,6 +166,7 @@ export interface RoleStore {
   examSubmissions: ExamSubmission[];
   announcements?: Announcement[];
   gradebookSettings: Record<string, GradebookSetting>;
+  attendance: AttendanceRecord[];
   systemAdministration?: { settings: { currentTermId: string }; terms: Array<{ id: string; name: string }> };
 }
 

@@ -147,5 +147,12 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       status: active(item.status),
     })),
     gradebookSettings: Object.fromEntries(overview.gradebooks.map((item) => [item.classId, { activityWeight: item.activityWeight, examWeight: item.examWeight, passingScore: item.passingScore }])),
+    attendance: overview.attendance.map(({ classId, month }) => ({
+      classroomId: classId,
+      year: month.year,
+      month: month.month,
+      schoolDays: month.schoolDays,
+      daysPresent: Object.fromEntries(month.entries.map((entry) => [entry.studentId, entry.daysPresent])),
+    })),
   };
 }

@@ -52,6 +52,11 @@ export interface ExamInput {
   correctIndex: number;
 }
 
+export interface AttendanceInput {
+  schoolDays: number;
+  entries: Array<{ studentId: string; daysPresent: number }>;
+}
+
 const classPath = (classroomId: string) => `/api/classes/${encodeURIComponent(classroomId)}`;
 /** A datetime-local value ("2026-11-30T15:00") as an instant; empty stays empty. */
 const instant = (value: string) => (value ? new Date(value).toISOString() : undefined);
@@ -154,6 +159,10 @@ export function useInstructorActions() {
       /** Saved only as a whole; the server requires the two weights to add up to 100. */
       saveGradebook: (classroomId: string, settings: GradebookSetting) =>
         run(() => send("PUT", `${classPath(classroomId)}/gradebook`, settings)),
+
+      /** A whole month in one call. Students left out keep their saved days (D-035). */
+      saveAttendance: (classroomId: string, year: number, month: number, input: AttendanceInput) =>
+        run(() => send("PUT", `${classPath(classroomId)}/attendance/${year}/${month}`, input)),
     };
   }, [instructorId, refresh]);
 }
