@@ -31,9 +31,11 @@ public static class SubmissionEndpoints
             if (denied is not null) return denied;
             var cw = await VisibleAsync(db, classId, courseworkId, time, ct);
             if (cw is null || cw.Type != CourseworkType.Exam) return ContentEndpoints.NotFound("Exam");
+            if (cw.Status == CourseworkStatus.Closed) return Conflict(ClosedExam);
             var now = time.GetUtcNow().UtcDateTime;
 
             var mine = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
+            if (mine.Any(GradingRules.IsNotHandedIn)) return Conflict("Your instructor has already recorded a grade for this exam without an attempt.");
             var open = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress);
             if (open is not null) return TypedResults.Ok(await AttemptAsync(db, cw, open, ct));
 
@@ -63,6 +65,7 @@ public static class SubmissionEndpoints
             if (denied is not null) return denied;
             var (cw, attempt) = await OwnAttemptAsync(db, classId, courseworkId, id, user, ct);
             if (attempt is null) return ContentEndpoints.NotFound("Attempt");
+            if (cw!.Status == CourseworkStatus.Closed) return Conflict(ClosedExam);
             if (attempt.Status != SubmissionStatus.InProgress) return Conflict("This attempt has already been submitted.");
             if (Deadline(cw!, attempt) is { } deadline && time.GetUtcNow().UtcDateTime > deadline + Grace) return Conflict("Time is up for this attempt; submit it to record your saved answers.");
             var keys = await KeysAsync(db, cw!.QuestionnaireId!.Value, ct);
@@ -77,6 +80,7 @@ public static class SubmissionEndpoints
             if (denied is not null) return denied;
             var (cw, attempt) = await OwnAttemptAsync(db, classId, courseworkId, id, user, ct, track: true);
             if (attempt is null) return ContentEndpoints.NotFound("Attempt");
+            if (cw!.Status == CourseworkStatus.Closed) return Conflict(ClosedExam);
             if (attempt.Status != SubmissionStatus.InProgress) return Conflict("This attempt has already been submitted.");
             var now = time.GetUtcNow().UtcDateTime;
             var keys = await KeysAsync(db, cw!.QuestionnaireId!.Value, ct);
@@ -122,9 +126,12 @@ public static class SubmissionEndpoints
             if (denied is not null) return denied;
             var cw = await VisibleAsync(db, classId, courseworkId, time, ct);
             if (cw is null || cw.Type != CourseworkType.Assignment) return ContentEndpoints.NotFound("Assignment");
+            if (cw.Status == CourseworkStatus.Closed) return Conflict("This assignment is closed and no longer accepts work.");
             var now = time.GetUtcNow().UtcDateTime;
             if (cw.DueAt is { } due && now > due && !cw.AllowLate) return Conflict("This assignment is past its due date and does not accept late work.");
-            var previous = await db.Submissions.CountAsync(s => s.CourseworkId == cw.Id && s.StudentId == user.Id, ct);
+            var mine = await db.Submissions.AsNoTracking().Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
+            if (mine.Any(GradingRules.IsNotHandedIn)) return Conflict("Your instructor has already recorded a grade for this assignment without a submission.");
+            var previous = mine.Count;
             if (previous > 0 && !cw.AllowResubmission) return Conflict("You have already handed this in, and resubmission is not allowed.");
 
             var errors = new Errors();
@@ -193,7 +200,8 @@ public static class SubmissionEndpoints
             var errors = new Errors();
             var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
             decimal total;
-            if (cw!.Type == CourseworkType.Assignment)
+            // A "not handed in" grade has no answers to add up, so an exam's one also takes plain points.
+            if (cw!.Type == CourseworkType.Assignment || GradingRules.IsNotHandedIn(row))
             {
                 if (input.Points is not { } points || points < 0 || points > cw.MaxPoints) { errors.Add("points", $"Give a score from 0 to {cw.MaxPoints}."); total = 0; }
                 else total = Math.Round(points, 2);
@@ -232,11 +240,120 @@ public static class SubmissionEndpoints
             grade.GradedBy = user.Id;
             grade.GradedAt = time.GetUtcNow().UtcDateTime;
             row.Status = SubmissionStatus.Graded;
-            await ContentEndpoints.SaveWithAuditAsync(db, user, null, "graded", cw.Type == CourseworkType.Exam ? "Exam attempt" : "Assignment", () => row.Id, ct, "grading");
+            await ContentEndpoints.SaveWithAuditAsync(db, user, null, "graded", GradingRules.IsNotHandedIn(row) ? NotHandedIn : cw.Type == CourseworkType.Exam ? "Exam attempt" : "Assignment", () => row.Id, ct, "grading");
             return TypedResults.Ok((await ToDtoAsync(db, cw, [row], ct))[0]);
         }).WithName("GradeSubmission");
 
+        // A grade for one student who handed in nothing (D-036). It creates a "not handed in" record, or
+        // corrects the one already there; it never replaces work the student handed in or started.
+        work.MapPut("/students/{studentId}/grade", async Task<IResult> (string classId, long courseworkId, string studentId, MissingGradeInput input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var (_, denied) = await access.ForGradingAsync(classId, user, ct);
+            if (denied is not null) return denied;
+            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, ct);
+            if (invalid is not null) return invalid;
+            var student = await db.IsmsClassStudents.AsNoTracking().SingleOrDefaultAsync(s => s.ClassId == classId && s.StudentId == studentId && s.IsActive, ct);
+            if (student is null) return ContentEndpoints.NotFound("Student");
+            var errors = new Errors();
+            var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
+            if (errors.Any) return errors.Result();
+
+            var rows = await db.Submissions.Where(s => s.CourseworkId == cw!.Id && s.StudentId == studentId).ToListAsync(ct);
+            if (rows.Any(s => s.Status == SubmissionStatus.InProgress)) return Conflict("This student has an attempt in progress. Grade it once they submit.");
+            if (rows.Any(s => !GradingRules.IsNotHandedIn(s))) return Conflict("This student handed in work. Grade their submission instead.");
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var row = rows.FirstOrDefault();
+            if (row is null)
+            {
+                row = NotHandedInRecord(cw!.Id, studentId);
+                db.Submissions.Add(row);
+                try { await db.SaveChangesAsync(ct); }
+                catch (DbUpdateException) { return Conflict("The student handed in work at the same moment. Reload and try again."); }
+            }
+            var grade = await db.Grades.SingleOrDefaultAsync(g => g.SubmissionId == row.Id, ct);
+            if (grade is null) { grade = new Grade { SubmissionId = row.Id }; db.Grades.Add(grade); }
+            Fill(grade, Math.Round(input.Points!.Value, 2), feedback, user.Id, time.GetUtcNow().UtcDateTime);
+            Audit(db, user, "grading", "graded", NotHandedIn, row.Id);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return TypedResults.Ok((await ToDtoAsync(db, cw!, [row], ct))[0]);
+        }).WithName("GradeStudentWithoutSubmission");
+
+        // "Give N to everyone who didn't hand in": only students with no submission at all. Never
+        // overwrites a grade and never touches work in progress or waiting for a grade.
+        work.MapPost("/grade-missing", async Task<IResult> (string classId, long courseworkId, MissingGradeInput input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var (_, denied) = await access.ForGradingAsync(classId, user, ct);
+            if (denied is not null) return denied;
+            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, ct);
+            if (invalid is not null) return invalid;
+            var errors = new Errors();
+            var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
+            if (errors.Any) return errors.Result();
+
+            var started = db.Submissions.Where(s => s.CourseworkId == cw!.Id).Select(s => s.StudentId);
+            var missing = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive && !started.Contains(s.StudentId))
+                .Select(s => s.StudentId).ToListAsync(ct);
+            if (missing.Count == 0) return TypedResults.Ok(new MissingGradeResult(0));
+
+            var now = time.GetUtcNow().UtcDateTime;
+            var points = Math.Round(input.Points!.Value, 2);
+            var rows = missing.Select(id => NotHandedInRecord(cw!.Id, id)).ToList();
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            db.Submissions.AddRange(rows);
+            try { await db.SaveChangesAsync(ct); }
+            catch (DbUpdateException) { return Conflict("A student handed in work at the same moment. Reload and try again."); }
+            foreach (var row in rows)
+            {
+                var grade = new Grade { SubmissionId = row.Id };
+                Fill(grade, points, feedback, user.Id, now);
+                db.Grades.Add(grade);
+            }
+            // One metadata-only row for the whole action: which coursework and how many students.
+            db.AuditLog.Add(new AuditLogEntry
+            {
+                ActorId = user.Id, ActorRole = user.Role, Category = "grading", Action = "graded", Target = NotHandedIn,
+                TargetId = cw!.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Summary = $"{NotHandedIn} graded for {rows.Count} students",
+            });
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return TypedResults.Ok(new MissingGradeResult(rows.Count));
+        }).WithName("GradeEveryoneWithoutSubmission");
+
         return app;
+    }
+
+    private const string NotHandedIn = "Not handed in";
+    private const string ClosedExam = "This exam is closed. Attempts can no longer be started, saved or submitted.";
+
+    /// <summary>Graded, with no work and no submitted time (see <see cref="GradingRules.IsNotHandedIn"/>).</summary>
+    private static Submission NotHandedInRecord(long courseworkId, string studentId) =>
+        new() { CourseworkId = courseworkId, StudentId = studentId, AttemptNumber = 1, Status = SubmissionStatus.Graded };
+
+    private static void Fill(Grade grade, decimal points, string? feedback, string by, DateTime at)
+    {
+        grade.Points = points;
+        grade.Feedback = feedback;
+        grade.GradedBy = by;
+        grade.GradedAt = at;
+    }
+
+    /// <summary>Published or closed coursework of the class, and points within its maximum.</summary>
+    private static async Task<(CourseworkRow? Coursework, IResult? Invalid)> GradableAsync(LmsDbContext db, string classId, long courseworkId, decimal? points, CancellationToken ct)
+    {
+        var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
+        if (cw is null) return (null, ContentEndpoints.NotFound("Coursework"));
+        if (cw.Status is not (CourseworkStatus.Published or CourseworkStatus.Closed)) return (null, Conflict("Only published or closed coursework can be graded."));
+        if (points is not { } p || p < 0 || p > cw.MaxPoints)
+        {
+            var errors = new Errors();
+            errors.Add("points", $"Give a score from 0 to {cw.MaxPoints}.");
+            return (null, errors.Result());
+        }
+        return (cw, null);
     }
 
     // ----------------------------------------------------------------- helpers
@@ -246,12 +363,12 @@ public static class SubmissionEndpoints
     private static void Audit(LmsDbContext db, CurrentUser user, string category, string action, string target, long id) =>
         db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = category, Action = action, Target = target, TargetId = id.ToString(System.Globalization.CultureInfo.InvariantCulture), Summary = $"{target} {action}" });
 
-    /// <summary>Coursework a student can act on: published and available.</summary>
+    /// <summary>Coursework a student can see: published or closed, and available. Closed work refuses changes.</summary>
     private static Task<CourseworkRow?> VisibleAsync(LmsDbContext db, string classId, long id, TimeProvider time, CancellationToken ct)
     {
         var now = time.GetUtcNow().UtcDateTime;
         return db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == id && c.ClassId == classId
-            && c.Status == CourseworkStatus.Published && (c.AvailableFrom == null || c.AvailableFrom <= now), ct);
+            && (c.Status == CourseworkStatus.Published || c.Status == CourseworkStatus.Closed) && (c.AvailableFrom == null || c.AvailableFrom <= now), ct);
     }
 
     private static async Task<(CourseworkRow? Coursework, Submission? Attempt)> OwnAttemptAsync(LmsDbContext db, string classId, long courseworkId, long id, CurrentUser user, CancellationToken ct, bool track = false)
@@ -374,7 +491,7 @@ public static class SubmissionEndpoints
         {
             grades.TryGetValue(r.Id, out var g);
             return new SubmissionDto(r.Id, r.StudentId, names.GetValueOrDefault(r.StudentId), r.AttemptNumber, r.Status, r.StartedAt, r.SubmittedAt,
-                cw.DueAt is { } due && r.SubmittedAt > due, r.Text, r.FileName, g?.Points, cw.MaxPoints, g?.Feedback, g?.GradedAt);
+                cw.DueAt is { } due && r.SubmittedAt > due, r.Text, r.FileName, g?.Points, cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r));
         }).ToList();
     }
 }

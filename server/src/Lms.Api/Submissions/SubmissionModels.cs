@@ -31,13 +31,20 @@ public sealed record AssignmentSubmit(string? Text, string? FileName);
 // ------------------------------------------------------------- instructor side
 
 /// <param name="Late">Submitted after the due date.</param>
+/// <param name="NotHandedIn">A grade the instructor gave a student who handed in nothing (D-036): no work, no submitted time.</param>
 public sealed record SubmissionDto(long Id, string StudentId, string? StudentName, int AttemptNumber, string Status,
     DateTime? StartedAt, DateTime? SubmittedAt, bool Late, string? Text, string? FileName,
-    decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt);
+    decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt, bool NotHandedIn = false);
 
 public sealed record StudentRef(string StudentId, string Name);
 
-/// <param name="Missing">Students on the class list with no handed-in work yet.</param>
+/// <summary>A grade for a student who handed in nothing.</summary>
+public sealed record MissingGradeInput(decimal? Points, string? Feedback);
+
+/// <param name="Graded">How many students received the grade.</param>
+public sealed record MissingGradeResult(int Graded);
+
+/// <param name="Missing">Students on the class list with no handed-in work and no "not handed in" grade yet.</param>
 public sealed record SubmissionList(IReadOnlyList<SubmissionDto> Items, IReadOnlyList<StudentRef> Missing);
 
 /// <summary>An attempt with the correct answers beside the student's, for grading.</summary>
