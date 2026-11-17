@@ -1,6 +1,7 @@
 import { Archive, ArchiveRestore, Download, FileText, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
+import { moduleChoices, modulePath } from "../../../../shared/lib/moduleTree";
 import { Badge } from "../../../../shared/ui/Badge";
 import { Button } from "../../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
@@ -42,13 +43,15 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
   const [inspect, setInspect] = useState<Material | null>(null);
   const [removing, setRemoving] = useState<Material | null>(null);
   const q = query.trim().toLowerCase();
+  const parentOf = new Map(content.modules.map((item) => [item.id, item.parentId]));
   const shown = content.materials.filter(
     (item) =>
       (!q || `${item.title} ${item.description ?? ""} ${item.fileName ?? ""}`.toLowerCase().includes(q)) &&
-      (moduleId === "all" || item.moduleId === moduleId) &&
+      // A module shows its submodules' materials too.
+      (moduleId === "all" || item.moduleId === moduleId || parentOf.get(item.moduleId) === moduleId) &&
       (kind === "all" || item.kind === kind),
   );
-  const moduleTitle = (id: string) => content.modules.find((item) => item.id === id)?.title ?? "Unit";
+  const moduleTitle = (id: string) => modulePath(content.modules, id) ?? "Unit";
   const filtered = Boolean(q) || moduleId !== "all" || kind !== "all";
 
   const actions = useInstructorActions();
@@ -69,7 +72,7 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
         <Field label="Unit / module">
           <Select value={moduleId} onChange={(event) => setModuleId(event.target.value)}>
             <option value="all">All units &amp; modules</option>
-            {content.modules.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            {moduleChoices(content.modules).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </Select>
         </Field>
         <Field label="Resource type">

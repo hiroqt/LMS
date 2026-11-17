@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialData } from "../../../roles/shared/lmsData.js";
-import { activeInstructors, classMark, classroomsOf, classWork, gradebookAverages, reviewQueue, searchInstructor, subjectOf, yearLevels, yearOf } from "./selectors";
+import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, reviewQueue, searchInstructor, subjectOf, yearLevels, yearOf } from "./selectors";
 import type { RoleStore } from "./types";
 
 const seed = () => createInitialData() as RoleStore;
@@ -67,5 +67,19 @@ describe("instructor selectors", () => {
     expect(searchInstructor(store, rooms, "intro")[0]).toMatchObject({ kind: "Year 1 classroom", title: "Introduction to Programming · BSIT · Year 1 · Section A", target: "class" });
     expect(searchInstructor(store, rooms, "assessment").every((item) => item.target === "assessment")).toBe(true);
     expect(searchInstructor(store, rooms, "")).toEqual([]);
+  });
+
+  it("groups a class's content by the module or submodule it sits in", () => {
+    const grouped = contentByModule({
+      materials: [{ id: "m1", moduleId: "2", title: "Join notes", kind: "Reading", status: "archived" }],
+      activities: [{ id: "a1", moduleId: "1", title: "ER diagram", maxScore: 10 }],
+      exams: [{ id: "e1", classroomId: "c", moduleId: "2", title: "Joins quiz", totalMarks: 10 }, { id: "e2", classroomId: "c", title: "Unplaced", totalMarks: 5 }],
+    });
+    expect(grouped.get("1")?.map((item) => item.title)).toEqual(["ER diagram"]);
+    expect(grouped.get("2")).toEqual([
+      { kind: "material", id: "m1", title: "Join notes", label: "Material · Reading", archived: true },
+      { kind: "exam", id: "e1", title: "Joins quiz", label: "Assessment", archived: false },
+    ]);
+    expect([...grouped.keys()]).toEqual(["2", "1"]);
   });
 });

@@ -76,7 +76,13 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       source: "isms",
     })),
     enrollments: overview.students.map((item) => ({ id: `${item.classId}-${item.studentId}`, classroomId: item.classId, studentId: item.studentId, status: "active", source: "isms" })),
-    modules: overview.modules.map((item) => ({ id: String(item.id), classroomId: item.classId, title: item.title, order: item.sortOrder })),
+    modules: overview.modules.map((item) => ({
+      id: String(item.id),
+      classroomId: item.classId,
+      ...(item.parentModuleId === null ? {} : { parentId: String(item.parentModuleId) }),
+      title: item.title,
+      order: item.sortOrder,
+    })),
     materials: overview.materials.map((item) => ({
       id: String(item.id),
       moduleId: String(item.moduleId),

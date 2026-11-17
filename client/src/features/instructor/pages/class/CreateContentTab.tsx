@@ -1,6 +1,7 @@
 import { BookOpen, ClipboardList, FileUp, GraduationCap, Plus, X } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
+import { moduleChoices } from "../../../../shared/lib/moduleTree";
 import { Button } from "../../../../shared/ui/Button";
 import { Card } from "../../../../shared/ui/Card";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
@@ -25,7 +26,8 @@ const titles: Record<ContentType, string> = { material: "Upload class material",
 
 function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { type: ContentType; onDone: (saved: boolean) => void }) {
   const toast = useToast();
-  const [values, setValues] = useState<Record<string, string>>({ moduleId: content.modules[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", correctIndex: "0" });
+  const choices = moduleChoices(content.modules);
+  const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide", points: "10", timeLimit: "0", correctIndex: "0" });
   const [flags, setFlags] = useState({ allowLate: false, allowResubmission: false });
   const [file, setFile] = useState<{ name: string; type: string; size: string } | null>(null);
   const [errors, setErrors] = useState<Errors>({});
@@ -80,9 +82,9 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
         <h3 id="content-form-title" className="m-0 font-sans text-section font-semibold">{titles[type]}</h3>
         <p className="m-0 text-body text-muted">This content will be shared with {room.section}.</p>
       </div>
-      <Field label="Curriculum Unit / Module">
+      <Field label="Curriculum Unit / Module" hint="A module, or one of its submodules.">
         <Select value={v("moduleId")} onChange={set("moduleId")}>
-          {content.modules.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+          {choices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
         </Select>
       </Field>
       <Field label={label} required error={errors.title}>

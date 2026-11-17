@@ -45,6 +45,8 @@ export interface Enrollment {
 export interface Module {
   id: string;
   classroomId: string;
+  /** Set on a submodule: the module it belongs to (one level, D-033). */
+  parentId?: string;
   title: string;
   order?: number;
 }
