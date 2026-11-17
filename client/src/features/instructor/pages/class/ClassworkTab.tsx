@@ -1,5 +1,6 @@
-import { ArrowRight, ClipboardList, GraduationCap, Lock, LockOpen, Plus } from "lucide-react";
+import { ArrowRight, ClipboardList, GraduationCap, ListChecks, Lock, LockOpen, Pencil, Plus, SpellCheck } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { cn } from "../../../../shared/lib/cn";
 import { FilterChip, FilterChipGroup } from "../../../../shared/ui/FilterChip";
@@ -8,7 +9,9 @@ import { Button } from "../../../../shared/ui/Button";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { useInstructorActions, type UngradedStudent } from "../../api/actions";
+import { useSpellingReview, waitingCount } from "../../api/grading";
 import { classWork, gradedLabel, type WorkItem } from "../../api/selectors";
+import { instructorPaths } from "../../paths";
 import { dueLabel } from "./classUtils";
 import { ListSearch, type ClassTabProps } from "./shared";
 
@@ -18,7 +21,20 @@ const FILTERS = [
   { id: "Assessment", label: "Assessments" },
 ] as const;
 
+/** "2 spelling answers to review" on an exam's row, once the spelling review list has any. */
+function SpellingWaiting({ classId, examId }: { classId: string; examId: string }) {
+  const count = waitingCount(useSpellingReview(classId, examId).data);
+  if (!count) return null;
+  return (
+    <span className="flex items-center gap-1.5 text-body text-warning">
+      <SpellCheck aria-hidden className="size-4 shrink-0" />
+      {count} {count === 1 ? "spelling answer" : "spelling answers"} to review
+    </span>
+  );
+}
+
 export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
+  const navigate = useNavigate();
   const toast = useToast();
   const actions = useInstructorActions();
   const [busy, setBusy] = useState<string>();
@@ -76,8 +92,20 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                   <strong className="text-card-title font-semibold">{item.title}</strong>
                   <span className="text-body text-muted">{item.kind} · Due {dueLabel(item.dueAt)} · {item.points} points</span>
                   <span className="text-body text-ink">{gradedLabel(item)}</span>
+                  {item.kind === "Assessment" && <SpellingWaiting classId={room.id} examId={item.id} />}
                 </span>
-                <Badge tone={item.closed ? "neutral" : "success"}>{item.closed ? "Closed" : "Published"}</Badge>
+                <Badge tone={item.closed || item.draft ? "neutral" : "success"}>{item.draft ? "Draft" : item.closed ? "Closed" : "Published"}</Badge>
+                {item.draft ? (
+                  <Button variant="secondary" aria-label={`Edit draft ${item.title}`} onClick={() => navigate(instructorPaths.assessmentEdit(room.id, item.id))} icon={<Pencil aria-hidden className="size-4" />}>
+                    Edit draft
+                  </Button>
+                ) : (
+                <>
+                {item.kind === "Assessment" && (
+                  <Button variant="secondary" aria-label={`Grading for ${item.title}`} onClick={() => navigate(instructorPaths.examGrading(room.id, item.id))} icon={<ListChecks aria-hidden className="size-4" />}>
+                    Grading
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   loading={busy === item.id}
@@ -87,6 +115,8 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                 >
                   {item.closed ? "Reopen" : "Close"}
                 </Button>
+                </>
+                )}
               </div>
               {refused[item.id] && (
                 <div role="alert" className="flex flex-col gap-2 rounded-control border border-warning/40 bg-warning-soft p-3 text-body text-ink">

@@ -1,5 +1,5 @@
 import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, ListChecks, Search } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
@@ -9,7 +9,7 @@ import { AppShell, type NavItem } from "../../shared/layout/AppShell";
 import { SidebarGroup } from "../../shared/layout/SidebarGroup";
 import { cn } from "../../shared/lib/cn";
 import { toneFor } from "../../shared/lib/tones";
-import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
 import { describeApiError } from "../../shared/api/http";
 import { Button } from "../../shared/ui/Button";
 import { IconButton } from "../../shared/ui/IconButton";
@@ -19,6 +19,7 @@ import { classMark, searchInstructor, subjectOf } from "./api/selectors";
 import { useOverview, usePeople } from "./api/store";
 import { useInstructorWorkspace } from "./hooks/useInstructorWorkspace";
 import { InstructorSessionContext, type InstructorSession } from "./instructorContext";
+import { NavigationGuardContext, type NavigationGuard } from "./navigationGuard";
 import { instructorPaths } from "./paths";
 import OverviewPage from "./pages/OverviewPage";
 
@@ -27,6 +28,9 @@ const ClassPage = lazy(() => import("./pages/ClassPage"));
 const GradebookPage = lazy(() => import("./pages/GradebookPage"));
 const QuestionSetsPage = lazy(() => import("./pages/QuestionSetsPage"));
 const QuestionSetPage = lazy(() => import("./pages/QuestionSetPage"));
+const ExamGradingPage = lazy(() => import("./pages/ExamGradingPage"));
+const AssessmentPreviewPage = lazy(() => import("./pages/AssessmentPreviewPage"));
+const AssessmentBuilderPage = lazy(() => import("./pages/AssessmentBuilderPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
@@ -57,8 +61,48 @@ function ScreenLoading() {
   );
 }
 
+/** Asks before leaving a page with unsaved changes (the assessment builder, a question set). */
+function useNavigationGuard() {
+  const routerNavigate = useNavigate();
+  const dirtyOwners = useRef(new Set<string>());
+  const [pending, setPending] = useState<string | (() => void) | null>(null);
+  const go = useCallback((to: string | (() => void)) => (typeof to === "string" ? routerNavigate(to) : to()), [routerNavigate]);
+  const guard = useMemo<NavigationGuard>(
+    () => ({
+      setDirty: (owner, dirty) => {
+        if (dirty) dirtyOwners.current.add(owner);
+        else dirtyOwners.current.delete(owner);
+      },
+      navigate: (to) => (dirtyOwners.current.size ? setPending(() => to) : go(to)),
+    }),
+    [go],
+  );
+  const leave = () => {
+    const to = pending;
+    dirtyOwners.current.clear();
+    setPending(null);
+    if (to !== null) go(to);
+  };
+  const dialog = (
+    <Dialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
+      <DialogContent
+        title="Leave without saving?"
+        description="Your changes on this page are not saved. If you leave, they are lost."
+        footer={
+          <>
+            <DialogClose asChild><Button variant="secondary">Keep editing</Button></DialogClose>
+            <Button variant="danger" onClick={leave}>Leave without saving</Button>
+          </>
+        }
+      />
+    </Dialog>
+  );
+  return { guard, dialog };
+}
+
 function Workspace({ onNavigateRole }: RoleAppProps) {
-  const navigate = useNavigate();
+  const { guard, dialog: leaveDialog } = useNavigationGuard();
+  const navigate = guard.navigate;
   const location = useLocation();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
   const [mobileSearch, setMobileSearch] = useState(false);
@@ -119,7 +163,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
       activeId={section}
       onNavigate={(id) => navigate(navTarget[id] ?? instructorPaths.overview)}
       mobileNav="drawer"
-      pageKey={location.pathname}
+      pageKey={instructorPaths.pageKey(location.pathname)}
       sidebarExtra={myClasses}
       sidebarFooter={(collapsed) => <HelpSupport collapsed={collapsed} />}
       topbarStart={
@@ -149,21 +193,29 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               if (entry) navigate(instructorPaths.classPage(entry.classroomId, "Submissions", { review: entry.id }));
             }}
           />
-          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={onNavigateRole} />
+          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={(role) => navigate(() => onNavigateRole(role))} />
         </>
       }
     >
+      <NavigationGuardContext.Provider value={guard}>
+      {leaveDialog}
       <Suspense fallback={<ScreenLoading />}>
         <Routes>
           <Route path="instructor/classes" element={<ClassesPage />} />
           <Route path="instructor/classes/:classId" element={<ClassPage />} />
+          <Route path="instructor/classes/:classId/assessments/:examId/grading" element={<ExamGradingPage />} />
+          <Route path="instructor/classes/:classId/assessments/:id/preview" element={<AssessmentPreviewPage />} />
           <Route path="instructor/gradebook" element={<GradebookPage />} />
           <Route path="instructor/question-sets" element={<QuestionSetsPage />} />
           <Route path="instructor/question-sets/:setId" element={<QuestionSetPage />} />
+          {/* Both render the same page, so the first save (new → edit) keeps its state. */}
+          <Route path="instructor/classes/:classId/assessments/new" element={<AssessmentBuilderPage />} />
+          <Route path="instructor/classes/:classId/assessments/:assessmentId/edit" element={<AssessmentBuilderPage />} />
           {/* /instructor, ?role=instructor, #/instructor, /instructor.html … land on Overview. */}
           <Route path="*" element={<OverviewPage onNavigateRole={onNavigateRole} />} />
         </Routes>
       </Suspense>
+      </NavigationGuardContext.Provider>
     </AppShell>
   );
 }

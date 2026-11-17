@@ -17,6 +17,10 @@ public static class SubmissionEndpoints
     /// <summary>Extra time after a deadline for answers already on their way.</summary>
     public static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
     private const int TextMax = 20_000;
+    /// <summary>Exam answers (contract §1): essays, typed answers, and each enumeration item.</summary>
+    public const int EssayMax = 10_000;
+    public const int TypedMax = 200;
+    public const int ItemsMax = 20;
     private const int FeedbackMax = 2_000;
 
     public static IEndpointRouteBuilder MapSubmissionEndpoints(this IEndpointRouteBuilder app)
@@ -37,25 +41,27 @@ public static class SubmissionEndpoints
             var mine = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
             if (mine.Any(GradingRules.IsNotHandedIn)) return Conflict("Your instructor has already recorded a grade for this exam without an attempt.");
             var open = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress);
-            if (open is not null) return TypedResults.Ok(await AttemptAsync(db, cw, open, ct));
+            if (open is not null) return TypedResults.Ok(await AttemptView.BuildAsync(db, cw, open, now, ct));
 
-            if (cw.DueAt is { } due && now > due && !cw.AllowLate) return Conflict("This exam is past its due date.");
-            if (mine.Count >= (cw.MaxAttempts ?? 1)) return Conflict("You have used every attempt for this exam.");
+            // Publishing refuses an incomplete set, but one saved before that rule could still reach here.
+            if (await db.Questions.AnyAsync(q => q.QuestionnaireId == cw.QuestionnaireId && q.Incomplete, ct))
+                return Conflict("This exam has unfinished questions, so it can't be started yet. Ask your instructor to finish them.");
+            if (CannotStart(cw, mine.Count, now) is { } reason) return Conflict(reason);
 
             var attempt = new Submission { CourseworkId = cw.Id, StudentId = user.Id, AttemptNumber = mine.Count + 1, Status = SubmissionStatus.InProgress, StartedAt = now };
             db.Submissions.Add(attempt);
             try { await db.SaveChangesAsync(ct); }
             catch (DbUpdateException) { return Conflict("Another attempt was started at the same moment. Reload and try again."); }
-            return TypedResults.Created($"/api/classes/{classId}/coursework/{cw.Id}/attempts/{attempt.Id}", await AttemptAsync(db, cw, attempt, ct));
+            return TypedResults.Created($"/api/classes/{classId}/coursework/{cw.Id}/attempts/{attempt.Id}", await AttemptView.BuildAsync(db, cw, attempt, now, ct));
         }).WithName("StartAttempt");
 
-        work.MapGet("/attempts/{id:long}", async Task<IResult> (string classId, long courseworkId, long id, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
+        work.MapGet("/attempts/{id:long}", async Task<IResult> (string classId, long courseworkId, long id, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
         {
             var user = http.CurrentUser();
             var (_, denied) = await access.ForReadAsync(classId, user, ct);
             if (denied is not null) return denied;
             var (cw, attempt) = await OwnAttemptAsync(db, classId, courseworkId, id, user, ct);
-            return attempt is null ? ContentEndpoints.NotFound("Attempt") : TypedResults.Ok(await AttemptAsync(db, cw!, attempt, ct));
+            return attempt is null ? ContentEndpoints.NotFound("Attempt") : TypedResults.Ok(await AttemptView.BuildAsync(db, cw!, attempt, time.GetUtcNow().UtcDateTime, ct));
         }).WithName("GetAttempt");
 
         work.MapPut("/attempts/{id:long}/answers", async Task<IResult> (string classId, long courseworkId, long id, AnswersInput input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -70,7 +76,7 @@ public static class SubmissionEndpoints
             if (Deadline(cw!, attempt) is { } deadline && time.GetUtcNow().UtcDateTime > deadline + Grace) return Conflict("Time is up for this attempt; submit it to record your saved answers.");
             var keys = await KeysAsync(db, cw!.QuestionnaireId!.Value, ct);
             if (await SaveAnswersAsync(db, attempt.Id, keys, input.Answers ?? [], ct) is { } invalid) return invalid;
-            return TypedResults.Ok(await AttemptAsync(db, cw, attempt, ct));
+            return TypedResults.Ok(await AttemptView.BuildAsync(db, cw, attempt, time.GetUtcNow().UtcDateTime, ct));
         }).WithName("SaveAnswers");
 
         work.MapPost("/attempts/{id:long}/submit", async Task<IResult> (string classId, long courseworkId, long id, AnswersInput? input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -91,31 +97,13 @@ public static class SubmissionEndpoints
             if (inTime && input?.Answers is { Count: > 0 } answers && await SaveAnswersAsync(db, attempt.Id, keys, answers, ct) is { } invalid)
                 return invalid;
 
-            var saved = await db.SubmissionAnswers.Where(a => a.SubmissionId == attempt.Id).ToListAsync(ct);
-            foreach (var key in keys)
-            {
-                var answer = saved.FirstOrDefault(a => a.QuestionId == key.Question.Id);
-                var points = Scoring.Score(key, answer);
-                if (answer is null && points is not null)
-                {
-                    answer = new SubmissionAnswer { SubmissionId = attempt.Id, QuestionId = key.Question.Id };
-                    db.SubmissionAnswers.Add(answer);
-                }
-                if (answer is not null) answer.PointsAwarded = points;
-            }
+            // Graded now unless an essay or a near miss in review mode waits for the instructor.
             attempt.SubmittedAt = now;
-            var needsGrading = keys.Any(k => k.Question.Type == QuestionType.Essay);
-            attempt.Status = needsGrading ? SubmissionStatus.Submitted : SubmissionStatus.Graded;
-            if (!needsGrading)
-            {
-                await db.SaveChangesAsync(ct);
-                var total = await db.SubmissionAnswers.Where(a => a.SubmissionId == attempt.Id).SumAsync(a => a.PointsAwarded ?? 0, ct);
-                db.Grades.Add(new Grade { SubmissionId = attempt.Id, Points = total, GradedBy = "auto", GradedAt = now });
-            }
+            await AttemptGrading.ScoreAsync(db, cw, keys, attempt, now, regrade: false, ct);
             Audit(db, user, "submissions", "submitted", "Exam attempt", attempt.Id);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return TypedResults.Ok(await AttemptAsync(db, cw, attempt, ct));
+            return TypedResults.Ok(await AttemptView.BuildAsync(db, cw, attempt, now, ct));
         }).WithName("SubmitAttempt");
 
         // -------------------------------------------------------- student: assignments
@@ -185,7 +173,7 @@ public static class SubmissionEndpoints
             var keys = await KeysAsync(db, qid, ct);
             var answers = await db.SubmissionAnswers.AsNoTracking().Where(a => a.SubmissionId == row.Id).ToListAsync(ct);
             return TypedResults.Ok(new SubmissionDetail(dto, (await QuestionnaireEndpoints.LoadAsync(db, questionnaire, ct)).Questions,
-                answers.Select(a => ToAnswerDto(keys, a, true)).ToList()));
+                answers.Select(a => AttemptView.ToAnswerDto(keys, a, true, instructor: true)).ToList()));
         }).WithName("GetSubmission");
 
         work.MapPut("/submissions/{id:long}/grade", async Task<IResult> (string classId, long courseworkId, long id, GradeInput input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -218,7 +206,15 @@ public static class SubmissionEndpoints
                     var answer = answers.FirstOrDefault(a => a.QuestionId == questionId);
                     if (answer is null) { answer = new SubmissionAnswer { SubmissionId = row.Id, QuestionId = questionId }; db.SubmissionAnswers.Add(answer); answers.Add(answer); }
                     answer.PointsAwarded = Math.Round(points, 2);
+                    // An override of an automatically scored question survives a re-score (essays are never re-scored).
+                    if (key.Question.Type != QuestionType.Essay) answer.ManualPoints = answer.PointsAwarded;
+                    // Points for a near miss waiting for review settle it; the decision keeps it settled when the attempt is re-scored.
+                    if (answer.MatchNote == MatchNote.Review && answer.SpellingDecision is null)
+                        answer.SpellingDecision = points > 0 ? SpellingDecision.Accepted : SpellingDecision.Rejected;
                 }
+                // Anything still waiting for a spelling decision must be decided or given points.
+                foreach (var waiting in answers.Where(a => a.PointsAwarded is null && a.MatchNote == MatchNote.Review && a.SpellingDecision is null))
+                    errors.Add($"answerPoints[{waiting.QuestionId}]", "Give this answer points, or accept or reject its spelling in the spelling review.");
                 foreach (var essay in keys.Where(k => k.Question.Type == QuestionType.Essay))
                 {
                     var answer = answers.FirstOrDefault(a => a.QuestionId == essay.Question.Id);
@@ -392,6 +388,19 @@ public static class SubmissionEndpoints
         return (cw, await query.SingleOrDefaultAsync(s => s.Id == id && s.CourseworkId == cw.Id, ct));
     }
 
+    /// <summary>
+    /// Why a student who has used <paramref name="attemptsUsed"/> attempts can't start another, or null
+    /// when they can: the exam is closed, past its due date without late work, or out of attempts.
+    /// Starting an attempt and releasing the keys (<see cref="Visibility"/>) both use this rule.
+    /// </summary>
+    public static string? CannotStart(CourseworkRow cw, int attemptsUsed, DateTime now)
+    {
+        if (cw.Status == CourseworkStatus.Closed) return ClosedExam;
+        if (cw.DueAt is { } due && now > due && !cw.AllowLate) return "This exam is past its due date.";
+        if (attemptsUsed >= (cw.MaxAttempts ?? 1)) return "You have used every attempt for this exam.";
+        return null;
+    }
+
     /// <summary>When saving stops: the time limit, or the due date when late work is not allowed.</summary>
     public static DateTime? Deadline(CourseworkRow cw, Submission attempt)
     {
@@ -421,27 +430,7 @@ public static class SubmissionEndpoints
             if (key is null) { errors.Add($"{at}.questionId", "This question is not part of the exam."); continue; }
             var row = existing.FirstOrDefault(a => a.QuestionId == key.Question.Id);
             if (row is null) { row = new SubmissionAnswer { SubmissionId = submissionId, QuestionId = key.Question.Id }; db.SubmissionAnswers.Add(row); existing.Add(row); }
-            switch (key.Question.Type)
-            {
-                case QuestionType.MultipleChoice:
-                case QuestionType.TrueFalse:
-                    if (input.OptionId is { } option && key.Options.All(o => o.Id != option)) errors.Add($"{at}.optionId", "Choose one of this question's options.");
-                    else row.SelectedOptionId = input.OptionId;
-                    break;
-                case QuestionType.Essay:
-                    row.AnswerText = errors.Optional($"{at}.text", input.Text, TextMax);
-                    break;
-                case QuestionType.Enumeration:
-                    var items = (input.Items ?? []).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
-                    if (items.Count > 50 || items.Any(s => s.Length > 1_000)) errors.Add($"{at}.items", "Give at most 50 items of at most 1000 characters.");
-                    else row.AnswerText = Scoring.WriteItems(items);
-                    break;
-                case QuestionType.Matching:
-                    var matches = (input.Matches ?? new Dictionary<long, string?>()).Where(m => !string.IsNullOrWhiteSpace(m.Value)).ToDictionary(m => m.Key, m => m.Value!);
-                    if (matches.Keys.Any(left => key.Options.All(o => o.Id != left)) || matches.Values.Any(v => v.Length > 1_000)) errors.Add($"{at}.matches", "Match only this question's items.");
-                    else row.AnswerText = Scoring.WriteMatches(matches);
-                    break;
-            }
+            ApplyAnswer(errors, at, key, input, row);
         }
         if (errors.Any)
         {
@@ -453,35 +442,38 @@ public static class SubmissionEndpoints
         return null;
     }
 
-    private static async Task<AttemptDto> AttemptAsync(LmsDbContext db, CourseworkRow cw, Submission attempt, CancellationToken ct)
+    /// <summary>Copies one answer onto its row, checking it fits the question's type and the length limits.</summary>
+    internal static void ApplyAnswer(Errors errors, string at, ScoringKey key, AnswerInput input, SubmissionAnswer row)
     {
-        var keys = await KeysAsync(db, cw.QuestionnaireId!.Value, ct);
-        var answers = await db.SubmissionAnswers.AsNoTracking().Where(a => a.SubmissionId == attempt.Id).ToListAsync(ct);
-        var grade = await db.Grades.AsNoTracking().SingleOrDefaultAsync(g => g.SubmissionId == attempt.Id, ct);
-        var submitted = attempt.Status != SubmissionStatus.InProgress;
-        return new AttemptDto(attempt.Id, attempt.AttemptNumber, attempt.Status, attempt.StartedAt, attempt.SubmittedAt, Deadline(cw, attempt),
-            grade?.Points, cw.MaxPoints, grade?.Feedback,
-            keys.Select(ToStudentQuestion).ToList(), answers.Select(a => ToAnswerDto(keys, a, submitted)).ToList());
-    }
-
-    private static StudentQuestion ToStudentQuestion(ScoringKey k) => k.Question.Type switch
-    {
-        QuestionType.MultipleChoice or QuestionType.TrueFalse => new(k.Question.Id, k.Question.Type, k.Question.Prompt, k.Question.Points, k.Question.TimeLimitSeconds,
-            k.Options.Select(o => new StudentOption(o.Id, o.Text)).ToList(), null, [], []),
-        QuestionType.Enumeration => new(k.Question.Id, k.Question.Type, k.Question.Prompt, k.Question.Points, k.Question.TimeLimitSeconds, [], k.Expected.Count, [], []),
-        QuestionType.Matching => new(k.Question.Id, k.Question.Type, k.Question.Prompt, k.Question.Points, k.Question.TimeLimitSeconds, [], null,
-            k.Options.Select(o => new StudentOption(o.Id, o.Text)).ToList(), k.Expected.Select(e => e.AnswerText).OrderBy(t => t, StringComparer.OrdinalIgnoreCase).ToList()),
-        _ => new(k.Question.Id, k.Question.Type, k.Question.Prompt, k.Question.Points, k.Question.TimeLimitSeconds, [], null, [], []),
-    };
-
-    private static AnswerDto ToAnswerDto(List<ScoringKey> keys, SubmissionAnswer a, bool showPoints)
-    {
-        var type = keys.FirstOrDefault(k => k.Question.Id == a.QuestionId)?.Question.Type;
-        return new AnswerDto(a.QuestionId, a.SelectedOptionId,
-            type == QuestionType.Essay ? a.AnswerText : null,
-            type == QuestionType.Enumeration ? Scoring.ReadItems(a.AnswerText) : [],
-            type == QuestionType.Matching ? Scoring.ReadMatches(a.AnswerText) : new Dictionary<long, string>(),
-            showPoints ? a.PointsAwarded : null);
+        switch (key.Question.Type)
+        {
+            case QuestionType.MultipleChoice:
+            case QuestionType.TrueFalse:
+                if (input.OptionId is { } option && key.Options.All(o => o.Id != option)) errors.Add($"{at}.optionId", "Choose one of this question's options.");
+                else row.SelectedOptionId = input.OptionId;
+                break;
+            case QuestionType.ModifiedTrueFalse:
+                if (input.OptionId is { } choice && key.Options.All(o => o.Id != choice)) errors.Add($"{at}.optionId", "Choose True or False.");
+                else row.SelectedOptionId = input.OptionId;
+                row.AnswerText = errors.Optional($"{at}.text", input.Text, TypedMax);
+                break;
+            case QuestionType.Essay:
+                row.AnswerText = errors.Optional($"{at}.text", input.Text, EssayMax);
+                break;
+            case QuestionType.Identification:
+                row.AnswerText = errors.Optional($"{at}.text", input.Text, TypedMax);
+                break;
+            case QuestionType.Enumeration:
+                var items = (input.Items ?? []).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
+                if (items.Count > ItemsMax || items.Any(s => s.Trim().Length > TypedMax)) errors.Add($"{at}.items", $"Give at most {ItemsMax} items of at most {TypedMax} characters.");
+                else row.AnswerText = Scoring.WriteItems(items);
+                break;
+            case QuestionType.Matching:
+                var matches = (input.Matches ?? new Dictionary<long, string?>()).Where(m => !string.IsNullOrWhiteSpace(m.Value)).ToDictionary(m => m.Key, m => m.Value!);
+                if (matches.Keys.Any(left => key.Options.All(o => o.Id != left)) || matches.Values.Any(v => v.Length > 1_000)) errors.Add($"{at}.matches", "Match only this question's items.");
+                else row.AnswerText = Scoring.WriteMatches(matches);
+                break;
+        }
     }
 
     internal static async Task<List<SubmissionDto>> ToDtoAsync(LmsDbContext db, CourseworkRow cw, IReadOnlyList<Submission> rows, CancellationToken ct)

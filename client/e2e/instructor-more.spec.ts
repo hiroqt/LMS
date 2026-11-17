@@ -75,16 +75,22 @@ test.describe("Instructor · class content (B, C, D, E)", () => {
     await expect(page.getByRole("main").getByText("Recursion cheat sheet")).toBeVisible();
   });
 
-  test("E: assessment form adds a one-question assessment to Classwork", async ({ page }) => {
+  // D-040: assessments moved from the inline form to the assessment builder page; the journey's intent is unchanged.
+  test("E: the assessment builder adds a one-question assessment to Classwork", async ({ page }) => {
     await openClass(page);
     await createBlock(page, "Build and publish a quiz or exam");
-    await page.getByRole("textbox", { name: /Assessment title/ }).fill("Pop quiz: loops");
-    await page.getByRole("textbox", { name: /^Question/ }).fill("Which loop always runs at least once?");
-    for (const [n, text] of [[1, "do…while"], [2, "for"], [3, "while"], [4, "for…of"]] as const) {
-      await page.getByRole("textbox", { name: new RegExp(`^Answer choice ${n}`) }).fill(text);
+    await expect(page.getByRole("heading", { level: 1, name: "New assessment" })).toBeVisible();
+    await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Pop quiz: loops");
+    await page.getByRole("button", { name: /^Add question/ }).click();
+    await page.getByRole("menuitem", { name: /^Multiple choice/ }).click();
+    await page.getByRole("textbox", { name: "Question 1", exact: true }).fill("Which loop always runs at least once?");
+    for (const [letter, text] of [["a", "do…while"], ["b", "for"], ["c", "while"], ["d", "for…of"]] as const) {
+      await page.getByRole("textbox", { name: `Question 1, choice ${letter}` }).fill(text);
     }
-    await page.getByRole("button", { name: "Save and publish" }).click();
+    await page.getByRole("radio", { name: "Choice a of question 1 is Correct" }).check();
+    await page.getByRole("button", { name: "Publish" }).click();
     await expect(tab(page, /^Classwork\s?4/)).toBeVisible();
+    await expect(page.getByRole("main").getByText("Pop quiz: loops")).toBeVisible();
   });
 
   test("D: Classwork search and type filter narrow the list", async ({ page }) => {

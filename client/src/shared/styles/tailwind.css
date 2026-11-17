@@ -128,6 +128,9 @@
     overflow-y: scroll;
     scrollbar-gutter: stable;
     -webkit-tap-highlight-color: transparent;
+    /* Anything scrolled into view (keyboard focus, "jump to question") lands below the
+       sticky top bar instead of under it (WCAG 2.4.11 Focus Not Obscured). */
+    scroll-padding-top: calc(4rem + env(safe-area-inset-top) + 0.5rem);
   }
   body {
     min-width: 320px;

@@ -55,6 +55,16 @@
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
+| `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
+| `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
+| `src/shared/components/quiz/EnumerationAnswer.tsx` | `EnumerationAnswer` |
+| `src/shared/components/quiz/EssayAnswer.tsx` | `EssayAnswer` |
+| `src/shared/components/quiz/IdentificationAnswer.tsx` | `IdentificationAnswer` |
+| `src/shared/components/quiz/MatchingAnswer.tsx` | `MatchingAnswer` |
+| `src/shared/components/quiz/ModifiedTrueFalseAnswer.tsx` | `ModifiedTrueFalseAnswer` |
+| `src/shared/components/quiz/QuestionAnswer.tsx` | `QuestionAnswer` |
+| `src/shared/components/quiz/QuestionPrompt.tsx` | `QuestionPrompt` |
+| `src/shared/components/quiz/QuestionResult.tsx` | `QuestionResult` |
 
 ## Features
 
@@ -85,19 +95,35 @@
 | `src/features/admin/pages/courses/SubjectsTab.tsx` | `SubjectsTab` |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
+| `src/features/instructor/components/AnswerBesideKey.tsx` | `QuestionPrompt`, `AnswerBesideKey` |
+| `src/features/instructor/components/AnswerKeyDialog.tsx` | `AnswerKeyDialog` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
+| `src/features/instructor/components/MatchNoteLabel.tsx` | `MatchNoteLabel` |
 | `src/features/instructor/components/QuestionSetEditor.tsx` | `QuestionSetEditor`, `QuestionSetView` |
 | `src/features/instructor/components/QuestionSetPicker.tsx` | `QuestionSetPicker` |
 | `src/features/instructor/components/QuestionSetUses.tsx` | `QuestionSetUses` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
+| `src/features/instructor/components/questionEditor/AddQuestionMenu.tsx` | `AddQuestionMenu` |
+| `src/features/instructor/components/questionEditor/ImportDialog.tsx` | `ImportDialog` |
+| `src/features/instructor/components/questionEditor/ImportSummary.tsx` | `ImportSummary` |
+| `src/features/instructor/components/questionEditor/QuestionCard.tsx` | `QuestionCard` |
+| `src/features/instructor/components/questionEditor/QuestionEditor.tsx` | `QuestionEditor` |
+| `src/features/instructor/components/questionEditor/SaveImportDialog.tsx` | `SaveImportDialog` |
+| `src/features/instructor/pages/AssessmentBuilderPage.tsx` | `AssessmentBuilderPage` |
+| `src/features/instructor/pages/AssessmentPreviewPage.tsx` | `AssessmentPreviewPage` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
+| `src/features/instructor/pages/ExamGradingPage.tsx` | `ExamGradingPage` |
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
 | `src/features/instructor/pages/QuestionSetsPage.tsx` | `QuestionSetsPage` |
+| `src/features/instructor/pages/assessment/DetailsSection.tsx` | `DetailsSection` |
+| `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
+| `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
+| `src/features/instructor/pages/assessment/SummaryPanel.tsx` | `SummaryPanel` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
 | `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
@@ -106,8 +132,11 @@
 | `src/features/instructor/pages/class/ModulesTab.tsx` | `ModulesTab` |
 | `src/features/instructor/pages/class/PeopleTab.tsx` | `PeopleTab` |
 | `src/features/instructor/pages/class/StreamTab.tsx` | `StreamTab` |
-| `src/features/instructor/pages/class/SubmissionsTab.tsx` | `SubmissionsTab` |
+| `src/features/instructor/pages/class/SubmissionsTab.tsx` | `GradeForm`, `SubmissionsTab` |
 | `src/features/instructor/pages/class/shared.tsx` | `ListSearch` |
+| `src/features/instructor/pages/grading/ExamSubmissionsView.tsx` | `ExamSubmissionsView` |
+| `src/features/instructor/pages/grading/ItemAnalysisView.tsx` | `ItemAnalysisView` |
+| `src/features/instructor/pages/grading/SpellingReviewView.tsx` | `SpellingReviewView` |
 | `src/features/isms-link/IsmsLinkPage.tsx` | `IsmsLinkPage` |
 | `src/features/isms-link/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/isms-link/components/ClassRoster.tsx` | `ClassRoster` |
@@ -119,6 +148,7 @@
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
+| `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |

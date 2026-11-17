@@ -23,7 +23,10 @@ let nextId = 0;
  */
 export function Toaster({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ActiveToast[]>([]);
-  const show = useCallback((toast: ToastOptions) => setToasts((current) => [...current, { ...toast, id: ++nextId }]), []);
+  const show = useCallback(
+    (toast: ToastOptions) => setToasts((current) => [...current.filter((item) => !toast.group || item.group !== toast.group), { ...toast, id: ++nextId }]),
+    [],
+  );
   const api = useMemo(() => ({ show }), [show]);
   const remove = (id: number) => setToasts((current) => current.filter((toast) => toast.id !== id));
 

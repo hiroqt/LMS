@@ -1,6 +1,6 @@
 import { academicEvents, courses as demoCourses, featuredAnnouncements } from "../../../data.js";
-import { meetingLabel, type Overview, type Submission } from "../../../shared/api/overview";
-import type { ActivitySubmission, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
+import { meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
+import type { ActivitySubmission, Assessment, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
 
 /** Shown under the student's name; ISMS does not send a program yet. */
 export const STUDENT_SUBTITLE = "Student";
@@ -18,6 +18,12 @@ const handedIn = (submission: Submission) => submission.status !== "in_progress"
 function readTime(text: string | null): string {
   const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;
   return `${Math.max(1, Math.ceil(words / 200))} min`;
+}
+
+/** The exam settings of D-040, when the API sends them (contract §3). */
+function examSettings(work: Coursework & Partial<Pick<Assessment, "answerReview" | "spellingMode">>) {
+  if (work.type !== "exam") return {};
+  return { ...(work.answerReview ? { answerReview: work.answerReview } : {}), ...(work.spellingMode ? { spellingMode: work.spellingMode } : {}) };
 }
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -108,6 +114,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       allowResubmission: work.allowResubmission,
       maxAttempts: work.maxAttempts ?? 1,
       closed: work.status === "closed",
+      ...examSettings(work),
     })),
     materials: overview.materials.map((material) => ({
       id: String(material.id),

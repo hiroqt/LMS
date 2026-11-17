@@ -149,6 +149,28 @@ describe("Feedback states", () => {
 
     expect(() => render(<Save />)).toThrow("useToast must be used inside <Toaster>");
   });
+
+  it("a toast in the same group replaces the earlier one, so a fixed error does not stay", async () => {
+    const user = userEvent.setup();
+    function Decide() {
+      const toast = useToast();
+      return (
+        <>
+          <Button onClick={() => toast.show({ group: "row-1", title: "Could not save the decision", tone: "danger" })}>Fail</Button>
+          <Button onClick={() => toast.show({ group: "row-1", title: "Accepted", tone: "success" })}>Retry</Button>
+          <Button onClick={() => toast.show({ title: "Unrelated", tone: "danger" })}>Other</Button>
+        </>
+      );
+    }
+    render(<Toaster><Decide /></Toaster>);
+    await user.click(screen.getByRole("button", { name: "Other" }));
+    await user.click(screen.getByRole("button", { name: "Fail" }));
+    expect(await screen.findByText("Could not save the decision")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("Accepted")).toBeInTheDocument();
+    expect(screen.queryByText("Could not save the decision")).not.toBeInTheDocument();
+    expect(screen.getByText("Unrelated")).toBeInTheDocument();
+  });
 });
 
 describe("FilterChip", () => {

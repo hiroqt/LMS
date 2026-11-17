@@ -122,10 +122,14 @@ public static class DemoSeeder
             var questionnaire = new Questionnaire { OwnerInstructorId = owner, SubjectId = room.SubjectId, Title = w.Title, CreatedBy = owner };
             db.Questionnaires.Add(questionnaire);
             await db.SaveChangesAsync();
+            // Every saved set has a section; the seed's quizzes have one unnamed section.
+            var section = new QuestionSection { QuestionnaireId = questionnaire.Id, Title = "", SortOrder = 1, CreatedBy = owner };
+            db.QuestionSections.Add(section);
+            await db.SaveChangesAsync();
             for (var i = 0; i < w.Questions.Count; i++)
             {
                 var q = w.Questions[i];
-                var question = new Question { QuestionnaireId = questionnaire.Id, Type = QuestionType.MultipleChoice, Prompt = q.Prompt, Points = q.Points, SortOrder = i + 1, TimeLimitSeconds = q.TimeLimitSeconds, CreatedBy = owner };
+                var question = new Question { QuestionnaireId = questionnaire.Id, SectionId = section.Id, Type = QuestionType.MultipleChoice, Prompt = q.Prompt, Points = q.Points, SortOrder = i + 1, TimeLimitSeconds = q.TimeLimitSeconds, CreatedBy = owner };
                 db.Questions.Add(question);
                 await db.SaveChangesAsync();
                 for (var k = 0; k < q.Options.Count; k++)
