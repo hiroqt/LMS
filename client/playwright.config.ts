@@ -1,10 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // An uncommon port, so a dev server left running on 4173 or 5173 is never reused by mistake.
-const PORT = 4317;
+// E2E_PORT / E2E_API_PORT let two checkouts run the suite at once without reusing each other's servers.
+const PORT = Number(process.env.E2E_PORT ?? 4317);
 const BASE_URL = `http://localhost:${PORT}`;
 /** The LMS API in Demo mode (server/README.md): fictional seed, one database per test sandbox. */
-export const API_PORT = 5299;
+export const API_PORT = Number(process.env.E2E_API_PORT ?? 5299);
 const API_URL = `http://localhost:${API_PORT}`;
 /** The fixtures pin the browser clock to this moment; the API's clock starts at the same instant. */
 const DEMO_NOW = "2026-10-23T09:00:00+08:00";
@@ -46,7 +47,9 @@ export default defineConfig({
         ASPNETCORE_ENVIRONMENT: "Demo",
         ASPNETCORE_URLS: API_URL,
         Lms__Demo__Now: DEMO_NOW,
-        Lms__Demo__DataDirectory: `${process.env.RUNNER_TEMP ?? process.env.TMPDIR ?? "/tmp"}/lms-e2e`,
+        Lms__Demo__DataDirectory: `${process.env.RUNNER_TEMP ?? process.env.TMPDIR ?? "/tmp"}/lms-e2e-${API_PORT}`,
+        // Adds this run's client origin to the Demo CORS list (appsettings.Demo.json has 4317).
+        Cors__AllowedOrigins__3: BASE_URL,
       },
     },
     {
