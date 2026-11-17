@@ -10,7 +10,7 @@ describe("toRoleStore", () => {
   it("builds the classroom, its subject and its class list from ISMS data", () => {
     const s = store();
     const [room] = classroomsOf(s, "EMP-1");
-    expect(room).toMatchObject({ id: "class-a", section: "BSIT 2-A", yearLevel: 2, term: "2026-2027 · 1st Semester", schedule: "MW 08:00–09:30", source: "isms" });
+    expect(room).toMatchObject({ id: "class-a", ismsSubjectId: 7, section: "BSIT 2-A", yearLevel: 2, term: "2026-2027 · 1st Semester", schedule: "MW 08:00–09:30", source: "isms" });
     expect(s.subjects[0]).toMatchObject({ code: "IT202", title: "Database Systems 1" });
     expect(classContent(s, "class-a").students.map((user) => user.id)).toEqual(["STU-1", "STU-2"]);
     expect(s.users.filter((user) => user.role === "instructor").map((user) => user.lastName)).toEqual(["Reyes", "Cruz"]);

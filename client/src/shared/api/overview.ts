@@ -13,6 +13,8 @@ export interface ClassMeeting {
 
 export interface OverviewClass {
   id: string;
+  /** The ISMS subject; question sets belong to one (D-034). */
+  subjectId: number;
   subjectCode: string | null;
   subjectName: string;
   sectionName: string | null;
