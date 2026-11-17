@@ -2,7 +2,7 @@
 
 ## UI revamp and shared memory (read first)
 
-The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`) and cut over on 2026-11-17 (D-021): they are the only Student and Instructor UIs. Revamp v2 (`docs/UI_REVAMP_V2_PLAN.md`, D-037) removes decoration everywhere (no gradients, eyebrows, pulse animations, status dots, or side lines on cards; `npm run style:check`) and rebuilds Admin on the same shared system. Until its phase lands, Admin keeps its current UI.
+The Student and Instructor UIs were rebuilt in phases (`docs/UI_REVAMP_PLAN.md`) and cut over on 2026-11-17 (D-021): they are the only Student and Instructor UIs. Revamp v2 (`docs/UI_REVAMP_V2_PLAN.md`, D-037) removes decoration everywhere (no gradients, eyebrows, pulse animations, status dots, or side lines on cards; `npm run style:check`) and rebuilds Admin on the same shared system. Admin was rebuilt in `src/features/admin` (D-038).
 
 - **Before UI work**, read `docs/ui-memory/CONVENTIONS.md`, skim `docs/ui-memory/DECISIONS.md` and `LEARNINGS.md`, and check `docs/ui-memory/generated/components.md` for something to reuse. The checklist is `.agents/skills/ui-memory/SKILL.md`.
 - **In the same PR**, record what you learned (`LEARNINGS.md`) and any choice others must follow (`DECISIONS.md`), update `FLOW_PARITY.md`, and run `npm run memory:sync`. CI fails when generated memory is stale.
@@ -15,8 +15,8 @@ This is a React 19 + Vite frontend in TypeScript (adopted file by file; legacy f
 
 - `src/main.tsx` mounts `src/app/providers` (TanStack Query) and `src/app/router` (React Router). The router resolves `/student`, `/instructor`, and `/admin` with the legacy `roles/shared/roleRouter.js` parser.
 - New code goes in `src/features/<role>/<feature>` and `src/shared/{ui,layout,components,hooks,lib,api,styles}`. See `docs/ui-memory/CONVENTIONS.md` (C-001).
-- Admin (legacy, unchanged): `src/roles/admin`, its shell `src/roles/shared/RoleWorkspace.jsx` (+ `shellCompat.css`), `src/components/shared`, `src/icons.jsx`, and `src/index.css`. Shared data modules live in `src/roles/shared/*.js` and `src/data.js`.
-- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens; no preflight while Admin is legacy, D-022) and `fonts.css` (self-hosted Poppins). Admin also loads the legacy `src/index.css`, `roles/shared/*.css`, and its own CSS.
+- Admin: `src/features/admin` (screens on `AppShell` and `shared/ui`; browser-local data modules in `features/admin/data`). Still legacy until revamp v2 phase 4: the unknown-path page in `src/components/shared`, `src/icons.jsx`, `src/index.css`, and `src/roles/shared/roleRouter.js`.
+- Styles: `src/shared/styles/tailwind.css` (Tailwind v4 tokens; no preflight while Admin is legacy, D-022) and `fonts.css` (self-hosted Poppins). The legacy `src/index.css` still loads until phase 4.
 - `e2e/`: Playwright flow-parity specs. `public/`: static assets. Project scope and data flow: `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/CODEBASE_MAP.md`, and the role flow docs.
 
 ## Build, Test, and Development Commands
@@ -40,16 +40,16 @@ Use React function components and hooks. New files are TypeScript and follow `do
 ## Dashboard Design and Typography
 
 - Keep one visual system across all roles: Poppins, warm white canvas, soft green surfaces, rounded cards, restrained accent colors, and consistent spacing, type scale, focus rings, and button heights. For rebuilt Student and Instructor screens, the design tokens in `src/shared/styles/tailwind.css` are the source of truth.
-- For Admin dashboard layout, follow `.agents/skills/admin-dashboard-design/SKILL.md` and the user-provided Ember dashboard screenshot from 2026-10-29: brand and search at the top of the left sidebar, grouped navigation below, large reporting heading, metric-specific illustrated cards, and a wide primary chart with supporting charts. Match each card illustration to its metric. Copy the information hierarchy and layout only. Keep the LMS palette and TMCC identity; never copy the reference's dark palette, brand, or financial imagery.
-- Admin navigation stays in the legacy `RoleWorkspace` shell (Student and Instructor use `src/shared/layout/AppShell`). Preserve its active state, brand, navigation height, collapse behavior, and mobile drawer. Admin may place the existing GlobalSearch inside the sidebar beneath the brand; keep Instructor search in the top bar.
-- Type scale by purpose (rebuilt screens, decision D-005): page headings 28px on desktop and 24px on phones, section headings 20px, card titles 16px, body and metadata at least 14px, and 12px only for brief uppercase labels. Inputs use 16px. Admin keeps its current scale until it is revamped.
+- Admin dashboard layout (D-038): a page heading with the quick actions under it, four metric cards that open their directory, then a wide course-activity panel with supporting panels and a recent-activity table. Charts are plain bars with the number on each bar. The no-decoration rules (C-019) win over older references such as `.agents/skills/admin-dashboard-design/SKILL.md`.
+- Every role uses `src/shared/layout/AppShell`: the same brand, navigation rows, active state, collapse behavior, top-bar search, and phone drawer (Student uses the bottom bar).
+- Type scale by purpose (rebuilt screens, decision D-005): page headings 28px on desktop and 24px on phones, section headings 20px, card titles 16px, body and metadata at least 14px,. Nothing is smaller than 14px and nothing is uppercase (C-019). Inputs use 16px.
 - Keep dashboards calm and scannable: one clear page heading, a focused hero, simple metric cards with one useful supporting line, and consistent panel spacing. Remove duplicate headings and decorative status badges that repeat nearby information.
 - Keep management screens on one directory pattern: page heading and prominent primary action first; search and clearly labeled filters together in a standalone toolbar; records in a padded, rounded card; pagination directly below the records. Use filters that correspond to real record fields and reset to page one when the search or filters change.
-- Use the same sidebar group, navigation row height, active state, collapse behavior, and mobile drawer across Instructor and Admin. Admin navigation prioritizes Overview, Courses, People & Access, then Oversight; place Academic Terms after those groups and Settings below the Admin workspace footer. Expand a category only when it has multiple destinations; show a single destination directly. Open the selected multi-page category automatically and allow multiple categories to stay open. Keep navigation text readable; use tabs when a destination combines related directories.
+- Admin navigation (D-038): Overview, then plain section labels (`NavItem.group`) for Courses, People and access, Oversight, and System (Academic terms, Settings). Every destination is one click away; there are no expanding categories. Use tabs when a destination combines related directories.
 - Make primary actions and filter controls at least 42px high (44px, `min-h-touch`, on rebuilt screens). On narrow screens, stack actions and filters, keep tables horizontally scrollable, preserve row/action spacing, and verify the navigation drawer and all controls remain usable.
 - Do not shrink text to fit dense role screens. Adjust wrapping, spacing, or responsive layout first. The Student and Instructor UIs are being rebuilt by the revamp plan; keep their flows identical (proven by `e2e/`) while the visuals change.
 - The Admin dashboard search must use real workspace records; dashboard summaries and charts must retain their existing browser-local sources, scope controls, sample-data labels, accessibility, and reduced-motion behavior.
-- Keep the wide primary Admin chart distinct from its supporting analytics row. At desktop sizes, System Activity, Student Activity, and student breakdown cards share equal columns, aligned heights, and similarly sized chart areas. On narrow screens, stack them at full width and keep the chart areas similarly sized.
+- On the Admin dashboard, System activity, Student activity, and Students share equal columns on wide screens and stack on narrow ones.
 
 ## Admin System Administration boundaries
 

@@ -1,6 +1,6 @@
 import { GraduationCap, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { Dialog } from "radix-ui";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { usePersistentState } from "../hooks/usePersistentState";
 import { cn } from "../lib/cn";
@@ -15,6 +15,8 @@ export interface NavItem {
   icon: ReactNode;
   /** Badge count shown next to the label, e.g. pending reviews. */
   count?: number;
+  /** Sidebar section label shown above the first item of a run with the same group, e.g. "Courses". */
+  group?: string;
 }
 
 /** Sidebar content. A function receives whether the desktop sidebar is collapsed to icons. */
@@ -52,10 +54,18 @@ function NavList({ nav, activeId, onNavigate, label, layout, collapsed = false }
   return (
     <nav aria-label={label}>
       <ul className={cn("m-0 list-none p-0", layout === "column" ? "flex flex-col gap-1" : "grid auto-cols-fr grid-flow-col")}>
-        {nav.map((item) => {
+        {nav.map((item, index) => {
           const active = item.id === activeId;
+          const startsGroup = layout === "column" && item.group && item.group !== nav[index - 1]?.group;
           return (
-            <li key={item.id}>
+            <Fragment key={item.id}>
+            {startsGroup && (
+              // A plain section label (C-019): sentence case, no toggle. Collapsed, it becomes a divider.
+              <li className={cn("px-3 pt-3 pb-1 text-body font-medium text-muted", collapsed && "mx-2 mt-2 border-t border-line px-0 pt-2")}>
+                <span className={collapsed ? "sr-only" : undefined}>{item.group}</span>
+              </li>
+            )}
+            <li>
               <button
                 type="button"
                 aria-current={active ? "page" : undefined}
@@ -85,6 +95,7 @@ function NavList({ nav, activeId, onNavigate, label, layout, collapsed = false }
                 ) : null}
               </button>
             </li>
+            </Fragment>
           );
         })}
       </ul>
@@ -109,9 +120,8 @@ function Brand({ full = false, sealOnly = false }: { full?: boolean; sealOnly?: 
 }
 
 /**
- * Responsive workspace frame for the rebuilt Student and Instructor UIs
- * (Admin keeps RoleWorkspace, D-001). Desktop (lg+): fixed sidebar. Phones and
- * tablets: a bottom bar or a drawer. Includes the skip link, landmarks,
+ * Responsive workspace frame for every role (D-037). Desktop (lg+): fixed
+ * sidebar. Phones and tablets: a bottom bar or a drawer. Includes the skip link, landmarks,
  * connection banner, and focus management on page change (C-004).
  */
 export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId, onNavigate, mobileNav, sidebarExtra, sidebarFooter, topbarStart, topbarActions, pageKey, children }: AppShellProps) {
