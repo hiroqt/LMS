@@ -250,7 +250,7 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
 export function CreateContentTab({ room, content, goTab, open }: ClassTabProps & { open?: ContentType }) {
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeading eyebrow="Class content" title="Create and organize" />
+      <SectionHeading title="Create and organize" />
       <p className="m-0 -mt-2 text-body text-muted">Choose what you want to share with this class.</p>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => `${item.title} · ${item.kind ?? "Material"}`)} onCreate={(type) => goTab("Create content", { create: type })} />

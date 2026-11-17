@@ -50,7 +50,7 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading eyebrow="Assignments and assessments" title="Classwork" count={work.length} />
+        <SectionHeading title="Classwork" description="Assignments and assessments" count={work.length} />
         <div className="flex flex-col gap-2 sm:flex-row">
           <ListSearch label="Search classwork" placeholder="Search classwork" value={query} onChange={setQuery} />
           <Button onClick={() => goTab("Create content")} icon={<Plus aria-hidden className="size-4" />}>Create</Button>

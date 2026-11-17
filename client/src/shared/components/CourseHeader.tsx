@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { bandFor } from "../lib/tones";
 import { CourseCode } from "./CourseCode";
 
 export interface CourseFact {
@@ -16,7 +15,6 @@ export interface CourseHeaderProps {
   /** The subject area, e.g. "Programming fundamentals". */
   subject?: string;
   facts: CourseFact[];
-  index: number;
   breadcrumbLabel: string;
   onBreadcrumb: () => void;
   actions?: ReactNode;
@@ -27,10 +25,9 @@ export interface CourseHeaderProps {
  * term on one line, the course title as the page's h1, then the facts a
  * student or instructor looks up most (who, where, how many, when next).
  */
-export function CourseHeader({ code, section, term, title, subject, facts, index, breadcrumbLabel, onBreadcrumb, actions }: CourseHeaderProps) {
+export function CourseHeader({ code, section, term, title, subject, facts, breadcrumbLabel, onBreadcrumb, actions }: CourseHeaderProps) {
   return (
-    <header className="overflow-hidden rounded-card border border-line bg-surface font-sans text-ink shadow-card">
-      <div aria-hidden className={`h-2 w-full ${bandFor(index)}`} />
+    <header className="overflow-hidden rounded-card border border-line bg-surface font-sans text-ink">
       <div className="flex flex-col gap-4 p-5 sm:p-7">
         <nav aria-label="Breadcrumb">
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0 text-body text-muted">
@@ -50,13 +47,13 @@ export function CourseHeader({ code, section, term, title, subject, facts, index
             <span aria-hidden>·</span>
             <span>{term}</span>
           </p>
-          <h1 tabIndex={-1} className="m-0 text-page-mobile font-bold tracking-tight outline-none sm:text-page">{title}</h1>
+          <h1 tabIndex={-1} className="m-0 text-page-mobile font-semibold tracking-tight outline-none sm:text-page">{title}</h1>
           {subject && <p className="m-0 text-body text-muted">{subject}</p>}
         </div>
         <dl className="m-0 grid grid-cols-1 gap-3 border-t border-line pt-4 min-[400px]:grid-cols-2 lg:grid-cols-4">
           {facts.map((fact) => (
             <div key={fact.label} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="flex items-center gap-2 text-label font-semibold tracking-label text-muted uppercase">
+              <dt className="flex items-center gap-2 text-body font-medium text-muted">
                 <span aria-hidden className="inline-flex text-primary-700 [&>svg]:size-4">{fact.icon}</span>
                 {fact.label}
               </dt>

@@ -30,19 +30,17 @@ export function FeaturedNewsCarousel({ slides, onViewCalendar }: { slides: Featu
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && setPaused(false)}
-      className="overflow-hidden rounded-card bg-primary-900 font-sans text-white shadow-card"
+      className="@container overflow-hidden rounded-card bg-primary-900 font-sans text-white"
     >
-      <div
-        aria-roledescription="slide"
-        aria-label={`${position} of ${slides.length}`}
-        className="flex min-h-56 flex-col justify-end gap-2 bg-cover bg-center p-5 sm:p-7"
-        style={{ backgroundImage: `linear-gradient(90deg, rgb(27 70 61 / 0.96), rgb(27 70 61 / 0.82) 55%, rgb(27 70 61 / 0.3)), url("${slide.image}")` }}
-      >
-        <p className="m-0 text-label font-semibold tracking-wide text-primary-100 uppercase">Featured · {slide.category}</p>
-        <h3 className="m-0 text-section font-bold">{slide.title}</h3>
-        <p className="m-0 text-body text-primary-100">{formatLongDay(new Date(`${slide.date}T00:00:00`))}</p>
-        <p className="m-0 max-w-prose text-body">{slide.summary}</p>
-        <Button variant="secondary" className="mt-2 self-start" onClick={onViewCalendar}>View calendar<ArrowRight aria-hidden className="size-4" /></Button>
+      {/* The image sits beside the text, not under it, so the text always has a solid background (C-019). */}
+      <div aria-roledescription="slide" aria-label={`${position} of ${slides.length}`} className="grid grid-cols-1 @2xl:grid-cols-[3fr_2fr]">
+        <div className="flex min-h-56 flex-col justify-center gap-2 p-5 sm:p-7">
+          <h3 className="m-0 text-section font-semibold">{slide.title}</h3>
+          <p className="m-0 text-body text-primary-100">{slide.category} · {formatLongDay(new Date(`${slide.date}T00:00:00`))}</p>
+          <p className="m-0 max-w-prose text-body">{slide.summary}</p>
+          <Button variant="secondary" className="mt-2 self-start" onClick={onViewCalendar}>View calendar<ArrowRight aria-hidden className="size-4" /></Button>
+        </div>
+        <img src={slide.image} alt="" loading="lazy" decoding="async" className="hidden h-full min-h-56 w-full object-cover @2xl:block" />
       </div>
       <div className="flex items-center gap-1 bg-primary-800 px-3 py-1">
         <button type="button" aria-label="Previous announcement" onClick={() => setIndex((current) => (current - 1 + slides.length) % slides.length)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-white hover:bg-primary-700 focus-visible:outline-3 focus-visible:outline-white"><ChevronLeft aria-hidden className="size-5" /></button>

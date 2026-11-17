@@ -126,16 +126,12 @@ function CalendarPanel({ catalog, completed, now, className }: { catalog: Studen
     <Panel id="calendar-panel" className={className} icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
       {entries.length ? (
         <ol className="m-0 flex flex-1 list-none flex-col justify-between p-0">
-          {entries.map((entry, position) => {
+          {entries.map((entry) => {
             const body = (
               <>
                 <span className="flex w-14 shrink-0 flex-col items-center rounded-control bg-canvas py-1.5 leading-tight">
                   <span className="text-label font-semibold tracking-label text-muted uppercase">{new Intl.DateTimeFormat("en-US", { month: "short" }).format(entry.date)}</span>
-                  <span className="text-section font-bold tabular-nums">{entry.date.getDate()}</span>
-                </span>
-                <span aria-hidden className="relative flex w-3 shrink-0 items-center justify-center self-stretch">
-                  <span className={cn("absolute left-1/2 w-px -translate-x-1/2 bg-line", position === 0 ? "top-1/2" : "top-0", position === entries.length - 1 ? "bottom-1/2" : "bottom-0")} />
-                  <span className={cn("relative size-2.5 rounded-full ring-2 ring-surface", entry.assessment ? "bg-primary-600" : "bg-accent-400")} />
+                  <span className="text-section font-semibold tabular-nums">{entry.date.getDate()}</span>
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <strong className="text-card-title font-semibold">{entry.title}</strong>
@@ -227,13 +223,13 @@ export default function TodayPage() {
     // One 12-column bento grid: every tile shares the gutter and stretches to its
     // row, and tiles differ in size by importance (D-026, D-027).
     <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
-      <header className="flex flex-col justify-between gap-4 rounded-card bg-primary-700 p-5 text-white shadow-card @4xl:col-span-5 sm:p-6">
+      <header className="flex flex-col justify-between gap-4 rounded-card bg-primary-700 p-5 text-white @4xl:col-span-5 sm:p-6">
         <p className="m-0 text-body text-primary-100">
           {formatFullDate(now)}
           {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
         </p>
         <div className="flex flex-col gap-1">
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight outline-none sm:text-page">
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold tracking-tight outline-none sm:text-page">
             {greeting(now)}, {catalog.me.firstName}
           </h1>
           <p className="m-0 text-body text-primary-100">

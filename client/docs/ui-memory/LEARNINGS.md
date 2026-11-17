@@ -366,3 +366,18 @@ hand-ins into 404s instead of a clear 409; all four now accept `closed` too. On 
 `ApiError` kept only `title`, `detail` and `errors`, so the close action's `ungraded` list never
 reached the screen; it now keeps the whole problem body as `problem`. The instructor store maps
 every non-archived status to "active", so `closed` is carried as its own flag rather than a status.
+
+### L-052 · Local Android runs time out on the first workspace load
+`2026-11-17` · hiro · scope: e2e · confidence: medium
+On a laptop, a full or per-file `--project=android-chromium` run fails two or three specs per
+run with "Loading the student workspace" still on screen after 5 s; a different spec each time.
+`main` showed the same rate before the v2 revamp, so it is load, not a regression (each test
+seeds its own API database). CI is green because it retries once. Rerun the failing spec alone
+before suspecting a change.
+
+### L-053 · `@starting-style` gives a delayed skeleton without keyframes
+`2026-11-17` · hiro · scope: shared/ui · confidence: high
+`transition-opacity delay-300 starting:opacity-0` fades a newly mounted skeleton in after 300 ms,
+so fast loads never flash it, with no JavaScript timer and no `@keyframes` (C-019). Browsers
+without `@starting-style` and reduced-motion users see it at once. Playwright still counts a
+transparent element as visible, so specs that wait for a loading state are unaffected.

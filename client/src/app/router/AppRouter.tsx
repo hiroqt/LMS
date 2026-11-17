@@ -18,7 +18,7 @@ const IsmsLinkPage = lazy(() => import("../../features/isms-link/IsmsLinkPage"))
  * shared/ui here would put Radix and tailwind-merge into the entry bundle (L-013).
  */
 function PageLoading() {
-  const bar = "animate-pulse rounded-control bg-line motion-reduce:animate-none";
+  const bar = "rounded-control bg-line transition-opacity delay-300 duration-150 starting:opacity-0";
   return (
     <div role="status" aria-busy="true" className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 font-sans">
       <span className="sr-only">Loading workspace</span>

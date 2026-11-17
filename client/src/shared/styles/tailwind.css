@@ -89,7 +89,7 @@
   /* Focus ring: the legacy 3px #1f6e58 outline. */
   --color-focus: #1f6e58;
 
-  /* Shape and depth. */
+  /* Shape. */
   --radius-card: 14px;
   --radius-control: 10px;
   /* Course-code chips and term-track week cells. */
@@ -99,7 +99,7 @@
   /* Tracking for uppercase eyebrows and course codes (academic labelling). */
   --tracking-label: 0.12em;
   --tracking-code: 0.08em;
-  --shadow-card: 0 10px 32px rgb(47 74 64 / 0.055);
+  /* Cards are flat (border only). Only overlays cast a shadow (C-019). */
   --shadow-popover: 0 16px 40px rgb(36 49 45 / 0.14);
 
   /* Minimum touch target (WCAG 2.5.8 asks 24px; we use 44px). Enables

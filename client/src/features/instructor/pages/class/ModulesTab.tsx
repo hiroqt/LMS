@@ -111,7 +111,7 @@ export function ModulesTab({ room, content, goTab }: ClassTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeading eyebrow="Units and submodules" title="Modules" count={tree.length} />
+      <SectionHeading title="Modules" description="Units and submodules" count={tree.length} />
       {tree.length ? (
         <div className="flex flex-col gap-4">
           {tree.map(({ module, submodules }) => (

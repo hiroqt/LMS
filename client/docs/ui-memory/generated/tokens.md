@@ -73,7 +73,6 @@ Use as `shadow-<name>`.
 
 | Token | Value |
 | --- | --- |
-| `card` | `0 10px 32px rgb(47 74 64 / 0.055)` |
 | `popover` | `0 16px 40px rgb(36 49 45 / 0.14)` |
 
 ## Spacing

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { Toast } from "radix-ui";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { cn } from "../../lib/cn";
@@ -8,10 +8,11 @@ interface ActiveToast extends ToastOptions {
   id: number;
 }
 
+/** Tone is a soft tint and an icon, never a side stripe (C-019). */
 const tones = {
-  neutral: "border-line",
-  success: "border-l-4 border-l-success border-y-line border-r-line",
-  danger: "border-l-4 border-l-danger border-y-line border-r-line",
+  neutral: { className: "border-line bg-surface", icon: null },
+  success: { className: "border-success-soft bg-success-soft", icon: <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-success" /> },
+  danger: { className: "border-danger-soft bg-danger-soft", icon: <CircleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" /> },
 } as const;
 
 let nextId = 0;
@@ -36,8 +37,9 @@ export function Toaster({ children }: { children: ReactNode }) {
             type={tone === "danger" ? "foreground" : "background"}
             duration={duration ?? (tone === "danger" ? Number.POSITIVE_INFINITY : 5000)}
             onOpenChange={(open) => !open && remove(id)}
-            className={cn("flex items-start gap-3 rounded-card border bg-surface p-4 font-sans text-ink shadow-popover", tones[tone])}
+            className={cn("flex items-start gap-3 rounded-card border p-4 font-sans text-ink shadow-popover", tones[tone].className)}
           >
+            {tones[tone].icon}
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <Toast.Title className="text-body font-semibold">{title}</Toast.Title>
               {description && <Toast.Description className="text-body text-muted">{description}</Toast.Description>}

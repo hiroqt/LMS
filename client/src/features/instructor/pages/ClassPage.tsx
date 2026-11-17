@@ -82,7 +82,6 @@ export default function ClassPage() {
         term={room.term ?? "Fall 2026"}
         title={subject?.title ?? "Classroom"}
         subject={`Year ${yearOf(room)}`}
-        index={index}
         breadcrumbLabel="My classes"
         onBreadcrumb={() => navigate(instructorPaths.classes())}
         facts={[

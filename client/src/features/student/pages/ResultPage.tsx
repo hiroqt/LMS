@@ -44,13 +44,13 @@ export default function ResultPage() {
         <header className="flex flex-col items-center gap-2 text-center">
           <span aria-hidden className="grid size-14 place-items-center rounded-full bg-success-soft text-success"><ClipboardCheck className="size-7" /></span>
           <p className="m-0 text-label font-semibold tracking-wide text-success uppercase">Assessment submitted</p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold outline-none sm:text-page">You did it, {catalog.me.firstName}!</h1>
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold outline-none sm:text-page">You did it, {catalog.me.firstName}!</h1>
           <p className="m-0 text-body-lg text-muted">Your {assessment.type.toLowerCase()} for {course?.name ?? "your class"} has been submitted.</p>
         </header>
 
         <div className="flex flex-col items-center gap-4 rounded-card bg-primary-50 p-5 sm:flex-row">
           <p className="m-0 flex flex-col items-center">
-            <strong className="text-display font-bold text-primary-700">{percent}%</strong>
+            <strong className="text-display font-semibold text-primary-700">{percent}%</strong>
             <span className="text-body text-muted">score</span>
           </p>
           <div className="flex flex-col gap-1 text-center sm:text-left">

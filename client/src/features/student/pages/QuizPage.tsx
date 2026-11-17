@@ -118,20 +118,20 @@ function Quiz({ assessmentId, attempt }: { assessmentId: string; attempt: Attemp
         <div className="flex flex-col gap-5">
           <header className="flex flex-col gap-1">
             <p className="m-0 text-label font-semibold tracking-wide text-primary-700 uppercase">{assessment.type} · {course?.name}</p>
-            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold text-ink outline-none sm:text-page">{assessment.title}</h1>
+            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold text-ink outline-none sm:text-page">{assessment.title}</h1>
             <p className="m-0 text-body text-muted">{course?.section} · {assessment.points} points</p>
           </header>
           <p aria-live="polite" className="sr-only">{announcement}</p>
 
           {/* Timer and progress stick under the top bar for the whole question column,
               so the countdown stays visible while scrolling long questions on phones. */}
-          <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 -mx-1 flex flex-col gap-2 rounded-card border border-line bg-surface/95 px-4 py-3 font-sans shadow-card backdrop-blur">
+          <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 -mx-1 flex flex-col gap-2 rounded-card border border-line bg-surface px-4 py-3 font-sans">
             <div className="flex items-center justify-between gap-3">
               <span className="text-body">Question <strong className="font-semibold">{pad2(index + 1)}</strong> of {pad2(questions.length)} <span className="text-muted">· {answered} answered</span></span>
               <span className={cn("flex items-center gap-2 rounded-control px-2.5 py-1", seconds <= 15 ? "bg-danger-soft text-danger" : "bg-canvas text-ink")}>
                 <Clock3 aria-hidden className="size-4" />
                 <span className="sr-only">Time left for this question:</span>
-                <strong className="text-body-lg font-bold tabular-nums">{formatCountdown(seconds)}</strong>
+                <strong className="text-body-lg font-semibold tabular-nums">{formatCountdown(seconds)}</strong>
               </span>
             </div>
             <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-line">

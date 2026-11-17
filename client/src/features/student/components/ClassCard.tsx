@@ -30,7 +30,7 @@ export function ClassCard({ course, index, onOpen, tile = false }: { course: Cou
     <button
       type="button"
       onClick={onOpen}
-      className="group flex h-full w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink shadow-card transition hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
+      className="group flex h-full w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink transition hover:border-primary-300 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
       <span aria-hidden className={cn("grid size-12 shrink-0 place-items-center rounded-control", toneFor(index))}>
         <SubjectIcon subject={`${course.name} ${course.subject}`} className="size-6" />

@@ -110,7 +110,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
                 currentClass === course.id ? "bg-primary-100" : "bg-transparent hover:bg-primary-50",
               )}
             >
-              <span aria-hidden className={cn("w-14 shrink-0 rounded-chip py-0.5 text-center text-body font-semibold tracking-code tabular-nums", toneFor(index))}>{courseCode(course)}</span>
+              <span aria-hidden className={cn("w-14 shrink-0 rounded-chip py-0.5 text-center text-body font-semibold tabular-nums", toneFor(index))}>{courseCode(course)}</span>
               <span className={collapsed ? "sr-only" : "flex min-w-0 flex-col"}>
                 <span className="truncate text-body font-medium text-ink">{course.name}</span>
                 <span className="truncate text-body text-muted">{course.section}</span>
