@@ -141,8 +141,10 @@ async function request<T>(method: "GET" | WriteMethod, path: string, body: unkno
     let response: Response;
     try {
       const headers: Record<string, string> = { Accept: "application/json", ...(options.identity ? identityHeaders(options.viewer === undefined ? undefined : options.viewer) : {}) };
-      if (body !== undefined) headers["Content-Type"] = "application/json";
-      response = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal });
+      // A FormData body is a file upload: the browser sets the multipart boundary itself.
+      const form = typeof FormData !== "undefined" && body instanceof FormData;
+      if (body !== undefined && !form) headers["Content-Type"] = "application/json";
+      response = await fetch(url, { method, headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: controller.signal });
     } catch (cause) {
       if (outer?.aborted && !timedOut) throw cause;
       if (timedOut) throw new ApiError({ kind: "timeout", status: 0, url, cause });
@@ -165,6 +167,25 @@ async function request<T>(method: "GET" | WriteMethod, path: string, body: unkno
     clearTimeout(timer);
     outer?.removeEventListener("abort", forwardAbort);
   }
+}
+
+/**
+ * GET a file (for example a template to download). Resolves with its bytes and
+ * the server's file name when the response exposes one; errors as `getJson`.
+ */
+export async function getFile(path: string, options: Omit<GetJsonOptions, "identity"> = {}): Promise<{ blob: Blob; fileName: string | undefined }> {
+  const url = apiUrl(path, options.params);
+  let response: Response;
+  try {
+    response = await fetch(url, { headers: identityHeaders(options.viewer === undefined ? undefined : options.viewer), signal: options.signal });
+  } catch (cause) {
+    if (options.signal?.aborted) throw cause;
+    throw new ApiError({ kind: "network", status: 0, url, cause });
+  }
+  if (!response.ok) throw new ApiError({ kind: kindForStatus(response.status), status: response.status, url, ...(await readProblem(response)) });
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const fileName = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)?.[1];
+  return { blob: await response.blob(), fileName: fileName ? decodeURIComponent(fileName) : undefined };
 }
 
 /**
