@@ -204,16 +204,23 @@ Every question has `prompt`, `points` (more than 0, at most 1000) and an optiona
 | POST | `/api/questionnaires/{id}/copy` | Owner only (others 404). A deep copy (questions, choices, accepted answers, pairs) titled "… (copy)", unlocked, owned by the caller, same subject |
 | GET / PATCH | `/api/questionnaires/{id}` | Full view with correct answers (owner only) / `{ title }` |
 | PUT | `/api/questionnaires/{id}/questions` | `{ questions: [...] }` replaces the whole list in one transaction; errors name the position, e.g. `questions[2].pairs` |
-| GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published work whose `availableFrom` has passed |
+| GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published and closed work whose `availableFrom` has passed. Instructors also get `gradedCount` and `rosterCount` |
 | GET | `/api/classes/{classId}/coursework/{id}` | Same visibility |
 | POST | `/api/classes/{classId}/coursework` | `{ type (assignment or exam), moduleId, title, instructions?, maxPoints (assignments), dueAt?, availableFrom?, allowLate?, allowResubmission?, maxAttempts? (1–20), timeLimitMinutes? (0–600), questionnaireId (exams), status? }` |
-| PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived |
+| PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived. It cannot set or leave `closed` (400 pointing to the actions below) |
+| POST | `/api/classes/{classId}/coursework/{id}/close` | Published work only. 409 with `ungraded: [{ studentId, name }]` until every student active on the class list is graded |
+| POST | `/api/classes/{classId}/coursework/{id}/reopen` | Closed work back to published |
 
 An exam is worth the total points of its questionnaire and cannot be published without
 questions. An exam can use only the caller's own questionnaire, and only one for the class's
 subject (or one with no subject). Several exams can share one questionnaire; each keeps its own
 dates, attempts and time limit. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
 questions or answers from these routes; they get questions when they start an attempt (step 4).
+
+**Closing (D-036).** "Graded" means: assignment, the student's latest submission has a grade;
+exam, at least one attempt is graded (an attempt whose essays still wait is not). Closed work
+refuses hand-ins and starting, saving or submitting attempts (409); grades can still be corrected.
+Close and reopen each write a metadata-only audit row.
 
 ## Submissions and grading (Phase 2, step 4)
 
@@ -249,12 +256,16 @@ only). A second hand-in needs `allowResubmission`. `late` is true when handed in
 | GET | `…/coursework/{id}/submissions` | Every attempt, plus `missing`: students on the class list who have handed nothing in |
 | GET | `…/coursework/{id}/submissions/{submissionId}` | The attempt with the correct answers beside the student's |
 | PUT | `…/coursework/{id}/submissions/{submissionId}/grade` | Assignments `{ points, feedback? }`. Exams `{ answerPoints: { questionId: points }, feedback? }`; every written essay needs points, and the score is the sum of all answers |
+| PUT | `…/coursework/{id}/students/{studentId}/grade` | `{ points, feedback? }` for a student who handed in nothing: creates a "not handed in" record (graded, no work, `submittedAt` null, `notHandedIn: true`) or corrects it. 409 when the student handed in or has an attempt in progress |
+| POST | `…/coursework/{id}/grade-missing` | `{ points, feedback? }` for every active student with no submission at all, in one transaction and one audit row; returns `{ graded }`. Never overwrites |
 | GET | `/api/classes/{classId}/gradebook` | Weights and each student's averages; a student sees only their own row |
 | PUT | `/api/classes/{classId}/gradebook` | `{ activityWeight, examWeight, passingScore }`; the weights must add up to 100 |
 
 Gradebook rules are the prototype's: graded work only, the latest graded assignment submission,
 the highest graded exam attempt, and an overall only once every weighted category has a grade.
-Phase 3 replaces the two fixed categories with teacher-defined grade components.
+Phase 3 replaces the two fixed categories with teacher-defined grade components. A "not handed
+in" grade counts like any graded work, and once a student has one they can no longer hand in or
+start an attempt for that coursework (409).
 
 **Monthly attendance.** Monthly totals, not a daily roll call: attendance % = days present ÷
 school days × 100. Recorded only; it does not count in the gradebook yet.

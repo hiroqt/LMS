@@ -36,9 +36,11 @@ export class ApiError extends Error {
   readonly title: string | undefined;
   /** RFC 7807 `detail`, when the API sent one. */
   readonly detail: string | undefined;
+  /** The whole problem body, for extension members such as `ungraded` (D-036); empty when there was none. */
+  readonly problem: Record<string, unknown>;
   readonly url: string;
 
-  constructor(options: { kind: ApiErrorKind; status: number; url: string; title?: string; detail?: string; fieldErrors?: Record<string, string[]>; cause?: unknown }) {
+  constructor(options: { kind: ApiErrorKind; status: number; url: string; title?: string; detail?: string; fieldErrors?: Record<string, string[]>; problem?: Record<string, unknown>; cause?: unknown }) {
     super(options.detail ?? options.title ?? `${options.kind} error (${options.status}) for ${options.url}`, { cause: options.cause });
     this.name = "ApiError";
     this.kind = options.kind;
@@ -47,6 +49,7 @@ export class ApiError extends Error {
     this.detail = options.detail;
     this.url = options.url;
     this.fieldErrors = options.fieldErrors ?? {};
+    this.problem = options.problem ?? {};
   }
 }
 
@@ -60,7 +63,7 @@ export function kindForStatus(status: number): ApiErrorKind {
   return "http";
 }
 
-async function readProblem(response: Response): Promise<{ title?: string; detail?: string; fieldErrors?: Record<string, string[]> }> {
+async function readProblem(response: Response): Promise<{ title?: string; detail?: string; fieldErrors?: Record<string, string[]>; problem?: Record<string, unknown> }> {
   try {
     const body: unknown = await response.json();
     if (!body || typeof body !== "object") return {};
@@ -69,6 +72,7 @@ async function readProblem(response: Response): Promise<{ title?: string; detail
       title: typeof title === "string" && title ? title : undefined,
       detail: typeof detail === "string" && detail ? detail : undefined,
       fieldErrors: errors && typeof errors === "object" ? (errors as Record<string, string[]>) : undefined,
+      problem: body as Record<string, unknown>,
     };
   } catch {
     return {};

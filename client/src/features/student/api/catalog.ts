@@ -70,12 +70,14 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
           submittedAt: latest.submittedAt ?? "",
           grade: latest.status === "graded" ? latest.score : null,
           feedback: latest.feedback ?? "",
+          ...(latest.notHandedIn ? { notHandedIn: true } : {}),
         };
       }
     } else {
-      attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done[0]?.id, used: mine.length };
+      // A "not handed in" grade has no attempt to review, so it is never the latest attempt.
+      attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done.find((item) => !item.notHandedIn)?.id, used: mine.length };
       const best = done.filter((item) => item.status === "graded" && item.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
-      if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined };
+      if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined, ...(best.notHandedIn ? { notHandedIn: true } : {}) };
     }
   }
 
@@ -105,6 +107,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       allowLate: work.allowLate,
       allowResubmission: work.allowResubmission,
       maxAttempts: work.maxAttempts ?? 1,
+      closed: work.status === "closed",
     })),
     materials: overview.materials.map((material) => ({
       id: String(material.id),

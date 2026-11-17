@@ -75,7 +75,11 @@ export interface Coursework {
   timeLimitMinutes: number | null;
   questionnaireId: number | null;
   questionCount: number;
-  status: "draft" | "published" | "archived";
+  /** Closed work refuses hand-ins and attempts; only the close and reopen actions change it (D-036). */
+  status: "draft" | "published" | "closed" | "archived";
+  /** Instructors only: students on the class list with a grade, and how many are on it. */
+  gradedCount?: number | null;
+  rosterCount?: number | null;
 }
 
 export interface Submission {
@@ -93,6 +97,8 @@ export interface Submission {
   maxPoints: number;
   feedback: string | null;
   gradedAt: string | null;
+  /** A grade the instructor gave a student who handed in nothing (D-036). */
+  notHandedIn?: boolean;
 }
 
 /** One month of a class's attendance. A student receives only their own entry. */

@@ -380,3 +380,27 @@ school days below a saved entry is refused rather than clamped, naming the stude
 upserts the whole month in one transaction with a metadata-only audit row; students left out
 keep their days, and an entry cannot be deleted yet. Students receive only their own entries.
 Attendance is **not** part of the gradebook; a later phase decides how it counts.
+
+### D-036 · An activity closes only once every student is graded; a non-submitter can be graded
+`2026-11-17` · hiro (Phase 3a, PR C) · scope: instructor, student, shared/api, server, e2e · confidence: medium
+Closing is its own server action (`POST …/coursework/{id}/close`, `…/reopen`), not the plain update,
+which can no longer set or leave `closed`. Close works on published work only and is refused (409)
+with `ungraded: [{ studentId, name }]` until every student active on the class list is graded:
+for an assignment their latest submission has a grade; for an exam at least one attempt is graded
+(an attempt whose essays still wait is not). Closed work stays visible to students but refuses
+hand-ins and starting, saving or submitting attempts; grades can still be corrected (audited as
+before). Close and reopen write metadata-only audit rows. Coursework DTOs carry `gradedCount` and
+`rosterCount` for instructors, shown as "N of M graded" on each Classwork row with **Close** /
+**Reopen**; a refused close lists who is left. **Students who never handed in** can be graded:
+the server creates a "not handed in" record (status graded, no text or file, `submittedAt` null,
+`notHandedIn: true`) per student (`PUT …/students/{studentId}/grade`, which also corrects it) or for
+everyone with no submission at all (`POST …/grade-missing`, one transaction, one audit row with the
+count, never overwriting and never touching started or ungraded work). Screens say "Not handed in".
+**Rule chosen for attempts:** a not-handed-in grade is allowed only when the student has no
+submission or attempt at all, and once it exists the student can no longer hand in or start an
+attempt for that coursework (409), so it never consumes or races a real attempt. Because it
+locks the student out, it is refused (409) while the work is published and its due date has not
+passed; work with no due date, or already closed, can be graded at any time. It counts in the
+gradebook like any graded work (a 0 lowers the average). To let that student hand in, there is no
+undo yet; the instructor corrects the grade instead. Journeys added, none changed: instructor
+CLOSE and NHI, student CLOSED, all in `close-activities`.

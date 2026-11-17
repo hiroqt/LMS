@@ -68,6 +68,27 @@ export type ExamInput = ExamSettings &
     | { source: "existing"; questionSetId: number }
   );
 
+export interface UngradedStudent {
+  studentId: string;
+  name: string;
+}
+
+export interface CloseResult extends ActionResult {
+  /** When closing was refused: the students still without a grade. */
+  ungraded: UngradedStudent[];
+}
+
+/** Reads the `ungraded` member of the close action's 409 problem. */
+export function ungradedFrom(problem: Record<string, unknown>): UngradedStudent[] {
+  const list = problem.ungraded;
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((item: unknown) => {
+    if (!item || typeof item !== "object") return [];
+    const { studentId, name } = item as Record<string, unknown>;
+    return typeof studentId === "string" ? [{ studentId, name: typeof name === "string" && name ? name : studentId }] : [];
+  });
+}
+
 const classPath = (classroomId: string) => `/api/classes/${encodeURIComponent(classroomId)}`;
 /** A datetime-local value ("2026-11-30T15:00") as an instant; empty stays empty. */
 const instant = (value: string) => (value ? new Date(value).toISOString() : undefined);
@@ -197,6 +218,36 @@ export function useInstructorActions() {
           send("PUT", `${classPath(item.classroomId)}/coursework/${item.courseworkId}/submissions/${item.id}/grade`,
             item.kind === "activity" ? { points: score, feedback } : { feedback, answerPoints: answerPoints ?? {} }),
         ),
+
+      /** Refused (409) until every student is graded; the refusal names who is left (D-036). */
+      closeCoursework: async (classroomId: string, courseworkId: string): Promise<CloseResult> => {
+        let ungraded: UngradedStudent[] = [];
+        const result = await run(async () => {
+          try {
+            await send("POST", `${classPath(classroomId)}/coursework/${courseworkId}/close`);
+          } catch (error) {
+            if (isApiError(error) && error.status === 409) ungraded = ungradedFrom(error.problem);
+            throw error;
+          }
+        });
+        return { ...result, ungraded };
+      },
+
+      reopenCoursework: (classroomId: string, courseworkId: string) =>
+        run(() => send("POST", `${classPath(classroomId)}/coursework/${courseworkId}/reopen`)),
+
+      /** A grade for a student who handed in nothing; corrects it when one is already there. */
+      gradeNotHandedIn: (classroomId: string, courseworkId: string, studentId: string, points: number) =>
+        run(() => send("PUT", `${classPath(classroomId)}/coursework/${courseworkId}/students/${encodeURIComponent(studentId)}/grade`, { points })),
+
+      /** "Give N to everyone who didn't hand in": never touches handed-in or started work. */
+      gradeEveryoneNotHandedIn: async (classroomId: string, courseworkId: string, points: number): Promise<ActionResult & { graded: number }> => {
+        let graded = 0;
+        const result = await run(async () => {
+          graded = (await send<{ graded: number }>("POST", `${classPath(classroomId)}/coursework/${courseworkId}/grade-missing`, { points })).graded;
+        });
+        return { ...result, graded };
+      },
 
       /** Saved only as a whole; the server requires the two weights to add up to 100. */
       saveGradebook: (classroomId: string, settings: GradebookSetting) =>
