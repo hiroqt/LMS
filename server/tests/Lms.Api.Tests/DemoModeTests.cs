@@ -88,6 +88,15 @@ public sealed class DemoModeTests : IDisposable
     }
 
     [Fact]
+    public async Task The_demo_database_has_the_attendance_tables()
+    {
+        var saved = await As("instructor-1", CurrentUser.Instructor).PutAsJsonAsync("/api/classes/biology/attendance/2026/10", new { schoolDays = 20, entries = new[] { new { studentId = "s0", daysPresent = 18 } } });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var overview = await Json(await As("s0", CurrentUser.Student).GetAsync("/api/me/overview"));
+        Assert.Equal(18, overview.GetProperty("attendance")[0].GetProperty("month").GetProperty("entries")[0].GetProperty("daysPresent").GetInt32());
+    }
+
+    [Fact]
     public async Task The_clock_starts_at_the_configured_time_so_seeded_due_dates_behave_as_in_the_tests()
     {
         var overview = await Json(await As("s0", CurrentUser.Student).GetAsync("/api/me/overview"));

@@ -74,7 +74,7 @@ without a migration.
 | Group | Tables |
 |---|---|
 | ISMS reference (written only by the sync) | `isms_classes`, `isms_class_students` |
-| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `grades`, `gradebook_settings`, `audit_log` |
+| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `grades`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
 
 Every LMS-owned row records `created_at`, `created_by`, `updated_at` and `updated_by`. ISMS people
 are stored by their ISMS reference ids, never as LMS accounts.
@@ -253,6 +253,18 @@ Gradebook rules are the prototype's: graded work only, the latest graded assignm
 the highest graded exam attempt, and an overall only once every weighted category has a grade.
 Phase 3 replaces the two fixed categories with teacher-defined grade components.
 
+**Monthly attendance.** Monthly totals, not a daily roll call: attendance % = days present ÷
+school days × 100. Recorded only; it does not count in the gradebook yet.
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `/api/classes/{classId}/attendance` | Months, newest first, with `entries` (`studentId`, `daysPresent`); a student gets only their own entry |
+| PUT | `/api/classes/{classId}/attendance/{year}/{month}` | `{ schoolDays, entries: [{ studentId, daysPresent }] }`; creates or updates the month in one transaction. Students left out keep their saved days |
+
+The class's instructor writes, only while ISMS offers the class (409 after). School days are 1 to
+the days in that month; days present are 0 to the school days, for students active on the class
+list. Lowering the school days below a saved entry is refused, naming the students to change first.
+
 ## Demo mode
 
 `ASPNETCORE_ENVIRONMENT=Demo` runs the API on its own, with no MySQL and no ISMS API:
@@ -276,8 +288,8 @@ ASPNETCORE_ENVIRONMENT=Demo dotnet run --project src/Lms.Api --no-launch-profile
 Never run demo mode on a server other people can reach: anyone can say who they are.
 
 `GET /api/me/overview` returns everything a workspace shows in one call: classes with class size,
-modules, materials, announcements, coursework, submissions, class lists and gradebook settings.
-Students get only published, available work, active content and their own submissions.
+modules, materials, announcements, coursework, submissions, class lists, gradebook settings and attendance months.
+Students get only published, available work, active content, their own submissions and their own attendance.
 `GET /api/people` lists who the client can view as, when the demo identity is on.
 
 ## Caching

@@ -237,6 +237,29 @@ public sealed class GradebookSetting : Audited
     public int PassingScore { get; set; } = 60;
 }
 
+/// <summary>
+/// One month of attendance for a class: how many school days it had. Recorded only; not counted
+/// in grades yet. Attendance % = days present / school days x 100.
+/// </summary>
+public sealed class AttendanceMonth : Audited
+{
+    public long Id { get; set; }
+    public string ClassId { get; set; } = "";
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public int SchoolDays { get; set; }
+    public List<AttendanceEntry> Entries { get; set; } = [];
+}
+
+/// <summary>Days present for one student in one <see cref="AttendanceMonth"/>.</summary>
+public sealed class AttendanceEntry : Audited
+{
+    public long Id { get; set; }
+    public long AttendanceMonthId { get; set; }
+    public string StudentId { get; set; } = "";
+    public int DaysPresent { get; set; }
+}
+
 /// <summary>Metadata only: never answers, submission text, comments, or feedback.</summary>
 public sealed class AuditLogEntry
 {

@@ -33,6 +33,8 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<SubmissionAnswer> SubmissionAnswers => Set<SubmissionAnswer>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<GradebookSetting> GradebookSettings => Set<GradebookSetting>();
+    public DbSet<AttendanceMonth> AttendanceMonths => Set<AttendanceMonth>();
+    public DbSet<AttendanceEntry> AttendanceEntries => Set<AttendanceEntry>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
 
     private const int IdLength = 64;       // ISMS reference ids (students, employees, schedules)
@@ -190,6 +192,25 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.HasKey(x => x.ClassId);
             e.Property(x => x.ClassId).HasMaxLength(ClassIdLength);
             e.HasOne<IsmsClass>().WithMany().HasForeignKey(x => x.ClassId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<AttendanceMonth>(e =>
+        {
+            e.ToTable("attendance_months");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ClassId).HasMaxLength(ClassIdLength).IsRequired();
+            e.HasOne<IsmsClass>().WithMany().HasForeignKey(x => x.ClassId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.ClassId, x.Year, x.Month }).IsUnique();
+            e.HasMany(x => x.Entries).WithOne().HasForeignKey(x => x.AttendanceMonthId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<AttendanceEntry>(e =>
+        {
+            e.ToTable("attendance_entries");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.StudentId).HasMaxLength(IdLength).IsRequired();
+            e.HasIndex(x => new { x.AttendanceMonthId, x.StudentId }).IsUnique();
+            e.HasIndex(x => x.StudentId);
         });
 
         b.Entity<AuditLogEntry>(e =>
