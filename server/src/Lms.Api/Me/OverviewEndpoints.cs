@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Lms.Api.Attendance;
 using Lms.Api.Classes;
 using Lms.Api.Content;
 using Lms.Api.Coursework;
@@ -21,11 +22,13 @@ public sealed record CourseworkItem(string ClassId, CourseworkDto Coursework);
 public sealed record SubmissionItem(long CourseworkId, string ClassId, SubmissionDto Submission);
 public sealed record ClassStudent(string ClassId, string StudentId, string FirstName, string LastName);
 public sealed record GradebookItem(string ClassId, int ActivityWeight, int ExamWeight, int PassingScore);
+public sealed record AttendanceItem(string ClassId, AttendanceMonthDto Month);
 
 /// <summary>Everything a workspace shows, in one call. Students get only what they may see.</summary>
 public sealed record Overview(Person Me, IReadOnlyList<ClassSummary> Classes, IReadOnlyList<ModuleItem> Modules,
     IReadOnlyList<MaterialItem> Materials, IReadOnlyList<AnnouncementItem> Announcements, IReadOnlyList<CourseworkItem> Coursework,
-    IReadOnlyList<SubmissionItem> Submissions, IReadOnlyList<ClassStudent> Students, IReadOnlyList<GradebookItem> Gradebooks);
+    IReadOnlyList<SubmissionItem> Submissions, IReadOnlyList<ClassStudent> Students, IReadOnlyList<GradebookItem> Gradebooks,
+    IReadOnlyList<AttendanceItem> Attendance);
 
 public sealed record PersonRef(string Id, string Name);
 public sealed record People(IReadOnlyList<PersonRef> Instructors, IReadOnlyList<PersonRef> Students);
@@ -87,6 +90,8 @@ public static class OverviewEndpoints
                 submissions.AddRange((await SubmissionEndpoints.ToDtoAsync(db, cw, rows, ct)).Select(d => new SubmissionItem(cw.Id, cw.ClassId, d)));
             }
 
+            // Instructors: every entry of their classes. Students: their own days only.
+            var attendance = await AttendanceEndpoints.LoadAsync(db, ids, ct);
             var gradebooks = await db.GradebookSettings.AsNoTracking().Where(g => ids.Contains(g.ClassId)).ToListAsync(ct);
             // One instructor often teaches several classes, so keep the first name per id.
             var names = classes.DistinctBy(c => c.InstructorId).ToDictionary(c => c.InstructorId, c => c.InstructorName);
@@ -106,7 +111,8 @@ public static class OverviewEndpoints
                 roster.Select(s => new ClassStudent(s.ClassId, s.StudentId, s.FirstName, s.LastName)).ToList(),
                 classes.Select(c => gradebooks.FirstOrDefault(g => g.ClassId == c.Id) is { } g
                     ? new GradebookItem(c.Id, g.ActivityWeight, g.ExamWeight, g.PassingScore)
-                    : new GradebookItem(c.Id, 40, 60, 60)).ToList()));
+                    : new GradebookItem(c.Id, 40, 60, 60)).ToList(),
+                attendance.Select(m => new AttendanceItem(m.ClassId, AttendanceEndpoints.ToDto(m, user))).ToList()));
         }).WithName("GetOverview");
 
         return app;

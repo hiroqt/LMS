@@ -102,6 +102,16 @@ export interface ExamGrade {
   feedback?: string;
 }
 
+/** One month of the student's own attendance (D-035). */
+export interface AttendanceMonth {
+  courseId: string;
+  year: number;
+  month: number;
+  schoolDays: number;
+  /** null when the instructor recorded the month but not this student's days. */
+  daysPresent: number | null;
+}
+
 export interface StudentCatalog {
   courses: Course[];
   assessments: Assessment[];
@@ -119,6 +129,8 @@ export interface StudentCatalog {
   attempts: Record<string, AttemptSummary>;
   /** Assessments the student has handed in. */
   completed: string[];
+  /** The student's own attendance, newest month first. */
+  attendance: AttendanceMonth[];
   /** The student being viewed. */
   me: { id: string; firstName: string; name: string };
 }

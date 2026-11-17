@@ -335,3 +335,17 @@ and the API clock pinned to the fixtures' date; `e2e/fixtures.ts` turns old demo
 **Known regression:** a student can no longer take a quiz offline; the cached app opens and says
 it needs a connection (`resilience`). Offline work returns with the persisted cache and outbox (D-020).
 Admin now loads lazily like the other workspaces (L-047).
+
+### D-035 · Monthly attendance is recorded per class, not counted in grades
+`2026-11-17` · hiro (Phase 3a) · scope: instructor, student, shared/api, server, e2e · confidence: medium
+Attendance is monthly totals, not a daily roll call: for each class and month the instructor
+enters the school days and each student's days present, and attendance % = days present ÷
+school days × 100 (`shared/lib/attendance.ts`, one decimal). Both class views gain an
+**Attendance** tab (new journeys AT and CL-AT, `e2e/attendance.spec.ts`; the existing tab
+journeys are unchanged). The server owns the rules (`PUT /api/classes/{id}/attendance/{y}/{m}`):
+school days 1 to the days in the month, days present 0 to the school days, students active on
+the class list, the class's instructor only and only while ISMS offers the class; lowering the
+school days below a saved entry is refused rather than clamped, naming the students. A save
+upserts the whole month in one transaction with a metadata-only audit row; students left out
+keep their days, and an entry cannot be deleted yet. Students receive only their own entries.
+Attendance is **not** part of the gradebook; a later phase decides how it counts.

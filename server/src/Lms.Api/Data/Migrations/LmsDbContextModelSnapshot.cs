@@ -80,6 +80,108 @@ namespace Lms.Api.Data.Migrations
                     b.ToTable("announcements", (string)null);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.AttendanceEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<long>("AttendanceMonthId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("attendance_month_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("DaysPresent")
+                        .HasColumnType("int")
+                        .HasColumnName("days_present");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_attendance_entries");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("AttendanceMonthId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("attendance_entries", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.AttendanceMonth", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClassId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("class_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int")
+                        .HasColumnName("month");
+
+                    b.Property<int>("SchoolDays")
+                        .HasColumnType("int")
+                        .HasColumnName("school_days");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id")
+                        .HasName("PK_attendance_months");
+
+                    b.HasIndex("ClassId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("attendance_months", (string)null);
+                });
+
             modelBuilder.Entity("Lms.Api.Data.AuditLogEntry", b =>
                 {
                     b.Property<long>("Id")
@@ -974,6 +1076,24 @@ namespace Lms.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.AttendanceEntry", b =>
+                {
+                    b.HasOne("Lms.Api.Data.AttendanceMonth", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("AttendanceMonthId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.AttendanceMonth", b =>
+                {
+                    b.HasOne("Lms.Api.Data.IsmsClass", null)
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Coursework", b =>
                 {
                     b.HasOne("Lms.Api.Data.IsmsClass", null)
@@ -1104,6 +1224,11 @@ namespace Lms.Api.Data.Migrations
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.AttendanceMonth", b =>
+                {
+                    b.Navigation("Entries");
                 });
 #pragma warning restore 612, 618
         }

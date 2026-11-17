@@ -27,6 +27,14 @@ describe("toStudentCatalog", () => {
     expect(catalog.assessments.find((item) => item.id === "3")?.dueAt).toBe("");
   });
 
+  it("keeps only the student's own days per month, and null when their days were not recorded", () => {
+    const catalog = toStudentCatalog(overviewFixture());
+    expect(catalog.attendance).toEqual([
+      { courseId: "class-a", year: 2026, month: 10, schoolDays: 20, daysPresent: 18 },
+      { courseId: "class-a", year: 2026, month: 9, schoolDays: 22, daysPresent: null },
+    ]);
+  });
+
   it("names the student, marks them in the class list, and credits announcements", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.me).toEqual({ id: "STU-1", firstName: "Lia", name: "Lia Abad" });

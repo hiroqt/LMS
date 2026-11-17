@@ -39,6 +39,10 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
       { classId: "class-a", studentId: "STU-2", firstName: "Max", lastName: "Bautista" },
     ],
     gradebooks: [{ classId: "class-a", activityWeight: 30, examWeight: 70, passingScore: 75 }],
+    attendance: [
+      { classId: "class-a", month: { year: 2026, month: 10, schoolDays: 20, entries: [{ studentId: "STU-1", daysPresent: 18 }, { studentId: "STU-2", daysPresent: 15 }] } },
+      { classId: "class-a", month: { year: 2026, month: 9, schoolDays: 22, entries: [{ studentId: "STU-2", daysPresent: 22 }] } },
+    ],
   };
   change(overview);
   return overview;

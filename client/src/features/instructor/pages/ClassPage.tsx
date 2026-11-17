@@ -9,6 +9,7 @@ import { classContent, classMark, classWork, subjectOf, yearOf } from "../api/se
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { CLASS_TABS, instructorPaths, isClassTab, isContentType, type ClassTab, type ContentType } from "../paths";
 import { AnnouncementsTab } from "./class/AnnouncementsTab";
+import { AttendanceTab } from "./class/AttendanceTab";
 import { ClassworkTab } from "./class/ClassworkTab";
 import { CreateContentTab } from "./class/CreateContentTab";
 import { MaterialsTab } from "./class/MaterialsTab";
@@ -114,6 +115,7 @@ export default function ClassPage() {
         <TabsContent value={slug("Announcements")}><AnnouncementsTab {...props} /></TabsContent>
         <TabsContent value={slug("Materials")}><MaterialsTab {...props} /></TabsContent>
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>
+        <TabsContent value={slug("Attendance")}><AttendanceTab {...props} /></TabsContent>
         <TabsContent value={slug("Submissions")}>
           <SubmissionsTab items={submissions} selectedId={review} instructor={instructor} onSelect={(id) => goTab("Submissions", { review: id })} />
         </TabsContent>

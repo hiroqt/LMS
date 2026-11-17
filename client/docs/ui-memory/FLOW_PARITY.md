@@ -31,6 +31,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
+| CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |
@@ -60,8 +61,9 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | F | "Review student work" → review queue | ✔ `instructor-more` | ✅ |
 | ROLE | Switch role (URL, title, Back) | ✔ `routing` | ✅ |
 | A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | ✅ |
-| TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | ✅ |
+| TABS | All seven class tabs reachable (Attendance, the eighth, is covered by `attendance`) | ✔ `instructor-flow` A → TABS | ✅ |
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ✅ |
+| AT | Attendance tab: month, school days, days present, live %, field errors, Save (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ✅ |
 | COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ✅ |
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |

@@ -57,6 +57,7 @@ flowchart TD
     TABS -->|Announcements| B2((B))
     TABS -->|Materials| C2((C))
     TABS -->|People| PEOPLE[Search active enrolled students by name or email]
+    TABS -->|Attendance| AT[Pick a month, set school days, enter days present per student, Save]
     TABS -->|Submissions| F3((F))
     TABS -->|Create content| E2((E))
 
@@ -155,6 +156,7 @@ flowchart TD
 - **Create content:** the forms require a title and module. Materials additionally have one of four resource types (Study guide, Reading, Video, Practice set) and an optional description. Assignments also support instructions, due date, points, accept-late-work, and allow-resubmission. Assessments support instructions, due date, points, time limit (0 means none), one required question, four required answer choices, and one correct answer. The current instructor form creates one multiple-choice question.
 - **Announcements:** posting requires a nonblank title and message (maximum 120 and 1,200 characters). Saving associates the notice with the selected class and instructor and timestamps it. It appears in the instructor News list and the connected Student class Stream. Cancel closes the composer.
 - **Submissions and grading:** the overview hero, review list, notification menu, and class Submissions tab enter the same review flow. It holds handed-in assignments without a grade, and exam attempts with essays. Multiple-choice and true/false exams are graded by the server on submit, so they never wait for review. Assignments show the student's note and attachment file name; no file is uploaded. An exam review shows the server's points for each question and asks for points on each essay.
+- **Attendance (D-035):** monthly totals, not a daily roll call. Pick a month (this month and the eleven before it, plus any older month already recorded), enter the month's school days (1 to the days in that month) and each student's days present (0 to the school days). Each row shows the live attendance % (days present ÷ school days × 100). **Save attendance** stores the whole month in one call (Saving…/Saved); out-of-range values show a field error, and lowering the school days below a saved entry is refused with the students named. Leaving a student blank before the first save means not recorded; a saved entry cannot be cleared. Attendance is recorded only and does not count in the gradebook yet.
 - **Gradebook:** select an active classroom and edit category weights and passing score. Changes save once the activity and exam weights add up to 100 (Saving…/Saved); until then a warning says so. The panel reports graded counts and averages for activities and exams.
 
 ## Completion and prototype limits
@@ -174,6 +176,7 @@ The journeys above are unchanged and are verified by `e2e/instructor-flow.spec.t
 - **Grading** shows the server's points per question for exams with essays and asks for each essay's points; assignment scores start empty. Saving confirms with a message.
 - **Gradebook** warns when the weights do not add up to 100% and saves only once they do (D-032); its averages are correct (the classic page showed NaN% for graded assignments).
 - The class header shows the **class code with a copy button**.
+- **Attendance tab** (D-035): monthly attendance per class, recorded only (`e2e/attendance.spec.ts`).
 - **Phones:** the drawer holds navigation and the class list and closes on any choice; search opens in a sheet.
 
 Implementation references: [Instructor workspace](../src/features/instructor/InstructorApp.tsx), [screens and class tabs](../src/features/instructor/pages/), [data, rules, and writes](../src/features/instructor/api/), [shared shell](../src/shared/layout/AppShell.tsx), and [local data model](../src/roles/shared/lmsData.js).

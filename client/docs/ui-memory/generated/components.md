@@ -72,6 +72,7 @@
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
+| `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
 | `src/features/instructor/pages/class/CreateContentTab.tsx` | `CreateContentTab` |
 | `src/features/instructor/pages/class/MaterialsTab.tsx` | `MaterialsTab` |
