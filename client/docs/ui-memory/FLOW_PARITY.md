@@ -43,6 +43,8 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | CONF | Keep working / Submit now | ✔ `student-flow` | ✅ |
 | R | Result and answer review; persists after reload | ✔ `student-flow` | ✅ |
 | R → Q | Practice again | ✖ | ✅ |
+| Q (types) | Every question type answered; section directions; spelling notice; typed answers autosave and survive reload; unanswered list on submit (D-040, D-043) | ✔ `quiz-types` | ✅ |
+| R (review modes) | Score only / which were right / correct answers after submit or due; Waiting for grading; keys only once no attempt is left (D-040, D-042) | ✔ `quiz-types` | ✅ |
 | MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
 | Activity | Submit an assignment (filename + comment) | ✔ `instructor-flow` E → I → F → J | ✅ |
 | Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
@@ -74,14 +76,20 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
-| E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | ✅ |
+| E: assessment | Create → assessment builder → Publish → Classwork (D-040; was the one-MCQ form) | ✔ `instructor-more` | ✅ |
+| E: builder | Sections with every type; Save draft → Draft in Classwork → Edit draft; Publish refused while a question needs attention; dates can be cleared | ✔ `assessment-builder` | ✅ |
+| E: import | Pasted or uploaded exam → draft questions with original text and warnings; nothing saved until Save (D-041) | ✔ `assessment-builder`, server `ImportTests` | ✅ |
+| PREVIEW | Preview as student; Check answers shows results and keys; nothing saved | ✔ `quiz-types` | ✅ |
+| GRADE (types) | Answers beside the key for every type; points override for typed answers kept on re-score (D-043, D-042) | ✔ `grading-accuracy` | ✅ |
+| SPELL | Accept or reject near misses; count on the Classwork row | ✔ `grading-accuracy` | ✅ |
+| KEY | Item analysis flags a likely wrong key → Fix answer key → attempts re-scored, students see "score updated" | ✔ `grading-accuracy` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
 | MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |
 | SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ✅ |
 | J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ✅ |
 | J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | ✅ |
-| E: assessment (reuse) | Assessment uses an existing question set; Points hidden; set lists both exams (D-034) | ✔ `question-sets` QS → E | ✅ |
+| E: assessment (reuse) | Builder → Use a question set; set lists both exams (D-034, D-040) | ✔ `question-sets` QS → E | ✅ |
 | QS | Question sets page: count, points, exams using each, Locked badge; edit an unlocked set | ✔ `question-sets`, `QuestionSetEditor.test.tsx` | ✅ |
 | QS (locked) | Locked set is read-only with an explanation; Make a copy gives an editable copy; original unchanged | ✔ `question-sets` | ✅ |
 | G | Gradebook loads | ✔ `instructor-flow` G | ✅ |
