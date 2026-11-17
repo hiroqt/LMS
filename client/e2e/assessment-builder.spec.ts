@@ -150,6 +150,9 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     const summary = page.getByRole("complementary", { name: "Summary" });
     await expect(summary.getByText(/^7 questions · /)).toBeVisible();
     await expect(summary.getByText(/need attention/)).toHaveCount(0);
+    // Axe's target-size rule counts a 44px button as small when it happens to sit under the sticky
+    // top bar at the scroll position the last fill left; measure the page from the top instead.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expectNoAxeViolations(page);
     await expectReadableText(page);
 
