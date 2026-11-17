@@ -416,3 +416,24 @@ results, avatars, count pills, and the functional button spinner. Admin is rebui
 `features/admin` on `AppShell` and `shared/ui` with its journeys unchanged; then the legacy
 shell and CSS are deleted and preflight is turned on (closes D-003, D-010, D-022).
 `npm run style:check` enforces the rules. Dark mode is out of scope.
+
+### D-038 · Admin rebuilt on the shared system
+`2026-11-17` · hiro (revamp v2, phase 3) · scope: admin, shared/layout, e2e · confidence: high
+Admin now lives in `src/features/admin` on `AppShell` and `shared/ui`; the classic Admin screens,
+`RoleWorkspace`, and their CSS are deleted. Its browser-local data modules moved unchanged to
+`features/admin/data` (same keys and shapes, C-007). Journeys are unchanged and proven by
+`e2e/admin-flow.spec.ts`, written against the classic Admin first. What changed:
+- **URLs.** Every page has one (`/admin/users`, `/admin/courses?tab=classrooms`, …) and create
+  forms open from `?create=1`, so the back button and links work. The users filter is `?type=`,
+  never `?role=` (the role router reads that as a workspace switch, L-056).
+- **Navigation.** One click to every page under plain section labels (`NavItem.group` in
+  `AppShell`) instead of expanding categories; Settings moved from the sidebar footer to System.
+- **Dialogs.** Create forms open in a dialog (a bottom sheet on phones). Deleting a subject and
+  resetting the demo confirm in a dialog that names the item instead of `window.confirm`; the two
+  spec steps changed only for that (D-013). Record names are buttons that open details, so the
+  details are reachable by keyboard (they were clickable text before).
+- **Dashboard.** Plain bars with the number on each bar replace the animated SVG charts and their
+  fake 450 ms loading state; the sample preview stays and stays labelled. The illustrative
+  female/male breakdown (sex is not stored) became real active/inactive student counts. Reset
+  demo data lives only in Settings.
+- **New checks.** Every Admin page passes axe, the 14px text check, and the 320px sweep.

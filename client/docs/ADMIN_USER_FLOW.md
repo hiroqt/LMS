@@ -10,7 +10,7 @@ flowchart TD
     SHELL --> OVERVIEW[Overview: student and faculty totals; active courses and users; learning analytics; student, course, and system activity; date filter]
     OVERVIEW --> ROUTE{Choose a page or dashboard action}
 
-    ROUTE -->|Footer Settings| SETTINGS[System Configuration from sidebar footer]
+    ROUTE -->|System: Settings| SETTINGS[Settings]
     SETTINGS --> CONFIG[Set institution name, timezone, current term, and in-app alerts]
     SETTINGS --> BACKUP{Create backup or reset demo?}
     BACKUP -->|Create backup| SNAPSHOT[Save full browser-local snapshot]
@@ -21,7 +21,7 @@ flowchart TD
     SNAPSHOT_RESET --> SEED[Restore initial demo records]
     SETTINGS -. scheduled backup card is display-only .-> CRON[No background job runs]
 
-    ROUTE -->|Academic Term Configuration direct link| TERMS[Create or edit a term; set current; archive]
+    ROUTE -->|System: Academic terms| TERMS[Create or edit a term; set current; archive]
     TERMS --> TERM_RULES[Validate required fields and dates; one current term]
     TERM_RULES -->|Valid| TERMS_SAVE[Save term settings locally; existing classroom terms stay unchanged]
     TERM_RULES -->|Invalid| TERM_ERROR[Show validation; keep editing]
@@ -77,8 +77,8 @@ flowchart TD
 
 ## Flow stages
 
-1. **Enter and orient:** Admin opens `/admin` or switches into the Admin workspace. Overview presents the shared-data counts, learning analytics, weekly student/course/system activity, recent event feed, and date range controls. Dashboard actions can open the matching creation form.
-2. **Configure the system:** Admin updates browser-local institution defaults and alert preferences, manages academic terms, or creates/downloads a full JSON snapshot. The scheduled-backup panel is a display-only mock; it does not run while the browser is closed or in the background. Reset requires confirmation, saves a pre-reset snapshot, and then restores the initial demo records.
+1. **Enter and orient:** Admin opens `/admin` or switches into the Admin workspace. Overview presents the shared-data counts, weekly student/course/system activity, classroom status, student accounts, recent activity, and term and date range controls. Dashboard actions open the matching creation form.
+2. **Configure the system:** Admin updates browser-local institution defaults and alert preferences, manages academic terms, or creates/downloads a full JSON snapshot. The scheduled-backup panel is a display-only mock; it does not run while the browser is closed or in the background. Reset (Settings only) requires confirmation in a dialog, saves a pre-reset snapshot, and then restores the initial demo records.
 3. **Manage people and access:** User Management supports search, role/status filtering, pagination, and user create/edit/activate/deactivate. Role Management edits a local visual permission matrix only; it does not enforce access.
 4. **Manage courses:** Course Management has Subjects and Classrooms tabs; Enrollments is its own page. These directories support their available search/filter/pagination and existing create/edit/status actions. Form validation blocks invalid links and duplicate values. Referenced records are deactivated when needed to preserve history; unused subjects may be deleted.
 5. **Review and report:** Audit Logs show timestamped change metadata across roles with filters, pagination, and CSV export. System Reports export the available shared records as CSV. Audit summaries do not include answers, submission text, comments, or feedback.
@@ -88,4 +88,4 @@ flowchart TD
 
 The role selector is not authentication. Data, settings, terms, role-matrix values, audit history, and backups stay in this browser; there is no server sync, enforced permission system, external integration, automatic scheduled job, or off-device backup unless the downloaded JSON is saved elsewhere. Audit history is reset with demo data after its pre-reset snapshot is saved.
 
-Implementation references: [Admin workspace](../src/roles/admin/Admin.jsx), [Admin sidebar shell](../src/roles/shared/RoleWorkspace.jsx), [shared Admin data and audit/backup seam](../src/roles/shared/systemAdministrationData.js), [Admin directory](../src/roles/admin/AdminDirectory.jsx), and [storage](../src/roles/shared/storage.js).
+Implementation references: [Admin workspace and routes](../src/features/admin/AdminApp.tsx), [pages](../src/features/admin/pages/), [shared Admin data and audit/backup seam](../src/features/admin/data/systemAdministrationData.js), [storage](../src/features/admin/data/storage.js), and the journeys' spec [`e2e/admin-flow.spec.ts`](../e2e/admin-flow.spec.ts).

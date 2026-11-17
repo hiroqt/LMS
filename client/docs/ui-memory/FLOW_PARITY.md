@@ -1,8 +1,8 @@
 # Flow parity
 
-Every node in [`STUDENT_USER_FLOW.md`](../STUDENT_USER_FLOW.md) and
-[`INSTRUCTOR_USER_FLOW.md`](../INSTRUCTOR_USER_FLOW.md), its spec, and its migration
-status. **A node without a spec gets one, against the old UI, before its screen is
+Every node in [`STUDENT_USER_FLOW.md`](../STUDENT_USER_FLOW.md),
+[`INSTRUCTOR_USER_FLOW.md`](../INSTRUCTOR_USER_FLOW.md), and
+[`ADMIN_USER_FLOW.md`](../ADMIN_USER_FLOW.md), its spec, and its migration status. **A node without a spec gets one, against the old UI, before its screen is
 rebuilt.**
 
 Status: ⬜ legacy UI · 🟨 rebuilt behind the classic/new toggle · ✅ cut over (2026-11-17, D-021; the `*-new` projects that proved parity were retired at cutover)
@@ -90,12 +90,31 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 
 Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cutover (Phase 3) and is now guarded in the default projects.
 
+## Admin (rebuilt in UI revamp v2, D-037, D-038)
+
+Specs written against the classic Admin first, then run unchanged against the rebuild
+(confirmations moved from `window.confirm` to a dialog, D-038).
+
+| Node | Journey | Spec | Status |
+| --- | --- | --- | --- |
+| OVERVIEW | Totals open the matching directory with its filter | ✔ `admin-flow` OVERVIEW | ✅ |
+| USERS, USER_VALIDATE, USER_SAVE | Duplicate email refused; add, find, deactivate | ✔ `admin-flow` USERS | ✅ |
+| SUBJECTS, COURSE_VALIDATE | Duplicate code refused; delete an unused subject | ✔ `admin-flow` SUBJECTS | ✅ |
+| CLASSROOMS, ENROLL | Add a classroom; enroll once, duplicate refused; remove | ✔ `admin-flow` CLASSROOMS and ENROLLMENTS | ✅ |
+| TERMS, TERM_RULES | Date validation; new term made current; old term archived | ✔ `admin-flow` TERMS | ✅ |
+| ROLES, ROLE_SAVE | Matrix saves and survives a reload | ✔ `admin-flow` ROLES | ✅ |
+| SETTINGS, CONFIG, SNAPSHOT, DOWNLOAD, RESET, SEED | Save defaults; back up; download; confirmed reset | ✔ `admin-flow` SETTINGS | ✅ |
+| AUDIT, AUDIT_EVENT | Changes appear; category filter; CSV export | ✔ `admin-flow` USERS | ✅ |
+| REPORTS | Each report downloads a CSV | ✔ `admin-flow` REPORTS (users) | ✅ |
+| Search, phone menu | Top-bar search; drawer reaches a page | ✔ `admin-flow` SEARCH, MOBILE `@mobile` | ✅ |
+| a11y | Zero axe violations, text ≥14px, no sideways scroll at 320px | ✔ `admin-flow` `@all`, `@mobile` | ✅ |
+
 ## Cross-cutting
 
 | Check | Spec |
 | --- | --- |
 | Every legacy URL form resolves; unknown path fallback | ✔ `routing` |
-| Admin smoke (out of scope, must not break) | ✔ `routing` |
+| Admin landmark and URL forms | ✔ `routing` |
 | Poppins loaded on desktop, iPhone, Android | ✔ `platform` `@all` |
 | axe WCAG 2.2 AA baseline | retired at cutover (classic removed); strict checks in `student-new`, `instructor-new`, `new-shell` |
 
@@ -105,7 +124,7 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | --- | --- |
 | Skip link first; nav `aria-current`; focus moves to h1 on page change | ✔ `new-shell` |
 | Choice remembered; "Use classic view" returns to the legacy UI | retired at cutover (D-021); a leftover `?ui=classic` opens the rebuilt UI: ✔ `new-shell` |
-| Workspace switch keeps the new UI; Admin stays classic | ✔ `new-shell` |
+| Workspace switch keeps the new UI | ✔ `new-shell` |
 | Offline banner announced and cleared | ✔ `new-shell` |
 | Student bottom nav on phones; no sideways scroll at 320px | ✔ `new-shell` `@mobile` |
 | Instructor drawer closes and focuses the page after navigating | ✔ `new-shell` `@mobile` |

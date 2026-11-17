@@ -62,6 +62,27 @@
 
 | File | Exports |
 | --- | --- |
+| `src/features/admin/AdminApp.tsx` | `AdminApp` |
+| `src/features/admin/components/ConfirmDialog.tsx` | `ConfirmDialog` |
+| `src/features/admin/components/DataTable.tsx` | `DataTable`, `EmptyRow` |
+| `src/features/admin/components/EventList.tsx` | `EventList` |
+| `src/features/admin/components/FormDialog.tsx` | `FormDialog` |
+| `src/features/admin/components/MetricCard.tsx` | `MetricCard` |
+| `src/features/admin/components/Pagination.tsx` | `Pagination` |
+| `src/features/admin/components/StatusBadge.tsx` | `StatusBadge` |
+| `src/features/admin/components/Toolbar.tsx` | `Toolbar` |
+| `src/features/admin/components/WeeklyBars.tsx` | `WeeklyBars` |
+| `src/features/admin/pages/AuditPage.tsx` | `AuditPage` |
+| `src/features/admin/pages/CoursesPage.tsx` | `CoursesPage` |
+| `src/features/admin/pages/EnrollmentsPage.tsx` | `EnrollmentsPage` |
+| `src/features/admin/pages/OverviewPage.tsx` | `OverviewPage` |
+| `src/features/admin/pages/ReportsPage.tsx` | `ReportsPage` |
+| `src/features/admin/pages/RolesPage.tsx` | `RolesPage` |
+| `src/features/admin/pages/SettingsPage.tsx` | `SettingsPage` |
+| `src/features/admin/pages/TermsPage.tsx` | `TermsPage` |
+| `src/features/admin/pages/UsersPage.tsx` | `UsersPage` |
+| `src/features/admin/pages/courses/ClassroomsTab.tsx` | `ClassroomsTab` |
+| `src/features/admin/pages/courses/SubjectsTab.tsx` | `SubjectsTab` |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
@@ -125,19 +146,4 @@ Admin and its shell keep their pre-revamp code until Admin is revamped (D-001, D
 
 | File | Exports |
 | --- | --- |
-| `src/components/shared/Avatar.jsx` | `Avatar` |
-| `src/components/shared/Breadcrumbs.jsx` | `Breadcrumbs` |
-| `src/components/shared/GlobalSearch.jsx` | `GlobalSearch` |
-| `src/components/shared/NotificationMenu.jsx` | `NotificationMenu` |
-| `src/components/shared/RoleSwitcher.jsx` | `RoleSwitcher` |
 | `src/components/shared/UnknownRoleFallback.jsx` | `UnknownRoleFallback` |
-| `src/roles/admin/Admin.jsx` | `Admin` |
-| `src/roles/admin/AdminAcademicTerms.jsx` | `AdminAcademicTerms` |
-| `src/roles/admin/AdminAuditLogs.jsx` | `AdminAuditLogs` |
-| `src/roles/admin/AdminDirectory.jsx` | `AdminDirectory` |
-| `src/roles/admin/AdminLearningResources.jsx` | `AdminLearningResources` |
-| `src/roles/admin/AdminOverview.jsx` | `AdminOverview` |
-| `src/roles/admin/AdminReports.jsx` | `AdminReports` |
-| `src/roles/admin/AdminRoleManagement.jsx` | `AdminRoleManagement` |
-| `src/roles/admin/AdminSystemConfiguration.jsx` | `AdminSystemConfiguration` |
-| `src/roles/shared/RoleWorkspace.jsx` | `RoleWorkspace` |

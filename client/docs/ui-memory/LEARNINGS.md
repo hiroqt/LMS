@@ -396,3 +396,16 @@ Partway through a session, every `iphone-webkit` spec that taps the top bar time
 the same specs had passed an hour earlier. It is the local headless WebKit, not the UI: compare
 against `main` (a worktree with `E2E_PORT`/`E2E_API_PORT`) before chasing it; CI's Linux WebKit
 is the reference.
+
+### L-056 · `?role=` in any URL switches the workspace
+`2026-11-17` · hiro · scope: admin, app/router · confidence: high
+`/admin/users?role=student` opened the Student workspace: `parseRoleFromLocation` honours the
+legacy `?role=` form before the path (D-004). Admin's user filter is `?type=` instead, and
+`features/admin/paths.ts` says why. Never name a query parameter `role` in any workspace.
+
+### L-057 · `getByLabel` also matches hidden tab panels
+`2026-11-17` · hiro · scope: e2e · confidence: high
+A Radix tab panel is labelled by its tab, so `getByLabel(/^subject/i)` matched both the hidden
+"Subjects" panel and the "Subject" select in the classroom dialog, and `selectOption` hung until
+the test timed out with no call log. Use `getByRole("combobox", { name })`: role queries skip
+hidden elements. Also, `allTextContents()` does not wait; assert the element is visible first.
