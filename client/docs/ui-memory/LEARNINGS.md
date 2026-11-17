@@ -432,3 +432,52 @@ on close (Save, Cancel, and Esc all pass through it), and give a select with a c
 The calendar dots were decoration by C-019, but they were also the only cue on today's cell and
 the only non-color cue elsewhere; a tint alone fails WCAG 1.4.1 and vanishes in forced colors.
 Days with items now underline their number. When a rule removes something, ask what it said.
+
+### L-061 · Contract first lets parallel streams build against an API that doesn't exist yet
+`2026-11-17` · hiro · scope: process, e2e · confidence: high
+Five streams (API, import, builder, grading, student) were built in parallel against
+`ASSESSMENTS_API_CONTRACT.md`. Client specs that need the new API fail until it's integrated. To
+check a screen early, a local throwaway spec can answer the new endpoints with `page.route`
+(calling `route.fetch()` for the real data and changing one field). Committed specs use the real
+API. Each stream needs its own `E2E_PORT`/`E2E_API_PORT`, and never two Playwright runs in one
+checkout (they rebuild `dist/` under each other). Integration still found gaps the contract had
+missed (left ids for matching, overview fields, clearing dates, `Content-Disposition`).
+
+### L-062 · Minimal-API `IFormFile` buffers uploads to disk
+`2026-11-17` · hiro · scope: server · confidence: high
+Binding an `IFormFile` buffers files over 64 KB to a temp file. Import reads the body with
+`MultipartReader` (with `BodyLengthLimit`) into a `MemoryStream`, which keeps the "never on disk"
+promise and gives exact size refusals. To guard against zip bombs, count the bytes as you unpack;
+don't trust the entry headers. OpenXml 3.x `UnderlineValues`/`CellValues` are structs: compare
+them with `==`, not `switch` constants.
+
+### L-063 · EF refuses nested transactions; `HasDefaultValue` covers old rows
+`2026-11-17` · hiro · scope: server · confidence: high
+`ContentEndpoints.SaveWithAuditAsync` opens its own transaction, so run follow-up work (a
+regrade) in a second transaction after it. `AttemptGrading.ScoreAsync` is the one place that
+decides `submitted` vs `graded`; reuse it. New settings columns use `HasDefaultValue`, so old rows
+get `results`/`strict` from both the migration and `EnsureCreated`.
+
+### L-064 · `BrowserRouter` has no `useBlocker`
+`2026-11-17` · hiro · scope: instructor · confidence: high
+The router is a plain `BrowserRouter`, so React Router's blocker isn't available. The
+Instructor workspace guards unsaved work with `useUnsavedChanges(dirty)` and
+`useGuardedNavigate()` (`NavigationGuardContext`) plus `beforeunload`; screens that leave an
+editor must navigate through it. Browser Back/Forward isn't intercepted yet. Two `<Route>`s
+rendering the same component keep its state when the URL changes between them (new → edit), and
+`instructorPaths.pageKey` keeps the shell from refocusing the h1.
+
+### L-065 · A separating space belongs outside an `sr-only` span
+`2026-11-17` · hiro · scope: shared, a11y · confidence: high
+Chrome inserts a space before an absolutely positioned `sr-only` span, but jsdom drops spaces
+at its edges. So `Label<span class="sr-only"> context</span>` reads differently in tests and in
+browsers. Write `Label{" "}<span className="sr-only">context</span>`, and inside a flex button
+wrap the pair in one span so the gap doesn't double the space.
+
+### L-066 · Layout details on long editor pages
+`2026-11-17` · hiro · scope: instructor · confidence: medium
+A sticky side panel needs `top-20` to clear the shell's 64px sticky header. Radix menus far
+down a long page can render outside the viewport, so cap them with
+`max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto`. Specs that need an
+exam "after its due date" should `PATCH` `dueAt` into the past, because closing answers 409 until
+everyone is graded (D-036).

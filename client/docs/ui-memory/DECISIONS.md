@@ -498,3 +498,23 @@ an outside service.
 **Retention.** Attempts are anonymized 2 terms after their term ends (`Lms:Retention:AttemptTerms`,
 to be confirmed by the registrar or data protection officer under RA 10173). Answer and essay
 text is cleared; scores and grades stay.
+A re-score (key fix, spelling-mode change, or spelling decision) recomputes auto-scored answers
+from the key but **keeps the instructor's manual points** (including partial points on a
+near miss), essay points, and spelling decisions; anonymized attempts are never re-scored.
+Correct answers are shown only once the student can't start another attempt.
+
+### D-043 · An exam's grading tools have their own page; quizzes autosave typed answers
+`2026-11-17` · hiro (assessments) · scope: instructor, student · confidence: medium
+- **The exam grading page:** `/instructor/classes/:classId/assessments/:examId/grading` holds one
+  exam's Submissions, Spelling review, and Item analysis as `?view=` tabs. They aren't path
+  tabs, because the shell refocuses the h1 when the path changes. Classwork rows open it with
+  **Grading**; the class Submissions tab stays the class-wide queue.
+- **Preview as student:** `…/assessments/:id/preview` renders the student quiz from shared
+  components (`shared/components/quiz`). Nothing is saved.
+- **Quiz autosave:** typed answers save after 1 s idle, on any question change, and on page
+  hide, retrying with backoff. Only settled states ("Saved", "Not saved, retrying") are
+  announced.
+- **Timers:** each question's own time limit applies (60 s when none is set), and the quiz
+  submits itself at the attempt deadline.
+- **Validation status codes:** the API keeps its existing 400 validation response for every new
+  rule; only import refusals are 422. The client treats both as field errors.
