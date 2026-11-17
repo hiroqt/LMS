@@ -33,7 +33,7 @@ test("an unknown path shows the role fallback, which can return to Student", asy
   await page.goto("/not-a-role");
   await expect(page.getByRole("heading", { name: "Role path not found" })).toBeVisible();
   await expect(page.getByText("/not-a-role")).toBeVisible();
-  await page.getByRole("button", { name: /Return to Student Workspace/ }).click();
+  await page.getByRole("button", { name: /Return to Student workspace/i }).click();
   await expect(page).toHaveURL(/\/student$/);
   await expect(page.getByRole("heading", { level: 1, name: STUDENT })).toBeVisible();
 });

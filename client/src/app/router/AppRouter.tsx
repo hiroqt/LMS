@@ -1,11 +1,11 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
-import UnknownRoleFallback from "../../components/shared/UnknownRoleFallback.jsx";
 import { matchRole } from "./roles";
 import { useRoleNavigation } from "./useRoleNavigation";
 
 // Each workspace loads on demand, so a visitor downloads only their own role's code (L-047).
 const AdminApp = lazy(() => import("../../features/admin/AdminApp"));
+const UnknownRolePage = lazy(() => import("./UnknownRolePage"));
 const StudentApp = lazy(() => import("../../features/student/StudentApp"));
 const InstructorApp = lazy(() => import("../../features/instructor/InstructorApp"));
 const DesignSystemPage = lazy(() => import("../../features/design-system/DesignSystemPage"));
@@ -33,7 +33,7 @@ function RoleWorkspaceRoute() {
   const navigateRole = useRoleNavigation();
   const { role, unknownPath } = matchRole(location);
 
-  if (unknownPath) return <UnknownRoleFallback unknownPath={unknownPath} onNavigateRole={navigateRole} />;
+  if (unknownPath) return <UnknownRolePage unknownPath={unknownPath} onNavigateRole={navigateRole} />;
   if (role === "admin") return <AdminApp onNavigateRole={navigateRole} />;
   if (role === "instructor") return <InstructorApp onNavigateRole={navigateRole} />;
   return <StudentApp onNavigateRole={navigateRole} />;

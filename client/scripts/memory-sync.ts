@@ -66,7 +66,7 @@ function routesDoc(): string {
   const routes = routerFiles.flatMap((file) =>
     [...readFileSync(file, "utf8").matchAll(/<Route\s+[^>]*path="([^"]+)"[^>]*element=\{<(\w+)/g)].map((m) => [m[1], m[2], rel(file)] as const),
   );
-  const roles = readFileSync(join(src, "roles", "shared", "roleRouter.js"), "utf8").match(/VALID_ROLES\s*=\s*\[([^\]]+)\]/)?.[1] ?? "";
+  const roles = readFileSync(join(src, "app", "router", "roleRouter.js"), "utf8").match(/VALID_ROLES\s*=\s*\[([^\]]+)\]/)?.[1] ?? "";
   let out = `${HEADER}# Routes\n\n## Roles\n\n${roles.split(",").map((r) => `- \`/${r.trim().replace(/"/g, "")}\``).join("\n")}\n`;
   out += "\nEach role also resolves from `?role=<role>`, `#/<role>`, `/<role>.html`, and `/<role>/index.html` (see `e2e/routing.spec.ts`).\n";
   out += `\n## Route table\n\n| Path | Element | Defined in |\n| --- | --- | --- |\n${routes.map(([p, e, f]) => `| \`${p}\` | \`${e}\` | \`${f}\` |`).join("\n")}\n`;
