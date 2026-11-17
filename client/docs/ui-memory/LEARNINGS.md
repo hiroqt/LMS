@@ -340,3 +340,11 @@ as `entries[i].daysPresent` and the tab mapped it to the same field error. That 
 behavior, but the journey proves the outcome, not which layer caught it; the limits themselves are
 pinned by `shared/lib/attendance.test.ts` and the server tests. Map indexed server errors back to
 the rows actually sent, not to the class list order.
+
+### L-049 · Reordering with equal sort orders, and phone specs that click the sidebar
+`2026-11-17` · hiro · scope: shared, e2e · confidence: high
+New modules get the next sort order per parent, but older rows can share one, and swapping two equal
+numbers moves nothing. `reorderSiblings` renumbers the siblings 1, 2, 3… in their shown order and
+sends only the orders that changed (sometimes just the neighbor's). An `@all` spec that opened the
+class from the sidebar timed out on phones, where the class list sits in the closed drawer; open the
+page by URL in specs that run on every device.

@@ -14,9 +14,20 @@ export interface Course {
   about: string;
 }
 
+/** A module of a class, or a submodule when `parentId` is set (one level, D-033). */
+export interface CourseModule {
+  id: string;
+  courseId: string;
+  parentId?: string;
+  title: string;
+  order: number;
+}
+
 export interface Assessment {
   id: string;
   courseId: string;
+  /** The module or submodule it is placed in. */
+  moduleId?: string;
   title: string;
   /** "Quiz" | "Long Quiz" | "Exam" | "Assignment" */
   type: string;
@@ -37,6 +48,8 @@ export interface Assessment {
 export interface Material {
   id: string;
   courseId: string;
+  /** The module or submodule it is placed in. */
+  moduleId?: string;
   title: string;
   kind: string;
   readTime: string;
@@ -114,6 +127,8 @@ export interface AttendanceMonth {
 
 export interface StudentCatalog {
   courses: Course[];
+  /** Every class's modules and submodules, unsorted (see shared/lib/moduleTree). */
+  modules: CourseModule[];
   assessments: Assessment[];
   materials: Material[];
   questions: Record<string, Question[]>;

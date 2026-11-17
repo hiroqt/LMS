@@ -82,9 +82,17 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
   const me = overview.me;
   return {
     courses,
+    modules: overview.modules.map((item) => ({
+      id: String(item.id),
+      courseId: item.classId,
+      ...(item.parentModuleId === null ? {} : { parentId: String(item.parentModuleId) }),
+      title: item.title,
+      order: item.sortOrder,
+    })),
     assessments: coursework.map((work) => ({
       id: String(work.id),
       courseId: work.classId,
+      moduleId: String(work.moduleId),
       title: work.title,
       type: work.category ?? (work.type === "exam" ? "Exam" : "Assignment"),
       description: work.description ?? work.instructions ?? "",
@@ -101,6 +109,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
     materials: overview.materials.map((material) => ({
       id: String(material.id),
       courseId: material.classId,
+      moduleId: String(material.moduleId),
       title: material.title,
       kind: material.kind,
       readTime: readTime(material.description),

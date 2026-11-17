@@ -13,6 +13,7 @@ import { AttendanceTab } from "./class/AttendanceTab";
 import { ClassworkTab } from "./class/ClassworkTab";
 import { CreateContentTab } from "./class/CreateContentTab";
 import { MaterialsTab } from "./class/MaterialsTab";
+import { ModulesTab } from "./class/ModulesTab";
 import { PeopleTab } from "./class/PeopleTab";
 import { StreamTab } from "./class/StreamTab";
 import { SubmissionsTab } from "./class/SubmissionsTab";
@@ -112,6 +113,7 @@ export default function ClassPage() {
         </TabsList>
         <TabsContent value={slug("Stream")}><StreamTab {...props} /></TabsContent>
         <TabsContent value={slug("Classwork")}><ClassworkTab {...props} /></TabsContent>
+        <TabsContent value={slug("Modules")}><ModulesTab {...props} /></TabsContent>
         <TabsContent value={slug("Announcements")}><AnnouncementsTab {...props} /></TabsContent>
         <TabsContent value={slug("Materials")}><MaterialsTab {...props} /></TabsContent>
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>

@@ -86,6 +86,32 @@ export function classWork(content: Pick<ClassContent, "activities" | "exams">): 
   ].sort((a, b) => (a.dueAt || "9999").localeCompare(b.dueAt || "9999"));
 }
 
+export interface ModuleItem {
+  kind: "material" | "activity" | "exam";
+  id: string;
+  title: string;
+  /** "Material · Reading", "Assignment", "Assessment". */
+  label: string;
+  archived: boolean;
+}
+
+/**
+ * Everything placed in each module or submodule of a class, keyed by module id:
+ * materials first, then assignments and assessments. Content with no module
+ * (an exam created before modules existed) is left out.
+ */
+export function contentByModule(content: Pick<ClassContent, "materials" | "activities" | "exams">): Map<string, ModuleItem[]> {
+  const byModule = new Map<string, ModuleItem[]>();
+  const add = (moduleId: string | undefined, item: ModuleItem) => {
+    if (!moduleId) return;
+    byModule.set(moduleId, [...(byModule.get(moduleId) ?? []), item]);
+  };
+  for (const item of content.materials) add(item.moduleId, { kind: "material", id: item.id, title: item.title, label: `Material · ${item.kind ?? "Study guide"}`, archived: item.status === "archived" });
+  for (const item of content.activities) add(item.moduleId, { kind: "activity", id: item.id, title: item.title, label: "Assignment", archived: false });
+  for (const item of content.exams) add(item.moduleId, { kind: "exam", id: item.id, title: item.title, label: "Assessment", archived: false });
+  return byModule;
+}
+
 export interface ReviewItem {
   /** The submission's id. */
   id: string;

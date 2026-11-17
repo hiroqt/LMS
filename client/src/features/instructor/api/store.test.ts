@@ -23,6 +23,14 @@ describe("toRoleStore", () => {
     expect(content.materials[0]).toMatchObject({ id: "5", moduleId: "1", status: "archived" });
   });
 
+  it("keeps a submodule's parent so the Modules tab can nest it", () => {
+    const s = toRoleStore(overviewFixture((o) => o.modules.push({ id: 2, classId: "class-a", parentModuleId: 1, title: "1.1 Tables", sortOrder: 1 })), people);
+    expect(s.modules).toEqual([
+      { id: "1", classroomId: "class-a", title: "Unit 1", order: 1 },
+      { id: "2", classroomId: "class-a", parentId: "1", title: "1.1 Tables", order: 1 },
+    ]);
+  });
+
   it("splits submissions by kind and carries grades and weights", () => {
     const s = store();
     expect(s.activitySubmissions.map((item) => [item.id, item.grade])).toEqual([["11", 4], ["12", 9]]);

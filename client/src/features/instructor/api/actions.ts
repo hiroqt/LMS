@@ -20,6 +20,8 @@ export interface ActionResult {
   fieldErrors?: Record<string, string[]>;
 }
 
+export type ContentKind = "material" | "activity" | "exam";
+
 export interface MaterialInput {
   moduleId: string;
   title: string;
@@ -139,6 +141,26 @@ export function useInstructorActions() {
             status: "published",
           });
         }),
+
+      /** A submodule sits one level under a module; the server refuses deeper nesting. */
+      createSubmodule: (classroomId: string, parentId: string, title: string) =>
+        run(() => send("POST", `${classPath(classroomId)}/modules`, { title, parentModuleId: Number(parentId) })),
+
+      renameModule: (classroomId: string, moduleId: string, title: string) =>
+        run(() => send("PATCH", `${classPath(classroomId)}/modules/${moduleId}`, { title })),
+
+      /** One PATCH per changed sort order (see reorderSiblings). Refreshes even after a partial failure. */
+      reorderModules: async (classroomId: string, changes: Array<{ id: string; order: number }>) => {
+        const result = await attempt(async () => {
+          for (const change of changes) await send("PATCH", `${classPath(classroomId)}/modules/${change.id}`, { sortOrder: change.order });
+        });
+        await refresh();
+        return result;
+      },
+
+      /** Moves a material, assignment, or assessment to another module or submodule of the class. */
+      moveContent: (classroomId: string, item: { kind: ContentKind; id: string }, moduleId: string) =>
+        run(() => send("PATCH", `${classPath(classroomId)}/${item.kind === "material" ? "materials" : "coursework"}/${item.id}`, { moduleId: Number(moduleId) })),
 
       publishAnnouncement: (classroomId: string, input: { title: string; message: string }) =>
         run(() => send("POST", `${classPath(classroomId)}/announcements`, input)),

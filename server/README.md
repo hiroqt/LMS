@@ -169,7 +169,7 @@ comes from.
 | PATCH | `/api/classes/{classId}/modules/{id}` | `{ title?, sortOrder? }` |
 | GET | `/api/classes/{classId}/materials?moduleId=&page=&pageSize=` | Paged `{ items, page, pageSize, total }` |
 | POST | `/api/classes/{classId}/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }`. `kind` is one of the six types on the Instructor form. File name only; nothing is uploaded |
-| PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status? }`, where status is `active` or `archived` |
+| PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status?, moduleId? }`, where status is `active` or `archived`; `moduleId` moves it to another module or submodule of the same class |
 | DELETE | `/api/classes/{classId}/materials/{id}` | 204 |
 | GET | `/api/classes/{classId}/announcements?page=&pageSize=` | Newest first, paged; `postedBy` is the instructor's ISMS id |
 | POST | `/api/classes/{classId}/announcements` | `{ title (≤120), message (≤1,200) }` |

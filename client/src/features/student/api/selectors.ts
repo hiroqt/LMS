@@ -1,5 +1,6 @@
 import { inMonth, monthGrid, type CalendarMark } from "../../../shared/lib/calendar";
-import type { AcademicEvent, Assessment, StudentCatalog, StudentProgress } from "./types";
+import { moduleTree } from "../../../shared/lib/moduleTree";
+import type { AcademicEvent, Assessment, CourseModule, StudentCatalog, StudentProgress } from "./types";
 
 export { inMonth, monthGrid };
 export { upcomingSchoolEvents } from "../../../shared/lib/schoolNews";
@@ -107,4 +108,34 @@ export function scoreAttempt(questions: Array<{ correct: number }>, answers: Rec
 export function greeting(now: number): string {
   const hour = new Date(now).getHours();
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
+
+export interface ModuleEntry {
+  kind: "material" | "assessment";
+  id: string;
+  title: string;
+  /** "Reading", "Quiz", "Assignment"… */
+  type: string;
+}
+
+export interface ModuleSection {
+  module: CourseModule;
+  entries: ModuleEntry[];
+  submodules: Array<{ module: CourseModule; entries: ModuleEntry[] }>;
+}
+
+/**
+ * A class's modules in order, each with its submodules and the materials and
+ * assessments placed directly in each (D-033). Materials come first.
+ */
+export function courseModules(catalog: Pick<StudentCatalog, "modules" | "materials" | "assessments">, courseId: string): ModuleSection[] {
+  const entriesOf = (moduleId: string): ModuleEntry[] => [
+    ...catalog.materials.filter((item) => item.courseId === courseId && item.moduleId === moduleId).map((item) => ({ kind: "material" as const, id: item.id, title: item.title, type: item.kind })),
+    ...catalog.assessments.filter((item) => item.courseId === courseId && item.moduleId === moduleId).map((item) => ({ kind: "assessment" as const, id: item.id, title: item.title, type: item.type })),
+  ];
+  return moduleTree(catalog.modules.filter((item) => item.courseId === courseId)).map(({ module, submodules }) => ({
+    module,
+    entries: entriesOf(module.id),
+    submodules: submodules.map((sub) => ({ module: sub, entries: entriesOf(sub.id) })),
+  }));
 }

@@ -336,6 +336,21 @@ and the API clock pinned to the fixtures' date; `e2e/fixtures.ts` turns old demo
 it needs a connection (`resilience`). Offline work returns with the persisted cache and outbox (D-020).
 Admin now loads lazily like the other workspaces (L-047).
 
+### D-033 · Submodules on screen: a Modules tab for both roles
+`2026-11-17` · hiro (Phase 3a, PR A) · scope: student, instructor, shared, server · confidence: medium
+Modules may have submodules, one level deep (the LMS API refuses deeper nesting). Both class
+pages gain a **Modules** tab after Classwork: each module is a section (`h3`) with its content,
+and its submodules are an ordered list of sections (`h4`) with theirs. The Instructor UI had no
+module controls before, so the tab is where they live: **Add submodule**, **Rename**, and **Move
+up/down** act on submodules; a **Move** button on each material, assignment, or assessment moves it
+to another module or submodule (`PATCH` with `moduleId`; materials gained this, coursework had it).
+Adding, renaming, or reordering top-level modules is not in this PR. The module pickers (Create
+content, Materials filter, Move) list each module followed by its submodules as "Unit › Sub", and the
+Materials filter on a module includes its submodules' materials. Ordering and labels come from
+`shared/lib/moduleTree.ts` so both roles agree. Journeys added, none changed: instructor
+connector MODULES and student node MODS, both in `submodules`; the new tab does not change any
+existing spec.
+
 ### D-035 · Monthly attendance is recorded per class, not counted in grades
 `2026-11-17` · hiro (Phase 3a) · scope: instructor, student, shared/api, server, e2e · confidence: medium
 Attendance is monthly totals, not a daily roll call: for each class and month the instructor
