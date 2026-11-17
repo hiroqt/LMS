@@ -38,7 +38,7 @@ export function QuestionSetPicker({ subjectId, value, onChange, error }: Questio
   if (!options.length) {
     return (
       <p role="status" className="m-0 rounded-card border border-line bg-canvas p-3 text-body text-muted">
-        You have no question sets for this subject yet. Choose “Write new questions” to create one.
+        You have no question sets for this subject yet. Choose “Write questions” to create one.
       </p>
     );
   }

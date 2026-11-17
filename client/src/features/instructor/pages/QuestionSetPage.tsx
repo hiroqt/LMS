@@ -1,6 +1,6 @@
 import { Copy, KeyRound, Lock } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import { describeApiError, isApiError } from "../../../shared/api/http";
 import { BackLink } from "../../../shared/components/BackLink";
 import { PageHeader } from "../../../shared/layout/PageHeader";
@@ -13,13 +13,14 @@ import { setFacts, useQuestionSet, useQuestionSetActions } from "../api/question
 import { AnswerKeyDialog } from "../components/AnswerKeyDialog";
 import { QuestionSetEditor, QuestionSetView } from "../components/QuestionSetEditor";
 import { QuestionSetUses } from "../components/QuestionSetUses";
+import { useGuardedNavigate } from "../hooks/useGuardedNavigate";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { instructorPaths } from "../paths";
 import { subjectLabel, subjectLabels } from "./questionSetUtils";
 
 /** One question set: edit it while no student has started an exam that uses it; copy it any time (D-034). */
 export default function QuestionSetPage() {
-  const navigate = useNavigate();
+  const navigate = useGuardedNavigate();
   const toast = useToast();
   const { setId } = useParams();
   const id = Number(setId);
@@ -107,7 +108,7 @@ export default function QuestionSetPage() {
           </>
         ) : (
           // Keyed by set only: a background refetch (window focus) must not wipe unsaved edits.
-          <QuestionSetEditor key={set.id} set={set} onSave={(title, questions) => actions.save(set, title, questions)} />
+          <QuestionSetEditor key={set.id} set={set} onSave={(title, sections) => actions.save(set, title, sections)} />
         )}
       </section>
     </>
