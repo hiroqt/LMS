@@ -93,6 +93,14 @@ export interface Submission {
   gradedAt: string | null;
 }
 
+/** One month of a class's attendance. A student receives only their own entry. */
+export interface AttendanceMonth {
+  year: number;
+  month: number;
+  schoolDays: number;
+  entries: Array<{ studentId: string; daysPresent: number }>;
+}
+
 export interface Overview {
   me: { id: string; firstName: string; lastName: string; role: string };
   classes: OverviewClass[];
@@ -103,6 +111,8 @@ export interface Overview {
   submissions: Array<{ courseworkId: number; classId: string; submission: Submission }>;
   students: Array<{ classId: string; studentId: string; firstName: string; lastName: string }>;
   gradebooks: Array<{ classId: string; activityWeight: number; examWeight: number; passingScore: number }>;
+  /** Newest month first. Recorded only; not part of the gradebook (D-035). */
+  attendance: Array<{ classId: string; month: AttendanceMonth }>;
 }
 
 export interface People {
