@@ -32,6 +32,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
 | CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
+| MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |
@@ -72,6 +73,7 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
 | E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
+| MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |
 | SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ✅ |
 | J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ✅ |
@@ -134,3 +136,4 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | Gradebook saves once the weights add up to 100 | ✔ `instructor-more` SETTINGS, `instructor-new` |
 | An exam's grade shows on the exam page and the result (D-015) | ✔ `student-new` |
 | Overview mapping: completed work, best exam attempt, archived content, review queue | ✔ `catalog.test.ts`, `store.test.ts` |
+| Submodules: instructor builds them, student sees them nested; Modules tabs pass axe and fit 320px (D-033) | ✔ `submodules` (`@all` for axe and 320px); tree rules in `moduleTree.test.ts` |
