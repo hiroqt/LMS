@@ -124,4 +124,27 @@ describe("settings", () => {
     expect(toLocalInput(new Date(2026, 10, 30, 15, 5).toISOString())).toBe("2026-11-30T15:05");
     expect(courseworkBody({ ...settings, category: " " }, 7, "draft")).toMatchObject({ category: "Quiz", dueAt: undefined, timeLimitMinutes: 0, maxAttempts: 1 });
   });
+
+  it("asks the server to clear a date that was emptied on an existing exam, and only then", () => {
+    const dated = { ...settings, dueAt: "2026-11-30T15:05", availableFrom: "2026-11-20T08:00" };
+    const created = courseworkBody({ ...settings, dueAt: "", availableFrom: "" }, 7, "draft");
+    expect(created).not.toHaveProperty("clearDueAt");
+    expect(created).not.toHaveProperty("clearAvailableFrom");
+
+    const kept = courseworkBody(dated, 7, "draft", true);
+    expect(kept.dueAt).toBe(new Date(2026, 10, 30, 15, 5).toISOString());
+    expect(kept).not.toHaveProperty("clearDueAt");
+    expect(kept).not.toHaveProperty("clearAvailableFrom");
+
+    expect(courseworkBody({ ...dated, dueAt: "" }, 7, "draft", true)).toMatchObject({ dueAt: undefined, clearDueAt: true });
+    expect(courseworkBody({ ...dated, dueAt: "" }, 7, "draft", true)).not.toHaveProperty("clearAvailableFrom");
+    expect(courseworkBody({ ...dated, availableFrom: "" }, 7, "draft", true)).toMatchObject({ availableFrom: undefined, clearAvailableFrom: true });
+  });
+
+  it("sends the clear flags when the save patches an existing exam", async () => {
+    const { send, calls } = fakeApi({});
+    await saveAssessment(send, request({ examId: 40, questions: { source: "set", setId: 5 } }));
+    expect(calls[0]![0]).toBe("PATCH");
+    expect(calls[0]![2]).toMatchObject({ clearDueAt: true, clearAvailableFrom: true });
+  });
 });
