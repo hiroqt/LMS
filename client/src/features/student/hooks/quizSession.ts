@@ -1,6 +1,6 @@
 /**
  * Per-question quiz timers (the classic rules): every question has its own
- * 60 seconds; only the question on screen counts down; leaving a question
+ * 60 seconds, or its own time limit when the instructor set one; only the question on screen counts down; leaving a question
  * pauses its timer; when the current question's time runs out the quiz moves
  * to the next question, and on the last question it submits.
  *
@@ -16,8 +16,15 @@ export interface QuizClock {
   since: number;
 }
 
-export function startClock(questionCount: number, now: number): QuizClock {
-  return { index: 0, remaining: Array(questionCount).fill(SECONDS_PER_QUESTION * 1000), since: now };
+/** Each question's seconds: its own time limit when the instructor set one, otherwise the default. */
+export function questionSeconds(limits: Array<number | null | undefined>): number[] {
+  return limits.map((limit) => (limit && limit > 0 ? limit : SECONDS_PER_QUESTION));
+}
+
+/** A clock for `questions` questions of the default length, or for the given seconds per question. */
+export function startClock(questions: number | number[], now: number): QuizClock {
+  const seconds = typeof questions === "number" ? Array<number>(questions).fill(SECONDS_PER_QUESTION) : questions;
+  return { index: 0, remaining: seconds.map((value) => value * 1000), since: now };
 }
 
 export function msLeft(clock: QuizClock, now: number): number {

@@ -1,3 +1,5 @@
+import type { AnswerReview, SpellingMode } from "../../../shared/components/quiz/types";
+
 /** Shapes of the Student workspace data, built from the LMS API overview (D-032). */
 
 export interface Course {
@@ -45,6 +47,9 @@ export interface Assessment {
   maxAttempts?: number;
   /** The instructor closed it: no more hand-ins or attempts (D-036). */
   closed?: boolean;
+  /** Exams: what the student sees after submitting, and the spelling rule for typed answers (D-040). */
+  answerReview?: AnswerReview;
+  spellingMode?: SpellingMode;
 }
 
 export interface Material {

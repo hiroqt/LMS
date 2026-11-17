@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expire, goTo, secondsLeft, startClock } from "./quizSession";
+import { expire, goTo, questionSeconds, secondsLeft, startClock } from "./quizSession";
 
 const T0 = 1_000_000;
 
@@ -36,5 +36,12 @@ describe("quiz clock", () => {
     clock = goTo(clock, 0, T0 + 61_000); // back to the expired Q1
     expect(secondsLeft(clock, T0 + 61_000)).toBe(0);
     expect(expire(clock, T0 + 61_000).clock.index).toBe(1);
+  });
+
+  it("uses each question's own time limit, and 60 seconds when there is none", () => {
+    expect(questionSeconds([null, 0, 300])).toEqual([60, 60, 300]);
+    const clock = startClock(questionSeconds([null, 300]), T0);
+    expect(secondsLeft(clock, T0)).toBe(60);
+    expect(secondsLeft(goTo(clock, 1, T0), T0)).toBe(300);
   });
 });

@@ -1,6 +1,7 @@
-import { AlarmClock, ArrowRight, CalendarDays, Check, ClipboardCheck, Clock3, FileText, ListChecks, Lock, ShieldCheck } from "lucide-react";
+import { AlarmClock, ArrowRight, CalendarDays, Check, ClipboardCheck, Clock3, Eye, FileText, ListChecks, Lock, ShieldCheck, SpellCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
+import { ANSWER_REVIEW_NOTES, SPELLING_RULES } from "../../../shared/components/quiz/answers";
 import { formatDue } from "../../../shared/lib/format";
 import { Badge } from "../../../shared/ui/Badge";
 import { Button } from "../../../shared/ui/Button";
@@ -148,14 +149,20 @@ export default function AssessmentPage() {
             <h2 className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
             <p className="m-0 text-body whitespace-pre-line">{assessment.instructions}</p>
             <p className="m-0 text-body text-muted">
-              {isActivity ? "Attach the filename for your work and leave a note for your instructor." : "Choose the best answer for every question. You may revisit questions before submitting."}
+              {isActivity ? "Attach the filename for your work and leave a note for your instructor." : "Answer every question. You may revisit questions before submitting."}
             </p>
+            {!isActivity && assessment.spellingMode && (
+              <p className="m-0 flex items-center gap-2 text-body text-ink"><SpellCheck aria-hidden className="size-4 shrink-0 text-muted" />{SPELLING_RULES[assessment.spellingMode]}.</p>
+            )}
+            {!isActivity && assessment.answerReview && (
+              <p className="m-0 flex items-center gap-2 text-body text-ink"><Eye aria-hidden className="size-4 shrink-0 text-muted" />{ANSWER_REVIEW_NOTES[assessment.answerReview]}</p>
+            )}
           </Card>
 
           {!isActivity && (
             <p className="m-0 flex items-start gap-3 rounded-card bg-accent-100 p-4 text-body text-ink">
               <AlarmClock aria-hidden className="mt-0.5 size-5 shrink-0 text-accent-700" />
-              <span><strong className="font-semibold">One minute per question.</strong> Your timer is individual to each question. Time pauses while you review other questions.</span>
+              <span><strong className="font-semibold">Each question has its own timer,</strong> one minute unless your instructor set another. Time pauses while you review other questions.</span>
             </p>
           )}
 
