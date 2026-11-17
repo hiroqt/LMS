@@ -1,4 +1,4 @@
-import { ArrowRight, ClipboardList, GraduationCap, ListChecks, Lock, LockOpen, Plus, SpellCheck } from "lucide-react";
+import { ArrowRight, ClipboardList, GraduationCap, ListChecks, Lock, LockOpen, Pencil, Plus, SpellCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
@@ -94,7 +94,13 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                   <span className="text-body text-ink">{gradedLabel(item)}</span>
                   {item.kind === "Assessment" && <SpellingWaiting classId={room.id} examId={item.id} />}
                 </span>
-                <Badge tone={item.closed ? "neutral" : "success"}>{item.closed ? "Closed" : "Published"}</Badge>
+                <Badge tone={item.closed || item.draft ? "neutral" : "success"}>{item.draft ? "Draft" : item.closed ? "Closed" : "Published"}</Badge>
+                {item.draft ? (
+                  <Button variant="secondary" aria-label={`Edit draft ${item.title}`} onClick={() => navigate(instructorPaths.assessmentEdit(room.id, item.id))} icon={<Pencil aria-hidden className="size-4" />}>
+                    Edit draft
+                  </Button>
+                ) : (
+                <>
                 {item.kind === "Assessment" && (
                   <Button variant="secondary" aria-label={`Grading for ${item.title}`} onClick={() => navigate(instructorPaths.examGrading(room.id, item.id))} icon={<ListChecks aria-hidden className="size-4" />}>
                     Grading
@@ -109,6 +115,8 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                 >
                   {item.closed ? "Reopen" : "Close"}
                 </Button>
+                </>
+                )}
               </div>
               {refused[item.id] && (
                 <div role="alert" className="flex flex-col gap-2 rounded-control border border-warning/40 bg-warning-soft p-3 text-body text-ink">

@@ -78,13 +78,15 @@ export interface WorkItem {
   status?: string;
   /** Closed once every student was graded (D-036). */
   closed: boolean;
+  /** An assessment saved in the builder but not published: students do not see it (D-040). */
+  draft: boolean;
   gradedCount: number;
   rosterCount: number;
 }
 
 /** Assignments and assessments of a class, soonest due first; undated last. */
 export function classWork(content: Pick<ClassContent, "activities" | "exams">): WorkItem[] {
-  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
+  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), draft: "draft" in item && Boolean(item.draft), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
   return [
     ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status, ...progress(item) })),
     ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status, ...progress(item) })),

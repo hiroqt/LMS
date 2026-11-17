@@ -90,6 +90,17 @@ describe("instructor selectors", () => {
     expect(gradedLabel(item!)).toBe("12 of 30 graded");
   });
 
+  it("marks a draft assessment, and never an assignment", () => {
+    const work = classWork({
+      activities: [{ id: "a", moduleId: "m", title: "Lab", maxScore: 5 }],
+      exams: [
+        { id: "d", moduleId: "m", title: "Draft quiz", totalMarks: 10, draft: true },
+        { id: "p", moduleId: "m", title: "Live quiz", totalMarks: 10 },
+      ],
+    } as Parameters<typeof classWork>[0]);
+    expect(Object.fromEntries(work.map((item) => [item.id, item.draft]))).toEqual({ a: false, d: true, p: false });
+  });
+
   it("finds students with no work and no not-handed-in grade, per assignment or assessment", () => {
     const people: User[] = ["s0", "s1", "s2"].map((id) => ({ id, firstName: id, lastName: "", role: "student", status: "active" }));
     const store = {
