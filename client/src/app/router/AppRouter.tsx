@@ -4,9 +4,8 @@ import UnknownRoleFallback from "../../components/shared/UnknownRoleFallback.jsx
 import { matchRole } from "./roles";
 import { useRoleNavigation } from "./useRoleNavigation";
 
-// Each workspace loads on demand, so a visitor downloads only their own role's UI.
-// Every workspace loads on first visit, so each role downloads only its own code (L-047).
-const Admin = lazy(() => import("../../roles/admin/Admin.jsx"));
+// Each workspace loads on demand, so a visitor downloads only their own role's code (L-047).
+const AdminApp = lazy(() => import("../../features/admin/AdminApp"));
 const StudentApp = lazy(() => import("../../features/student/StudentApp"));
 const InstructorApp = lazy(() => import("../../features/instructor/InstructorApp"));
 const DesignSystemPage = lazy(() => import("../../features/design-system/DesignSystemPage"));
@@ -35,8 +34,7 @@ function RoleWorkspaceRoute() {
   const { role, unknownPath } = matchRole(location);
 
   if (unknownPath) return <UnknownRoleFallback unknownPath={unknownPath} onNavigateRole={navigateRole} />;
-  // Admin keeps its current UI until it gets its own revamp (D-001).
-  if (role === "admin") return <Admin onNavigateRole={navigateRole} />;
+  if (role === "admin") return <AdminApp onNavigateRole={navigateRole} />;
   if (role === "instructor") return <InstructorApp onNavigateRole={navigateRole} />;
   return <StudentApp onNavigateRole={navigateRole} />;
 }
