@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { Button } from "../../../../shared/ui/Button";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "../../../../shared/ui/Menu";
 import { QUESTION_TYPE_HINTS, QUESTION_TYPE_LABELS, QUESTION_TYPES, type QuestionType } from "../../api/questionSets";
-import { focusTarget } from "./focus";
+import { focusTarget, shouldTakeFocus } from "./focus";
 
 /** "Add question" by type, each with a one-line hint. Returns the new question's key so focus can move to it. */
 export function AddQuestionMenu({ context, onAdd }: { context?: string; onAdd: (type: QuestionType) => string }) {
@@ -25,7 +25,12 @@ export function AddQuestionMenu({ context, onAdd }: { context?: string; onAdd: (
           added.current = null;
           if (key) {
             event.preventDefault();
-            requestAnimationFrame(() => focusTarget(`${key}:prompt`));
+            // This runs after the menu's exit transition. Only take focus if it is still nowhere
+            // (the closed menu leaves it on the body); a person who already clicked into another
+            // field keeps it, so their typing never lands in this prompt.
+            requestAnimationFrame(() => {
+              if (shouldTakeFocus(document.activeElement)) focusTarget(`${key}:prompt`);
+            });
           }
         }}
       >

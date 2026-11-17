@@ -16,3 +16,8 @@ export function focusField(key: string, field: string): void {
   if (name && focusTarget(`${key}:${name}`)) return;
   focusTarget(`${key}:heading`);
 }
+
+/** True when nothing holds focus yet (the body, or the menu that is closing). */
+export function shouldTakeFocus(active: Element | null): boolean {
+  return !active || active === document.body || active.closest("[role='menu']") !== null;
+}
