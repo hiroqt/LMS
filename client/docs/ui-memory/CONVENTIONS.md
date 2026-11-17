@@ -23,8 +23,8 @@ from [`LEARNINGS.md`](LEARNINGS.md) (see the loop in [`README.md`](README.md)).
 - Style with Tailwind utilities that use the tokens in
   [`generated/tokens.md`](generated/tokens.md). No hex values or pixel font sizes in
   components.
-- Body text is `text-body` (14px) or larger. `text-label` is only for short uppercase
-  eyebrows. Green text is `text-primary-700` or darker.
+- Body text is `text-body` (14px) or larger. Green text is `text-primary-700` or darker.
+  No uppercase labels or eyebrows (C-019).
 - Interactive controls are at least `min-h-touch` (44px) tall.
 
 ### C-004 · Accessibility is part of done
@@ -151,3 +151,13 @@ Utilities win over those rules because they are `!important` (D-010), so never a
 - Vary tile size and weight by importance (D-027): one filled tile per dashboard, flat
   tinted tiles for collections, white panels for lists. Titles use `text-card-title`,
   details `text-body`.
+
+### C-019 · No decoration (D-033)
+- No gradients, eyebrows, uppercase or letter-spaced labels, status dots, colored side or
+  top lines on cards and toasts, `backdrop-blur`, or keyframe animation (pulse, ping,
+  bounce, entrances). `npm run style:check` fails on them.
+- Cards are flat: `border border-line bg-surface`, no shadow. Only overlays (menus,
+  dialogs, popovers, toasts) use `shadow-popover`.
+- Status is an icon with text or a tinted `Badge`, never a dot or a stripe alone.
+- Text over an image sits on a solid panel. Skeletons are static and appear after 300 ms.
+- Motion is limited to 150 ms color and opacity transitions and the button spinner.
