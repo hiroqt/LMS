@@ -14,9 +14,20 @@ export interface Course {
   about: string;
 }
 
+/** A module of a class, or a submodule when `parentId` is set (one level, D-033). */
+export interface CourseModule {
+  id: string;
+  courseId: string;
+  parentId?: string;
+  title: string;
+  order: number;
+}
+
 export interface Assessment {
   id: string;
   courseId: string;
+  /** The module or submodule it is placed in. */
+  moduleId?: string;
   title: string;
   /** "Quiz" | "Long Quiz" | "Exam" | "Assignment" */
   type: string;
@@ -32,11 +43,15 @@ export interface Assessment {
   allowResubmission?: boolean;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;
+  /** The instructor closed it: no more hand-ins or attempts (D-036). */
+  closed?: boolean;
 }
 
 export interface Material {
   id: string;
   courseId: string;
+  /** The module or submodule it is placed in. */
+  moduleId?: string;
   title: string;
   kind: string;
   readTime: string;
@@ -94,16 +109,32 @@ export interface ActivitySubmission {
   submittedAt: string;
   grade: number | null;
   feedback: string;
+  /** The instructor graded it without anything handed in (D-036). */
+  notHandedIn?: boolean;
 }
 
 export interface ExamGrade {
   examId: string;
   totalScore: number;
   feedback?: string;
+  /** See ActivitySubmission.notHandedIn. */
+  notHandedIn?: boolean;
+}
+
+/** One month of the student's own attendance (D-035). */
+export interface AttendanceMonth {
+  courseId: string;
+  year: number;
+  month: number;
+  schoolDays: number;
+  /** null when the instructor recorded the month but not this student's days. */
+  daysPresent: number | null;
 }
 
 export interface StudentCatalog {
   courses: Course[];
+  /** Every class's modules and submodules, unsorted (see shared/lib/moduleTree). */
+  modules: CourseModule[];
   assessments: Assessment[];
   materials: Material[];
   questions: Record<string, Question[]>;
@@ -119,6 +150,8 @@ export interface StudentCatalog {
   attempts: Record<string, AttemptSummary>;
   /** Assessments the student has handed in. */
   completed: string[];
+  /** The student's own attendance, newest month first. */
+  attendance: AttendanceMonth[];
   /** The student being viewed. */
   me: { id: string; firstName: string; name: string };
 }

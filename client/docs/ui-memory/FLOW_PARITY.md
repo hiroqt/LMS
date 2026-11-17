@@ -31,6 +31,9 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
+| CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
+| CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
+| MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |
@@ -60,8 +63,11 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | F | "Review student work" → review queue | ✔ `instructor-more` | ✅ |
 | ROLE | Switch role (URL, title, Back) | ✔ `routing` | ✅ |
 | A, PICK | Sidebar class; year filter | ✔ `instructor-flow` / `shell` PICK | ✅ |
-| TABS | All seven class tabs reachable | ✔ `instructor-flow` A → TABS | ✅ |
+| TABS | All seven class tabs reachable (Attendance, the eighth, is covered by `attendance`) | ✔ `instructor-flow` A → TABS | ✅ |
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ✅ |
+| AT | Attendance tab: month, school days, days present, live %, field errors, Save (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
+| CLOSE | Classwork "N of M graded", Close refused with the ungraded list, Reopen (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
+| NHI | Submissions: grade a student who handed in nothing; Give 0 to everyone who didn't hand in (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ✅ |
 | COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ✅ |
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |
@@ -70,10 +76,14 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
 | E: assessment | Assessment form (one MCQ) → Classwork | ✔ `instructor-more` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
+| MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |
 | SCORE, VALID | Out-of-range score rejected; valid saves | ✔ `instructor-flow` | ✅ |
 | J | Student sees score + feedback (assignment) | ✔ `instructor-flow` | ✅ |
 | J (exam) | Student sees exam grade later | ✔ rebuilt UI (`student-new`, D-015); classic keeps the gap | ✅ |
+| E: assessment (reuse) | Assessment uses an existing question set; Points hidden; set lists both exams (D-034) | ✔ `question-sets` QS → E | ✅ |
+| QS | Question sets page: count, points, exams using each, Locked badge; edit an unlocked set | ✔ `question-sets`, `QuestionSetEditor.test.tsx` | ✅ |
+| QS (locked) | Locked set is read-only with an explanation; Make a copy gives an editable copy; original unchanged | ✔ `question-sets` | ✅ |
 | G | Gradebook loads | ✔ `instructor-flow` G | ✅ |
 | SETTINGS | Edit weights and passing score (persisted) | ✔ `instructor-more` | ✅ |
 | Mobile | Drawer → class at phone width | ✔ `@mobile` | ✅ |
@@ -132,3 +142,6 @@ Instructor: every ✔ row passed on the rebuilt UI and in `both-new` before cuto
 | Gradebook saves once the weights add up to 100 | ✔ `instructor-more` SETTINGS, `instructor-new` |
 | An exam's grade shows on the exam page and the result (D-015) | ✔ `student-new` |
 | Overview mapping: completed work, best exam attempt, archived content, review queue | ✔ `catalog.test.ts`, `store.test.ts` |
+| Submodules: instructor builds them, student sees them nested; Modules tabs pass axe and fit 320px (D-033) | ✔ `submodules` (`@all` for axe and 320px); tree rules in `moduleTree.test.ts` |
+| Question sets: copy is deep and owner-only; an exam uses only the instructor's own set for its class's subject (D-034) | ✔ `CourseworkTests` (server), `questionSets.test.ts` |
+| Question sets pages: zero axe violations, text ≥14px, no sideways scroll at 320px, reachable from the drawer | ✔ `question-sets` `@all`, `@mobile` |

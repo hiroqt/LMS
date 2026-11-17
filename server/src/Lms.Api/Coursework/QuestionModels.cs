@@ -3,10 +3,13 @@ using Lms.Api.Data;
 
 namespace Lms.Api.Coursework;
 
-public sealed record QuestionnaireSummary(long Id, string Title, int? SubjectId, int QuestionCount, decimal TotalPoints, bool Locked);
+/// <summary>An exam that uses a questionnaire, and the class it was given to.</summary>
+public sealed record QuestionnaireUse(long ExamId, string ExamTitle, string ClassId, string SubjectName, string? SectionName);
+
+public sealed record QuestionnaireSummary(long Id, string Title, int? SubjectId, int QuestionCount, decimal TotalPoints, bool Locked, IReadOnlyList<QuestionnaireUse> UsedBy);
 
 /// <summary>The owner's full view, including correct answers. Never sent to students.</summary>
-public sealed record QuestionnaireDto(long Id, string Title, int? SubjectId, bool Locked, IReadOnlyList<QuestionDto> Questions);
+public sealed record QuestionnaireDto(long Id, string Title, int? SubjectId, bool Locked, IReadOnlyList<QuestionDto> Questions, IReadOnlyList<QuestionnaireUse> UsedBy);
 
 public sealed record OptionDto(long Id, string Text, bool IsCorrect);
 public sealed record PairDto(string Left, string Right);

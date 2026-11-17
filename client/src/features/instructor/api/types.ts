@@ -22,6 +22,8 @@ export interface Subject {
 export interface Classroom {
   id: string;
   subjectId: string;
+  /** The ISMS subject id, which question sets are filed under (D-034). */
+  ismsSubjectId?: number;
   instructorId: string;
   section: string;
   yearLevel?: number;
@@ -45,6 +47,8 @@ export interface Enrollment {
 export interface Module {
   id: string;
   classroomId: string;
+  /** Set on a submodule: the module it belongs to (one level, D-033). */
+  parentId?: string;
   title: string;
   order?: number;
 }
@@ -76,6 +80,11 @@ export interface Activity {
   allowLate?: boolean;
   allowResubmission?: boolean;
   status?: string;
+  /** Closed with the close action once every student was graded (D-036). */
+  closed?: boolean;
+  /** Students on the class list with a grade, and how many are on it (from the server). */
+  gradedCount?: number;
+  rosterCount?: number;
   createdAt?: string;
 }
 
@@ -97,6 +106,10 @@ export interface Exam {
   timeLimitMinutes?: number;
   attempts?: number;
   status?: string;
+  /** See Activity.closed (D-036). */
+  closed?: boolean;
+  gradedCount?: number;
+  rosterCount?: number;
   createdAt?: string;
   questions?: ExamQuestion[];
 }
@@ -112,6 +125,8 @@ export interface ActivitySubmission {
   submittedAt?: string;
   grade: number | null;
   feedback?: string;
+  /** A grade given to a student who handed in nothing (D-036). */
+  notHandedIn?: boolean;
 }
 
 export interface ExamSubmission {
@@ -126,6 +141,7 @@ export interface ExamSubmission {
   submittedAt?: string;
   gradedAt?: string;
   gradedBy?: string;
+  notHandedIn?: boolean;
 }
 
 export interface Announcement {
@@ -144,6 +160,15 @@ export interface GradebookSetting {
   passingScore: number;
 }
 
+export interface AttendanceRecord {
+  classroomId: string;
+  year: number;
+  month: number;
+  schoolDays: number;
+  /** Days present by student id. */
+  daysPresent: Record<string, number>;
+}
+
 export interface RoleStore {
   users: User[];
   subjects: Subject[];
@@ -157,6 +182,7 @@ export interface RoleStore {
   examSubmissions: ExamSubmission[];
   announcements?: Announcement[];
   gradebookSettings: Record<string, GradebookSetting>;
+  attendance: AttendanceRecord[];
   systemAdministration?: { settings: { currentTermId: string }; terms: Array<{ id: string; name: string }> };
 }
 

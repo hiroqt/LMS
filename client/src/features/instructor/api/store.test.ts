@@ -10,7 +10,7 @@ describe("toRoleStore", () => {
   it("builds the classroom, its subject and its class list from ISMS data", () => {
     const s = store();
     const [room] = classroomsOf(s, "EMP-1");
-    expect(room).toMatchObject({ id: "class-a", section: "BSIT 2-A", yearLevel: 2, term: "2026-2027 · 1st Semester", schedule: "MW 08:00–09:30", source: "isms" });
+    expect(room).toMatchObject({ id: "class-a", ismsSubjectId: 7, section: "BSIT 2-A", yearLevel: 2, term: "2026-2027 · 1st Semester", schedule: "MW 08:00–09:30", source: "isms" });
     expect(s.subjects[0]).toMatchObject({ code: "IT202", title: "Database Systems 1" });
     expect(classContent(s, "class-a").students.map((user) => user.id)).toEqual(["STU-1", "STU-2"]);
     expect(s.users.filter((user) => user.role === "instructor").map((user) => user.lastName)).toEqual(["Reyes", "Cruz"]);
@@ -23,12 +23,27 @@ describe("toRoleStore", () => {
     expect(content.materials[0]).toMatchObject({ id: "5", moduleId: "1", status: "archived" });
   });
 
+  it("keeps a submodule's parent so the Modules tab can nest it", () => {
+    const s = toRoleStore(overviewFixture((o) => o.modules.push({ id: 2, classId: "class-a", parentModuleId: 1, title: "1.1 Tables", sortOrder: 1 })), people);
+    expect(s.modules).toEqual([
+      { id: "1", classroomId: "class-a", title: "Unit 1", order: 1 },
+      { id: "2", classroomId: "class-a", parentId: "1", title: "1.1 Tables", order: 1 },
+    ]);
+  });
+
   it("splits submissions by kind and carries grades and weights", () => {
     const s = store();
     expect(s.activitySubmissions.map((item) => [item.id, item.grade])).toEqual([["11", 4], ["12", 9]]);
     expect(s.examSubmissions.map((item) => [item.id, item.status])).toEqual([["21", "graded"], ["22", "in_progress"]]);
     expect(s.gradebookSettings["class-a"]).toEqual({ activityWeight: 30, examWeight: 70, passingScore: 75 });
     expect(gradebookAverages(s, "class-a").activities).toEqual({ graded: 2, average: 65 });
+  });
+
+  it("carries attendance by month with days present by student", () => {
+    expect(store().attendance).toEqual([
+      { classroomId: "class-a", year: 2026, month: 10, schoolDays: 20, daysPresent: { "STU-1": 18, "STU-2": 15 } },
+      { classroomId: "class-a", year: 2026, month: 9, schoolDays: 22, daysPresent: { "STU-2": 22 } },
+    ]);
   });
 
   it("queues only handed-in, ungraded work", () => {

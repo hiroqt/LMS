@@ -2,7 +2,7 @@
 
 Follows [`UI_REVAMP_PLAN.md`](UI_REVAMP_PLAN.md) (Student and Instructor rebuild, cut over
 2026-11-17). v2 brings Admin onto the same system and removes decoration everywhere.
-Decision record: D-033 in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md).
+Decision record: D-037 in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md).
 
 ## Goals
 
@@ -43,7 +43,7 @@ quiz and on results (they carry information), avatars and count pills.
 
 | Phase | Scope | Proof |
 |---|---|---|
-| 0 | D-033, C-019, `style:check` script, this plan. Docs and tooling only. | `memory:check` |
+| 0 | D-037, C-019, `style:check` script, this plan. Docs and tooling only. | `memory:check` |
 | 1 | Shared primitives: `SectionHeading` without eyebrows, static `Skeleton`, flat toasts, border-only cards, solid top bar, flat carousel panel. | Unit + axe, all e2e |
 | 2 | Student and Instructor pages: remove eyebrows and uppercase labels, reuse primitives for repeated markup. `style:check` joins CI for `app`, `shared`, `features`. | All e2e unchanged |
 | 3 | Admin rebuilt in `features/admin` on `AppShell` and `shared/ui`, page by page. Flows from `ADMIN_USER_FLOW.md` unchanged. | Admin e2e unchanged |

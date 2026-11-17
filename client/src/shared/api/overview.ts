@@ -13,6 +13,8 @@ export interface ClassMeeting {
 
 export interface OverviewClass {
   id: string;
+  /** The ISMS subject; question sets belong to one (D-034). */
+  subjectId: number;
   subjectCode: string | null;
   subjectName: string;
   sectionName: string | null;
@@ -73,7 +75,11 @@ export interface Coursework {
   timeLimitMinutes: number | null;
   questionnaireId: number | null;
   questionCount: number;
-  status: "draft" | "published" | "archived";
+  /** Closed work refuses hand-ins and attempts; only the close and reopen actions change it (D-036). */
+  status: "draft" | "published" | "closed" | "archived";
+  /** Instructors only: students on the class list with a grade, and how many are on it. */
+  gradedCount?: number | null;
+  rosterCount?: number | null;
 }
 
 export interface Submission {
@@ -91,6 +97,16 @@ export interface Submission {
   maxPoints: number;
   feedback: string | null;
   gradedAt: string | null;
+  /** A grade the instructor gave a student who handed in nothing (D-036). */
+  notHandedIn?: boolean;
+}
+
+/** One month of a class's attendance. A student receives only their own entry. */
+export interface AttendanceMonth {
+  year: number;
+  month: number;
+  schoolDays: number;
+  entries: Array<{ studentId: string; daysPresent: number }>;
 }
 
 export interface Overview {
@@ -103,6 +119,8 @@ export interface Overview {
   submissions: Array<{ courseworkId: number; classId: string; submission: Submission }>;
   students: Array<{ classId: string; studentId: string; firstName: string; lastName: string }>;
   gradebooks: Array<{ classId: string; activityWeight: number; examWeight: number; passingScore: number }>;
+  /** Newest month first. Recorded only; not part of the gradebook (D-035). */
+  attendance: Array<{ classId: string; month: AttendanceMonth }>;
 }
 
 export interface People {

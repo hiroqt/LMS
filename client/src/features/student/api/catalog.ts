@@ -70,21 +70,31 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
           submittedAt: latest.submittedAt ?? "",
           grade: latest.status === "graded" ? latest.score : null,
           feedback: latest.feedback ?? "",
+          ...(latest.notHandedIn ? { notHandedIn: true } : {}),
         };
       }
     } else {
-      attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done[0]?.id, used: mine.length };
+      // A "not handed in" grade has no attempt to review, so it is never the latest attempt.
+      attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done.find((item) => !item.notHandedIn)?.id, used: mine.length };
       const best = done.filter((item) => item.status === "graded" && item.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
-      if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined };
+      if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined, ...(best.notHandedIn ? { notHandedIn: true } : {}) };
     }
   }
 
   const me = overview.me;
   return {
     courses,
+    modules: overview.modules.map((item) => ({
+      id: String(item.id),
+      courseId: item.classId,
+      ...(item.parentModuleId === null ? {} : { parentId: String(item.parentModuleId) }),
+      title: item.title,
+      order: item.sortOrder,
+    })),
     assessments: coursework.map((work) => ({
       id: String(work.id),
       courseId: work.classId,
+      moduleId: String(work.moduleId),
       title: work.title,
       type: work.category ?? (work.type === "exam" ? "Exam" : "Assignment"),
       description: work.description ?? work.instructions ?? "",
@@ -97,10 +107,12 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       allowLate: work.allowLate,
       allowResubmission: work.allowResubmission,
       maxAttempts: work.maxAttempts ?? 1,
+      closed: work.status === "closed",
     })),
     materials: overview.materials.map((material) => ({
       id: String(material.id),
       courseId: material.classId,
+      moduleId: String(material.moduleId),
       title: material.title,
       kind: material.kind,
       readTime: readTime(material.description),
@@ -130,6 +142,13 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
     examGrades,
     attempts,
     completed,
+    attendance: overview.attendance.map(({ classId, month }) => ({
+      courseId: classId,
+      year: month.year,
+      month: month.month,
+      schoolDays: month.schoolDays,
+      daysPresent: month.entries.find((entry) => entry.studentId === me.id)?.daysPresent ?? null,
+    })),
     me: { id: me.id, firstName: me.firstName || "there", name: `${me.firstName} ${me.lastName}`.trim() || me.id },
   };
 }

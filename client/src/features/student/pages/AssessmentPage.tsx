@@ -1,4 +1,4 @@
-import { AlarmClock, ArrowRight, CalendarDays, Check, ClipboardCheck, Clock3, FileText, ListChecks, ShieldCheck } from "lucide-react";
+import { AlarmClock, ArrowRight, CalendarDays, Check, ClipboardCheck, Clock3, FileText, ListChecks, Lock, ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { formatDue } from "../../../shared/lib/format";
@@ -21,7 +21,7 @@ function ExamGradeNote({ grade, points }: { grade: ExamGrade; points: number }) 
   return (
     <section aria-labelledby="exam-grade" className="flex flex-col gap-1 rounded-card border border-success/30 bg-success-soft p-4">
       <h2 id="exam-grade" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold text-success"><Check aria-hidden className="size-4" />Your grade</h2>
-      <p className="m-0 text-body-lg font-semibold text-ink">{grade.totalScore} / {points} points</p>
+      <p className="m-0 text-body-lg font-semibold text-ink">{grade.notHandedIn && "Not handed in · "}{grade.totalScore} / {points} points</p>
       {grade.feedback && <p className="m-0 text-body text-ink">{grade.feedback}</p>}
     </section>
   );
@@ -32,7 +32,7 @@ function ActivityStatus({ submission, points }: { submission: ActivitySubmission
     <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
       <Check aria-hidden className="size-4 text-success" />
       <span>
-        Submitted · {submission.grade === null ? "Waiting for instructor review" : `${submission.grade} / ${points} points`}
+        {submission.notHandedIn ? "Not handed in" : "Submitted"} · {submission.grade === null ? "Waiting for instructor review" : `${submission.grade} / ${points} points`}
         {submission.feedback && <> · {submission.feedback}</>}
       </span>
     </p>
@@ -105,8 +105,11 @@ export default function AssessmentPage() {
   const grade = catalog.examGrades[assessment.id];
   const attempts = catalog.attempts[assessment.id];
   const attemptsLeft = (assessment.maxAttempts ?? 1) - (attempts?.used ?? 0);
-  const canStart = Boolean(attempts?.openId) || attemptsLeft > 0;
-  const closed = isActivity && Boolean(assessment.dueAt) && new Date(assessment.dueAt).getTime() < now && !assessment.allowLate;
+  const pastDue = isActivity && Boolean(assessment.dueAt) && new Date(assessment.dueAt).getTime() < now && !assessment.allowLate;
+  // Closed by the instructor (D-036), or graded without anything handed in: nothing more can be handed in.
+  const isClosed = Boolean(assessment.closed);
+  const notHandedIn = Boolean(submission?.notHandedIn || grade?.notHandedIn);
+  const canStart = !isClosed && !notHandedIn && (Boolean(attempts?.openId) || attemptsLeft > 0);
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
   const facts: Array<[string, string, typeof ListChecks]> = [
@@ -156,14 +159,19 @@ export default function AssessmentPage() {
             </p>
           )}
 
-          {isActivity && (!isCompleted || assessment.allowResubmission) && <TurnInForm assessment={assessment} submitted={Boolean(submission)} closed={closed} />}
+          {isClosed && (
+            <p role="status" className="m-0 flex items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
+              <Lock aria-hidden className="size-4 text-muted" />Closed. Your instructor is no longer accepting work for this {isActivity ? "assignment" : "assessment"}.
+            </p>
+          )}
+          {isActivity && !isClosed && !notHandedIn && (!isCompleted || assessment.allowResubmission) && <TurnInForm assessment={assessment} submitted={Boolean(submission)} closed={pastDue} />}
         </article>
 
         <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="flex flex-col gap-4 p-5">
             <div className="flex items-center justify-between">
               <h2 id="assessment-details" className="m-0 text-label font-semibold tracking-wide text-muted uppercase">Assessment details</h2>
-              <Badge tone={isCompleted ? "success" : "brand"}>{isCompleted ? "Submitted" : "Open"}</Badge>
+              <Badge tone={isClosed ? "neutral" : isCompleted && !notHandedIn ? "success" : "brand"}>{isClosed ? "Closed" : notHandedIn ? "Not handed in" : isCompleted ? "Submitted" : "Open"}</Badge>
             </div>
             <dl className="m-0 grid grid-cols-2 gap-3">
               {facts.map(([label, value, Icon]) => (
@@ -174,17 +182,19 @@ export default function AssessmentPage() {
               ))}
             </dl>
             <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-body"><span className="text-muted">Your progress</span><strong className="font-semibold">{isCompleted ? "Submitted" : "Not started"}</strong></div>
-              <div className="h-2 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-primary-600" style={{ width: isCompleted ? "100%" : "0%" }} /></div>
+              <div className="flex justify-between text-body"><span className="text-muted">Your progress</span><strong className="font-semibold">{notHandedIn ? "Not handed in" : isCompleted ? "Submitted" : "Not started"}</strong></div>
+              <div className="h-2 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-primary-600" style={{ width: isCompleted && !notHandedIn ? "100%" : "0%" }} /></div>
             </div>
             {!isActivity && (
               <div className="flex flex-col gap-2">
                 {canStart ? (
                   <Button size="lg" block onClick={() => navigate(studentPaths.quiz(assessment.id))}>{attempts?.openId ? "Continue assessment" : isCompleted ? "Practice again" : "Start assessment"}<ArrowRight aria-hidden className="size-4" /></Button>
                 ) : (
-                  <p className="m-0 text-body text-muted">You have used every attempt for this assessment.</p>
+                  <p className="m-0 text-body text-muted">
+                    {isClosed ? "This assessment is closed." : notHandedIn ? "Your instructor recorded a grade without an attempt." : "You have used every attempt for this assessment."}
+                  </p>
                 )}
-                {isCompleted && <Button variant="secondary" block onClick={() => navigate(studentPaths.result(assessment.id))}>View your result</Button>}
+                {isCompleted && attempts?.latestId !== undefined && <Button variant="secondary" block onClick={() => navigate(studentPaths.result(assessment.id))}>View your result</Button>}
               </div>
             )}
             <p className="m-0 flex items-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your answers save to your class as you go.</p>

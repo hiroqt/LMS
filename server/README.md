@@ -74,7 +74,7 @@ without a migration.
 | Group | Tables |
 |---|---|
 | ISMS reference (written only by the sync) | `isms_classes`, `isms_class_students` |
-| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `grades`, `gradebook_settings`, `audit_log` |
+| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `grades`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
 
 Every LMS-owned row records `created_at`, `created_by`, `updated_at` and `updated_by`. ISMS people
 are stored by their ISMS reference ids, never as LMS accounts.
@@ -169,7 +169,7 @@ comes from.
 | PATCH | `/api/classes/{classId}/modules/{id}` | `{ title?, sortOrder? }` |
 | GET | `/api/classes/{classId}/materials?moduleId=&page=&pageSize=` | Paged `{ items, page, pageSize, total }` |
 | POST | `/api/classes/{classId}/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }`. `kind` is one of the six types on the Instructor form. File name only; nothing is uploaded |
-| PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status? }`, where status is `active` or `archived` |
+| PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status?, moduleId? }`, where status is `active` or `archived`; `moduleId` moves it to another module or submodule of the same class |
 | DELETE | `/api/classes/{classId}/materials/{id}` | 204 |
 | GET | `/api/classes/{classId}/announcements?page=&pageSize=` | Newest first, paged; `postedBy` is the instructor's ISMS id |
 | POST | `/api/classes/{classId}/announcements` | `{ title (≤120), message (≤1,200) }` |
@@ -199,18 +199,28 @@ Every question has `prompt`, `points` (more than 0, at most 1000) and an optiona
 
 | Method | Route | Notes |
 |---|---|---|
-| GET | `/api/questionnaires` | The caller's questionnaires with question count, total points, `locked` |
-| POST | `/api/questionnaires` | `{ title, subjectId? }` |
+| GET | `/api/questionnaires` | The caller's questionnaires with question count, total points, `locked`, and `usedBy` (each exam using it: `examId, examTitle, classId, subjectName, sectionName`; archived exams left out) |
+| POST | `/api/questionnaires` | `{ title, subjectId? }`; `subjectId` must be a subject the caller teaches |
+| POST | `/api/questionnaires/{id}/copy` | Owner only (others 404). A deep copy (questions, choices, accepted answers, pairs) titled "… (copy)", unlocked, owned by the caller, same subject |
 | GET / PATCH | `/api/questionnaires/{id}` | Full view with correct answers (owner only) / `{ title }` |
 | PUT | `/api/questionnaires/{id}/questions` | `{ questions: [...] }` replaces the whole list in one transaction; errors name the position, e.g. `questions[2].pairs` |
-| GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published work whose `availableFrom` has passed |
+| GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published and closed work whose `availableFrom` has passed. Instructors also get `gradedCount` and `rosterCount` |
 | GET | `/api/classes/{classId}/coursework/{id}` | Same visibility |
 | POST | `/api/classes/{classId}/coursework` | `{ type (assignment or exam), moduleId, title, instructions?, maxPoints (assignments), dueAt?, availableFrom?, allowLate?, allowResubmission?, maxAttempts? (1–20), timeLimitMinutes? (0–600), questionnaireId (exams), status? }` |
-| PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived |
+| PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived. It cannot set or leave `closed` (400 pointing to the actions below) |
+| POST | `/api/classes/{classId}/coursework/{id}/close` | Published work only. 409 with `ungraded: [{ studentId, name }]` until every student active on the class list is graded |
+| POST | `/api/classes/{classId}/coursework/{id}/reopen` | Closed work back to published |
 
 An exam is worth the total points of its questionnaire and cannot be published without
-questions. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
+questions. An exam can use only the caller's own questionnaire, and only one for the class's
+subject (or one with no subject). Several exams can share one questionnaire; each keeps its own
+dates, attempts and time limit. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
 questions or answers from these routes; they get questions when they start an attempt (step 4).
+
+**Closing (D-036).** "Graded" means: assignment, the student's latest submission has a grade;
+exam, at least one attempt is graded (an attempt whose essays still wait is not). Closed work
+refuses hand-ins and starting, saving or submitting attempts (409); grades can still be corrected.
+Close and reopen each write a metadata-only audit row.
 
 ## Submissions and grading (Phase 2, step 4)
 
@@ -246,12 +256,28 @@ only). A second hand-in needs `allowResubmission`. `late` is true when handed in
 | GET | `…/coursework/{id}/submissions` | Every attempt, plus `missing`: students on the class list who have handed nothing in |
 | GET | `…/coursework/{id}/submissions/{submissionId}` | The attempt with the correct answers beside the student's |
 | PUT | `…/coursework/{id}/submissions/{submissionId}/grade` | Assignments `{ points, feedback? }`. Exams `{ answerPoints: { questionId: points }, feedback? }`; every written essay needs points, and the score is the sum of all answers |
+| PUT | `…/coursework/{id}/students/{studentId}/grade` | `{ points, feedback? }` for a student who handed in nothing: creates a "not handed in" record (graded, no work, `submittedAt` null, `notHandedIn: true`) or corrects it. 409 when the student handed in or has an attempt in progress |
+| POST | `…/coursework/{id}/grade-missing` | `{ points, feedback? }` for every active student with no submission at all, in one transaction and one audit row; returns `{ graded }`. Never overwrites |
 | GET | `/api/classes/{classId}/gradebook` | Weights and each student's averages; a student sees only their own row |
 | PUT | `/api/classes/{classId}/gradebook` | `{ activityWeight, examWeight, passingScore }`; the weights must add up to 100 |
 
 Gradebook rules are the prototype's: graded work only, the latest graded assignment submission,
 the highest graded exam attempt, and an overall only once every weighted category has a grade.
-Phase 3 replaces the two fixed categories with teacher-defined grade components.
+Phase 3 replaces the two fixed categories with teacher-defined grade components. A "not handed
+in" grade counts like any graded work, and once a student has one they can no longer hand in or
+start an attempt for that coursework (409).
+
+**Monthly attendance.** Monthly totals, not a daily roll call: attendance % = days present ÷
+school days × 100. Recorded only; it does not count in the gradebook yet.
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `/api/classes/{classId}/attendance` | Months, newest first, with `entries` (`studentId`, `daysPresent`); a student gets only their own entry |
+| PUT | `/api/classes/{classId}/attendance/{year}/{month}` | `{ schoolDays, entries: [{ studentId, daysPresent }] }`; creates or updates the month in one transaction. Students left out keep their saved days |
+
+The class's instructor writes, only while ISMS offers the class (409 after). School days are 1 to
+the days in that month; days present are 0 to the school days, for students active on the class
+list. Lowering the school days below a saved entry is refused, naming the students to change first.
 
 ## Demo mode
 
@@ -276,8 +302,8 @@ ASPNETCORE_ENVIRONMENT=Demo dotnet run --project src/Lms.Api --no-launch-profile
 Never run demo mode on a server other people can reach: anyone can say who they are.
 
 `GET /api/me/overview` returns everything a workspace shows in one call: classes with class size,
-modules, materials, announcements, coursework, submissions, class lists and gradebook settings.
-Students get only published, available work, active content and their own submissions.
+modules, materials, announcements, coursework, submissions, class lists, gradebook settings and attendance months.
+Students get only published, available work, active content, their own submissions and their own attendance.
 `GET /api/people` lists who the client can view as, when the demo identity is on.
 
 ## Caching

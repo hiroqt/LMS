@@ -152,7 +152,7 @@ Utilities win over those rules because they are `!important` (D-010), so never a
   tinted tiles for collections, white panels for lists. Titles use `text-card-title`,
   details `text-body`.
 
-### C-019 · No decoration (D-033)
+### C-019 · No decoration (D-037)
 - No gradients, eyebrows, uppercase or letter-spaced labels, status dots, colored side or
   top lines on cards and toasts, `backdrop-blur`, or keyframe animation (pulse, ping,
   bounce, entrances). `npm run style:check` fails on them.

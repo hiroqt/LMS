@@ -76,14 +76,75 @@ export interface WorkItem {
   dueAt?: string;
   points: number;
   status?: string;
+  /** Closed once every student was graded (D-036). */
+  closed: boolean;
+  gradedCount: number;
+  rosterCount: number;
 }
 
 /** Assignments and assessments of a class, soonest due first; undated last. */
 export function classWork(content: Pick<ClassContent, "activities" | "exams">): WorkItem[] {
+  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
   return [
-    ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status })),
-    ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status })),
+    ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status, ...progress(item) })),
+    ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status, ...progress(item) })),
   ].sort((a, b) => (a.dueAt || "9999").localeCompare(b.dueAt || "9999"));
+}
+
+/** "12 of 30 graded". */
+export function gradedLabel(item: Pick<WorkItem, "gradedCount" | "rosterCount">): string {
+  return `${item.gradedCount} of ${item.rosterCount} graded`;
+}
+
+/**
+ * Students on the class list with no handed-in work and no "not handed in" grade for
+ * this assignment or assessment (D-036). An exam attempt still in progress is not in
+ * the instructor's data, so the server has the last word and refuses those.
+ */
+export function studentsWithoutWork(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions">, item: Pick<WorkItem, "id" | "kind">, students: User[]): User[] {
+  const done = new Set(
+    item.kind === "Assignment"
+      ? store.activitySubmissions.filter((record) => record.activityId === item.id).map((record) => record.studentId)
+      : store.examSubmissions.filter((record) => record.examId === item.id).map((record) => record.studentId),
+  );
+  return students.filter((student) => !done.has(student.id));
+}
+
+/** Students given a grade without handing anything in, with that grade. */
+export function notHandedInGrades(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions">, item: Pick<WorkItem, "id" | "kind">, students: User[]): Array<{ student: User; score: number | null }> {
+  const records = item.kind === "Assignment"
+    ? store.activitySubmissions.filter((record) => record.activityId === item.id && record.notHandedIn).map((record) => ({ studentId: record.studentId, score: record.grade }))
+    : store.examSubmissions.filter((record) => record.examId === item.id && record.notHandedIn).map((record) => ({ studentId: record.studentId, score: record.totalScore ?? null }));
+  return records.flatMap((record) => {
+    const student = students.find((user) => user.id === record.studentId);
+    return student ? [{ student, score: record.score }] : [];
+  });
+}
+
+export interface ModuleItem {
+  kind: "material" | "activity" | "exam";
+  id: string;
+  title: string;
+  /** "Material · Reading", "Assignment", "Assessment". */
+  label: string;
+  archived: boolean;
+}
+
+/**
+ * Everything placed in each module or submodule of a class, keyed by module id:
+ * materials first, then assignments and assessments. Content with no module
+ * (an exam created before modules existed) is left out.
+ */
+export function contentByModule(content: Pick<ClassContent, "materials" | "activities" | "exams">): Map<string, ModuleItem[]> {
+  const byModule = new Map<string, ModuleItem[]>();
+  const add = (moduleId: string | undefined, item: ModuleItem) => {
+    if (!moduleId) return;
+    byModule.set(moduleId, [...(byModule.get(moduleId) ?? []), item]);
+  };
+  for (const item of content.materials) add(item.moduleId, { kind: "material", id: item.id, title: item.title, label: `Material · ${item.kind ?? "Study guide"}`, archived: item.status === "archived" });
+  for (const item of content.activities) add(item.moduleId, { kind: "activity", id: item.id, title: item.title, label: "Assignment", archived: false });
+  for (const item of content.exams) add(item.moduleId, { kind: "exam", id: item.id, title: item.title, label: "Assessment", archived: false });
+  return byModule;
 }
 
 export interface ReviewItem {

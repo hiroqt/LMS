@@ -1,4 +1,4 @@
-import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, Search } from "lucide-react";
+import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, ListChecks, Search } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
@@ -25,6 +25,8 @@ import OverviewPage from "./pages/OverviewPage";
 const ClassesPage = lazy(() => import("./pages/ClassesPage"));
 const ClassPage = lazy(() => import("./pages/ClassPage"));
 const GradebookPage = lazy(() => import("./pages/GradebookPage"));
+const QuestionSetsPage = lazy(() => import("./pages/QuestionSetsPage"));
+const QuestionSetPage = lazy(() => import("./pages/QuestionSetPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
@@ -34,14 +36,17 @@ export interface RoleAppProps {
 const nav: NavItem[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard /> },
   { id: "gradebook", label: "Gradebook", icon: <GraduationCap /> },
+  { id: "question-sets", label: "Question sets", icon: <ListChecks /> },
 ];
 
-const pageNames: Record<string, string> = { overview: "Overview", classes: "Classes", gradebook: "Gradebook" };
+const pageNames: Record<string, string> = { overview: "Overview", classes: "Classes", gradebook: "Gradebook", "question-sets": "Question sets" };
 
 function sectionOf(pathname: string): string {
   const [, , section] = pathname.split("/");
-  return section === "classes" || section === "gradebook" ? section : "overview";
+  return section === "classes" || section === "gradebook" || section === "question-sets" ? section : "overview";
 }
+
+const navTarget: Record<string, string> = { gradebook: instructorPaths.gradebook(), "question-sets": instructorPaths.questionSets };
 
 function ScreenLoading() {
   return (
@@ -112,7 +117,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
       navLabel="instructor navigation"
       nav={nav}
       activeId={section}
-      onNavigate={(id) => navigate(id === "gradebook" ? instructorPaths.gradebook() : instructorPaths.overview)}
+      onNavigate={(id) => navigate(navTarget[id] ?? instructorPaths.overview)}
       mobileNav="drawer"
       pageKey={location.pathname}
       sidebarExtra={myClasses}
@@ -153,6 +158,8 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
           <Route path="instructor/classes" element={<ClassesPage />} />
           <Route path="instructor/classes/:classId" element={<ClassPage />} />
           <Route path="instructor/gradebook" element={<GradebookPage />} />
+          <Route path="instructor/question-sets" element={<QuestionSetsPage />} />
+          <Route path="instructor/question-sets/:setId" element={<QuestionSetPage />} />
           {/* /instructor, ?role=instructor, #/instructor, /instructor.html … land on Overview. */}
           <Route path="*" element={<OverviewPage onNavigateRole={onNavigateRole} />} />
         </Routes>

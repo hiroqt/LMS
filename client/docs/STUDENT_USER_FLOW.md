@@ -44,11 +44,14 @@ flowchart TD
     CL1 --> CL2{Choose class tab}
     CL2 -->|Stream| STREAM[Read class updates and open linked work or material]
     CL2 -->|Classwork| CW[Browse or filter Quiz, Long Quiz, and Exam]
+    CL2 -->|Modules| MODS[Modules with their submodules; open a material or assessment from them]
     CL2 -->|Materials| MAT[Browse learning materials]
     CL2 -->|People| PEOPLE[Search the student roster]
+    CL2 -->|Attendance| CLAT[Read own attendance % per month]
     STREAM -->|Open assessment| AD
     STREAM -->|Open material| MD
     CW -->|Open assessment| AD
+    AD -->|Closed by the instructor| CLOSED[Shows Closed with no hand-in or start; a grade given without work reads Not handed in]
     MAT -->|Open material| MD
     PEOPLE -->|Choose another class or workspace item| CL
 
@@ -84,7 +87,7 @@ flowchart TD
 - **Today** is the starting point and the workspace breadcrumb returns to it. The dashboard can switch between Overview and News & announcements; its due, completed, activity, class, assessment, and material shortcuts open the corresponding workspace path.
 - The **academic calendar** is opened from the top bar or the dashboard. Assessment entries lead to assessment details; school events are informational entries.
 - **Tasks** groups assessments by due status. Selecting an assessment opens the same details view as calendar, notifications, search, and classwork.
-- A **class** opens on Stream. Its tabs provide Stream, Classwork, Materials, and People. Assessment and material detail back buttons return to their matching class tab.
+- A **class** opens on Stream. Its tabs provide Stream, Classwork, Modules, Materials, People, and Attendance. Modules (D-033) shows each module with its submodules nested under it and the materials and assessments placed in each. Attendance lists the student's own months, newest first: days present, school days, and attendance % (days present ÷ school days × 100), or "Not recorded" when the instructor has not entered their days. It is not counted in grades yet (D-035). Assessment and material detail back buttons return to their matching class tab.
 - Starting an assessment starts, or resumes, an attempt on the LMS API, which sends the questions without their answers. Each question has its own 60-second timer in the browser; the server enforces the exam's overall time limit and attempt limit. Answers save to the server as the student works. Timeouts advance automatically; the final timeout submits. Manual submission asks for confirmation before showing the result.
 - The server scores multiple-choice and true/false answers on submit; the result shows the score and which questions were right without revealing the correct options. Work handed in and grades are stored by the LMS API (D-032). Material review state lasts only for the current app session. Today's "Choose demo student" switches which student the workspace shows; this is a demo identity, not a sign-in.
 
@@ -103,5 +106,6 @@ The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` 
 - **Navigation (D-023):** Dashboard (formerly Today), My Classes, Tasks & Assessments, Calendar, and News & Announcements, which is now its own page instead of a toggle on the dashboard. On phones these are in the bottom bar (Dashboard, Classes, Tasks, Calendar, News), with a search sheet.
 - **Dashboard:** greeting with the date and term week, summary chips, Tasks & Assessments with due-date pills, My Classes, an Academic Calendar timeline, and the latest announcement.
 - **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
+- **Closed activities** (D-036): once the instructor closes an assignment or assessment it shows **Closed** and offers no hand-in or start; a grade the instructor gave without anything handed in reads **Not handed in** with the score (`e2e/close-activities.spec.ts`).
 
 Implementation references: [Student workspace](../src/features/student/StudentApp.tsx), [screens](../src/features/student/pages/), [data and rules](../src/features/student/api/), [fictional seed data](../src/data.js), and [project scope](PROJECT_BRIEF.md).

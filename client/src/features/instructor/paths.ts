@@ -1,5 +1,5 @@
 /** Instructor routes. Every screen, tab, open form, and selected submission has a URL. */
-export const CLASS_TABS = ["Stream", "Classwork", "Announcements", "Materials", "People", "Submissions", "Create content"] as const;
+export const CLASS_TABS = ["Stream", "Classwork", "Modules", "Announcements", "Materials", "People", "Attendance", "Submissions", "Create content"] as const;
 export type ClassTab = (typeof CLASS_TABS)[number];
 export const isClassTab = (value: unknown): value is ClassTab => CLASS_TABS.includes(value as ClassTab);
 
@@ -17,5 +17,7 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
   },
+  questionSets: "/instructor/question-sets",
+  questionSet: (id: number) => `/instructor/question-sets/${id}`,
   gradebook: (classId?: string) => (classId ? `/instructor/gradebook?class=${encodeURIComponent(classId)}` : "/instructor/gradebook"),
 };

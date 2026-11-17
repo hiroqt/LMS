@@ -9,9 +9,11 @@ import { classContent, classMark, classWork, subjectOf, yearOf } from "../api/se
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { CLASS_TABS, instructorPaths, isClassTab, isContentType, type ClassTab, type ContentType } from "../paths";
 import { AnnouncementsTab } from "./class/AnnouncementsTab";
+import { AttendanceTab } from "./class/AttendanceTab";
 import { ClassworkTab } from "./class/ClassworkTab";
 import { CreateContentTab } from "./class/CreateContentTab";
 import { MaterialsTab } from "./class/MaterialsTab";
+import { ModulesTab } from "./class/ModulesTab";
 import { PeopleTab } from "./class/PeopleTab";
 import { StreamTab } from "./class/StreamTab";
 import { SubmissionsTab } from "./class/SubmissionsTab";
@@ -111,11 +113,22 @@ export default function ClassPage() {
         </TabsList>
         <TabsContent value={slug("Stream")}><StreamTab {...props} /></TabsContent>
         <TabsContent value={slug("Classwork")}><ClassworkTab {...props} /></TabsContent>
+        <TabsContent value={slug("Modules")}><ModulesTab {...props} /></TabsContent>
         <TabsContent value={slug("Announcements")}><AnnouncementsTab {...props} /></TabsContent>
         <TabsContent value={slug("Materials")}><MaterialsTab {...props} /></TabsContent>
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>
+        <TabsContent value={slug("Attendance")}><AttendanceTab {...props} /></TabsContent>
         <TabsContent value={slug("Submissions")}>
-          <SubmissionsTab items={submissions} selectedId={review} instructor={instructor} onSelect={(id) => goTab("Submissions", { review: id })} />
+          <SubmissionsTab
+            items={submissions}
+            selectedId={review}
+            instructor={instructor}
+            onSelect={(id) => goTab("Submissions", { review: id })}
+            store={store}
+            work={classWork(content)}
+            students={content.students}
+            classroomId={room.id}
+          />
         </TabsContent>
         <TabsContent value={slug("Create content")}><CreateContentTab {...props} open={isContentType(create) ? create : undefined} /></TabsContent>
       </Tabs>

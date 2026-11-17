@@ -34,10 +34,11 @@ flowchart TD
     TOOLS -->|Breadcrumb home| HOME
     TOOLS -->|Switch role| ROLE[Open Student, Instructor, or Admin workspace]
 
-    IDENT --> SIDEBAR[Sidebar: Overview, Gradebook, expandable My classes]
+    IDENT --> SIDEBAR[Sidebar: Overview, Gradebook, Question sets, expandable My classes]
     SIDEBAR -->|Choose existing class| A3((A))
     ISMS[ISMS classes and class lists, read through the LMS API] --> K1((K))
     SIDEBAR -->|Gradebook| G1((G))
+    SIDEBAR -->|Question sets| QS1((QS))
     A1 --> A4((A))
     A2 --> A4
     A3 --> A4
@@ -54,10 +55,13 @@ flowchart TD
     STREAM -->|View materials| C1((C))
     STREAM -->|Post class content| E1((E))
     TABS -->|Classwork| D2((D))
+    TABS -->|Modules| MODULES[Modules with their submodules and content: add, rename, or reorder a submodule; move content between them]
     TABS -->|Announcements| B2((B))
     TABS -->|Materials| C2((C))
     TABS -->|People| PEOPLE[Search active enrolled students by name or email]
+    TABS -->|Attendance| AT[Pick a month, set school days, enter days present per student, Save]
     TABS -->|Submissions| F3((F))
+    F3 -->|Didn't hand in| NHI[Give one student a grade, or give 0 or any points to everyone who handed in nothing, after a confirmation]
     TABS -->|Create content| E2((E))
 
     D1 --> D3((D))
@@ -65,6 +69,8 @@ flowchart TD
     D3 --> WORK[Search and filter All work, Assignments, or Assessments]
     WORK -->|Create / no matching work| E3((E))
     WORK -->|Review published row, due date, points, and status| WORK
+    WORK -->|Close or Reopen, with N of M graded| CLOSE[Close: refused with the students still to grade until everyone has a grade; Reopen returns it to published]
+    CLOSE -->|Still to grade| F4((F))
 
     B1 --> B2
     B2 --> ANNOUNCEMENTS[Read class notices; choose New announcement]
@@ -95,9 +101,12 @@ flowchart TD
     ACTRULES -->|Save and share| ACTSAVED[Add active assignment to this class]
     ACTSAVED --> D4((D))
     ACTSAVED --> I1((I))
-    CONTENT -->|Assessment| EXFORM[Choose module; enter title, instructions, due date, points, and time limit]
-    EXFORM --> QUESTION[Enter one question, four answer choices, and correct answer]
+    CONTENT -->|Assessment| EXFORM[Choose module; enter title, instructions, due date, time limit, and attempts]
+    EXFORM --> SOURCE{Questions}
+    SOURCE -->|Write new questions| QUESTION[Enter points, one question, four answer choices, and correct answer; a new set for this subject]
+    SOURCE -->|Use an existing question set| PICKSET[Choose one of your sets for this subject; the exam is worth its points]
     QUESTION -->|Save and share| EXSAVED[Add active assessment to this class]
+    PICKSET -->|Save and share| EXSAVED
     EXSAVED --> D5((D))
     EXSAVED --> I1
     C4 --> MATERIALS
@@ -127,6 +136,17 @@ flowchart TD
     GRADEBOOK --> SETTINGS[Edit activity weight, exam weight, and passing score]
     SETTINGS --> SUMMARY[Review graded record counts and category averages]
     SUMMARY -->|Breadcrumb home| HOME
+
+    QS1 --> QS2((QS))
+    QS2 --> SETS[Question sets: title, subject, question count, total points, exams using each, Locked badge]
+    SETS -->|Open a set| SET{Has a student started an exam that uses it?}
+    SET -->|No| EDITSET[Edit title and questions; Save question set]
+    SET -->|Yes · Locked| VIEWSET[Read-only questions with an explanation]
+    EDITSET -->|Make a copy| COPY[Unlocked copy titled “… (copy)”, used by no exam]
+    VIEWSET -->|Make a copy| COPY
+    COPY --> EDITSET
+    SETS -->|Exam listed under Used by| D6((D))
+    D6 --> WORK
 ```
 
 ### Connector key
@@ -141,6 +161,7 @@ flowchart TD
 - **H** — instructor breadcrumbs return to Overview; role switching redirects to another workspace.
 - **I** — saved classwork reaches the Student demo submission path and returns to instructor review.
 - **J** — saving a grade updates the matching Student work detail; there is no standalone Student Grades page.
+- **QS** — Question sets lists the instructor's reusable sets; a new assessment can use one instead of new questions, and a locked set is changed by copying it (D-034).
 - **K** — classes are not created in the LMS. They arrive from ISMS and appear in the sidebar and Classes page of the instructor who teaches them (D-031).
 
 ## Code-based details
@@ -150,11 +171,13 @@ flowchart TD
 - **News & announcements:** the featured school announcement carousel can be changed with its controls. The teacher list includes active class announcements; selecting one opens that class's Announcements tab. The school event list shows up to six upcoming entries. **View calendar** returns to the Overview calendar.
 - **Shared top bar:** search matches up to six displayed results from assigned classes, instructor materials, and assessments. A class result selects that class and opens Stream. A material or assessment result only changes to the Classes view; it does not open the specific result. Notifications contain up to five pending submissions and open the selected review. Breadcrumb home returns to Overview; the role switch navigates to Student, Instructor, or Admin.
 - **Classes:** year-level filters are also available on the Classes page, which shows a chooser for the visible classrooms. The class header includes the subject, section, term, enrolled count, and enrollment code. Stream shows a static welcome post, up to three work updates, up to two material updates, up to four upcoming due items, and the About panel. Stream links into Classwork, Materials, or Create content.
-- **Class tabs:** Classwork searches the selected class's assignment and assessment rows, and filters All, Assignments, and Assessments; rows show due date, points, and published status. People searches active enrolled student names and email addresses. Materials shows class resources. Announcements lists active class notices and provides a required title/message composer. Submissions lists only pending items for the selected class. Create content groups existing Materials, Assignments, and Assessments and shows their counts.
+- **Class tabs:** Classwork searches the selected class's assignment and assessment rows, and filters All, Assignments, and Assessments; rows show due date, points, "N of M graded", and Published or Closed, with Close or Reopen (D-036). People searches active enrolled student names and email addresses. Materials shows class resources. Announcements lists active class notices and provides a required title/message composer. Submissions lists only pending items for the selected class. Create content groups existing Materials, Assignments, and Assessments and shows their counts. Modules (D-033) lists each module with its submodules (one level) and the materials, assignments, and assessments placed in each; an instructor adds a submodule under a module, renames it, moves it up or down, and moves any item to another module or submodule of the class.
 - **Classes from ISMS:** the LMS API syncs the current term's ISMS classes and class lists into its database; the workspace shows the classes of the instructor being viewed ("Choose demo instructor" on Overview, a demo identity, not a sign-in). A class seen for the first time gets a starter module and default gradebook settings (40% activity, 60% exam, 60 passing score). A class ISMS stops offering becomes read-only with its content kept. Modules, materials, assignments, assessments, announcements, and grades are LMS-owned and stored by the LMS API (D-032). ISMS classes have no class code.
-- **Create content:** the forms require a title and module. Materials additionally have one of four resource types (Study guide, Reading, Video, Practice set) and an optional description. Assignments also support instructions, due date, points, accept-late-work, and allow-resubmission. Assessments support instructions, due date, points, time limit (0 means none), one required question, four required answer choices, and one correct answer. The current instructor form creates one multiple-choice question.
+- **Create content:** the forms require a title and module; the module picker lists each module followed by its submodules ("Unit 1 › 1.1 Joins"). Materials additionally have one of four resource types (Study guide, Reading, Video, Practice set) and an optional description. Assignments also support instructions, due date, points, accept-late-work, and allow-resubmission. Assessments support instructions, due date, time limit (0 means none), and attempts allowed (1 to 20), and then either **Write new questions** (points, one required question, four required answer choices, and one correct answer; this creates a new question set for the class's subject) or **Use an existing question set** (one of the instructor's sets for that subject; the exam is worth the set's points). Each exam keeps its own dates, attempts, and time limit.
 - **Announcements:** posting requires a nonblank title and message (maximum 120 and 1,200 characters). Saving associates the notice with the selected class and instructor and timestamps it. It appears in the instructor News list and the connected Student class Stream. Cancel closes the composer.
 - **Submissions and grading:** the overview hero, review list, notification menu, and class Submissions tab enter the same review flow. It holds handed-in assignments without a grade, and exam attempts with essays. Multiple-choice and true/false exams are graded by the server on submit, so they never wait for review. Assignments show the student's note and attachment file name; no file is uploaded. An exam review shows the server's points for each question and asks for points on each essay.
+- **Attendance (D-035):** monthly totals, not a daily roll call. Pick a month (this month and the eleven before it, plus any older month already recorded), enter the month's school days (1 to the days in that month) and each student's days present (0 to the school days). Each row shows the live attendance % (days present ÷ school days × 100). **Save attendance** stores the whole month in one call (Saving…/Saved); out-of-range values show a field error, and lowering the school days below a saved entry is refused with the students named. Leaving a student blank before the first save means not recorded; a saved entry cannot be cleared. Attendance is recorded only and does not count in the gradebook yet.
+- **Question sets:** each set belongs to one instructor and one subject they teach and can back exams in any of their classes for that subject. The page lists question count, total points, the exams that use each set (archived exams left out), and a **Locked** badge once any student has started one of those exams. An unlocked set can be edited (title, prompts, points, choices, answers; multiple-choice questions can be added; questions removed) and saved as a whole. A locked set is read-only, with an explanation; **Make a copy** (available on every set) creates an unlocked copy used by no exam, which can then be edited and chosen for new exams (D-034).
 - **Gradebook:** select an active classroom and edit category weights and passing score. Changes save once the activity and exam weights add up to 100 (Saving…/Saved); until then a warning says so. The panel reports graded counts and averages for activities and exams.
 
 ## Completion and prototype limits
@@ -174,6 +197,8 @@ The journeys above are unchanged and are verified by `e2e/instructor-flow.spec.t
 - **Grading** shows the server's points per question for exams with essays and asks for each essay's points; assignment scores start empty. Saving confirms with a message.
 - **Gradebook** warns when the weights do not add up to 100% and saves only once they do (D-032); its averages are correct (the classic page showed NaN% for graded assignments).
 - The class header shows the **class code with a copy button**.
+- **Attendance tab** (D-035): monthly attendance per class, recorded only (`e2e/attendance.spec.ts`).
+- **Closing an activity** (D-036): each Classwork row shows "N of M graded" with **Close** (and **Reopen** once closed). Close is refused until every student on the class list has a grade and lists who is left; Submissions gains **Didn't hand in** to grade students who handed in nothing, one at a time or with **Give 0 to everyone who didn't hand in** (confirmed; points default to 0). Closed work takes no more hand-ins or attempts; grades can still be corrected (`e2e/close-activities.spec.ts`).
 - **Phones:** the drawer holds navigation and the class list and closes on any choice; search opens in a sheet.
 
 Implementation references: [Instructor workspace](../src/features/instructor/InstructorApp.tsx), [screens and class tabs](../src/features/instructor/pages/), [data, rules, and writes](../src/features/instructor/api/), [shared shell](../src/shared/layout/AppShell.tsx), and [local data model](../src/roles/shared/lmsData.js).

@@ -68,6 +68,12 @@ describe("getJson", () => {
     expect(describeApiError(error).title).toBe("Not Found");
   });
 
+  it("keeps the whole problem body for extension members", async () => {
+    stubFetch(async () => json({ title: "Not every student is graded yet.", status: 409, ungraded: [{ studentId: "s1", name: "Jamie Lee" }] }, 409, "application/problem+json"));
+    const error = await failure(getJson("/api/classes/x/coursework/1"));
+    expect(error.problem.ungraded).toEqual([{ studentId: "s1", name: "Jamie Lee" }]);
+  });
+
   it("flags a 2xx body that is not JSON", async () => {
     stubFetch(async () => new Response("<html>", { status: 200 }));
     expect(await failure(getJson("/api/subjects"))).toMatchObject({ kind: "invalid-response", status: 200 });

@@ -125,6 +125,11 @@ public static class ContentEndpoints
             if (input.Kind is not null) row.Kind = KindOf(errors, input.Kind) ?? row.Kind;
             if (input.Description is not null) row.Description = errors.Optional("description", input.Description, ContentRules.DescriptionMax);
             if (input.Status is not null) row.Status = StatusOf(errors, input.Status) ?? row.Status;
+            if (input.ModuleId is { } moduleId)
+            {
+                if (await db.Modules.AnyAsync(m => m.Id == moduleId && m.ClassId == classId, ct)) row.ModuleId = moduleId;
+                else errors.Add("moduleId", "Choose a module of this class.");
+            }
             if (errors.Any) return errors.Result();
             var action = input.Status == ContentStatus.Archived ? "archived" : input.Status == ContentStatus.Active ? "restored" : "updated";
             await SaveWithAuditAsync(db, user, row, action, "Material", () => row.Id, ct);

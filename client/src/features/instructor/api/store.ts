@@ -51,6 +51,12 @@ export function useRefreshOverview(): () => Promise<void> {
 }
 
 const active = (status: string) => (status === "archived" ? "inactive" : "active");
+/** Closed stays "active" (it is still shown); `closed` and the graded counts are kept beside it (D-036). */
+const progress = (item: { status: string; gradedCount?: number | null; rosterCount?: number | null }) => ({
+  closed: item.status === "closed",
+  gradedCount: item.gradedCount ?? 0,
+  rosterCount: item.rosterCount ?? 0,
+});
 
 export function toRoleStore(overview: Overview, people: People): RoleStore {
   const instructors: User[] = people.instructors.map((person) => ({ id: person.id, ...splitName(person.name), role: "instructor", status: "active" }));
@@ -67,6 +73,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
     classrooms: overview.classes.map((room) => ({
       id: room.id,
       subjectId: `subject-${room.id}`,
+      ismsSubjectId: room.subjectId,
       instructorId: room.instructorId,
       section: room.sectionName ?? "",
       yearLevel: yearLevelFromSection(room.sectionName),
@@ -76,7 +83,13 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       source: "isms",
     })),
     enrollments: overview.students.map((item) => ({ id: `${item.classId}-${item.studentId}`, classroomId: item.classId, studentId: item.studentId, status: "active", source: "isms" })),
-    modules: overview.modules.map((item) => ({ id: String(item.id), classroomId: item.classId, title: item.title, order: item.sortOrder })),
+    modules: overview.modules.map((item) => ({
+      id: String(item.id),
+      classroomId: item.classId,
+      ...(item.parentModuleId === null ? {} : { parentId: String(item.parentModuleId) }),
+      title: item.title,
+      order: item.sortOrder,
+    })),
     materials: overview.materials.map((item) => ({
       id: String(item.id),
       moduleId: String(item.moduleId),
@@ -101,6 +114,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       allowLate: item.allowLate,
       allowResubmission: item.allowResubmission,
       status: active(item.status),
+      ...progress(item),
     })),
     exams: coursework.filter((item) => item.type === "exam").map((item) => ({
       id: String(item.id),
@@ -113,6 +127,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       timeLimitMinutes: item.timeLimitMinutes ?? 0,
       attempts: item.maxAttempts ?? 1,
       status: active(item.status),
+      ...progress(item),
     })),
     activitySubmissions: overview.submissions.filter((item) => kindOf.get(item.courseworkId) === "assignment").map(({ courseworkId, classId, submission }) => ({
       id: String(submission.id),
@@ -125,6 +140,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       submittedAt: submission.submittedAt ?? undefined,
       grade: submission.status === "graded" ? submission.score : null,
       feedback: submission.feedback ?? "",
+      notHandedIn: Boolean(submission.notHandedIn),
     })),
     examSubmissions: overview.submissions.filter((item) => kindOf.get(item.courseworkId) === "exam").map(({ courseworkId, classId, submission }) => ({
       id: String(submission.id),
@@ -136,6 +152,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       feedback: submission.feedback ?? undefined,
       submittedAt: submission.submittedAt ?? undefined,
       gradedAt: submission.gradedAt ?? undefined,
+      notHandedIn: Boolean(submission.notHandedIn),
     })),
     announcements: overview.announcements.map((item) => ({
       id: String(item.id),
@@ -147,5 +164,12 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       status: active(item.status),
     })),
     gradebookSettings: Object.fromEntries(overview.gradebooks.map((item) => [item.classId, { activityWeight: item.activityWeight, examWeight: item.examWeight, passingScore: item.passingScore }])),
+    attendance: overview.attendance.map(({ classId, month }) => ({
+      classroomId: classId,
+      year: month.year,
+      month: month.month,
+      schoolDays: month.schoolDays,
+      daysPresent: Object.fromEntries(month.entries.map((entry) => [entry.studentId, entry.daysPresent])),
+    })),
   };
 }

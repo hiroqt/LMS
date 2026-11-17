@@ -37,6 +37,7 @@ export function AssessmentRow({ item, courseIndex, courseCode, completed, missin
         <strong className="text-body font-semibold">{item.dueAt ? formatDue(item.dueAt) : "No due date"}</strong>
       </span>
       {missing && <Badge tone="danger">Missing</Badge>}
+      {item.closed && <Badge>Closed</Badge>}
       {completed && <Badge tone="success"><Check aria-hidden className="size-3.5" />Submitted</Badge>}
       <ChevronRight aria-hidden className="size-5 shrink-0 text-muted group-hover:text-ink" />
     </button>

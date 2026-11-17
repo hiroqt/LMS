@@ -1,15 +1,18 @@
 using Lms.Api.Content;
 using Lms.Api.Data;
 using Lms.Api.Identity;
+using Lms.Api.Submissions;
 using Microsoft.EntityFrameworkCore;
 using CourseworkRow = Lms.Api.Data.Coursework;
 
 namespace Lms.Api.Coursework;
 
 /// <param name="QuestionnaireId">Instructors only; null for students.</param>
+/// <param name="GradedCount">Instructors only: students on the class list with a grade (see <see cref="GradingRules"/>).</param>
+/// <param name="RosterCount">Instructors only: students active on the class list.</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
-    long? QuestionnaireId, int QuestionCount, string Status);
+    long? QuestionnaireId, int QuestionCount, string Status, int? GradedCount = null, int? RosterCount = null);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
@@ -20,6 +23,8 @@ public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
 /// see published work once it is available. An exam is worth the total points of its
 /// questionnaire, and its questions reach students only when they start an attempt (step 4).
+/// Published work is closed with the close action once every student is graded (D-036); the
+/// plain update never sets or leaves the closed status.
 /// </summary>
 public static class CourseworkEndpoints
 {
@@ -39,7 +44,8 @@ public static class CourseworkEndpoints
             if (type is not null) query = query.Where(c => c.Type == type);
             var list = await ContentEndpoints.PageAsync(query.OrderBy(c => c.DueAt == null).ThenBy(c => c.DueAt).ThenBy(c => c.Id), page, pageSize, c => c, ct);
             var counts = await QuestionCountsAsync(db, list.Items, ct);
-            return TypedResults.Ok(new PagedList<CourseworkDto>(list.Items.Select(c => ToDto(c, user, counts)).ToList(), list.Page, list.PageSize, list.Total));
+            var progress = await ProgressForAsync(db, user, list.Items, ct);
+            return TypedResults.Ok(new PagedList<CourseworkDto>(list.Items.Select(c => ToDto(c, user, counts, progress)).ToList(), list.Page, list.PageSize, list.Total));
         }).WithName("ListCoursework");
 
         group.MapGet("/{id:long}", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -49,7 +55,7 @@ public static class CourseworkEndpoints
             if (denied is not null) return denied;
             var row = await VisibleTo(user, db.Coursework.AsNoTracking().Where(c => c.ClassId == classId && c.Id == id), time).SingleOrDefaultAsync(ct);
             if (row is null) return ContentEndpoints.NotFound("Coursework");
-            return TypedResults.Ok(ToDto(row, user, await QuestionCountsAsync(db, [row], ct)));
+            return await OkAsync(db, user, row, ct);
         }).WithName("GetCoursework");
 
         group.MapPost("", async Task<IResult> (string classId, CourseworkInput input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -66,7 +72,7 @@ public static class CourseworkEndpoints
             var row = new CourseworkRow { ClassId = classId, Type = input.Type!, Status = CourseworkStatus.Draft };
             if (await ApplyAsync(db, user, classId, row, input, errors, ct) is { } invalid) return invalid;
             await ContentEndpoints.SaveWithAuditAsync(db, user, row, row.Status == CourseworkStatus.Published ? "published" : "created", Label(row), () => row.Id, ct, "coursework");
-            return TypedResults.Created($"/api/classes/{classId}/coursework/{row.Id}", ToDto(row, user, await QuestionCountsAsync(db, [row], ct)));
+            return TypedResults.Created($"/api/classes/{classId}/coursework/{row.Id}", await DtoAsync(db, user, row, ct));
         }).WithName("CreateCoursework");
 
         group.MapPatch("/{id:long}", async Task<IResult> (string classId, long id, CourseworkInput input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -78,22 +84,73 @@ public static class CourseworkEndpoints
             if (row is null) return ContentEndpoints.NotFound("Coursework");
             var errors = new Errors();
             if (input.Type is not null && input.Type != row.Type) errors.Add("type", "The type cannot change; create new coursework instead.");
+            // Closing checks that every student is graded, so it has its own actions.
+            if (input.Status == CourseworkStatus.Closed && row.Status != CourseworkStatus.Closed)
+                errors.Add("status", "Use the Close action (POST …/close) to close coursework once every student is graded.");
+            else if (row.Status == CourseworkStatus.Closed && input.Status is not null && input.Status != CourseworkStatus.Closed)
+                errors.Add("status", "This coursework is closed. Use the Reopen action (POST …/reopen) before changing its status.");
+            if (errors.Any) return errors.Result();
             var before = row.Status;
             if (await ApplyAsync(db, user, classId, row, input, errors, ct) is { } invalid) return invalid;
             var action = row.Status == before ? "updated" : row.Status;
             await ContentEndpoints.SaveWithAuditAsync(db, user, row, action, Label(row), () => row.Id, ct, "coursework");
-            return TypedResults.Ok(ToDto(row, user, await QuestionCountsAsync(db, [row], ct)));
+            return await OkAsync(db, user, row, ct);
         }).WithName("UpdateCoursework");
+
+        // Closing stops hand-ins and attempts. It is refused, naming the students still to grade, until everyone has a grade.
+        group.MapPost("/{id:long}/close", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var (_, denied) = await access.ForWriteAsync(classId, user, ct);
+            if (denied is not null) return denied;
+            var row = await db.Coursework.SingleOrDefaultAsync(c => c.Id == id && c.ClassId == classId, ct);
+            if (row is null) return ContentEndpoints.NotFound("Coursework");
+            if (row.Status == CourseworkStatus.Closed) return Conflict("This coursework is already closed.");
+            if (row.Status != CourseworkStatus.Published) return Conflict("Only published coursework can be closed.");
+            var progress = (await GradingRules.ProgressAsync(db, [row], ct))[row.Id];
+            if (progress.Ungraded.Count > 0)
+                return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "Not every student is graded yet.",
+                    detail: $"{progress.Ungraded.Count} of {progress.Roster} students still need a grade.",
+                    extensions: new Dictionary<string, object?> { ["ungraded"] = progress.Ungraded });
+            row.Status = CourseworkStatus.Closed;
+            await ContentEndpoints.SaveWithAuditAsync(db, user, null, "closed", Label(row), () => row.Id, ct, "coursework");
+            return await OkAsync(db, user, row, ct);
+        }).WithName("CloseCoursework");
+
+        group.MapPost("/{id:long}/reopen", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var (_, denied) = await access.ForWriteAsync(classId, user, ct);
+            if (denied is not null) return denied;
+            var row = await db.Coursework.SingleOrDefaultAsync(c => c.Id == id && c.ClassId == classId, ct);
+            if (row is null) return ContentEndpoints.NotFound("Coursework");
+            if (row.Status != CourseworkStatus.Closed) return Conflict("Only closed coursework can be reopened.");
+            row.Status = CourseworkStatus.Published;
+            await ContentEndpoints.SaveWithAuditAsync(db, user, null, "reopened", Label(row), () => row.Id, ct, "coursework");
+            return await OkAsync(db, user, row, ct);
+        }).WithName("ReopenCoursework");
 
         return app;
     }
 
-    /// <summary>Students see published work whose availability date has passed.</summary>
+    private static IResult Conflict(string title) => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: title);
+
+    private static async Task<CourseworkDto> DtoAsync(LmsDbContext db, CurrentUser user, CourseworkRow row, CancellationToken ct) =>
+        ToDto(row, user, await QuestionCountsAsync(db, [row], ct), await ProgressForAsync(db, user, [row], ct));
+
+    private static async Task<IResult> OkAsync(LmsDbContext db, CurrentUser user, CourseworkRow row, CancellationToken ct) =>
+        TypedResults.Ok(await DtoAsync(db, user, row, ct));
+
+    /// <summary>Graded progress for instructors; students get none.</summary>
+    internal static async Task<Dictionary<long, GradingProgress>?> ProgressForAsync(LmsDbContext db, CurrentUser user, IReadOnlyCollection<CourseworkRow> rows, CancellationToken ct) =>
+        user.IsInstructor ? await GradingRules.ProgressAsync(db, rows, ct) : null;
+
+    /// <summary>Students see published and closed work whose availability date has passed.</summary>
     private static IQueryable<CourseworkRow> VisibleTo(CurrentUser user, IQueryable<CourseworkRow> query, TimeProvider time)
     {
         if (user.IsInstructor) return query;
         var now = time.GetUtcNow().UtcDateTime;
-        return query.Where(c => c.Status == CourseworkStatus.Published && (c.AvailableFrom == null || c.AvailableFrom <= now));
+        return query.Where(c => (c.Status == CourseworkStatus.Published || c.Status == CourseworkStatus.Closed) && (c.AvailableFrom == null || c.AvailableFrom <= now));
     }
 
     /// <summary>Applies the sent fields, then checks the whole record. Returns a 400 result, or null when valid.</summary>
@@ -127,8 +184,12 @@ public static class CourseworkEndpoints
         {
             if (input.QuestionnaireId is { } qid)
             {
-                if (await db.Questionnaires.AnyAsync(q => q.Id == qid && q.OwnerInstructorId == user.Id, ct)) row.QuestionnaireId = qid;
-                else errors.Add("questionnaireId", "Choose one of your questionnaires.");
+                // Only the caller's own set, and only one for this class's subject (or one with no subject).
+                var set = await db.Questionnaires.AsNoTracking().Where(q => q.Id == qid && q.OwnerInstructorId == user.Id).Select(q => new { q.SubjectId }).SingleOrDefaultAsync(ct);
+                var subjectId = await db.IsmsClasses.Where(c => c.Id == classId).Select(c => c.SubjectId).SingleAsync(ct);
+                if (set is null) errors.Add("questionnaireId", "Choose one of your questionnaires.");
+                else if (set.SubjectId is { } s && s != subjectId) errors.Add("questionnaireId", "Choose a question set for this class's subject.");
+                else row.QuestionnaireId = qid;
             }
             if (row.QuestionnaireId is null) errors.Add("questionnaireId", "An exam needs a questionnaire.");
             else
@@ -154,8 +215,11 @@ public static class CourseworkEndpoints
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
     }
 
-    internal static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts) => new(
-        c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
-        c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
-        c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status);
+    internal static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts, Dictionary<long, GradingProgress>? progress)
+    {
+        var p = user.IsInstructor ? progress?.GetValueOrDefault(c.Id) : null;
+        return new(c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
+            c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
+            c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, p?.Graded, p?.Roster);
+    }
 }

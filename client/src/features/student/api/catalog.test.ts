@@ -8,6 +8,19 @@ describe("toStudentCatalog", () => {
     expect(course).toMatchObject({ id: "class-a", code: "IT202", name: "Database Systems 1", section: "BSIT 2-A", teacher: "Ana Reyes", count: 2, room: "Room 203", next: "MW 08:00–09:30" });
   });
 
+  it("keeps modules, submodules, and where each material and assessment is placed", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      o.modules.push({ id: 2, classId: "class-a", parentModuleId: 1, title: "1.1 Tables", sortOrder: 1 });
+      o.materials[0]!.moduleId = 2;
+    }));
+    expect(catalog.modules).toEqual([
+      { id: "1", courseId: "class-a", title: "Unit 1", order: 1 },
+      { id: "2", courseId: "class-a", parentId: "1", title: "1.1 Tables", order: 1 },
+    ]);
+    expect(catalog.materials[0]?.moduleId).toBe("2");
+    expect(catalog.assessments.map((item) => item.moduleId)).toEqual(["1", "1", "1"]);
+  });
+
   it("counts handed-in work as completed, never an open attempt", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.completed).toEqual(["1", "2"]);
@@ -20,11 +33,33 @@ describe("toStudentCatalog", () => {
     expect(catalog.examGrades["2"]).toEqual({ examId: "2", totalScore: 16, feedback: undefined });
   });
 
+  it("marks closed work and a not-handed-in grade, which is never an attempt to review", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      o.coursework[0]!.coursework.status = "closed";
+      o.submissions = o.submissions.filter((item) => item.courseworkId !== 1 && item.courseworkId !== 2);
+      const graded = { id: 30, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "graded" as const, startedAt: null, submittedAt: null, late: false, text: null, fileName: null, score: 0, maxPoints: 20, feedback: null, gradedAt: "2026-10-30T00:00:00Z", notHandedIn: true };
+      o.submissions.push({ courseworkId: 1, classId: "class-a", submission: { ...graded, maxPoints: 10 } }, { courseworkId: 2, classId: "class-a", submission: graded });
+    }));
+    expect(catalog.assessments.map((item) => item.closed)).toEqual([true, false, false]);
+    expect(catalog.activitySubmissions["1"]).toMatchObject({ grade: 0, notHandedIn: true });
+    expect(catalog.examGrades["2"]).toEqual({ examId: "2", totalScore: 0, feedback: undefined, notHandedIn: true });
+    expect(catalog.attempts["2"]).toEqual({ openId: undefined, latestId: undefined, used: 1 });
+    expect(catalog.completed).toEqual(["1", "2"]);
+  });
+
   it("maps coursework to assessments, keeping a missing due date empty", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.assessments.find((item) => item.id === "2")).toMatchObject({ type: "Quiz", points: 20, questionCount: 5, timeLimit: "5 minutes", maxAttempts: 2, kind: undefined });
     expect(catalog.assessments.find((item) => item.id === "1")).toMatchObject({ type: "Assignment", kind: "activity", description: "Do it." });
     expect(catalog.assessments.find((item) => item.id === "3")?.dueAt).toBe("");
+  });
+
+  it("keeps only the student's own days per month, and null when their days were not recorded", () => {
+    const catalog = toStudentCatalog(overviewFixture());
+    expect(catalog.attendance).toEqual([
+      { courseId: "class-a", year: 2026, month: 10, schoolDays: 20, daysPresent: 18 },
+      { courseId: "class-a", year: 2026, month: 9, schoolDays: 22, daysPresent: null },
+    ]);
   });
 
   it("names the student, marks them in the class list, and credits announcements", () => {

@@ -336,7 +336,75 @@ and the API clock pinned to the fixtures' date; `e2e/fixtures.ts` turns old demo
 it needs a connection (`resilience`). Offline work returns with the persisted cache and outbox (D-020).
 Admin now loads lazily like the other workspaces (L-047).
 
-### D-033 · UI revamp v2: no decoration, Admin joins the shared system
+### D-033 · Submodules on screen: a Modules tab for both roles
+`2026-11-17` · hiro (Phase 3a, PR A) · scope: student, instructor, shared, server · confidence: medium
+Modules may have submodules, one level deep (the LMS API refuses deeper nesting). Both class
+pages gain a **Modules** tab after Classwork: each module is a section (`h3`) with its content,
+and its submodules are an ordered list of sections (`h4`) with theirs. The Instructor UI had no
+module controls before, so the tab is where they live: **Add submodule**, **Rename**, and **Move
+up/down** act on submodules; a **Move** button on each material, assignment, or assessment moves it
+to another module or submodule (`PATCH` with `moduleId`; materials gained this, coursework had it).
+Adding, renaming, or reordering top-level modules is not in this PR. The module pickers (Create
+content, Materials filter, Move) list each module followed by its submodules as "Unit › Sub", and the
+Materials filter on a module includes its submodules' materials. Ordering and labels come from
+`shared/lib/moduleTree.ts` so both roles agree. Journeys added, none changed: instructor
+connector MODULES and student node MODS, both in `submodules`; the new tab does not change any
+existing spec.
+
+### D-034 · Exams can reuse a question set; a locked set is changed by copying it
+`2026-11-17` · hiro (Phase 3a, PR B) · scope: instructor, server, e2e · confidence: medium
+(D-033 is taken by the submodules branch.) A question set (the API's questionnaire) belongs to
+one instructor and one subject they teach, and can back exams in any of their classes for that
+subject; the server refuses another instructor's set, a subject they do not teach, and a set for
+another subject. The assessment form adds **Questions**: "Write new questions" (the previous
+journey, now saving the set under the class's subject) or "Use an existing question set", which
+hides Points because the exam is worth the set's points. Each exam keeps its own dates, attempts
+("Attempts allowed", default 1, the server's previous default) and time limit. A new **Question
+sets** page in the Instructor navigation lists each set's questions, points, the exams that use it,
+and a Locked badge. Once a student has started any exam that uses a set it is read-only, because
+recorded answers point at its questions; **Make a copy** (`POST /api/questionnaires/{id}/copy`)
+makes an unlocked deep copy to edit instead. The editor sends the whole question list at once and
+can add multiple-choice questions only; other types are edited in place. Existing specs are
+unchanged; `question-sets` covers the new journeys.
+
+### D-035 · Monthly attendance is recorded per class, not counted in grades
+`2026-11-17` · hiro (Phase 3a) · scope: instructor, student, shared/api, server, e2e · confidence: medium
+Attendance is monthly totals, not a daily roll call: for each class and month the instructor
+enters the school days and each student's days present, and attendance % = days present ÷
+school days × 100 (`shared/lib/attendance.ts`, one decimal). Both class views gain an
+**Attendance** tab (new journeys AT and CL-AT, `e2e/attendance.spec.ts`; the existing tab
+journeys are unchanged). The server owns the rules (`PUT /api/classes/{id}/attendance/{y}/{m}`):
+school days 1 to the days in the month, days present 0 to the school days, students active on
+the class list, the class's instructor only and only while ISMS offers the class; lowering the
+school days below a saved entry is refused rather than clamped, naming the students. A save
+upserts the whole month in one transaction with a metadata-only audit row; students left out
+keep their days, and an entry cannot be deleted yet. Students receive only their own entries.
+Attendance is **not** part of the gradebook; a later phase decides how it counts.
+
+### D-036 · An activity closes only once every student is graded; a non-submitter can be graded
+`2026-11-17` · hiro (Phase 3a, PR C) · scope: instructor, student, shared/api, server, e2e · confidence: medium
+Closing is its own server action (`POST …/coursework/{id}/close`, `…/reopen`), not the plain update,
+which can no longer set or leave `closed`. Close works on published work only and is refused (409)
+with `ungraded: [{ studentId, name }]` until every student active on the class list is graded:
+for an assignment their latest submission has a grade; for an exam at least one attempt is graded
+(an attempt whose essays still wait is not). Closed work stays visible to students but refuses
+hand-ins and starting, saving or submitting attempts; grades can still be corrected (audited as
+before). Close and reopen write metadata-only audit rows. Coursework DTOs carry `gradedCount` and
+`rosterCount` for instructors, shown as "N of M graded" on each Classwork row with **Close** /
+**Reopen**; a refused close lists who is left. **Students who never handed in** can be graded:
+the server creates a "not handed in" record (status graded, no text or file, `submittedAt` null,
+`notHandedIn: true`) per student (`PUT …/students/{studentId}/grade`, which also corrects it) or for
+everyone with no submission at all (`POST …/grade-missing`, one transaction, one audit row with the
+count, never overwriting and never touching started or ungraded work). Screens say "Not handed in".
+**Rule chosen for attempts:** a not-handed-in grade is allowed only when the student has no
+submission or attempt at all, and once it exists the student can no longer hand in or start an
+attempt for that coursework (409), so it never consumes or races a real attempt. Because it
+locks the student out, it is refused (409) while the work is published and its due date has not
+passed; work with no due date, or already closed, can be graded at any time. It counts in the
+gradebook like any graded work (a 0 lowers the average). To let that student hand in, there is no
+undo yet; the instructor corrects the grade instead. Journeys added, none changed: instructor
+CLOSE and NHI, student CLOSED, all in `close-activities`.
+### D-037 · UI revamp v2: no decoration, Admin joins the shared system
 `2026-11-17` · hiro (user request) · scope: all · confidence: high
 Supersedes D-001 (Admin out of scope) and amends D-005 (12px uppercase labels) and D-024.
 The user asked for one simple, modern UI across every role with **no gradients, no

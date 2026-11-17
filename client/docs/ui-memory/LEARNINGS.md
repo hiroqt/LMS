@@ -331,3 +331,38 @@ preloaded chunk into `index` and the entry passed 105 KB with no code added. Com
 source-map `sources` between `main` and the branch shows such moves at once. The fix was real,
 not a budget change: Admin now loads lazily like the other workspaces, so a student or instructor
 no longer downloads Admin code before the first screen.
+
+### L-048 · A client check that mirrors the server hides itself from a journey spec
+`2026-11-17` · hiro · scope: instructor, e2e · confidence: high
+The Attendance tab checks days present before saving, with the same message the server sends.
+Removing the client check left `e2e/attendance.spec.ts` green, because the server's 400 came back
+as `entries[i].daysPresent` and the tab mapped it to the same field error. That is the wanted
+behavior, but the journey proves the outcome, not which layer caught it; the limits themselves are
+pinned by `shared/lib/attendance.test.ts` and the server tests. Map indexed server errors back to
+the rows actually sent, not to the class list order.
+
+### L-049 · Reordering with equal sort orders, and phone specs that click the sidebar
+`2026-11-17` · hiro · scope: shared, e2e · confidence: high
+New modules get the next sort order per parent, but older rows can share one, and swapping two equal
+numbers moves nothing. `reorderSiblings` renumbers the siblings 1, 2, 3… in their shown order and
+sends only the orders that changed (sometimes just the neighbor's). An `@all` spec that opened the
+class from the sidebar timed out on phones, where the class list sits in the closed drawer; open the
+page by URL in specs that run on every device.
+
+### L-050 · Editors over server data must not reset on a background refetch
+`2026-11-17` · hiro · scope: instructor, e2e · confidence: high
+The app's queries refetch on window focus, so keying the question-set editor by `dataUpdatedAt`
+(to pick up a save) would have thrown away unsaved edits whenever the instructor switched tabs;
+it is keyed by the set id and keeps its own state after a save. The overview's classes had no ISMS
+subject id, so nothing on the client could tell which sets belong to a class; `ClassSummary` now
+carries `subjectId` and the store keeps it as `ismsSubjectId`. In specs, `getByRole("textbox")`
+also finds the top-bar search, so "no editable fields" checks are scoped to `main`.
+
+### L-051 · Closed work was invisible to students, and a 409 body was thrown away
+`2026-11-17` · hiro · scope: server, shared/api, instructor · confidence: high
+Every student read (coursework list and detail, the overview, and the hand-in lookup) filtered on
+`status == published`, so closing an activity would have made it vanish for students and turned
+hand-ins into 404s instead of a clear 409; all four now accept `closed` too. On the client,
+`ApiError` kept only `title`, `detail` and `errors`, so the close action's `ungraded` list never
+reached the screen; it now keeps the whole problem body as `problem`. The instructor store maps
+every non-archived status to "active", so `closed` is carried as its own flag rather than a status.
