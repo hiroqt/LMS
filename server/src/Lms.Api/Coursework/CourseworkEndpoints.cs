@@ -10,21 +10,26 @@ namespace Lms.Api.Coursework;
 /// <param name="QuestionnaireId">Instructors only; null for students.</param>
 /// <param name="GradedCount">Instructors only: students on the class list with a grade (see <see cref="GradingRules"/>).</param>
 /// <param name="RosterCount">Instructors only: students active on the class list.</param>
+/// <param name="AnswerReview">What students see after submitting (see <see cref="Data.AnswerReview"/>). Students get it too, for the notices.</param>
+/// <param name="SpellingMode">How near misses in typed answers are scored (see <see cref="Data.SpellingMode"/>).</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
-    long? QuestionnaireId, int QuestionCount, string Status, int? GradedCount = null, int? RosterCount = null);
+    long? QuestionnaireId, int QuestionCount, string Status, string AnswerReview, string SpellingMode, bool ShuffleQuestions, bool ShuffleChoices,
+    int? GradedCount = null, int? RosterCount = null);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
     DateTimeOffset? DueAt, DateTimeOffset? AvailableFrom, bool? AllowLate, bool? AllowResubmission, int? MaxAttempts,
-    int? TimeLimitMinutes, long? QuestionnaireId, string? Status);
+    int? TimeLimitMinutes, long? QuestionnaireId, string? Status,
+    string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null);
 
 /// <summary>
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
 /// see published work once it is available. An exam is worth the total points of its
 /// questionnaire, and its questions reach students only when they start an attempt (step 4).
 /// Published work is closed with the close action once every student is graded (D-036); the
-/// plain update never sets or leaves the closed status.
+/// plain update never sets or leaves the closed status. Changing an exam's spelling mode re-scores
+/// the attempts already handed in (D-042).
 /// </summary>
 public static class CourseworkEndpoints
 {
@@ -75,7 +80,7 @@ public static class CourseworkEndpoints
             return TypedResults.Created($"/api/classes/{classId}/coursework/{row.Id}", await DtoAsync(db, user, row, ct));
         }).WithName("CreateCoursework");
 
-        group.MapPatch("/{id:long}", async Task<IResult> (string classId, long id, CourseworkInput input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
+        group.MapPatch("/{id:long}", async Task<IResult> (string classId, long id, CourseworkInput input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
         {
             var user = http.CurrentUser();
             var (_, denied) = await access.ForWriteAsync(classId, user, ct);
@@ -91,9 +96,21 @@ public static class CourseworkEndpoints
                 errors.Add("status", "This coursework is closed. Use the Reopen action (POST …/reopen) before changing its status.");
             if (errors.Any) return errors.Result();
             var before = row.Status;
+            var spelling = row.SpellingMode;
             if (await ApplyAsync(db, user, classId, row, input, errors, ct) is { } invalid) return invalid;
             var action = row.Status == before ? "updated" : row.Status;
             await ContentEndpoints.SaveWithAuditAsync(db, user, row, action, Label(row), () => row.Id, ct, "coursework");
+            if (row.SpellingMode != spelling && row.QuestionnaireId is { } setId)
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(ct);
+                var keys = await SubmissionEndpoints.KeysAsync(db, setId, ct);
+                var (regraded, changed) = await AttemptGrading.RegradeAsync(db, row, keys, time.GetUtcNow().UtcDateTime, ct);
+                if (regraded > 0)
+                    db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = "grading", Action = "regraded", Target = Label(row),
+                        TargetId = row.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), Summary = $"Spelling mode changed: {regraded} attempts re-scored, {changed} changed" });
+                await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
             return await OkAsync(db, user, row, ct);
         }).WithName("UpdateCoursework");
 
@@ -171,7 +188,12 @@ public static class CourseworkEndpoints
         if (input.AllowResubmission is { } again) row.AllowResubmission = again;
         if (input.MaxAttempts is { } attempts) { if (attempts is < 1 or > 20) errors.Add("maxAttempts", "Allow 1 to 20 attempts."); else row.MaxAttempts = attempts; }
         if (input.TimeLimitMinutes is { } minutes) { if (minutes is < 0 or > 600) errors.Add("timeLimitMinutes", "Use 0 to 600 minutes (0 means no limit)."); else row.TimeLimitMinutes = minutes == 0 ? null : minutes; }
+        var publishing = input.Status == CourseworkStatus.Published && row.Status != CourseworkStatus.Published;
         if (input.Status is not null) { if (Statuses.Contains(input.Status)) row.Status = input.Status; else errors.Add("status", "Choose draft, published or archived."); }
+        if (input.AnswerReview is not null) { if (AnswerReview.All.Contains(input.AnswerReview)) row.AnswerReview = input.AnswerReview; else errors.Add("answerReview", $"Choose one of: {string.Join(", ", AnswerReview.All)}."); }
+        if (input.SpellingMode is not null) { if (SpellingMode.All.Contains(input.SpellingMode)) row.SpellingMode = input.SpellingMode; else errors.Add("spellingMode", $"Choose one of: {string.Join(", ", SpellingMode.All)}."); }
+        if (input.ShuffleQuestions is { } shuffleQuestions) row.ShuffleQuestions = shuffleQuestions;
+        if (input.ShuffleChoices is { } shuffleChoices) row.ShuffleChoices = shuffleChoices;
         if (row.DueAt is { } d && row.AvailableFrom is { } a && d <= a) errors.Add("dueAt", "The due date must be after the date it becomes available.");
 
         if (row.Type == CourseworkType.Assignment)
@@ -196,10 +218,13 @@ public static class CourseworkEndpoints
             {
                 // An exam is worth its questions' points; a sent maxPoints is ignored.
                 var stats = await db.Questions.Where(q => q.QuestionnaireId == row.QuestionnaireId)
-                    .GroupBy(_ => 1).Select(g => new { Count = g.Count(), Points = g.Sum(q => q.Points) }).SingleOrDefaultAsync(ct);
+                    .GroupBy(_ => 1).Select(g => new { Count = g.Count(), Points = g.Sum(q => q.Points), Incomplete = g.Count(q => q.Incomplete) }).SingleOrDefaultAsync(ct);
                 row.MaxPoints = stats?.Points ?? 0;
                 if (row.Status == CourseworkStatus.Published && (stats?.Count ?? 0) == 0)
                     errors.Add("status", "Add at least one question before publishing this exam.");
+                // A draft may use an incomplete set; publishing it, or giving a published exam such a set, is refused.
+                else if (row.Status == CourseworkStatus.Published && (publishing || input.QuestionnaireId is not null) && stats?.Incomplete > 0)
+                    errors.Add("questionnaireId", "Finish the questions marked \"needs attention\" before publishing.");
             }
         }
         if (errors.Any) return errors.Result();
@@ -220,6 +245,6 @@ public static class CourseworkEndpoints
         var p = user.IsInstructor ? progress?.GetValueOrDefault(c.Id) : null;
         return new(c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
             c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
-            c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, p?.Graded, p?.Roster);
+            c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, c.AnswerReview, c.SpellingMode, c.ShuffleQuestions, c.ShuffleChoices, p?.Graded, p?.Roster);
     }
 }

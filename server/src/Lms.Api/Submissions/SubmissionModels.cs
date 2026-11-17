@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Lms.Api.Coursework;
 
 namespace Lms.Api.Submissions;
@@ -5,23 +6,39 @@ namespace Lms.Api.Submissions;
 // ---------------------------------------------------------------- student side
 
 public sealed record StudentOption(long Id, string Text);
+public sealed record StudentSection(long Id, string Title, string? Directions);
+public sealed record KeyPair(long LeftId, string Right);
 
-/// <summary>A question as a student sees it: no correct answers. Matching gives the right-hand
-/// items in alphabetical order; enumeration says how many items are expected.</summary>
+/// <summary>The correct answer of one question, with only the fields its type uses.</summary>
+public sealed record AnswerKeyDto(
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<long>? OptionIds,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Answers,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<KeyPair>? Pairs,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? CorrectAnswer);
+
+/// <summary>A question as a student sees it. Matching gives the right-hand items in alphabetical
+/// order; enumeration says how many items are expected. <paramref name="Key"/> is null until the
+/// exam's answer review allows it.</summary>
 public sealed record StudentQuestion(long Id, string Type, string Prompt, decimal Points, int? TimeLimitSeconds,
-    IReadOnlyList<StudentOption> Options, int? ItemCount, IReadOnlyList<StudentOption> Lefts, IReadOnlyList<string> Rights);
+    IReadOnlyList<StudentOption> Options, int? ItemCount, IReadOnlyList<StudentOption> Lefts, IReadOnlyList<string> Rights,
+    long? SectionId = null, string? Underlined = null, AnswerKeyDto? Key = null);
 
-/// <param name="PointsAwarded">Shown to the student once the attempt is submitted.</param>
+/// <param name="PointsAwarded">Shown to the student once the attempt is submitted, when the answer review allows.</param>
+/// <param name="MatchNote">How a typed answer matched: exact, typo, review, or null.</param>
+/// <param name="Decision">Instructors only: the spelling decision on a near miss.</param>
 public sealed record AnswerDto(long QuestionId, long? OptionId, string? Text, IReadOnlyList<string> Items,
-    IReadOnlyDictionary<long, string> Matches, decimal? PointsAwarded);
+    IReadOnlyDictionary<long, string> Matches, decimal? PointsAwarded, string? MatchNote = null, string? Decision = null);
 
 /// <param name="Deadline">When saving stops: the time limit, or the due date when late work is not allowed.</param>
+/// <param name="ScoreUpdatedAt">When a regrade last changed the score ("Your score was updated").</param>
 public sealed record AttemptDto(long Id, int AttemptNumber, string Status, DateTime? StartedAt, DateTime? SubmittedAt,
     DateTime? Deadline, decimal? Score, decimal MaxPoints, string? Feedback,
-    IReadOnlyList<StudentQuestion> Questions, IReadOnlyList<AnswerDto> Answers);
+    IReadOnlyList<StudentQuestion> Questions, IReadOnlyList<AnswerDto> Answers,
+    string AnswerReview, string SpellingMode, DateTime? ScoreUpdatedAt, IReadOnlyList<StudentSection> Sections);
 
 /// <summary>One answer. Use the field for the question's type: optionId (multiple choice, true/false),
-/// text (essay), items (enumeration), matches (matching: left option id to right text).</summary>
+/// text (essay, identification), optionId and text (modified true or false: the correction when False),
+/// items (enumeration), matches (matching: left option id to right text).</summary>
 public sealed record AnswerInput(long QuestionId, long? OptionId, string? Text, IReadOnlyList<string?>? Items, IReadOnlyDictionary<long, string?>? Matches);
 
 public sealed record AnswersInput(IReadOnlyList<AnswerInput>? Answers);
