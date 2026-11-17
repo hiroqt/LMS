@@ -7,6 +7,7 @@ export { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } fr
 export { Dialog, DialogClose, DialogContent, DialogTrigger, type DialogContentProps } from "./Dialog";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Field, Input, Select, Textarea, type FieldProps } from "./Field";
+export { FilterChip, FilterChipGroup, type FilterChipProps } from "./FilterChip";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./Popover";
 export { Menu, MenuContent, MenuGroup, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "./Menu";

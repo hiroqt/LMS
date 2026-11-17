@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { axeViolations } from "../../test/axe";
 import {
-  Badge, Button, Dialog, DialogContent, DialogTrigger, EmptyState, Field, IconButton, Input,
+  Badge, Button, Dialog, DialogContent, DialogTrigger, EmptyState, Field, FilterChip, FilterChipGroup, IconButton, Input,
   Menu, MenuContent, MenuItem, MenuTrigger, Select, SkeletonGroup, Skeleton, Tabs, TabsContent,
   TabsList, TabsTrigger, Textarea, Toaster, useToast,
 } from "./index";
@@ -148,5 +148,21 @@ describe("Feedback states", () => {
     expect(await screen.findByText("Grade saved")).toBeInTheDocument();
 
     expect(() => render(<Save />)).toThrow("useToast must be used inside <Toaster>");
+  });
+});
+
+describe("FilterChip", () => {
+  it("exposes the pressed state and puts the count in the name after a space", async () => {
+    render(
+      <FilterChipGroup label="Filter by status">
+        <FilterChip selected count={3}>Missing</FilterChip>
+        <FilterChip selected={false}>Done</FilterChip>
+      </FilterChipGroup>,
+    );
+    expect(screen.getByRole("group", { name: "Filter by status" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Missing 3" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute("type", "button");
+    expect(await axeViolations()).toEqual([]);
   });
 });
