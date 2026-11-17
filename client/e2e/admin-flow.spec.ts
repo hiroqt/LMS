@@ -1,7 +1,9 @@
+import { expectNoAxeViolations, expectReadableText } from "./a11y";
 import { expect, test, type Page } from "./fixtures";
 
 // The Admin journeys of docs/ADMIN_USER_FLOW.md. Written against the classic Admin UI
-// before its rebuild (D-037), so the rebuild can prove it kept every journey.
+// before its rebuild (D-037), so the rebuild could prove it kept every journey; the
+// only change since is that confirmations moved from window.confirm to a dialog (D-038).
 // Admin data is browser-local: each test starts from the fictional seed.
 // Names are matched case-insensitively because the rebuild uses sentence case.
 
@@ -72,8 +74,9 @@ test.describe("Admin", () => {
     const row = page.getByRole("row", { name: /CS201/ });
     await expect(row).toContainText("Data Structures");
 
-    page.once("dialog", (dialog) => void dialog.accept());
+    // Destructive actions confirm in a dialog that names the item (C-013, D-038).
     await row.getByRole("button", { name: /^delete/i }).click();
+    await page.getByRole("dialog", { name: "Delete CS201?" }).getByRole("button", { name: "Delete subject" }).click();
     await expect(page.getByRole("row", { name: /CS201/ })).toHaveCount(0);
   });
 
@@ -82,7 +85,7 @@ test.describe("Admin", () => {
     await openPage(page, /^course management$/i, "Courses");
     await page.getByRole("tab", { name: "Classrooms" }).click();
     await page.getByRole("button", { name: /add classroom/i }).click();
-    await page.getByLabel(/^subject/i).selectOption({ index: 1 });
+    await page.getByRole("combobox", { name: /^subject\b/i }).selectOption({ index: 1 });
     await page.getByLabel(/^section name/i).fill("BSIT 1-Z");
     await expect(page.getByLabel(/^enrollment code/i)).not.toHaveValue("");
     await page.getByRole("button", { name: /^save record$/i }).click();
@@ -156,8 +159,8 @@ test.describe("Admin", () => {
     await page.getByRole("button", { name: /^download json$/i }).click();
     expect((await download).suggestedFilename()).toMatch(/^tmcc-lms-backup-.+\.json$/);
 
-    page.once("dialog", (dialog) => void dialog.accept());
     await page.getByRole("button", { name: /^reset demo data$/i }).click();
+    await page.getByRole("dialog", { name: "Reset demo data?" }).getByRole("button", { name: /^reset demo data$/i }).click();
     await expect(page.getByText(/^Demo data reset\. A backup from/)).toBeVisible();
     // What was stored, not what the form still shows: reload and look again.
     await openAdmin(page);
@@ -190,8 +193,37 @@ test.describe("Admin", () => {
 
 /** The full label of the first option matching `pattern` in the target-classroom list. */
 async function optionLabel(page: Page, pattern: RegExp): Promise<string> {
-  const labels = await page.getByLabel(/^target classroom/i).locator("option").allTextContents();
+  const select = page.getByLabel(/^target classroom/i);
+  await expect(select).toBeVisible();
+  const labels = await select.locator("option").allTextContents();
   const match = labels.find((label) => pattern.test(label));
   if (!match) throw new Error(`No classroom option matches ${pattern}`);
   return match;
 }
+
+// Added with the rebuild (D-038): the same bar as the rebuilt Student and Instructor screens.
+const ADMIN_PAGES = ["/admin", "/admin/users", "/admin/courses", "/admin/courses?tab=classrooms", "/admin/enrollments", "/admin/roles", "/admin/audit", "/admin/reports", "/admin/terms", "/admin/settings"];
+
+test("every Admin page: zero axe violations and text of at least 14px @all", async ({ page }) => {
+  test.slow(); // many page loads, each with a full axe scan (L-030)
+  for (const path of ADMIN_PAGES) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expectNoAxeViolations(page);
+    await expectReadableText(page);
+  }
+  await page.goto("/admin/users?create=1");
+  await expect(page.getByRole("dialog", { name: "Create new person" })).toBeVisible();
+  await expectNoAxeViolations(page);
+});
+
+test("no Admin page scrolls sideways at 320px @mobile", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize({ width: 320, height: 640 });
+  for (const path of ADMIN_PAGES) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, path).toBeLessThanOrEqual(1);
+  }
+});
