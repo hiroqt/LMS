@@ -88,7 +88,8 @@ public static class OverviewEndpoints
             }
 
             var gradebooks = await db.GradebookSettings.AsNoTracking().Where(g => ids.Contains(g.ClassId)).ToListAsync(ct);
-            var names = classes.ToDictionary(c => c.InstructorId, c => c.InstructorName);
+            // One instructor often teaches several classes, so keep the first name per id.
+            var names = classes.DistinctBy(c => c.InstructorId).ToDictionary(c => c.InstructorId, c => c.InstructorName);
             var me = user.IsInstructor
                 ? Split(user.Id, names.GetValueOrDefault(user.Id), user.Role)
                 : roster.FirstOrDefault(s => s.StudentId == user.Id) is { } self ? new Person(user.Id, self.FirstName, self.LastName, user.Role) : new Person(user.Id, "", "", user.Role);
