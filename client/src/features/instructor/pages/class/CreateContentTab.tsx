@@ -157,10 +157,11 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
   const noun = type === "material" ? "material" : type === "activity" ? "assignment" : "assessment";
   return (
     <Card className="flex flex-col">
-      <header className="flex items-start gap-3 border-b border-line p-4">
+      {/* Wraps: at 320px "Assessments" and Create can't share a row, and a fixed row pushed Create past the card. */}
+      <header className="flex flex-wrap items-start gap-3 border-b border-line p-4">
         <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-control bg-primary-100 text-primary-700 [&>svg]:size-5">{icon}</span>
-        <div className="flex flex-1 flex-col">
-          <h3 className="m-0 font-sans text-card-title font-semibold">{title} <span className="font-normal text-muted">· {items.length}</span></h3>
+        <div className="flex min-w-0 flex-1 basis-32 flex-col">
+          <h3 className="m-0 font-sans text-card-title font-semibold break-words">{title} <span className="font-normal text-muted">· {items.length}</span></h3>
           <p className="m-0 text-body text-muted">{note}</p>
         </div>
         <Button variant="secondary" aria-label={`Create ${noun}`} onClick={() => onCreate(type)} icon={<Plus aria-hidden className="size-4" />}>Create</Button>
