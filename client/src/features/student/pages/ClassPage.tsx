@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, FolderTree, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
@@ -7,7 +7,7 @@ import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
-import { dueSoon } from "../api/selectors";
+import { courseModules, dueSoon, type ModuleEntry } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
@@ -191,6 +191,70 @@ function MaterialGrid({ materials }: { materials: StudentCatalog["materials"] })
   );
 }
 
+function ModuleEntries({ label, entries }: { label: string; entries: ModuleEntry[] }) {
+  const navigate = useNavigate();
+  if (!entries.length) return <p className="m-0 text-body text-muted">Nothing in {label} yet.</p>;
+  return (
+    <ul aria-label={`Content in ${label}`} className="m-0 flex list-none flex-col gap-2 p-0">
+      {entries.map((entry) => {
+        const Icon = entry.kind === "material" ? FileText : ClipboardList;
+        return (
+          <li key={`${entry.kind}-${entry.id}`}>
+            <button
+              type="button"
+              onClick={() => navigate(entry.kind === "material" ? studentPaths.material(entry.id) : studentPaths.assessment(entry.id))}
+              className="flex min-h-touch w-full items-center gap-3 rounded-control border border-line bg-surface p-3 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
+            >
+              <Icon aria-hidden className="size-5 shrink-0 text-primary-700" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <strong className="text-body font-semibold">{entry.title}</strong>
+                <span className="text-body text-muted">{entry.kind === "material" ? `Material · ${entry.type}` : entry.type}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** The class's modules with their submodules, and what is placed in each (D-033). */
+function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
+  const sections = courseModules(catalog, course.id);
+  return (
+    <div className="flex flex-col gap-4">
+      <SectionHeading eyebrow={course.section} title="Modules" />
+      {sections.length ? (
+        sections.map(({ module, entries, submodules }) => (
+          <Card key={module.id} className="p-5">
+            <section aria-labelledby={`module-${module.id}`} className="flex flex-col gap-4">
+              <h3 id={`module-${module.id}`} className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold">
+                <FolderTree aria-hidden className="size-5 text-primary-700" />
+                {module.title}
+              </h3>
+              {(entries.length > 0 || submodules.length === 0) && <ModuleEntries label={module.title} entries={entries} />}
+              {submodules.length > 0 && (
+                <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 border-l-2 border-primary-200 p-0 pl-4">
+                  {submodules.map((sub) => (
+                    <li key={sub.module.id}>
+                      <section aria-labelledby={`module-${sub.module.id}`} className="flex flex-col gap-3">
+                        <h4 id={`module-${sub.module.id}`} className="m-0 font-sans text-body-lg font-semibold">{sub.module.title}</h4>
+                        <ModuleEntries label={sub.module.title} entries={sub.entries} />
+                      </section>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          </Card>
+        ))
+      ) : (
+        <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">This class has no modules yet.</p>
+      )}
+    </div>
+  );
+}
+
 function Materials({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
   const [query, setQuery] = useState("");
   const shown = catalog.materials.filter((item) => item.courseId === course.id && `${item.title} ${item.kind}`.toLowerCase().includes(query.toLowerCase()));
@@ -330,6 +394,7 @@ export default function ClassPage() {
         </TabsList>
         <TabsContent value="Stream"><Stream course={course} catalog={catalog} completed={completed} now={now} onTab={setTab} /></TabsContent>
         <TabsContent value="Classwork"><Classwork course={course} catalog={catalog} completed={completed} courseIndex={index} /></TabsContent>
+        <TabsContent value="Modules"><Modules course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Materials"><Materials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>

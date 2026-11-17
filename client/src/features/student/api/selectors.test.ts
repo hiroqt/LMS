@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarEntries, dueSoon, dueThisWeek, greeting, inMonth, monthGrid, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
+import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, monthGrid, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
 import type { Assessment } from "./types";
 
 const NOW = new Date("2026-10-23T09:00:00").getTime(); // Friday
@@ -51,5 +51,30 @@ describe("student selectors", () => {
     expect(scoreAttempt([{ correct: 0 }, { correct: 2 }], { 0: 0, 1: 1 })).toBe(1);
     expect(greeting(NOW)).toBe("Good morning");
     expect(greeting(new Date("2026-10-23T19:00:00").getTime())).toBe("Good evening");
+  });
+});
+
+describe("courseModules", () => {
+  const catalog = {
+    modules: [
+      { id: "2", courseId: "c", parentId: "1", title: "1.1 Joins", order: 1 },
+      { id: "1", courseId: "c", title: "Unit 1", order: 1 },
+      { id: "9", courseId: "other", title: "Elsewhere", order: 1 },
+    ],
+    materials: [
+      { id: "m1", courseId: "c", moduleId: "2", title: "Join notes", kind: "Reading", readTime: "1 min", summary: "", added: "", goal: "", points: [] },
+      { id: "m2", courseId: "c", moduleId: "1", title: "Intro", kind: "Study guide", readTime: "1 min", summary: "", added: "", goal: "", points: [] },
+    ],
+    assessments: [{ ...item("q1", ""), moduleId: "2" }],
+  };
+
+  it("nests each submodule under its module with the content placed in it", () => {
+    const [unit, ...rest] = courseModules(catalog, "c");
+    expect(rest).toEqual([]);
+    expect(unit?.module.title).toBe("Unit 1");
+    expect(unit?.entries.map((entry) => entry.title)).toEqual(["Intro"]);
+    expect(unit?.submodules.map((sub) => [sub.module.title, sub.entries.map((entry) => `${entry.kind}:${entry.title}`)])).toEqual([
+      ["1.1 Joins", ["material:Join notes", "assessment:Item q1"]],
+    ]);
   });
 });

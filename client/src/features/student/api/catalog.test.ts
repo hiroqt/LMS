@@ -8,6 +8,19 @@ describe("toStudentCatalog", () => {
     expect(course).toMatchObject({ id: "class-a", code: "IT202", name: "Database Systems 1", section: "BSIT 2-A", teacher: "Ana Reyes", count: 2, room: "Room 203", next: "MW 08:00–09:30" });
   });
 
+  it("keeps modules, submodules, and where each material and assessment is placed", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      o.modules.push({ id: 2, classId: "class-a", parentModuleId: 1, title: "1.1 Tables", sortOrder: 1 });
+      o.materials[0]!.moduleId = 2;
+    }));
+    expect(catalog.modules).toEqual([
+      { id: "1", courseId: "class-a", title: "Unit 1", order: 1 },
+      { id: "2", courseId: "class-a", parentId: "1", title: "1.1 Tables", order: 1 },
+    ]);
+    expect(catalog.materials[0]?.moduleId).toBe("2");
+    expect(catalog.assessments.map((item) => item.moduleId)).toEqual(["1", "1", "1"]);
+  });
+
   it("counts handed-in work as completed, never an open attempt", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.completed).toEqual(["1", "2"]);
