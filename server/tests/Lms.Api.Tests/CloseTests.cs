@@ -75,6 +75,22 @@ public sealed class CloseTests : IDisposable
             .GetProperty("id").GetInt64();
     }
 
+    [Fact]
+    public async Task Students_who_did_not_hand_in_are_graded_only_after_the_due_date()
+    {
+        await SeedAsync();
+        var due = _factory.Time.Now.AddDays(1);
+        var work = (await Json(await Instructor.PostAsJsonAsync(Base, new { type = "assignment", moduleId = _moduleId, title = "Due tomorrow", maxPoints = 20, status = "published", dueAt = due })))
+            .GetProperty("id").GetInt64();
+
+        await Problem(await Instructor.PostAsJsonAsync($"{Base}/{work}/grade-missing", new { points = 0 }), HttpStatusCode.Conflict);
+        await Problem(await Instructor.PutAsJsonAsync($"{Base}/{work}/students/{Noa}/grade", new { points = 0 }), HttpStatusCode.Conflict);
+        await HandInAsync(Lia, work);   // still open, so students can hand in
+
+        _factory.Time.Now = due.AddMinutes(1);
+        Assert.Equal(2, (await Json(await Instructor.PostAsJsonAsync($"{Base}/{work}/grade-missing", new { points = 0 }))).GetProperty("graded").GetInt32());
+    }
+
     private async Task<long> HandInAsync(string student, long assignment) =>
         (await Json(await Student(student).PostAsJsonAsync($"{Base}/{assignment}/submissions", new { fileName = "erd.png" }))).GetProperty("id").GetInt64();
 

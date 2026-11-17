@@ -251,7 +251,7 @@ public static class SubmissionEndpoints
             var user = http.CurrentUser();
             var (_, denied) = await access.ForGradingAsync(classId, user, ct);
             if (denied is not null) return denied;
-            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, ct);
+            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, time.GetUtcNow().UtcDateTime, ct);
             if (invalid is not null) return invalid;
             var student = await db.IsmsClassStudents.AsNoTracking().SingleOrDefaultAsync(s => s.ClassId == classId && s.StudentId == studentId && s.IsActive, ct);
             if (student is null) return ContentEndpoints.NotFound("Student");
@@ -287,7 +287,7 @@ public static class SubmissionEndpoints
             var user = http.CurrentUser();
             var (_, denied) = await access.ForGradingAsync(classId, user, ct);
             if (denied is not null) return denied;
-            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, ct);
+            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, time.GetUtcNow().UtcDateTime, ct);
             if (invalid is not null) return invalid;
             var errors = new Errors();
             var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
@@ -342,11 +342,15 @@ public static class SubmissionEndpoints
     }
 
     /// <summary>Published or closed coursework of the class, and points within its maximum.</summary>
-    private static async Task<(CourseworkRow? Coursework, IResult? Invalid)> GradableAsync(LmsDbContext db, string classId, long courseworkId, decimal? points, CancellationToken ct)
+    private static async Task<(CourseworkRow? Coursework, IResult? Invalid)> GradableAsync(LmsDbContext db, string classId, long courseworkId, decimal? points, DateTime now, CancellationToken ct)
     {
         var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
         if (cw is null) return (null, ContentEndpoints.NotFound("Coursework"));
         if (cw.Status is not (CourseworkStatus.Published or CourseworkStatus.Closed)) return (null, Conflict("Only published or closed coursework can be graded."));
+        // A "not handed in" grade blocks the student from handing in, so it waits for the due date
+        // unless the instructor has already closed the work.
+        if (cw.Status == CourseworkStatus.Published && cw.DueAt is { } due && now <= due)
+            return (null, Conflict("Students can still hand in until the due date. Grade those who didn't hand in after it passes."));
         if (points is not { } p || p < 0 || p > cw.MaxPoints)
         {
             var errors = new Errors();

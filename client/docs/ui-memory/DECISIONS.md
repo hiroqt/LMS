@@ -398,7 +398,9 @@ everyone with no submission at all (`POST …/grade-missing`, one transaction, o
 count, never overwriting and never touching started or ungraded work). Screens say "Not handed in".
 **Rule chosen for attempts:** a not-handed-in grade is allowed only when the student has no
 submission or attempt at all, and once it exists the student can no longer hand in or start an
-attempt for that coursework (409), so it never consumes or races a real attempt. It counts in the
+attempt for that coursework (409), so it never consumes or races a real attempt. Because it
+locks the student out, it is refused (409) while the work is published and its due date has not
+passed; work with no due date, or already closed, can be graded at any time. It counts in the
 gradebook like any graded work (a 0 lowers the average). To let that student hand in, there is no
 undo yet; the instructor corrects the grade instead. Journeys added, none changed: instructor
 CLOSE and NHI, student CLOSED, all in `close-activities`.

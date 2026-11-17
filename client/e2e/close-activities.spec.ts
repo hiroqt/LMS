@@ -9,7 +9,9 @@ const workRow = (page: Page) => page.getByRole("main").getByRole("listitem").fil
 async function setUp(page: Page, sandbox: string): Promise<string> {
   const [unit] = await callApi<Array<{ id: number }>>(page, sandbox, INSTRUCTOR, "GET", "/api/classes/biology/modules");
   const work = await callApi<{ id: number }>(page, sandbox, INSTRUCTOR, "POST", "/api/classes/biology/coursework", {
-    type: "assignment", moduleId: unit!.id, title: TITLE, maxPoints: 10, status: "published", dueAt: "2026-10-30T09:00:00Z",
+    type: "assignment", moduleId: unit!.id, title: TITLE, maxPoints: 10, status: "published",
+    // Past due (the demo clock is 2026-10-23) so non-submitters can be graded; late work lets Alex hand in.
+    dueAt: "2026-10-22T09:00:00Z", allowLate: true,
   });
   // Alex hands in; the other eleven hand in nothing.
   await callApi(page, sandbox, STUDENT, "POST", `/api/classes/biology/coursework/${work.id}/submissions`, { fileName: "lab-report.pdf" });
