@@ -437,3 +437,18 @@ Admin now lives in `src/features/admin` on `AppShell` and `shared/ui`; the class
   female/male breakdown (sex is not stored) became real active/inactive student counts. Reset
   demo data lives only in Settings.
 - **New checks.** Every Admin page passes axe, the 14px text check, and the 320px sweep.
+
+### D-039 · No legacy UI left: preflight on, one stylesheet
+`2026-11-17` · hiro (revamp v2, phase 4) · scope: styles, app/router · confidence: high
+Closes D-003, D-010, and D-022, and supersedes C-005's manual resets. With Admin rebuilt
+(D-038), `src/index.css`, `src/icons.jsx`, `src/components/`, and `src/roles/` are gone:
+- `tailwind.css` imports all of Tailwind with **preflight on**, utilities are ordinary layered
+  CSS (no `!important`), and the scan covers all of `src` except tests. The page defaults the
+  old `index.css` held (canvas background, scrollbar gutter, focus ring, button cursor,
+  selection color) moved into its `@layer base`.
+- The role parser moved to `app/router/roleRouter.js`; the unknown-path page is
+  `app/router/UnknownRolePage.tsx`, loaded lazily. Its button reads "Return to Student
+  workspace" (sentence case), so `routing` matches that name case-insensitively (D-013).
+- Poppins 700 is no longer shipped; the heaviest weight in use is 600.
+- `npm run style:check` now covers all of `src`.
+One 9.1 KB (gzip) stylesheet serves every role; the entry script is 76.6 KB (was 78.5).

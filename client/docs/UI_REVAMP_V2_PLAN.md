@@ -2,7 +2,7 @@
 
 Follows [`UI_REVAMP_PLAN.md`](UI_REVAMP_PLAN.md) (Student and Instructor rebuild, cut over
 2026-11-17). v2 brings Admin onto the same system and removes decoration everywhere.
-Decision record: D-037 in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md).
+Decision records: D-037 (rules), D-038 (Admin), D-039 (legacy removed) in [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md).
 
 ## Goals
 
@@ -40,6 +40,8 @@ quiz and on results (they carry information), avatars and count pills.
 5. Every list has loading (delayed skeleton), empty (`EmptyState`), and error (retry).
 
 ## Phases
+
+Status 2026-11-17: phases 0–4 are done (PRs #42–#46); phase 5 is the verification pass.
 
 | Phase | Scope | Proof |
 |---|---|---|

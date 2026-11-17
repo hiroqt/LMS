@@ -9,8 +9,8 @@ from [`LEARNINGS.md`](LEARNINGS.md) (see the loop in [`README.md`](README.md)).
   (design system), `layout/`, `components/`, `hooks/`, `lib/`, `api/`, `styles/`.
 - `features` may import `shared`. `shared` never imports `features`. A feature imports
   another feature only through its `index.ts`.
-- Legacy code now belongs to Admin only (`roles/**`, `components/shared/**`, `index.css`).
-  Do not use it from `features/` or `shared/`; build new pieces there instead.
+- There is no legacy UI code left (D-039). Plain-JavaScript data modules live in their
+  feature (`features/admin/data`); add a `types.ts` beside them for typed screens.
 
 ### C-002 · TypeScript
 - New files are `.ts`/`.tsx` and pass `npm run typecheck` (strict,
@@ -35,12 +35,11 @@ from [`LEARNINGS.md`](LEARNINGS.md) (see the loop in [`README.md`](README.md)).
 - Respect `prefers-reduced-motion`. Never rely on color alone for status.
 - Each page has one `h1`; focus moves to it on route change.
 
-### C-005 · Base styles while preflight is off
-Until cutover (D-003), rebuilt components set their own base styles: `font-sans`, a text
-color, `m-0` on headings and paragraphs, `list-none p-0` on lists, and `border-0
-bg-transparent` on bare buttons. Do not rely on legacy `index.css` element rules.
-Utilities win over those rules because they are `!important` (D-010), so never add
-`!important` by hand.
+### C-005 · Base styles come from preflight (D-039)
+Tailwind's preflight is on and `tailwind.css` sets the page defaults (canvas background, ink
+text, Poppins, pointer cursor on buttons, a focus ring). Components no longer need `m-0`,
+`list-none p-0`, or `border-0 bg-transparent` for resets; existing ones are harmless. Never
+add `!important` by hand.
 
 ### C-006 · Tests
 - A new or rebuilt screen keeps every flow spec in `e2e/` passing unchanged (D-007).

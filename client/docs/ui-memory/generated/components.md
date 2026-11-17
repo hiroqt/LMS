@@ -139,11 +139,10 @@
 | --- | --- |
 | `src/app/providers/AppProviders.tsx` | `AppProviders` |
 | `src/app/router/AppRouter.tsx` | `AppRouter` |
+| `src/app/router/UnknownRolePage.tsx` | `UnknownRolePage` |
 
 ## Legacy Admin (unchanged)
 
 Admin and its shell keep their pre-revamp code until Admin is revamped (D-001, D-022).
 
-| File | Exports |
-| --- | --- |
-| `src/components/shared/UnknownRoleFallback.jsx` | `UnknownRoleFallback` |
+_None yet._
