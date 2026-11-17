@@ -23,13 +23,13 @@ public static class QuestionnaireEndpoints
             var rows = await db.Questionnaires.AsNoTracking().Where(q => q.OwnerInstructorId == user.Id).OrderBy(q => q.Title).ToListAsync(ct);
             var ids = rows.Select(r => r.Id).ToList();
             var stats = await db.Questions.Where(q => ids.Contains(q.QuestionnaireId))
-                .GroupBy(q => q.QuestionnaireId).Select(g => new { g.Key, Count = g.Count(), Points = g.Sum(q => q.Points) }).ToListAsync(ct);
+                .GroupBy(q => q.QuestionnaireId).Select(g => new { g.Key, Count = g.Count(), Points = g.Sum(q => q.Points), Incomplete = g.Count(q => q.Incomplete) }).ToListAsync(ct);
             var locked = await LockedAsync(db, ids, ct);
             var uses = await UsesAsync(db, ids, ct);
             return TypedResults.Ok(rows.Select(r =>
             {
                 var s = stats.FirstOrDefault(x => x.Key == r.Id);
-                return new QuestionnaireSummary(r.Id, r.Title, r.SubjectId, s?.Count ?? 0, s?.Points ?? 0, locked.Contains(r.Id), uses.GetValueOrDefault(r.Id) ?? []);
+                return new QuestionnaireSummary(r.Id, r.Title, r.SubjectId, s?.Count ?? 0, s?.Points ?? 0, locked.Contains(r.Id), uses.GetValueOrDefault(r.Id) ?? [], s?.Incomplete ?? 0);
             }).ToList());
         }).WithName("ListQuestionnaires");
 
@@ -68,7 +68,7 @@ public static class QuestionnaireEndpoints
             return TypedResults.Ok(await LoadAsync(db, row, ct));
         }).WithName("UpdateQuestionnaire");
 
-        // A deep copy: new questions, options and answers, so the copy can change while the original stays locked.
+        // A deep copy: new sections, questions, options and answers, so the copy can change while the original stays locked.
         group.MapPost("/{id:long}/copy", async Task<IResult> (long id, HttpContext http, LmsDbContext db, CancellationToken ct) =>
         {
             var user = http.CurrentUser();
@@ -80,21 +80,7 @@ public static class QuestionnaireEndpoints
             var copy = new Questionnaire { OwnerInstructorId = user.Id, SubjectId = source!.SubjectId, Title = CopyTitle(source.Title) };
             db.Questionnaires.Add(copy);
             await db.SaveChangesAsync(ct);
-
-            var questions = await db.Questions.AsNoTracking().Where(q => q.QuestionnaireId == id).OrderBy(q => q.SortOrder).ToListAsync(ct);
-            var ids = questions.Select(q => q.Id).ToList();
-            var options = await db.QuestionOptions.AsNoTracking().Where(o => ids.Contains(o.QuestionId)).ToListAsync(ct);
-            var answers = await db.QuestionExpectedAnswers.AsNoTracking().Where(a => ids.Contains(a.QuestionId)).ToListAsync(ct);
-            foreach (var q in questions)
-            {
-                var question = new Question { QuestionnaireId = copy.Id, Type = q.Type, Prompt = q.Prompt, Points = q.Points, SortOrder = q.SortOrder, TimeLimitSeconds = q.TimeLimitSeconds };
-                db.Questions.Add(question);
-                await db.SaveChangesAsync(ct);
-                foreach (var o in options.Where(o => o.QuestionId == q.Id))
-                    db.QuestionOptions.Add(new QuestionOption { QuestionId = question.Id, Text = o.Text, IsCorrect = o.IsCorrect, SortOrder = o.SortOrder });
-                foreach (var a in answers.Where(a => a.QuestionId == q.Id))
-                    db.QuestionExpectedAnswers.Add(new QuestionExpectedAnswer { QuestionId = question.Id, AnswerText = a.AnswerText, SortOrder = a.SortOrder });
-            }
+            await QuestionStore.CopyAsync(db, id, copy.Id, ct);
             db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = "coursework", Action = "copied", Target = "Questionnaire", TargetId = copy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), Summary = "Questionnaire copied" });
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -111,28 +97,28 @@ public static class QuestionnaireEndpoints
                 return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "Students have already started an exam that uses these questions, so they can no longer be changed. Copy them into a new questionnaire instead.");
 
             var questions = input.Questions ?? [];
+            IReadOnlyList<SectionInput> sections = input.Sections is { Count: > 0 } sent ? sent : [new SectionInput("", null, null)];
             var errors = new Errors();
             if (questions.Count > QuestionRules.MaxQuestions) errors.Add("questions", $"Use at most {QuestionRules.MaxQuestions} questions.");
-            for (var i = 0; i < questions.Count; i++) QuestionRules.Validate(errors, i, questions[i]);
+            QuestionRules.ValidateSections(errors, sections);
+            // With allowIncomplete only structural problems refuse the request; content problems mark the question incomplete.
+            for (var i = 0; i < questions.Count; i++)
+            {
+                if (input.AllowIncomplete == true) QuestionRules.Structural(errors, i, questions[i], sections.Count);
+                else QuestionRules.Validate(errors, i, questions[i], sections.Count);
+            }
             if (errors.Any) return errors.Result();
 
             db.Actor = user.Id;
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             db.Questions.RemoveRange(await db.Questions.Where(q => q.QuestionnaireId == id).ToListAsync(ct));
             await db.SaveChangesAsync(ct);
-
-            for (var i = 0; i < questions.Count; i++)
-            {
-                var q = questions[i];
-                var question = new Question { QuestionnaireId = id, Type = q.Type!, Prompt = q.Prompt!.Trim(), Points = q.Points!.Value, SortOrder = i + 1, TimeLimitSeconds = q.TimeLimitSeconds is > 0 ? q.TimeLimitSeconds : null };
-                db.Questions.Add(question);
-                await db.SaveChangesAsync(ct);
-                AddParts(db, question.Id, q);
-            }
+            db.QuestionSections.RemoveRange(await db.QuestionSections.Where(s => s.QuestionnaireId == id).ToListAsync(ct));
             await db.SaveChangesAsync(ct);
+            await QuestionStore.AddAsync(db, id, sections, questions, ct);
 
             // Exams that use this questionnaire are worth its total points.
-            var total = questions.Sum(q => q.Points ?? 0);
+            var total = questions.Sum(q => Math.Clamp(q.Points ?? 0, 0, 1000));
             await db.Coursework.Where(c => c.QuestionnaireId == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.MaxPoints, total), ct);
             db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = "coursework", Action = "updated", Target = "Questions", TargetId = id.ToString(System.Globalization.CultureInfo.InvariantCulture), Summary = "Questions updated" });
             await db.SaveChangesAsync(ct);
@@ -143,52 +129,20 @@ public static class QuestionnaireEndpoints
         return app;
     }
 
-    private static void AddParts(LmsDbContext db, long questionId, QuestionInput q)
-    {
-        switch (q.Type)
-        {
-            case QuestionType.MultipleChoice:
-                for (var k = 0; k < q.Options!.Count; k++)
-                    db.QuestionOptions.Add(new QuestionOption { QuestionId = questionId, Text = q.Options[k].Text!.Trim(), IsCorrect = q.Options[k].IsCorrect, SortOrder = k + 1 });
-                break;
-            case QuestionType.TrueFalse:
-                db.QuestionOptions.Add(new QuestionOption { QuestionId = questionId, Text = "True", IsCorrect = q.CorrectAnswer == true, SortOrder = 1 });
-                db.QuestionOptions.Add(new QuestionOption { QuestionId = questionId, Text = "False", IsCorrect = q.CorrectAnswer == false, SortOrder = 2 });
-                break;
-            case QuestionType.Enumeration:
-                for (var k = 0; k < q.ExpectedAnswers!.Count; k++)
-                    db.QuestionExpectedAnswers.Add(new QuestionExpectedAnswer { QuestionId = questionId, AnswerText = q.ExpectedAnswers[k]!.Trim(), SortOrder = k + 1 });
-                break;
-            case QuestionType.Matching:
-                // A pair is the option (left) and the expected answer (right) with the same sort order.
-                for (var k = 0; k < q.Pairs!.Count; k++)
-                {
-                    db.QuestionOptions.Add(new QuestionOption { QuestionId = questionId, Text = q.Pairs[k].Left!.Trim(), SortOrder = k + 1 });
-                    db.QuestionExpectedAnswers.Add(new QuestionExpectedAnswer { QuestionId = questionId, AnswerText = q.Pairs[k].Right!.Trim(), SortOrder = k + 1 });
-                }
-                break;
-        }
-    }
-
-    /// <summary>The owner's view of a questionnaire with every answer.</summary>
+    /// <summary>The owner's view of a questionnaire with its sections and every answer.</summary>
     internal static async Task<QuestionnaireDto> LoadAsync(LmsDbContext db, Questionnaire row, CancellationToken ct)
     {
+        var sections = await QuestionStore.SectionsAsync(db, row.Id, ct);
         var questions = await db.Questions.AsNoTracking().Where(q => q.QuestionnaireId == row.Id).OrderBy(q => q.SortOrder).ToListAsync(ct);
         var ids = questions.Select(q => q.Id).ToList();
         var options = await db.QuestionOptions.AsNoTracking().Where(o => ids.Contains(o.QuestionId)).OrderBy(o => o.SortOrder).ToListAsync(ct);
         var answers = await db.QuestionExpectedAnswers.AsNoTracking().Where(a => ids.Contains(a.QuestionId)).OrderBy(a => a.SortOrder).ToListAsync(ct);
         var locked = (await LockedAsync(db, [row.Id], ct)).Count > 0;
         var uses = (await UsesAsync(db, [row.Id], ct)).GetValueOrDefault(row.Id) ?? [];
-        return new QuestionnaireDto(row.Id, row.Title, row.SubjectId, locked, questions.Select(q =>
-        {
-            var opts = options.Where(o => o.QuestionId == q.Id).ToList();
-            var exp = answers.Where(a => a.QuestionId == q.Id).ToList();
-            return q.Type == QuestionType.Matching
-                ? new QuestionDto(q.Id, q.Type, q.Prompt, q.Points, q.SortOrder, q.TimeLimitSeconds, [], [],
-                    opts.Join(exp, o => o.SortOrder, a => a.SortOrder, (o, a) => new PairDto(o.Text, a.AnswerText)).ToList())
-                : new QuestionDto(q.Id, q.Type, q.Prompt, q.Points, q.SortOrder, q.TimeLimitSeconds,
-                    opts.Select(o => new OptionDto(o.Id, o.Text, o.IsCorrect)).ToList(), exp.Select(a => a.AnswerText).ToList(), []);
-        }).ToList(), uses);
+        return new QuestionnaireDto(row.Id, row.Title, row.SubjectId, locked,
+            sections.Select(s => new SectionDto(s.Id, s.Title, s.Directions, s.DefaultPoints, s.SortOrder)).ToList(),
+            questions.Select(q => QuestionStore.ToDto(q, options.Where(o => o.QuestionId == q.Id).ToList(), answers.Where(a => a.QuestionId == q.Id).ToList())).ToList(),
+            uses);
     }
 
     /// <summary>"Midterm" becomes "Midterm (copy)", shortened so it still fits the title limit.</summary>

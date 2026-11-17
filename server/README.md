@@ -317,3 +317,17 @@ later without changing the endpoints.
 
 - Real sign-in. Content routes use the demo identity above; the ISMS, status and diagnostic routes are anonymous.
 - The client does not use the content, coursework or submission endpoints yet (steps 5 and 6).
+
+## Attempt retention (D-042)
+
+Once a day (first run five minutes after startup) the API anonymizes old attempts: answer text,
+enumeration items, matching answers and `Submission.Text` are cleared, while scores, points and
+grades stay. A term's attempts are cleared once it is more than `Lms:Retention:AttemptTerms` terms
+behind the current one, and only for classes ISMS no longer offers. Terms are ordered by ISMS school
+year and semester ids. Nothing runs when no class is offered. Each run that clears something writes
+one metadata-only audit row. Demo mode has no retention job.
+
+| Setting | Default | Notes |
+|---|---|---|
+| `Lms:Retention:AttemptTerms` | 2 | to be confirmed by the registrar or data protection officer (RA 10173) |
+| `Lms:Retention:Enabled` | `true` | `false` turns the daily job off |

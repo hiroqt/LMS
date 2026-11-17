@@ -40,6 +40,10 @@ else
     builder.Services.AddScoped<IsmsReferenceSync>();
     builder.Services.Configure<SyncOptions>(builder.Configuration.GetSection(SyncOptions.SectionName));
     builder.Services.AddHostedService<IsmsSyncWorker>();
+    // Daily anonymizing of old attempts (D-042). Not registered in Demo mode.
+    builder.Services.Configure<RetentionOptions>(builder.Configuration.GetSection(RetentionOptions.SectionName));
+    builder.Services.AddScoped<AttemptRetention>();
+    builder.Services.AddHostedService<RetentionWorker>();
 }
 builder.Services.AddScoped<ClassAccess>();
 
@@ -56,7 +60,9 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
     cors.AddDefaultPolicy(policy => policy
         .WithOrigins(origins)
         .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete)
-        .AllowAnyHeader());
+        .AllowAnyHeader()
+        // Lets the browser read the import template's file name.
+        .WithExposedHeaders("Content-Disposition"));
 });
 
 var app = builder.Build();
@@ -83,8 +89,10 @@ app.MapLmsEndpoints();
 app.MapContentEndpoints();
 app.MapQuestionnaireEndpoints();
 app.MapImportEndpoints();
+app.MapAnswerKeyEndpoints();
 app.MapCourseworkEndpoints();
 app.MapSubmissionEndpoints();
+app.MapAccuracyEndpoints();
 app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();
 app.MapOverviewEndpoints();
