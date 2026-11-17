@@ -130,6 +130,13 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
     examGrades,
     attempts,
     completed,
+    attendance: overview.attendance.map(({ classId, month }) => ({
+      courseId: classId,
+      year: month.year,
+      month: month.month,
+      schoolDays: month.schoolDays,
+      daysPresent: month.entries.find((entry) => entry.studentId === me.id)?.daysPresent ?? null,
+    })),
     me: { id: me.id, firstName: me.firstName || "there", name: `${me.firstName} ${me.lastName}`.trim() || me.id },
   };
 }

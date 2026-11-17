@@ -1,6 +1,7 @@
 import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
 import { cn } from "../../../shared/lib/cn";
 import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
@@ -243,6 +244,40 @@ function People({ course, catalog }: { course: Course; catalog: StudentCatalog }
   );
 }
 
+function Attendance({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
+  const months = catalog.attendance.filter((item) => item.courseId === course.id);
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <SectionHeading eyebrow={course.section} title="Attendance" />
+        <p className="m-0 text-body text-muted">Recorded monthly by {course.teacher}: days present ÷ school days. Not counted in grades yet.</p>
+      </div>
+      {months.length ? (
+        <div role="region" aria-labelledby="attendance-caption" tabIndex={0} className="overflow-x-auto rounded-card border border-line bg-surface focus-visible:outline-3 focus-visible:outline-focus">
+          <table className="w-full min-w-[26rem] border-collapse text-left font-sans text-body">
+            <caption id="attendance-caption" className="px-4 pt-3 text-left font-semibold">Your attendance by month</caption>
+            <thead className="text-muted">
+              <tr>{["Month", "Days present", "School days", "Attendance"].map((heading) => <th key={heading} scope="col" className="px-4 py-3 font-medium">{heading}</th>)}</tr>
+            </thead>
+            <tbody>
+              {months.map((item) => (
+                <tr key={monthKey(item)} className="border-t border-line">
+                  <th scope="row" className="px-4 py-3 font-semibold">{monthLabel(item)}</th>
+                  <td className="px-4 py-3">{item.daysPresent ?? "Not recorded"}</td>
+                  <td className="px-4 py-3">{item.schoolDays}</td>
+                  <td className="px-4 py-3 font-semibold">{item.daysPresent === null ? "—" : formatPercent(attendancePercent(item.daysPresent, item.schoolDays))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">No attendance has been recorded for this class yet.</p>
+      )}
+    </div>
+  );
+}
+
 export default function ClassPage() {
   const { classId = "" } = useParams();
   const [params, setParams] = useSearchParams();
@@ -297,6 +332,7 @@ export default function ClassPage() {
         <TabsContent value="Classwork"><Classwork course={course} catalog={catalog} completed={completed} courseIndex={index} /></TabsContent>
         <TabsContent value="Materials"><Materials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
+        <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>
       </Tabs>
     </>
   );

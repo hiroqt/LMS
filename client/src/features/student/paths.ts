@@ -14,6 +14,6 @@ export const studentPaths = {
   material: (id: string) => `/student/materials/${encodeURIComponent(id)}`,
 };
 
-export const CLASS_TABS = ["Stream", "Classwork", "Materials", "People"] as const;
+export const CLASS_TABS = ["Stream", "Classwork", "Materials", "People", "Attendance"] as const;
 export type ClassTab = (typeof CLASS_TABS)[number];
 export const isClassTab = (value: unknown): value is ClassTab => CLASS_TABS.includes(value as ClassTab);
