@@ -33,6 +33,10 @@ function getWeeklyActivity(events, now) {
   });
 }
 
+/**
+ * @param {any} data
+ * @param {{ term?: string, range?: string, now?: Date, legacyCompleted?: string[] }} [options]
+ */
 export function buildAdminDashboard(data, { term = "all", range = "term", now = new Date(), legacyCompleted = [] } = {}) {
   const users = list(data.users);
   const classrooms = list(data.classrooms);

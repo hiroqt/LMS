@@ -1,4 +1,4 @@
-import { paginateRecords } from "../admin/pagination.js";
+import { paginateRecords } from "./pagination.js";
 
 const list = (items) => Array.isArray(items) ? items : [];
 const roles = ["student", "instructor", "admin"];

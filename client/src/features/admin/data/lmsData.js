@@ -1,4 +1,4 @@
-import { assessments, courses, questionsByAssessment, students, materials } from "../../data.js";
+import { assessments, courses, questionsByAssessment, students, materials } from "../../../data.js";
 import { readRoleData, saveRoleData } from "./storage.js";
 import { initializeSystemAdministration } from "./systemAdministrationData.js";
 

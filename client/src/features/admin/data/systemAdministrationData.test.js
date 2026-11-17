@@ -7,7 +7,7 @@ import {
   getAuditLogPage,
   initializeSystemAdministration,
   setCurrentAcademicTerm,
-} from "../shared/systemAdministrationData.js";
+} from "./systemAdministrationData.js";
 
 test("system administration migrates existing classroom terms without changing assignments", () => {
   const data = {

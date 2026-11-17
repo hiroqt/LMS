@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialData } from "../../../roles/shared/lmsData.js";
+import { createInitialData } from "../../admin/data/lmsData.js";
 import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, gradedLabel, notHandedInGrades, reviewQueue, searchInstructor, studentsWithoutWork, subjectOf, yearLevels, yearOf } from "./selectors";
 import type { User } from "./types";
 import type { RoleStore } from "./types";
