@@ -1,4 +1,4 @@
-import { Check, ClipboardCheck, Paperclip, X } from "lucide-react";
+import { Check, ClipboardCheck, Clock, ListChecks, Paperclip, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { cn } from "../../../../shared/lib/cn";
@@ -8,41 +8,49 @@ import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { useQuery } from "@tanstack/react-query";
-import { describeApiError, getJson, shouldRetryApiRead } from "../../../../shared/api/http";
+import { useNavigate } from "react-router";
+import { describeApiError } from "../../../../shared/api/http";
 import { Skeleton, SkeletonGroup } from "../../../../shared/ui/Skeleton";
 import { useInstructorActions } from "../../api/actions";
+import { isTypedAnswer, typeLabel, useRefreshGrading, useSubmissionDetail } from "../../api/grading";
+import { AnswerBesideKey, QuestionPrompt } from "../../components/AnswerBesideKey";
+import { MatchNoteLabel } from "../../components/MatchNoteLabel";
+import { instructorPaths } from "../../paths";
 import { gradedLabel, notHandedInGrades, studentsWithoutWork, type ReviewItem, type WorkItem } from "../../api/selectors";
 import type { RoleStore, User } from "../../api/types";
 
-interface AttemptDetail {
-  questions: Array<{ id: number; type: string; prompt: string; points: number }>;
-  answers: Array<{ questionId: number; optionId: number | null; text: string | null; items: string[]; pointsAwarded: number | null }>;
+export interface GradeFormProps {
+  item: ReviewItem;
+  onDone: () => void;
+  /** The saved feedback when an already graded attempt is corrected. */
+  initialFeedback?: string;
+  /** Exams: opens the exam's grading page (spelling review, item analysis, fixing the key). */
+  onOpenExamGrading?: () => void;
 }
 
-/** An exam attempt as the server scored it; essays need the instructor's points. */
-function useAttempt(item: ReviewItem, instructorId: string) {
-  return useQuery({
-    queryKey: ["instructor", "attempt", item.id],
-    queryFn: ({ signal }) =>
-      getJson<AttemptDetail>(`/api/classes/${encodeURIComponent(item.classroomId)}/coursework/${item.courseworkId}/submissions/${item.id}`, { identity: true, viewer: { id: instructorId, role: "instructor" }, signal }),
-    enabled: item.kind === "exam",
-    retry: shouldRetryApiRead,
-    networkMode: "always",
-  });
-}
+const toPoints = (value: string) => (value.trim() === "" ? Number.NaN : Number(value));
+const unscored = (points: number | null | undefined): points is null | undefined => points === null || points === undefined;
 
-function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor: User; onDone: () => void }) {
+/**
+ * Grades one submission. Assignments take one score. Exams show each answer beside the key:
+ * essays need points, and typed answers (identification, enumeration, modified true or false)
+ * can be overridden; both go through the grade endpoint's `answerPoints`.
+ */
+export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGrading }: GradeFormProps) {
   const toast = useToast();
   const actions = useInstructorActions();
-  const attempt = useAttempt(item, instructor.id);
+  const refreshGrading = useRefreshGrading();
+  const attempt = useSubmissionDetail(item.classroomId, item.courseworkId, item.id, item.kind === "exam");
   const [score, setScore] = useState("");
   const [essayPoints, setEssayPoints] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState("");
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState(initialFeedback);
   const [error, setError] = useState("");
+  const [overrideError, setOverrideError] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const student = `${item.student?.firstName ?? "Student"} ${item.student?.lastName ?? ""}`.trim();
-  const essays = (attempt.data?.questions ?? []).filter((question) => question.type === "essay");
+  const questions = attempt.data?.questions ?? [];
+  const essays = questions.filter((question) => question.type === "essay");
   const answerOf = (questionId: number) => attempt.data?.answers.find((answer) => answer.questionId === questionId);
 
   const submit = async (event: FormEvent) => {
@@ -65,8 +73,18 @@ function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor:
         }
         answerPoints[essay.id] = points;
       }
-      const automatic = (attempt.data?.answers ?? []).filter((answer) => !essays.some((essay) => essay.id === answer.questionId)).reduce((sum, answer) => sum + (answer.pointsAwarded ?? 0), 0);
-      value = automatic + Object.values(answerPoints).reduce((sum, points) => sum + points, 0);
+      const problems: Record<string, string> = {};
+      for (const question of questions.filter((entry) => isTypedAnswer(entry.type))) {
+        const typed = overrides[question.id];
+        if (typed === undefined) continue;
+        const points = toPoints(typed);
+        if (Number.isNaN(points) || points < 0 || points > question.points) problems[question.id] = `Give 0 to ${question.points} points.`;
+        else if (points !== answerOf(question.id)?.pointsAwarded) answerPoints[question.id] = points;
+      }
+      setOverrideError(problems);
+      if (Object.keys(problems).length) return;
+      // The total the server stores: each answer's points, with the essays and overrides given here.
+      value = questions.reduce((sum, question) => sum + (answerPoints?.[question.id] ?? answerOf(question.id)?.pointsAwarded ?? 0), 0);
     }
     setSaving(true);
     const result = await actions.saveGrade(item, value, feedback, answerPoints);
@@ -75,15 +93,21 @@ function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor:
       toast.show({ title: "Could not save the grade", description: result.message, tone: "danger" });
       return;
     }
+    if (item.kind === "exam") await refreshGrading();
     toast.show({ title: "Grade saved", description: `${student} · ${Math.round(value * 100) / 100} / ${item.maxScore}`, tone: "success" });
     onDone();
   };
 
   return (
-    <form onSubmit={submit} noValidate aria-labelledby="grading-title" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
+    <form onSubmit={submit} noValidate aria-labelledby="grading-title" className="@container flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
       <div className="flex flex-col gap-1">
         <h3 id="grading-title" className="m-0 font-sans text-section font-semibold">{item.title}</h3>
         <p className="m-0 text-body text-muted">{item.kind === "activity" ? "Assignment" : "Assessment"} · {student}</p>
+        {onOpenExamGrading && (
+          <Button variant="secondary" className="mt-1 max-w-full shrink self-start whitespace-normal" icon={<ListChecks aria-hidden className="size-4" />} onClick={onOpenExamGrading}>
+            Spelling review and item analysis
+          </Button>
+        )}
       </div>
       {item.kind === "activity" ? (
         <>
@@ -101,26 +125,47 @@ function GradeForm({ item, instructor, onDone }: { item: ReviewItem; instructor:
         <p role="alert" className="m-0 text-body text-danger">{describeApiError(attempt.error).title}. <button type="button" onClick={() => void attempt.refetch()} className="min-h-touch border-0 bg-transparent font-sans font-semibold text-primary-700 underline">Try again</button></p>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="m-0 text-body">The server scored every question except essays. Score each essay below; the total is added up for you.</p>
+          <p className="m-0 text-body">The server scored every question except essays. Score each essay below; you can also change the points of a typed answer. The total is added up for you.</p>
           <ol className="m-0 flex list-none flex-col gap-3 p-0">
-            {(attempt.data?.questions ?? []).map((question, index) => (
-              <li key={question.id} className="flex flex-col gap-2 rounded-control bg-canvas p-3 text-body">
-                <span className="font-semibold">{index + 1}. {question.prompt}</span>
-                {question.type === "essay" ? (
-                  <>
-                    <p className="m-0 whitespace-pre-wrap">{answerOf(question.id)?.text || "No answer"}</p>
+            {questions.map((question, index) => {
+              const answer = answerOf(question.id);
+              const awarded = answer?.pointsAwarded;
+              return (
+                <li key={question.id} className="flex min-w-0 flex-col gap-2 rounded-control bg-canvas p-3 text-body">
+                  <span className="font-semibold">{index + 1}. <QuestionPrompt question={question} /></span>
+                  <span className="text-muted">{typeLabel(question.type)} · {question.points} {question.points === 1 ? "point" : "points"}</span>
+                  <AnswerBesideKey question={question} answer={answer} />
+                  <MatchNoteLabel note={answer?.matchNote} decision={answer?.decision} className="self-start" />
+                  {question.type === "essay" ? (
                     <Field label={`Points for question ${index + 1} (0–${question.points})`} required error={error && !essayPoints[question.id] ? error : undefined}>
                       <Input type="number" inputMode="decimal" min={0} max={question.points} value={essayPoints[question.id] ?? ""} onChange={(event) => setEssayPoints((current) => ({ ...current, [question.id]: event.target.value }))} />
                     </Field>
-                  </>
-                ) : (
-                  <span className="flex items-center gap-2 text-muted">
-                    {(answerOf(question.id)?.pointsAwarded ?? 0) >= question.points ? <Check aria-hidden className="size-4 text-success" /> : <X aria-hidden className="size-4 text-danger" />}
-                    Scored {answerOf(question.id)?.pointsAwarded ?? 0} of {question.points}
-                  </span>
-                )}
-              </li>
-            ))}
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-2 text-muted">
+                        {unscored(awarded) ? <Clock aria-hidden className="size-4 text-warning" /> : awarded >= question.points ? <Check aria-hidden className="size-4 text-success" /> : <X aria-hidden className="size-4 text-danger" />}
+                        {unscored(awarded) ? `Not scored yet · ${question.points} possible` : `Scored ${awarded} of ${question.points}`}
+                      </span>
+                      {isTypedAnswer(question.type) && (
+                        <Field label={`Points for question ${index + 1} (0–${question.points})`} hint="Change it to override the automatic score." error={overrideError[question.id]} className="max-w-xs">
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            max={question.points}
+                            value={overrides[question.id] ?? (unscored(awarded) ? "" : String(awarded))}
+                            onChange={(event) => {
+                              const next = event.target.value;
+                              setOverrides((current) => ({ ...current, [question.id]: next }));
+                            }}
+                          />
+                        </Field>
+                      )}
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}
@@ -281,7 +326,8 @@ export interface SubmissionsTabProps {
   classroomId: string;
 }
 
-export function SubmissionsTab({ items, selectedId, onSelect, instructor, store, work, students, classroomId }: SubmissionsTabProps) {
+export function SubmissionsTab({ items, selectedId, onSelect, store, work, students, classroomId }: SubmissionsTabProps) {
+  const navigate = useNavigate();
   const selected = items.find((item) => item.id === selectedId);
   return (
     <div className="flex flex-col gap-4">
@@ -309,7 +355,12 @@ export function SubmissionsTab({ items, selectedId, onSelect, instructor, store,
             </ul>
           </Card>
           {selected ? (
-            <GradeForm key={selected.id} item={selected} instructor={instructor} onDone={() => onSelect(undefined)} />
+            <GradeForm
+              key={selected.id}
+              item={selected}
+              onDone={() => onSelect(undefined)}
+              onOpenExamGrading={selected.kind === "exam" ? () => navigate(instructorPaths.examGrading(selected.classroomId, selected.courseworkId)) : undefined}
+            />
           ) : (
             <p className="m-0 self-start rounded-card border border-dashed border-line-strong p-4 text-body text-muted">Choose a submission to review it and save a grade.</p>
           )}
