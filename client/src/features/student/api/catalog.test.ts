@@ -33,6 +33,20 @@ describe("toStudentCatalog", () => {
     expect(catalog.examGrades["2"]).toEqual({ examId: "2", totalScore: 16, feedback: undefined });
   });
 
+  it("marks closed work and a not-handed-in grade, which is never an attempt to review", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      o.coursework[0]!.coursework.status = "closed";
+      o.submissions = o.submissions.filter((item) => item.courseworkId !== 1 && item.courseworkId !== 2);
+      const graded = { id: 30, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "graded" as const, startedAt: null, submittedAt: null, late: false, text: null, fileName: null, score: 0, maxPoints: 20, feedback: null, gradedAt: "2026-10-30T00:00:00Z", notHandedIn: true };
+      o.submissions.push({ courseworkId: 1, classId: "class-a", submission: { ...graded, maxPoints: 10 } }, { courseworkId: 2, classId: "class-a", submission: graded });
+    }));
+    expect(catalog.assessments.map((item) => item.closed)).toEqual([true, false, false]);
+    expect(catalog.activitySubmissions["1"]).toMatchObject({ grade: 0, notHandedIn: true });
+    expect(catalog.examGrades["2"]).toEqual({ examId: "2", totalScore: 0, feedback: undefined, notHandedIn: true });
+    expect(catalog.attempts["2"]).toEqual({ openId: undefined, latestId: undefined, used: 1 });
+    expect(catalog.completed).toEqual(["1", "2"]);
+  });
+
   it("maps coursework to assessments, keeping a missing due date empty", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.assessments.find((item) => item.id === "2")).toMatchObject({ type: "Quiz", points: 20, questionCount: 5, timeLimit: "5 minutes", maxAttempts: 2, kind: undefined });

@@ -43,6 +43,8 @@ export interface Assessment {
   allowResubmission?: boolean;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;
+  /** The instructor closed it: no more hand-ins or attempts (D-036). */
+  closed?: boolean;
 }
 
 export interface Material {
@@ -107,12 +109,16 @@ export interface ActivitySubmission {
   submittedAt: string;
   grade: number | null;
   feedback: string;
+  /** The instructor graded it without anything handed in (D-036). */
+  notHandedIn?: boolean;
 }
 
 export interface ExamGrade {
   examId: string;
   totalScore: number;
   feedback?: string;
+  /** See ActivitySubmission.notHandedIn. */
+  notHandedIn?: boolean;
 }
 
 /** One month of the student's own attendance (D-035). */
