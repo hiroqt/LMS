@@ -335,15 +335,22 @@ export function summarize(sections: DraftSection[]): SetSummary {
   return { count: all.length, totalPoints: Math.round(totalPoints * 100) / 100, types: [...types], attention };
 }
 
-/** After a save: the server's `problems` for each question, matched by position. */
-export function applySaved(sections: DraftSection[], saved: QuestionSet): DraftSection[] {
+/**
+ * After a save: the server's `problems` for each question. `sent` is the sections as they were
+ * sent; the stored questions come back in that order, so each is matched to the sent question's
+ * key, not to whatever sits at its position now. The editor stays open during a save, so a
+ * question added, moved, or edited meanwhile is left as it is: an edit already cleared its
+ * problems, and the server's would describe the version before it.
+ */
+export function applySaved(sections: DraftSection[], saved: QuestionSet, sent: DraftSection[] = sections): DraftSection[] {
   const ordered = [...saved.questions].sort((a, b) => a.sortOrder - b.sortOrder);
-  let i = 0;
+  const byKey = new Map(flatten(sent).map((draft, index) => [draft.key, { draft, stored: ordered[index] }]));
   return sections.map((section) => ({
     ...section,
     questions: section.questions.map((draft) => {
-      const stored = ordered[i++];
-      return { ...draft, problems: stored?.incomplete ? (stored.problems ?? []) : [] };
+      const match = byKey.get(draft.key);
+      if (!match || match.draft !== draft) return draft;
+      return { ...draft, problems: match.stored?.incomplete ? (match.stored.problems ?? []) : [] };
     }),
   }));
 }
