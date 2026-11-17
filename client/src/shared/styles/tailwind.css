@@ -1,25 +1,15 @@
 /*
- * Tailwind v4 entry and the TMCC design tokens.
- *
- * Preflight (Tailwind's CSS reset) is deliberately NOT imported while the
- * legacy Admin UI is loaded: it would restyle Admin's buttons, headings, and
- * lists. Same for the !important utilities and the @source limit below: keep
- * all three until Admin is revamped (D-003, D-010, D-022).
+ * Tailwind v4 entry and the TMCC design tokens. Every role uses the rebuilt
+ * system (D-037, D-038), so Tailwind's preflight reset is on and utilities are
+ * ordinary layered CSS (this closes D-003, D-010, and D-022).
  */
-@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities) source(none) important;
+@import "tailwindcss" source("../..");
 
-/* Scan only rebuilt code. Legacy JSX contains words such as "hidden",
-   "collapse", or "table" that would otherwise generate utilities and
-   silently restyle legacy elements that use those class names. */
-@source "../../app";
-@source "../../shared";
-@source "../../features";
-@source not "../../**/*.test.{ts,tsx}";
+/* Tests hold class-like strings that are not UI. */
+@source not "../../**/*.test.{ts,tsx,js}";
 
-/* `static` emits every token as a CSS variable, used or not, so legacy CSS
-   and inline styles can reference them during the migration. */
+/* `static` emits every token as a CSS variable, so base styles and computed
+   inline styles can read them with var(). */
 @theme static {
   /* Typography: Poppins everywhere. */
   --font-sans: Poppins, "Poppins Fallback", "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -117,7 +107,7 @@
   }
 }
 
-/* Moved from the classic Details.css at cutover: honor reduced motion everywhere. */
+/* Honor reduced motion everywhere. */
 @layer base {
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -126,5 +116,44 @@
       scroll-behavior: auto !important;
       transition: none !important;
     }
+  }
+}
+
+/*
+ * Page defaults, moved from the legacy index.css (removed in revamp v2). The
+ * scrollbar gutter stops the layout shifting when a page becomes scrollable.
+ */
+@layer base {
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-width: 320px;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #root {
+    min-height: 100dvh;
+  }
+  /* Preflight gives buttons the default cursor; every button here is an action. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  /* A visible focus ring for anything that does not draw its own. */
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-900);
   }
 }
