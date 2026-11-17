@@ -513,3 +513,13 @@ A `flex` header with an icon, a `flex-1` title, and a `shrink-0` button can't sh
 title's longest word, so the button slides past the card. Local WebKit had 8px to spare; another
 run overflowed by 2px. Use `flex-wrap`, `min-w-0` and a `basis-*` on the title, and let the button
 drop under it.
+
+### L-071 · Warm both servers before the first test
+`2026-11-17` · hiro · scope: e2e · confidence: medium
+On CI, whichever spec ran first sometimes failed `openRole` ("main" not visible in 5 s), even on
+retry: the LMS API builds its EF model and seeds a sandbox on its first request (about 1 s
+locally, 4–5× the next ones), and the Vite dev server compiles each workspace the first time a
+browser opens it. On a 2-core runner with parallel workers, the two together passed 5 s.
+`e2e/global-setup.ts` now calls the API once per role and opens each workspace once before any
+test, instead of loosening the tests' timeouts. It began when the alphabetically first spec
+started using the API (`assessment-builder` before `attendance`).

@@ -19,6 +19,8 @@ const DEMO_NOW = "2026-10-23T09:00:00+08:00";
  */
 export default defineConfig({
   testDir: "./e2e",
+  // Starts after the web servers: warms the API and each workspace once (L-071).
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
