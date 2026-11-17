@@ -66,11 +66,16 @@
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
+| `src/features/instructor/components/QuestionSetEditor.tsx` | `QuestionSetEditor`, `QuestionSetView` |
+| `src/features/instructor/components/QuestionSetPicker.tsx` | `QuestionSetPicker` |
+| `src/features/instructor/components/QuestionSetUses.tsx` | `QuestionSetUses` |
 | `src/features/instructor/components/YearFilter.tsx` | `YearFilter` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
+| `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
+| `src/features/instructor/pages/QuestionSetsPage.tsx` | `QuestionSetsPage` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
 | `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |

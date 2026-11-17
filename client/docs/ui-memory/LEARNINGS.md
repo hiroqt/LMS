@@ -348,3 +348,12 @@ numbers moves nothing. `reorderSiblings` renumbers the siblings 1, 2, 3… in th
 sends only the orders that changed (sometimes just the neighbor's). An `@all` spec that opened the
 class from the sidebar timed out on phones, where the class list sits in the closed drawer; open the
 page by URL in specs that run on every device.
+
+### L-050 · Editors over server data must not reset on a background refetch
+`2026-11-17` · hiro · scope: instructor, e2e · confidence: high
+The app's queries refetch on window focus, so keying the question-set editor by `dataUpdatedAt`
+(to pick up a save) would have thrown away unsaved edits whenever the instructor switched tabs;
+it is keyed by the set id and keeps its own state after a save. The overview's classes had no ISMS
+subject id, so nothing on the client could tell which sets belong to a class; `ClassSummary` now
+carries `subjectId` and the store keeps it as `ismsSubjectId`. In specs, `getByRole("textbox")`
+also finds the top-bar search, so "no editable fields" checks are scoped to `main`.

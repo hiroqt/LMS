@@ -17,5 +17,7 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
   },
+  questionSets: "/instructor/question-sets",
+  questionSet: (id: number) => `/instructor/question-sets/${id}`,
   gradebook: (classId?: string) => (classId ? `/instructor/gradebook?class=${encodeURIComponent(classId)}` : "/instructor/gradebook"),
 };

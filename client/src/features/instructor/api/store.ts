@@ -67,6 +67,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
     classrooms: overview.classes.map((room) => ({
       id: room.id,
       subjectId: `subject-${room.id}`,
+      ismsSubjectId: room.subjectId,
       instructorId: room.instructorId,
       section: room.sectionName ?? "",
       yearLevel: yearLevelFromSection(room.sectionName),

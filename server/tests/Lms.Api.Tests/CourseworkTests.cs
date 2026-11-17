@@ -209,4 +209,147 @@ public sealed class CourseworkTests : IDisposable
         Assert.All(audit, a => Assert.Equal("coursework", a.Category));
         Assert.All(audit, a => Assert.DoesNotContain("normalisation", a.Summary));
     }
+
+    // ---------------------------------------------------------------- question sets reused across exams (D-034)
+
+    private async Task LockAsync(long courseworkId) => await _factory.WithDbAsync(async db =>
+    {
+        db.Submissions.Add(new Submission { CourseworkId = courseworkId, StudentId = Enrolled, StartedAt = DateTime.UtcNow });
+        return await db.SaveChangesAsync();
+    });
+
+    [Fact]
+    public async Task A_copy_is_a_deep_unlocked_copy_owned_by_the_caller_and_independent_of_the_original()
+    {
+        await SeedAsync();
+        var original = await QuestionnaireAsync(AllTypes);
+        var exam = await Json(await CreateExamAsync(original, "published"));
+        await LockAsync(exam.GetProperty("id").GetInt64());
+        var before = await Json(await AsInstructor().GetAsync($"/api/questionnaires/{original}"));
+        Assert.True(before.GetProperty("locked").GetBoolean());
+
+        var response = await AsInstructor().PostAsync($"/api/questionnaires/{original}/copy", null);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var copy = await Json(response);
+        var copyId = copy.GetProperty("id").GetInt64();
+        Assert.NotEqual(original, copyId);
+        Assert.Equal("Midterm (copy)", copy.GetProperty("title").GetString());
+        Assert.False(copy.GetProperty("locked").GetBoolean());
+        Assert.Equal(0, copy.GetProperty("usedBy").GetArrayLength());
+
+        // Same questions, options and answers, but new rows.
+        var a = before.GetProperty("questions");
+        var b = copy.GetProperty("questions");
+        Assert.Equal(a.GetArrayLength(), b.GetArrayLength());
+        for (var i = 0; i < a.GetArrayLength(); i++)
+        {
+            Assert.NotEqual(a[i].GetProperty("id").GetInt64(), b[i].GetProperty("id").GetInt64());
+            foreach (var field in new[] { "type", "prompt", "points", "sortOrder", "expectedAnswers", "pairs" })
+                Assert.Equal(a[i].GetProperty(field).GetRawText(), b[i].GetProperty(field).GetRawText());
+            var oa = a[i].GetProperty("options").EnumerateArray().ToList();
+            var ob = b[i].GetProperty("options").EnumerateArray().ToList();
+            Assert.Equal(oa.Select(o => (o.GetProperty("text").GetString(), o.GetProperty("isCorrect").GetBoolean())), ob.Select(o => (o.GetProperty("text").GetString(), o.GetProperty("isCorrect").GetBoolean())));
+            Assert.All(ob, o => Assert.DoesNotContain(oa, x => x.GetProperty("id").GetInt64() == o.GetProperty("id").GetInt64()));
+        }
+
+        // The copy can change; the original keeps its five locked questions.
+        var change = await AsInstructor().PutAsJsonAsync($"/api/questionnaires/{copyId}/questions", new { questions = AllTypes.Take(2) });
+        Assert.Equal(HttpStatusCode.OK, change.StatusCode);
+        var after = await Json(await AsInstructor().GetAsync($"/api/questionnaires/{original}"));
+        Assert.Equal(before.GetProperty("questions").GetRawText(), after.GetProperty("questions").GetRawText());
+        Assert.Equal(12m, (await Json(await AsInstructor().GetAsync($"/api/classes/class-a/coursework/{exam.GetProperty("id").GetInt64()}"))).GetProperty("maxPoints").GetDecimal());
+
+        // Audited: who created the rows, and a metadata-only audit entry.
+        var (createdBy, questionAuthors, audit) = await _factory.WithDbAsync(async db =>
+        {
+            var row = await db.Questionnaires.SingleAsync(q => q.Id == copyId);
+            var authors = await db.Questions.Where(q => q.QuestionnaireId == copyId).Select(q => q.CreatedBy).Distinct().ToListAsync();
+            var entry = await db.AuditLog.SingleAsync(e => e.Action == "copied");
+            return (row.CreatedBy, authors, entry);
+        });
+        Assert.Equal(Teacher, createdBy);
+        Assert.Equal([Teacher], questionAuthors);
+        Assert.Equal(copyId.ToString(System.Globalization.CultureInfo.InvariantCulture), audit.TargetId);
+        Assert.DoesNotContain("Primary key", audit.Summary);
+    }
+
+    [Fact]
+    public async Task Only_the_owner_can_copy_a_question_set()
+    {
+        await SeedAsync();
+        var id = await QuestionnaireAsync(AllTypes);
+        Assert.Equal(HttpStatusCode.NotFound, (await AsInstructor(OtherTeacher).PostAsync($"/api/questionnaires/{id}/copy", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await AsStudent().PostAsync($"/api/questionnaires/{id}/copy", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await AsInstructor().PostAsync("/api/questionnaires/999999/copy", null)).StatusCode);
+        Assert.Equal(1, await _factory.WithDbAsync(db => db.Questionnaires.CountAsync()));
+    }
+
+    [Fact]
+    public void A_long_title_is_shortened_so_the_copy_still_fits()
+    {
+        var title = new string('x', Lms.Api.Content.ContentRules.TitleMax);
+        var copy = Lms.Api.Coursework.QuestionnaireEndpoints.CopyTitle(title);
+        Assert.Equal(Lms.Api.Content.ContentRules.TitleMax, copy.Length);
+        Assert.EndsWith(" (copy)", copy);
+    }
+
+    [Fact]
+    public async Task The_list_names_every_exam_that_uses_a_set_and_its_class()
+    {
+        await SeedAsync();
+        var id = await QuestionnaireAsync(AllTypes);
+        var first = await Json(await CreateExamAsync(id, "published"));
+        await AsInstructor().PostAsJsonAsync("/api/classes/class-a/coursework", new { type = "exam", moduleId = _moduleId, title = "Make-up exam", questionnaireId = id, status = "published", maxAttempts = 2, timeLimitMinutes = 30 });
+        await QuestionnaireAsync();
+
+        var list = await Json(await AsInstructor().GetAsync("/api/questionnaires"));
+        var used = list.EnumerateArray().Single(q => q.GetProperty("id").GetInt64() == id).GetProperty("usedBy");
+        Assert.Equal(["Midterm exam", "Make-up exam"], used.EnumerateArray().Select(u => u.GetProperty("examTitle").GetString()!).ToArray());
+        Assert.Equal(first.GetProperty("id").GetInt64(), used[0].GetProperty("examId").GetInt64());
+        Assert.Equal("class-a", used[0].GetProperty("classId").GetString());
+        Assert.Equal("Database Systems 1", used[0].GetProperty("subjectName").GetString());
+        Assert.Equal(0, list.EnumerateArray().Single(q => q.GetProperty("id").GetInt64() != id).GetProperty("usedBy").GetArrayLength());
+
+        // Each exam keeps its own settings while sharing the questions.
+        var exams = (await Json(await AsInstructor().GetAsync("/api/classes/class-a/coursework?type=exam"))).GetProperty("items");
+        Assert.Equal(12m, exams[1].GetProperty("maxPoints").GetDecimal());
+        Assert.Equal(30, exams.EnumerateArray().Single(e => e.GetProperty("title").GetString() == "Make-up exam").GetProperty("timeLimitMinutes").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_set_belongs_to_a_subject_the_instructor_teaches_and_only_backs_exams_for_that_subject()
+    {
+        await SeedAsync();
+        var otherModule = await _factory.WithDbAsync(async db =>
+        {
+            db.IsmsClasses.Add(new IsmsClass { Id = "class-c", ScheduleId = "SCH-3", SubjectId = 5, SubjectName = "Web Development", InstructorId = Teacher, InstructorName = "Ana Reyes", IsActive = true });
+            db.IsmsClasses.Add(new IsmsClass { Id = "class-b", ScheduleId = "SCH-2", SubjectId = 9, SubjectName = "Networking", InstructorId = OtherTeacher, InstructorName = "Ben Cruz", IsActive = true });
+            var module = new Module { ClassId = "class-c", Title = "Unit 1", SortOrder = 1 };
+            db.Modules.Add(module);
+            await db.SaveChangesAsync();
+            return module.Id;
+        });
+
+        // Not a subject this instructor teaches.
+        var notTaught = await AsInstructor().PostAsJsonAsync("/api/questionnaires", new { title = "Subnets", subjectId = 9 });
+        Assert.Equal(HttpStatusCode.BadRequest, notTaught.StatusCode);
+        Assert.True((await Json(notTaught)).GetProperty("errors").TryGetProperty("subjectId", out _));
+
+        var web = await Json(await AsInstructor().PostAsJsonAsync("/api/questionnaires", new { title = "HTML basics", subjectId = 5 }));
+        Assert.Equal(5, web.GetProperty("subjectId").GetInt32());
+        var webId = web.GetProperty("id").GetInt64();
+
+        // A set for another subject cannot back this class's exam.
+        var wrongSubject = await CreateExamAsync(webId);
+        Assert.Equal(HttpStatusCode.BadRequest, wrongSubject.StatusCode);
+        Assert.True((await Json(wrongSubject)).GetProperty("errors").TryGetProperty("questionnaireId", out _));
+
+        var right = await AsInstructor().PostAsJsonAsync("/api/classes/class-c/coursework", new { type = "exam", moduleId = otherModule, title = "HTML quiz", questionnaireId = webId });
+        Assert.Equal(HttpStatusCode.Created, right.StatusCode);
+
+        // Changing an exam to another subject's set is refused too.
+        var exam = await Json(await CreateExamAsync(await QuestionnaireAsync()));
+        var patch = await AsInstructor().PatchAsJsonAsync($"/api/classes/class-a/coursework/{exam.GetProperty("id").GetInt64()}", new { questionnaireId = webId });
+        Assert.Equal(HttpStatusCode.BadRequest, patch.StatusCode);
+    }
 }

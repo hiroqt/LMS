@@ -22,6 +22,8 @@ export interface Subject {
 export interface Classroom {
   id: string;
   subjectId: string;
+  /** The ISMS subject id, which question sets are filed under (D-034). */
+  ismsSubjectId?: number;
   instructorId: string;
   section: string;
   yearLevel?: number;

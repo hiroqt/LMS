@@ -127,8 +127,12 @@ public static class CourseworkEndpoints
         {
             if (input.QuestionnaireId is { } qid)
             {
-                if (await db.Questionnaires.AnyAsync(q => q.Id == qid && q.OwnerInstructorId == user.Id, ct)) row.QuestionnaireId = qid;
-                else errors.Add("questionnaireId", "Choose one of your questionnaires.");
+                // Only the caller's own set, and only one for this class's subject (or one with no subject).
+                var set = await db.Questionnaires.AsNoTracking().Where(q => q.Id == qid && q.OwnerInstructorId == user.Id).Select(q => new { q.SubjectId }).SingleOrDefaultAsync(ct);
+                var subjectId = await db.IsmsClasses.Where(c => c.Id == classId).Select(c => c.SubjectId).SingleAsync(ct);
+                if (set is null) errors.Add("questionnaireId", "Choose one of your questionnaires.");
+                else if (set.SubjectId is { } s && s != subjectId) errors.Add("questionnaireId", "Choose a question set for this class's subject.");
+                else row.QuestionnaireId = qid;
             }
             if (row.QuestionnaireId is null) errors.Add("questionnaireId", "An exam needs a questionnaire.");
             else

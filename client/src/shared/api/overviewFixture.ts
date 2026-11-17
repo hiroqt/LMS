@@ -19,7 +19,7 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
   });
   const overview: Overview = {
     me: { id: "STU-1", firstName: "Lia", lastName: "Abad", role: "student" },
-    classes: [{ id: "class-a", subjectCode: "IT202", subjectName: "Database Systems 1", sectionName: "BSIT 2-A", instructorId: "EMP-1", instructorName: "Ana Reyes", termName: "2026-2027 · 1st Semester", studentCount: 2, meetings: [{ day: "MW", timeFrom: "08:00", timeTo: "09:30", roomId: 203, modality: 1 }] }],
+    classes: [{ id: "class-a", subjectId: 7, subjectCode: "IT202", subjectName: "Database Systems 1", sectionName: "BSIT 2-A", instructorId: "EMP-1", instructorName: "Ana Reyes", termName: "2026-2027 · 1st Semester", studentCount: 2, meetings: [{ day: "MW", timeFrom: "08:00", timeTo: "09:30", roomId: 203, modality: 1 }] }],
     modules: [{ id: 1, classId: "class-a", parentModuleId: null, title: "Unit 1", sortOrder: 1 }],
     materials: [{ id: 5, classId: "class-a", moduleId: 1, title: "Notes", kind: "Reading", description: "Short notes", fileName: "notes.pdf", fileType: "pdf", fileSize: null, status: "archived", createdAt: "2026-10-18T02:00:00Z" }],
     announcements: [{ id: 9, classId: "class-a", title: "Lab moved", message: "Room 204", status: "active", publishedAt: "2026-10-21T00:00:00Z", postedBy: "EMP-1", postedByName: "Ana Reyes" }],

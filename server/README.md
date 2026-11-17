@@ -199,8 +199,9 @@ Every question has `prompt`, `points` (more than 0, at most 1000) and an optiona
 
 | Method | Route | Notes |
 |---|---|---|
-| GET | `/api/questionnaires` | The caller's questionnaires with question count, total points, `locked` |
-| POST | `/api/questionnaires` | `{ title, subjectId? }` |
+| GET | `/api/questionnaires` | The caller's questionnaires with question count, total points, `locked`, and `usedBy` (each exam using it: `examId, examTitle, classId, subjectName, sectionName`; archived exams left out) |
+| POST | `/api/questionnaires` | `{ title, subjectId? }`; `subjectId` must be a subject the caller teaches |
+| POST | `/api/questionnaires/{id}/copy` | Owner only (others 404). A deep copy (questions, choices, accepted answers, pairs) titled "… (copy)", unlocked, owned by the caller, same subject |
 | GET / PATCH | `/api/questionnaires/{id}` | Full view with correct answers (owner only) / `{ title }` |
 | PUT | `/api/questionnaires/{id}/questions` | `{ questions: [...] }` replaces the whole list in one transaction; errors name the position, e.g. `questions[2].pairs` |
 | GET | `/api/classes/{classId}/coursework?type=&page=&pageSize=` | Soonest due first. Students see published work whose `availableFrom` has passed |
@@ -209,7 +210,9 @@ Every question has `prompt`, `points` (more than 0, at most 1000) and an optiona
 | PATCH | `/api/classes/{classId}/coursework/{id}` | Any of the fields above except `type`; `status` is draft, published or archived |
 
 An exam is worth the total points of its questionnaire and cannot be published without
-questions. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
+questions. An exam can use only the caller's own questionnaire, and only one for the class's
+subject (or one with no subject). Several exams can share one questionnaire; each keeps its own
+dates, attempts and time limit. Assignments cannot have a questionnaire. Students never receive `questionnaireId`,
 questions or answers from these routes; they get questions when they start an attempt (step 4).
 
 ## Submissions and grading (Phase 2, step 4)
