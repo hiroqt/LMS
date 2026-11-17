@@ -136,6 +136,39 @@ public sealed class ContentTests : IDisposable
     }
 
     [Fact]
+    public async Task Content_moves_between_modules_and_submodules_of_its_own_class_only()
+    {
+        await SeedAsync();
+        var unit1 = await ModuleIdAsync();
+        var sub = (await Json(await AsInstructor().PostAsJsonAsync("/api/classes/class-a/modules", new { title = "1.1 Joins", parentModuleId = unit1 }))).GetProperty("id").GetInt64();
+        var otherClassModule = await _factory.WithDbAsync(async db =>
+        {
+            var row = new Module { ClassId = "class-b", Title = "Web unit", SortOrder = 1 };
+            db.Modules.Add(row);
+            await db.SaveChangesAsync();
+            return row.Id;
+        });
+        var material = await CreateMaterialAsync();
+        var work = (await Json(await AsInstructor().PostAsJsonAsync("/api/classes/class-a/coursework", new { type = "assignment", moduleId = unit1, title = "ER diagram", maxPoints = 10 }))).GetProperty("id").GetInt64();
+
+        var moved = await AsInstructor().PatchAsJsonAsync($"/api/classes/class-a/materials/{material}", new { moduleId = sub });
+        Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
+        Assert.Equal(sub, (await Json(moved)).GetProperty("moduleId").GetInt64());
+        Assert.Equal(sub, (await Json(await AsInstructor().PatchAsJsonAsync($"/api/classes/class-a/coursework/{work}", new { moduleId = sub }))).GetProperty("moduleId").GetInt64());
+
+        foreach (var target in new[] { otherClassModule, 9999 })
+        {
+            var refused = await AsInstructor().PatchAsJsonAsync($"/api/classes/class-a/materials/{material}", new { moduleId = target });
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            Assert.True((await Json(refused)).GetProperty("errors").TryGetProperty("moduleId", out _));
+            Assert.Equal(HttpStatusCode.BadRequest, (await AsInstructor().PatchAsJsonAsync($"/api/classes/class-a/coursework/{work}", new { moduleId = target })).StatusCode);
+        }
+        Assert.Equal(sub, await _factory.WithDbAsync(db => db.Materials.Where(m => m.Id == material).Select(m => m.ModuleId).SingleAsync()));
+        Assert.Equal(sub, await _factory.WithDbAsync(db => db.Coursework.Where(c => c.Id == work).Select(c => c.ModuleId).SingleAsync()));
+        Assert.Equal(HttpStatusCode.Forbidden, (await AsStudent().PatchAsJsonAsync($"/api/classes/class-a/materials/{material}", new { moduleId = unit1 })).StatusCode);
+    }
+
+    [Fact]
     public async Task Materials_are_validated_and_archived_ones_are_hidden_from_students()
     {
         await SeedAsync();

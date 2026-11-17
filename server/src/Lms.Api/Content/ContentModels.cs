@@ -22,7 +22,8 @@ public sealed record PagedList<T>(IReadOnlyList<T> Items, int Page, int PageSize
 public sealed record ModuleCreate(string? Title, long? ParentModuleId, int? SortOrder);
 public sealed record ModuleUpdate(string? Title, int? SortOrder);
 public sealed record MaterialCreate(long ModuleId, string? Title, string? Kind, string? Description, string? FileName, string? FileType, string? FileSize);
-public sealed record MaterialUpdate(string? Title, string? Kind, string? Description, string? Status);
+/// <summary>Only the sent fields change. <c>ModuleId</c> moves the material to another module or submodule of the same class.</summary>
+public sealed record MaterialUpdate(string? Title, string? Kind, string? Description, string? Status, long? ModuleId = null);
 public sealed record AnnouncementCreate(string? Title, string? Message);
 public sealed record AnnouncementUpdate(string? Status);
 
