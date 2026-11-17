@@ -32,6 +32,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
 | CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
+| CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
 | MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
@@ -65,6 +66,8 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | TABS | All seven class tabs reachable (Attendance, the eighth, is covered by `attendance`) | ✔ `instructor-flow` A → TABS | ✅ |
 | PEOPLE | Roster search | ✔ `instructor-flow` People | ✅ |
 | AT | Attendance tab: month, school days, days present, live %, field errors, Save (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
+| CLOSE | Classwork "N of M graded", Close refused with the ungraded list, Reopen (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
+| NHI | Submissions: grade a student who handed in nothing; Give 0 to everyone who didn't hand in (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
 | B | Post announcement → class + Student Stream | ✔ `instructor-flow` B | ✅ |
 | COMPOSE | Title ≤120 / message ≤1,200 validation; Cancel | ✔ `instructor-more` | ✅ |
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |

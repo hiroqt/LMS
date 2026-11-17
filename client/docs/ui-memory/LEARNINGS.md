@@ -357,3 +357,12 @@ it is keyed by the set id and keeps its own state after a save. The overview's c
 subject id, so nothing on the client could tell which sets belong to a class; `ClassSummary` now
 carries `subjectId` and the store keeps it as `ismsSubjectId`. In specs, `getByRole("textbox")`
 also finds the top-bar search, so "no editable fields" checks are scoped to `main`.
+
+### L-051 · Closed work was invisible to students, and a 409 body was thrown away
+`2026-11-17` · hiro · scope: server, shared/api, instructor · confidence: high
+Every student read (coursework list and detail, the overview, and the hand-in lookup) filtered on
+`status == published`, so closing an activity would have made it vanish for students and turned
+hand-ins into 404s instead of a clear 409; all four now accept `closed` too. On the client,
+`ApiError` kept only `title`, `detail` and `errors`, so the close action's `ungraded` list never
+reached the screen; it now keeps the whole problem body as `problem`. The instructor store maps
+every non-archived status to "active", so `closed` is carried as its own flag rather than a status.

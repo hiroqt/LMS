@@ -51,6 +51,7 @@ flowchart TD
     STREAM -->|Open assessment| AD
     STREAM -->|Open material| MD
     CW -->|Open assessment| AD
+    AD -->|Closed by the instructor| CLOSED[Shows Closed with no hand-in or start; a grade given without work reads Not handed in]
     MAT -->|Open material| MD
     PEOPLE -->|Choose another class or workspace item| CL
 
@@ -105,5 +106,6 @@ The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` 
 - **Navigation (D-023):** Dashboard (formerly Today), My Classes, Tasks & Assessments, Calendar, and News & Announcements, which is now its own page instead of a toggle on the dashboard. On phones these are in the bottom bar (Dashboard, Classes, Tasks, Calendar, News), with a search sheet.
 - **Dashboard:** greeting with the date and term week, summary chips, Tasks & Assessments with due-date pills, My Classes, an Academic Calendar timeline, and the latest announcement.
 - **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
+- **Closed activities** (D-036): once the instructor closes an assignment or assessment it shows **Closed** and offers no hand-in or start; a grade the instructor gave without anything handed in reads **Not handed in** with the score (`e2e/close-activities.spec.ts`).
 
 Implementation references: [Student workspace](../src/features/student/StudentApp.tsx), [screens](../src/features/student/pages/), [data and rules](../src/features/student/api/), [fictional seed data](../src/data.js), and [project scope](PROJECT_BRIEF.md).
