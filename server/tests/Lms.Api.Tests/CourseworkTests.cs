@@ -244,8 +244,11 @@ public sealed class CourseworkTests : IDisposable
         for (var i = 0; i < a.GetArrayLength(); i++)
         {
             Assert.NotEqual(a[i].GetProperty("id").GetInt64(), b[i].GetProperty("id").GetInt64());
-            foreach (var field in new[] { "type", "prompt", "points", "sortOrder", "expectedAnswers", "pairs" })
+            foreach (var field in new[] { "type", "prompt", "points", "sortOrder", "expectedAnswers" })
                 Assert.Equal(a[i].GetProperty(field).GetRawText(), b[i].GetProperty(field).GetRawText());
+            // Pairs carry their left item's id (PR #48), which is a new row in the copy.
+            static string Pairs(JsonElement q) => string.Join("|", q.GetProperty("pairs").EnumerateArray().Select(p => $"{p.GetProperty("left").GetString()}={p.GetProperty("right").GetString()}"));
+            Assert.Equal(Pairs(a[i]), Pairs(b[i]));
             var oa = a[i].GetProperty("options").EnumerateArray().ToList();
             var ob = b[i].GetProperty("options").EnumerateArray().ToList();
             Assert.Equal(oa.Select(o => (o.GetProperty("text").GetString(), o.GetProperty("isCorrect").GetBoolean())), ob.Select(o => (o.GetProperty("text").GetString(), o.GetProperty("isCorrect").GetBoolean())));

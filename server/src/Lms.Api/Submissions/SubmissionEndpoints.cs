@@ -204,9 +204,13 @@ public static class SubmissionEndpoints
                     var answer = answers.FirstOrDefault(a => a.QuestionId == questionId);
                     if (answer is null) { answer = new SubmissionAnswer { SubmissionId = row.Id, QuestionId = questionId }; db.SubmissionAnswers.Add(answer); answers.Add(answer); }
                     answer.PointsAwarded = Math.Round(points, 2);
+                    // Points for a near miss waiting for review settle it; the decision keeps it settled when the attempt is re-scored.
+                    if (answer.MatchNote == MatchNote.Review && answer.SpellingDecision is null)
+                        answer.SpellingDecision = points > 0 ? SpellingDecision.Accepted : SpellingDecision.Rejected;
                 }
+                // Anything still waiting for a spelling decision must be decided or given points.
                 foreach (var waiting in answers.Where(a => a.PointsAwarded is null && a.MatchNote == MatchNote.Review && a.SpellingDecision is null))
-                    errors.Add($"answerPoints[{waiting.QuestionId}]", "Accept or reject the spelling of this answer in the spelling review first.");
+                    errors.Add($"answerPoints[{waiting.QuestionId}]", "Give this answer points, or accept or reject its spelling in the spelling review.");
                 foreach (var essay in keys.Where(k => k.Question.Type == QuestionType.Essay))
                 {
                     var answer = answers.FirstOrDefault(a => a.QuestionId == essay.Question.Id);

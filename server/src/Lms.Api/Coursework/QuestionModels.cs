@@ -14,7 +14,8 @@ public sealed record QuestionnaireDto(long Id, string Title, int? SubjectId, boo
 
 public sealed record SectionDto(long Id, string Title, string? Directions, decimal? DefaultPoints, int SortOrder);
 public sealed record OptionDto(long Id, string Text, bool IsCorrect);
-public sealed record PairDto(string Left, string Right);
+/// <param name="LeftId">The left item's option id: the key students' matches use.</param>
+public sealed record PairDto(long LeftId, string Left, string Right);
 
 /// <param name="Problems">Plain sentences saying what to fix; empty unless <paramref name="Incomplete"/>.</param>
 public sealed record QuestionDto(long Id, string Type, string Prompt, decimal Points, int SortOrder, int? TimeLimitSeconds,

@@ -138,7 +138,7 @@ public static class QuestionStore
         IReadOnlyList<string> problems = q.Incomplete && q.Problems is { } p ? p.Split('\n', StringSplitOptions.RemoveEmptyEntries) : [];
         return q.Type == QuestionType.Matching
             ? new QuestionDto(q.Id, q.Type, q.Prompt, q.Points, q.SortOrder, q.TimeLimitSeconds, q.SectionId, q.Underlined, q.AlwaysStrict, q.CaseSensitive, q.Incomplete, problems, [], [],
-                opts.Join(exp, o => o.SortOrder, a => a.SortOrder, (o, a) => new PairDto(o.Text, a.AnswerText)).ToList())
+                opts.Join(exp, o => o.SortOrder, a => a.SortOrder, (o, a) => new PairDto(o.Id, o.Text, a.AnswerText)).ToList())
             : new QuestionDto(q.Id, q.Type, q.Prompt, q.Points, q.SortOrder, q.TimeLimitSeconds, q.SectionId, q.Underlined, q.AlwaysStrict, q.CaseSensitive, q.Incomplete, problems,
                 opts.Select(o => new OptionDto(o.Id, o.Text, o.IsCorrect)).ToList(), exp.Select(a => a.AnswerText).ToList(), []);
     }
