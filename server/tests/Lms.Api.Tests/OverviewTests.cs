@@ -53,6 +53,27 @@ public sealed class OverviewTests : IDisposable
     }
 
     [Fact]
+    public async Task An_instructor_with_several_classes_and_their_shared_student_both_load()
+    {
+        await _factory.WithDbAsync(async db =>
+        {
+            foreach (var id in new[] { "class-a", "class-b" })
+            {
+                db.IsmsClasses.Add(new IsmsClass { Id = id, ScheduleId = id, SubjectName = "Databases", InstructorId = "EMP-1", InstructorName = "Ana Reyes", IsActive = true });
+                db.IsmsClassStudents.Add(new IsmsClassStudent { ClassId = id, StudentId = "STU-1", EnrollmentId = "E-" + id, FirstName = "Lia", LastName = "Abad", IsActive = true });
+            }
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var ana = await As("EMP-1", CurrentUser.Instructor).GetFromJsonAsync<JsonElement>("/api/me/overview");
+        Assert.Equal(2, ana.GetProperty("classes").GetArrayLength());
+        Assert.Equal("Ana", ana.GetProperty("me").GetProperty("firstName").GetString());
+        var lia = await As("STU-1", CurrentUser.Student).GetFromJsonAsync<JsonElement>("/api/me/overview");
+        Assert.Equal(2, lia.GetProperty("classes").GetArrayLength());
+    }
+
+    [Fact]
     public async Task The_people_list_is_unavailable_when_the_demo_identity_is_off()
     {
         using var factory = new LmsApiFactory().With(DemoIdentity.EnabledSetting, "false");
