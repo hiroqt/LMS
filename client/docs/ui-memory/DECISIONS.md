@@ -452,3 +452,49 @@ Closes D-003, D-010, and D-022, and supersedes C-005's manual resets. With Admin
 - Poppins 700 is no longer shipped; the heaviest weight in use is 600.
 - `npm run style:check` now covers all of `src`.
 One 9.1 KB (gzip) stylesheet serves every role; the entry script is 76.6 KB (was 78.5).
+
+### D-040 · Question types, sections, and assessment settings
+`2026-11-17` · hiro (assessments) · scope: instructor, student, server, e2e · confidence: medium
+Plan: `docs/QUESTION_TYPES_PLAN.md`; shapes: `docs/ASSESSMENTS_API_CONTRACT.md`.
+- **New question types:** `identification` (any accepted answer is correct) and
+  `modified_true_false` (an underlined phrase; False needs an accepted correction; all or
+  nothing). The underline is drawn from its own field, so no HTML is ever stored.
+- **Sections:** sets gain sections with directions and default points.
+- **Incomplete sets:** a set can be saved with incomplete questions (`allowIncomplete`), but an
+  exam using it can't be published until every question is complete.
+- **New settings on each exam:**
+  - `answerReview`: score only, which were right (the default, as before), or correct answers
+    after the due date or right after submitting. The server leaves the keys out until then.
+  - `spellingMode`: strict (the default, and every existing exam), small typos accepted but
+    flagged, or near misses held for the instructor. A question can be marked always strict and
+    case-sensitive.
+  - Shuffle questions within each section, and shuffle choices.
+- **The assessment builder page:** assessments get their own builder page (details, questions,
+  settings, summary with Preview, Save draft, and Publish). It replaces the one-question form,
+  so journey E changes, and its spec moves with it (D-013). The Question sets page uses the
+  same editor.
+
+### D-041 · Exams can be imported from Word, Excel, CSV, or pasted text; AI import waits
+`2026-11-17` · hiro (assessments) · scope: instructor, server · confidence: medium
+`POST /api/questionnaires/import` reads a `.docx`, `.xlsx`, `.csv`, or `.txt` file (≤ 5 MB) or
+pasted text, using the format in the contract. It returns draft questions with the original
+text and warnings (numbering gaps, points mismatches, a missing key). **Nothing is saved**, the
+file is discarded, and the audit row holds only the file name, format, and count. Drafts open in
+the builder's editor, and a person saves them. Macro-enabled files are refused, and size, zip
+entries, and parse time are capped. The server adds `DocumentFormat.OpenXml` (Microsoft, MIT).
+Reading any document with AI is **not built** until the school approves sending exam content to
+an outside service.
+
+### D-042 · A locked set's answer key can be fixed, and attempts are re-scored; attempts are anonymized after 2 terms
+`2026-11-17` · hiro (assessments) · scope: instructor, student, server · confidence: medium
+**Fixing the key: a narrow exception to D-034.**
+- `PUT /api/questionnaires/{id}/answer-key` changes answer keys only, even on a locked set.
+  Prompts, choices, types, points, and order stay as they are.
+- Every submitted attempt of the exams using the set is re-scored, with one audit row.
+- An attempt whose score changed records `scoreUpdatedAt`, and the student sees "Your score was
+  updated".
+- Changing an exam's spelling mode re-scores it the same way.
+
+**Retention.** Attempts are anonymized 2 terms after their term ends (`Lms:Retention:AttemptTerms`,
+to be confirmed by the registrar or data protection officer under RA 10173). Answer and essay
+text is cleared; scores and grades stay.
