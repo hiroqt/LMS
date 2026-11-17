@@ -14,7 +14,7 @@ export interface ClassTableRow {
  */
 export function ClassTable({ caption, columns, rows }: { caption: string; columns: string[]; rows: ClassTableRow[] }) {
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="overflow-x-auto rounded-card border border-line bg-surface shadow-card focus-visible:outline-3 focus-visible:outline-focus">
+    <div role="region" aria-label={caption} tabIndex={0} className="overflow-x-auto rounded-card border border-line bg-surface focus-visible:outline-3 focus-visible:outline-focus">
       <table className="w-full min-w-[34rem] border-collapse font-sans text-body text-ink">
         <caption className="sr-only">{caption}</caption>
         <thead>

@@ -29,7 +29,7 @@ export default function MaterialPage() {
           <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-control bg-surface/70"><FileText className="size-6" /></span>
           <div className="flex flex-col gap-1">
             <p className="m-0 text-label font-semibold tracking-wide uppercase">{course?.name} · {material.kind}</p>
-            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold text-ink outline-none sm:text-page">{material.title}</h1>
+            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold text-ink outline-none sm:text-page">{material.title}</h1>
             <p className="m-0 text-body text-ink">Added {material.added} by {course?.teacher ?? "your instructor"}</p>
           </div>
         </header>

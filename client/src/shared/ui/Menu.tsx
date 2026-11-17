@@ -34,7 +34,7 @@ export function MenuItem({ className, ...props }: ComponentProps<typeof Primitiv
 }
 
 export function MenuLabel({ className, ...props }: ComponentProps<typeof Primitive.Label>) {
-  return <Primitive.Label className={cn("px-3 pt-2 pb-1 text-label font-semibold tracking-wide text-muted uppercase", className)} {...props} />;
+  return <Primitive.Label className={cn("px-3 pt-2 pb-1 text-body font-semibold text-muted", className)} {...props} />;
 }
 
 export function MenuSeparator({ className, ...props }: ComponentProps<typeof Primitive.Separator>) {

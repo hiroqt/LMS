@@ -49,7 +49,7 @@ export function AnnouncementsTab({ room, instructor, content }: ClassTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <SectionHeading eyebrow={room.section} title="Announcements" count={content.announcements.length} />
+        <SectionHeading title="Announcements" count={content.announcements.length} />
         {!open && <Button onClick={() => setOpen(true)} icon={<Plus aria-hidden className="size-4" />}>New announcement</Button>}
       </div>
       {open && (

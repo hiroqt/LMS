@@ -22,7 +22,7 @@ function NewsContent({ catalog, now }: { catalog: StudentCatalog; now: number })
       <FeaturedNewsCarousel slides={featuredSlides(catalog.featured, catalog.academicEvents, now)} onViewCalendar={() => navigate(studentPaths.calendar())} />
       <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
-          <SectionHeading id="teacher-news" eyebrow="Your classes" title="Teacher announcements" />
+          <SectionHeading id="teacher-news" title="Teacher announcements" />
           {catalog.announcements.length ? (
             <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {catalog.announcements.slice(0, 6).map((item) => (

@@ -58,7 +58,7 @@ export function ProfileMenu({ name, subtitle, currentRole, onSwitchRole, actions
           <p className="m-0 text-body text-muted">{subtitle}</p>
         </div>
         <div role="group" aria-label="Switch workspace" className="border-t border-line pt-1.5">
-          <p className="m-0 px-3 pb-1 text-label font-semibold tracking-wide text-muted uppercase">Switch workspace</p>
+          <p className="m-0 px-3 pb-1 text-body font-semibold text-muted">Switch workspace</p>
           {roles.map(({ role, label, icon: Icon }) => (
             <button key={role} type="button" className={item} disabled={role === currentRole} onClick={() => run(() => onSwitchRole(role))}>
               <Icon aria-hidden />

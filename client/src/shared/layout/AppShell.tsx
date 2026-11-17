@@ -68,7 +68,7 @@ function NavList({ nav, activeId, onNavigate, label, layout, collapsed = false }
                     : "min-h-16 flex-col justify-center gap-0.5 px-1 text-body [&_svg]:size-6",
                   layout === "column"
                     ? active
-                      ? "bg-primary-700 font-semibold text-white shadow-card"
+                      ? "bg-primary-700 font-semibold text-white"
                       : "bg-transparent text-ink hover:bg-primary-50"
                     : active
                       ? "bg-primary-100 font-semibold text-primary-800"
@@ -101,7 +101,7 @@ function Brand({ full = false, sealOnly = false }: { full?: boolean; sealOnly?: 
       </span>
       <span className={sealOnly ? "sr-only" : "flex flex-col leading-tight"}>
         {/* Collapses to the seal on very narrow phones so the top bar fits 320px. */}
-        <span className="text-section font-bold tracking-tight max-[379px]:sr-only">TMCC LMS</span>
+        <span className="text-section font-semibold tracking-tight max-[379px]:sr-only">TMCC LMS</span>
         {full && <span className="text-body text-muted">Trece Martires City College</span>}
       </span>
     </span>
@@ -185,7 +185,7 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
       </aside>
 
       <div className={cn("flex min-h-dvh flex-col", collapsed ? "lg:pl-20" : "lg:pl-72")}>
-        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 sm:min-h-16 border-b border-line bg-surface/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 sm:min-h-16 border-b border-line bg-surface px-4 pt-[env(safe-area-inset-top)] sm:px-6">
           {mobileNav === "drawer" && (
             <Dialog.Root open={drawerVisible} onOpenChange={setDrawerOpen}>
               <Dialog.Trigger

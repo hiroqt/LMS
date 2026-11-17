@@ -64,7 +64,7 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <SectionHeading eyebrow="Readings, guides, and files" title="Class materials" count={shown.length} />
+        <SectionHeading title="Class materials" description="Readings, guides, and files" count={shown.length} />
         <Button onClick={() => goTab("Create content", { create: "material" })} icon={<Plus aria-hidden className="size-4" />}>Add material</Button>
       </div>
       <div className="grid grid-cols-1 gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-3 sm:items-end">

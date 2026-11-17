@@ -124,7 +124,7 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading eyebrow={course.section} title="Classwork" />
+        <SectionHeading title="Classwork" />
         <ListSearch label="Search classwork" placeholder="Find classwork" value={query} onChange={setQuery} />
       </div>
       <div role="group" aria-label="Filter classwork" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
@@ -223,7 +223,7 @@ function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog 
   const sections = courseModules(catalog, course.id);
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeading eyebrow={course.section} title="Modules" />
+      <SectionHeading title="Modules" />
       {sections.length ? (
         sections.map(({ module, entries, submodules }) => (
           <Card key={module.id} className="p-5">
@@ -261,7 +261,7 @@ function Materials({ course, catalog }: { course: Course; catalog: StudentCatalo
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading eyebrow={course.section} title="Class materials" />
+        <SectionHeading title="Class materials" />
         <ListSearch label="Search materials" placeholder="Search materials" value={query} onChange={setQuery} />
       </div>
       <MaterialGrid materials={shown} />
@@ -313,7 +313,7 @@ function Attendance({ course, catalog }: { course: Course; catalog: StudentCatal
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <SectionHeading eyebrow={course.section} title="Attendance" />
+        <SectionHeading title="Attendance" />
         <p className="m-0 text-body text-muted">Recorded monthly by {course.teacher}: days present ÷ school days. Not counted in grades yet.</p>
       </div>
       {months.length ? (
@@ -365,7 +365,6 @@ export default function ClassPage() {
         term={term}
         title={course.name}
         subject={course.subject}
-        index={index}
         breadcrumbLabel="My classes"
         onBreadcrumb={() => navigate(studentPaths.classes)}
         facts={[

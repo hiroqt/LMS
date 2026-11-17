@@ -62,10 +62,10 @@ function Overview({ onNews }: { onNews: () => void }) {
     // A bento grid: tiles share one gutter and stretch to their row (D-026).
     <div className="flex flex-col gap-3 sm:gap-4">
       <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
-        <section aria-labelledby="teaching-greeting" className="@container rounded-card bg-primary-700 p-5 font-sans text-white shadow-card @4xl:col-span-5 @7xl:col-span-4 sm:p-6">
+        <section aria-labelledby="teaching-greeting" className="@container rounded-card bg-primary-700 p-5 font-sans text-white @4xl:col-span-5 @7xl:col-span-4 sm:p-6">
           <div className="flex h-full flex-col justify-between gap-3 @lg:flex-row @lg:items-center">
             <div className="flex flex-col gap-1">
-              <h2 id="teaching-greeting" className="m-0 text-page-mobile font-bold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
+              <h2 id="teaching-greeting" className="m-0 text-page-mobile font-semibold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
               <p className="m-0 text-body text-primary-100">
                 {queue.length
                   ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
@@ -171,7 +171,7 @@ function News({ onCalendar }: { onCalendar: () => void }) {
       <FeaturedNewsCarousel slides={featuredSlides(featuredAnnouncements, events, now)} onViewCalendar={onCalendar} />
       <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-2">
         <section aria-labelledby="teacher-news" className="flex flex-col gap-3">
-          <SectionHeading id="teacher-news" icon={<Megaphone />} eyebrow="Your classes" title="Teacher announcements" count={announcements.length} />
+          <SectionHeading id="teacher-news" icon={<Megaphone />} title="Teacher announcements" count={announcements.length} />
           {announcements.length ? (
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {announcements.map((item) => (
@@ -229,7 +229,7 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
             {formatFullDate(now)}
             {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
           </p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">Your teaching day</h1>
+          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">Your teaching day</h1>
         </div>
         <div className="relative"><div className="flex flex-wrap items-end gap-3">
             {instructors.length > 1 && (

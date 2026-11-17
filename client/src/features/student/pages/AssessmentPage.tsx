@@ -131,7 +131,7 @@ export default function AssessmentPage() {
               <span aria-hidden>›</span>
               {assessment.type}
             </p>
-            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-bold text-ink outline-none sm:text-page">{assessment.title}</h1>
+            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold text-ink outline-none sm:text-page">{assessment.title}</h1>
             {assessment.description && <p className="m-0 text-body-lg text-muted">{assessment.description}</p>}
             {course && <p className="m-0 text-body text-muted">{course.teacher} · {course.section}</p>}
           </header>
