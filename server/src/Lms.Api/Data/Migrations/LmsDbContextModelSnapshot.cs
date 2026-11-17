@@ -257,6 +257,14 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("allow_resubmission");
 
+                    b.Property<string>("AnswerReview")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("results")
+                        .HasColumnName("answer_review");
+
                     b.Property<DateTime?>("AvailableFrom")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("available_from");
@@ -310,6 +318,22 @@ namespace Lms.Api.Data.Migrations
                     b.Property<long?>("QuestionnaireId")
                         .HasColumnType("bigint")
                         .HasColumnName("questionnaire_id");
+
+                    b.Property<bool>("ShuffleChoices")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("shuffle_choices");
+
+                    b.Property<bool>("ShuffleQuestions")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("shuffle_questions");
+
+                    b.Property<string>("SpellingMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("strict")
+                        .HasColumnName("spelling_mode");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -735,6 +759,14 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AlwaysStrict")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("always_strict");
+
+                    b.Property<bool>("CaseSensitive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("case_sensitive");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
@@ -744,10 +776,18 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(64)")
                         .HasColumnName("created_by");
 
+                    b.Property<bool>("Incomplete")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("incomplete");
+
                     b.Property<decimal>("Points")
                         .HasPrecision(8, 2)
                         .HasColumnType("decimal(8,2)")
                         .HasColumnName("points");
+
+                    b.Property<string>("Problems")
+                        .HasColumnType("longtext")
+                        .HasColumnName("problems");
 
                     b.Property<string>("Prompt")
                         .IsRequired()
@@ -757,6 +797,10 @@ namespace Lms.Api.Data.Migrations
                     b.Property<long>("QuestionnaireId")
                         .HasColumnType("bigint")
                         .HasColumnName("questionnaire_id");
+
+                    b.Property<long?>("SectionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("section_id");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int")
@@ -772,6 +816,11 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(30)")
                         .HasColumnName("type");
 
+                    b.Property<string>("Underlined")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("underlined");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
@@ -785,6 +834,8 @@ namespace Lms.Api.Data.Migrations
                         .HasName("PK_questions");
 
                     b.HasIndex("QuestionnaireId");
+
+                    b.HasIndex("SectionId");
 
                     b.ToTable("questions", (string)null);
                 });
@@ -886,6 +937,63 @@ namespace Lms.Api.Data.Migrations
                     b.ToTable("question_options", (string)null);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.QuestionSection", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal?>("DefaultPoints")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("default_points");
+
+                    b.Property<string>("Directions")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("directions");
+
+                    b.Property<long>("QuestionnaireId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("questionnaire_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_question_sections");
+
+                    b.HasIndex("QuestionnaireId");
+
+                    b.ToTable("question_sections", (string)null);
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Questionnaire", b =>
                 {
                     b.Property<long>("Id")
@@ -964,6 +1072,10 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(255)")
                         .HasColumnName("file_name");
 
+                    b.Property<DateTime?>("ScoreUpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("score_updated_at");
+
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("started_at");
@@ -1028,6 +1140,11 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(64)")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("MatchNote")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("match_note");
+
                     b.Property<decimal?>("PointsAwarded")
                         .HasPrecision(8, 2)
                         .HasColumnType("decimal(8,2)")
@@ -1040,6 +1157,11 @@ namespace Lms.Api.Data.Migrations
                     b.Property<long?>("SelectedOptionId")
                         .HasColumnType("bigint")
                         .HasColumnName("selected_option_id");
+
+                    b.Property<string>("SpellingDecision")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("spelling_decision");
 
                     b.Property<long>("SubmissionId")
                         .HasColumnType("bigint")
@@ -1177,6 +1299,11 @@ namespace Lms.Api.Data.Migrations
                         .HasForeignKey("QuestionnaireId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Lms.Api.Data.QuestionSection", null)
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.QuestionExpectedAnswer", b =>
@@ -1193,6 +1320,15 @@ namespace Lms.Api.Data.Migrations
                     b.HasOne("Lms.Api.Data.Question", null)
                         .WithMany()
                         .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.QuestionSection", b =>
+                {
+                    b.HasOne("Lms.Api.Data.Questionnaire", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionnaireId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

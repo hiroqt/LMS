@@ -84,6 +84,46 @@ public static class QuestionType
     public const string Essay = "essay";
     public const string Enumeration = "enumeration";
     public const string Matching = "matching";
+    /// <summary>A typed answer; any one of the accepted answers is correct.</summary>
+    public const string Identification = "identification";
+    /// <summary>True or false about an underlined phrase; False needs an accepted correction. All or nothing.</summary>
+    public const string ModifiedTrueFalse = "modified_true_false";
+}
+
+/// <summary>What a student sees after submitting an exam (D-040).</summary>
+public static class AnswerReview
+{
+    public const string ScoreOnly = "score_only";
+    public const string Results = "results";
+    public const string AnswersAfterDue = "answers_after_due";
+    public const string AnswersAfterSubmit = "answers_after_submit";
+    public static readonly IReadOnlyList<string> All = [ScoreOnly, Results, AnswersAfterDue, AnswersAfterSubmit];
+}
+
+/// <summary>How near misses in typed answers are scored (D-040).</summary>
+public static class SpellingMode
+{
+    public const string Strict = "strict";
+    /// <summary>Near misses get full points and are flagged.</summary>
+    public const string Typos = "typos";
+    /// <summary>Near misses wait for the instructor's decision.</summary>
+    public const string Review = "review";
+    public static readonly IReadOnlyList<string> All = [Strict, Typos, Review];
+}
+
+/// <summary>How a typed answer matched its key.</summary>
+public static class MatchNote
+{
+    public const string Exact = "exact";
+    public const string Typo = "typo";
+    public const string Review = "review";
+}
+
+/// <summary>The instructor's decision on a near miss.</summary>
+public static class SpellingDecision
+{
+    public const string Accepted = "accepted";
+    public const string Rejected = "rejected";
 }
 
 public static class SubmissionStatus
@@ -138,15 +178,38 @@ public sealed class Questionnaire : Audited
     public string Title { get; set; } = "";
 }
 
+/// <summary>A part of a questionnaire ("Test I. Multiple choice") with directions. Every saved set has at least one.</summary>
+public sealed class QuestionSection : Audited
+{
+    public long Id { get; set; }
+    public long QuestionnaireId { get; set; }
+    /// <summary>Empty for the unnamed section.</summary>
+    public string Title { get; set; } = "";
+    public string? Directions { get; set; }
+    public decimal? DefaultPoints { get; set; }
+    public int SortOrder { get; set; }
+}
+
 public sealed class Question : Audited
 {
     public long Id { get; set; }
     public long QuestionnaireId { get; set; }
+    public long? SectionId { get; set; }
     public string Type { get; set; } = QuestionType.MultipleChoice;
     public string Prompt { get; set; } = "";
     public decimal Points { get; set; } = 1;
     public int SortOrder { get; set; }
     public int? TimeLimitSeconds { get; set; }
+    /// <summary>Modified true or false: the phrase the client underlines. Plain text, never HTML.</summary>
+    public string? Underlined { get; set; }
+    /// <summary>Typed answers: ignore the exam's spelling mode and accept exact matches only.</summary>
+    public bool AlwaysStrict { get; set; }
+    /// <summary>Typed answers: capitals matter.</summary>
+    public bool CaseSensitive { get; set; }
+    /// <summary>Saved with allowIncomplete while failing its content rules; blocks publishing.</summary>
+    public bool Incomplete { get; set; }
+    /// <summary>Why it is incomplete: plain sentences, one per line.</summary>
+    public string? Problems { get; set; }
 }
 
 /// <summary>A choice. <see cref="IsCorrect"/> is never sent to students.</summary>
@@ -191,6 +254,14 @@ public sealed class Coursework : Audited
     /// <summary>Exams only.</summary>
     public long? QuestionnaireId { get; set; }
     public string Status { get; set; } = CourseworkStatus.Draft;
+    /// <summary>See <see cref="Data.AnswerReview"/>.</summary>
+    public string AnswerReview { get; set; } = Data.AnswerReview.Results;
+    /// <summary>See <see cref="Data.SpellingMode"/>.</summary>
+    public string SpellingMode { get; set; } = Data.SpellingMode.Strict;
+    /// <summary>Shuffle questions within each section, seeded by the attempt.</summary>
+    public bool ShuffleQuestions { get; set; }
+    /// <summary>Shuffle multiple-choice options, seeded by the attempt.</summary>
+    public bool ShuffleChoices { get; set; }
 }
 
 /// <summary>One attempt by one student.</summary>
@@ -206,6 +277,8 @@ public sealed class Submission : Audited
     public string? Text { get; set; }
     /// <summary>Filename only: files are not uploaded yet.</summary>
     public string? FileName { get; set; }
+    /// <summary>When a regrade (a key fix or a spelling change) last changed this attempt's score.</summary>
+    public DateTime? ScoreUpdatedAt { get; set; }
 }
 
 public sealed class SubmissionAnswer : Audited
@@ -216,6 +289,10 @@ public sealed class SubmissionAnswer : Audited
     public long? SelectedOptionId { get; set; }
     public string? AnswerText { get; set; }
     public decimal? PointsAwarded { get; set; }
+    /// <summary>Typed answers: see <see cref="Data.MatchNote"/>; null when nothing matched.</summary>
+    public string? MatchNote { get; set; }
+    /// <summary>The instructor's decision on a near miss: see <see cref="Data.SpellingDecision"/>.</summary>
+    public string? SpellingDecision { get; set; }
 }
 
 public sealed class Grade : Audited
