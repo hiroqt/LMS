@@ -39,6 +39,10 @@ else
     builder.Services.AddScoped<IsmsReferenceSync>();
     builder.Services.Configure<SyncOptions>(builder.Configuration.GetSection(SyncOptions.SectionName));
     builder.Services.AddHostedService<IsmsSyncWorker>();
+    // Daily anonymizing of old attempts (D-042). Not registered in Demo mode.
+    builder.Services.Configure<RetentionOptions>(builder.Configuration.GetSection(RetentionOptions.SectionName));
+    builder.Services.AddScoped<AttemptRetention>();
+    builder.Services.AddHostedService<RetentionWorker>();
 }
 builder.Services.AddScoped<ClassAccess>();
 
