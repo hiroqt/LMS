@@ -1,4 +1,4 @@
-import { Copy, Lock } from "lucide-react";
+import { Copy, KeyRound, Lock } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { describeApiError, isApiError } from "../../../shared/api/http";
@@ -10,6 +10,7 @@ import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
 import { useToast } from "../../../shared/ui/toast/useToast";
 import { setFacts, useQuestionSet, useQuestionSetActions } from "../api/questionSets";
+import { AnswerKeyDialog } from "../components/AnswerKeyDialog";
 import { QuestionSetEditor, QuestionSetView } from "../components/QuestionSetEditor";
 import { QuestionSetUses } from "../components/QuestionSetUses";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
@@ -26,6 +27,7 @@ export default function QuestionSetPage() {
   const query = useQuestionSet(id);
   const actions = useQuestionSetActions();
   const [copying, setCopying] = useState(false);
+  const [fixingKey, setFixingKey] = useState(false);
   const back = <BackLink label="All question sets" onBack={() => navigate(instructorPaths.questionSets)} />;
 
   if (query.isPending) {
@@ -96,6 +98,11 @@ export default function QuestionSetPage() {
               <Lock aria-hidden className="mt-0.5 size-4 shrink-0" />
               Students have started an exam that uses this set, so its questions can no longer change: their answers point to these questions. Make a copy to edit the questions; the copy is not used by any exam until you choose it.
             </p>
+            {/* A wrong key can still be fixed; every submitted attempt is re-scored (D-042). */}
+            <Button variant="secondary" className="self-start" icon={<KeyRound aria-hidden className="size-4" />} onClick={() => setFixingKey(true)}>
+              Fix answer key
+            </Button>
+            <AnswerKeyDialog setId={set.id} open={fixingKey} onOpenChange={setFixingKey} />
             <QuestionSetView set={set} />
           </>
         ) : (
