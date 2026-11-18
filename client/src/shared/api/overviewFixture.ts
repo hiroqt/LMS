@@ -7,7 +7,8 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
     coursework: {
       id, moduleId: 1, type: "assignment", title: `Work ${id}`, description: null, category: null, instructions: "Do it.", maxPoints: 10,
       dueAt: "2026-10-30T15:59:00Z", availableFrom: null, allowLate: false, allowResubmission: false, maxAttempts: null,
-      timeLimitMinutes: null, questionnaireId: null, questionCount: 0, status: "published", ...over,
+      timeLimitMinutes: null, questionnaireId: null, questionCount: 0, status: "published", closeAt: null, gradeRelease: "immediate",
+      turnIn: (over.type ?? "assignment") === "assignment" ? { state: "assigned", canTurnIn: true, reason: null, late: false } : null, ...over,
     },
   });
   const sub = (id: number, courseworkId: number, over: Partial<Submission>) => ({

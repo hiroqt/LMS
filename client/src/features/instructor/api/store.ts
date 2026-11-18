@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { shouldRetryApiRead } from "../../../shared/api/http";
-import { fetchOverview, fetchPeople, meetingLabel, splitName, yearLevelFromSection, type Overview, type People } from "../../../shared/api/overview";
+import { fetchOverview, fetchPeople, isGraded, meetingLabel, splitName, yearLevelFromSection, type Overview, type People } from "../../../shared/api/overview";
 import type { Viewer } from "../../../shared/api/viewer";
 import { useInstructorSession } from "../hooks/useInstructorSession";
 import type { RoleStore, User } from "./types";
@@ -139,7 +139,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       fileAttachmentUrl: submission.fileName ?? "",
       status: submission.status,
       submittedAt: submission.submittedAt ?? undefined,
-      grade: submission.status === "graded" ? submission.score : null,
+      grade: isGraded(submission.status) ? submission.score : null,
       feedback: submission.feedback ?? "",
       notHandedIn: Boolean(submission.notHandedIn),
     })),

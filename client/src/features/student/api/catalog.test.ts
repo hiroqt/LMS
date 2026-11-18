@@ -47,6 +47,27 @@ describe("toStudentCatalog", () => {
     expect(catalog.completed).toEqual(["1", "2"]);
   });
 
+  it("passes the server's turn-in verdict to assignments only (D-044)", () => {
+    const verdict = { state: "turned_in", canTurnIn: false, reason: "already_turned_in", late: false } as const;
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      o.coursework[0]!.coursework.turnIn = verdict;
+    }));
+    expect(catalog.assessments.find((item) => item.id === "1")?.turnIn).toEqual(verdict);
+    expect(catalog.assessments.find((item) => item.id === "2")?.turnIn).toBeUndefined();
+  });
+
+  it("shows a returned assignment's grade; a held one arrives as submitted with no score", () => {
+    const returned = toStudentCatalog(overviewFixture((o) => {
+      o.submissions[1]!.submission.status = "returned";
+    }));
+    expect(returned.activitySubmissions["1"]).toMatchObject({ id: "12", grade: 9, status: "returned" });
+    const held = toStudentCatalog(overviewFixture((o) => {
+      o.submissions[1]!.submission = { ...o.submissions[1]!.submission, status: "submitted", score: null, feedback: null };
+    }));
+    expect(held.activitySubmissions["1"]).toMatchObject({ id: "12", grade: null, feedback: "" });
+    expect(held.completed).toContain("1");
+  });
+
   it("maps coursework to assessments, keeping a missing due date empty", () => {
     const catalog = toStudentCatalog(overviewFixture());
     expect(catalog.assessments.find((item) => item.id === "2")).toMatchObject({ type: "Quiz", points: 20, questionCount: 5, timeLimit: "5 minutes", maxAttempts: 2, kind: undefined });

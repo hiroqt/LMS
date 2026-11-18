@@ -11,6 +11,7 @@ import { useToast } from "../../../shared/ui/toast/useToast";
 import { failureMessage, submitAssignment } from "../api/student";
 import { useRefreshStudent, useStudentViewer } from "../hooks/useStudentCatalog";
 import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
+import type { TurnIn } from "../../../shared/api/overview";
 import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
@@ -40,7 +41,18 @@ function ActivityStatus({ submission, points }: { submission: ActivitySubmission
   );
 }
 
-function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment; submitted: boolean; closed: boolean }) {
+/** Why the form is shown but can't be used; the server decides (D-044). */
+const REFUSALS: Partial<Record<NonNullable<TurnIn["reason"]>, string>> = {
+  past_due: "The due date has passed and late submissions are turned off.",
+  past_close: "The last day for late work has passed.",
+};
+
+/** The form shows while handing in is possible, or only blocked by a date; otherwise there is nothing to hand in. */
+const showsTurnInForm = (turnIn: TurnIn | undefined): turnIn is TurnIn =>
+  Boolean(turnIn && (turnIn.canTurnIn || (turnIn.reason && REFUSALS[turnIn.reason])));
+
+function TurnInForm({ assessment, submitted, turnIn }: { assessment: Assessment; submitted: boolean; turnIn: TurnIn }) {
+  const closed = !turnIn.canTurnIn;
   const toast = useToast();
   const [fileName, setFileName] = useState("");
   const [comment, setComment] = useState("");
@@ -77,7 +89,7 @@ function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment;
       <div className="flex flex-col gap-1">
         <h2 className="m-0 font-sans text-section font-semibold">{submitted ? "Submit a new version" : "Turn in your work"}</h2>
         <p className="m-0 text-body text-muted">
-          {closed ? "The due date has passed and late submissions are turned off." : "Use the filename of the document you prepared for this class. Only the filename is saved for now."}
+          {turnIn.reason ? REFUSALS[turnIn.reason] : "Use the filename of the document you prepared for this class. Only the filename is saved for now."}
         </p>
       </div>
       <Field label="Attachment filename" required error={error || undefined}>
@@ -94,7 +106,7 @@ function TurnInForm({ assessment, submitted, closed }: { assessment: Assessment;
 export default function AssessmentPage() {
   const { assessmentId = "" } = useParams();
   const navigate = useNavigate();
-  const { catalog, completed, now } = useWorkspace();
+  const { catalog, completed } = useWorkspace();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
   if (!assessment) return <Navigate to={studentPaths.tasks()} replace />;
 
@@ -106,7 +118,6 @@ export default function AssessmentPage() {
   const grade = catalog.examGrades[assessment.id];
   const attempts = catalog.attempts[assessment.id];
   const attemptsLeft = (assessment.maxAttempts ?? 1) - (attempts?.used ?? 0);
-  const pastDue = isActivity && Boolean(assessment.dueAt) && new Date(assessment.dueAt).getTime() < now && !assessment.allowLate;
   // Closed by the instructor (D-036), or graded without anything handed in: nothing more can be handed in.
   const isClosed = Boolean(assessment.closed);
   const notHandedIn = Boolean(submission?.notHandedIn || grade?.notHandedIn);
@@ -171,7 +182,7 @@ export default function AssessmentPage() {
               <Lock aria-hidden className="size-4 text-muted" />Closed. Your instructor is no longer accepting work for this {isActivity ? "assignment" : "assessment"}.
             </p>
           )}
-          {isActivity && !isClosed && !notHandedIn && (!isCompleted || assessment.allowResubmission) && <TurnInForm assessment={assessment} submitted={Boolean(submission)} closed={pastDue} />}
+          {isActivity && showsTurnInForm(assessment.turnIn) && <TurnInForm assessment={assessment} submitted={Boolean(submission)} turnIn={assessment.turnIn} />}
         </article>
 
         <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">

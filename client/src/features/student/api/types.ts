@@ -1,3 +1,4 @@
+import type { TurnIn } from "../../../shared/api/overview";
 import type { AnswerReview, SpellingMode } from "../../../shared/components/quiz/types";
 
 /** Shapes of the Student workspace data, built from the LMS API overview (D-032). */
@@ -41,8 +42,8 @@ export interface Assessment {
   instructions: string;
   /** Instructor-created assignments are "activity"; quizzes and exams have no kind. */
   kind?: "activity";
-  allowLate?: boolean;
-  allowResubmission?: boolean;
+  /** Assignments: the server's turn-in verdict (D-044). */
+  turnIn?: TurnIn;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;
   /** The instructor closed it: no more hand-ins or attempts (D-036). */

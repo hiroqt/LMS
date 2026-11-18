@@ -1,5 +1,5 @@
 import { academicEvents, courses as demoCourses, featuredAnnouncements } from "../../../data.js";
-import { meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
+import { isGraded, meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
 import type { ActivitySubmission, Assessment, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
 
 /** Shown under the student's name; ISMS does not send a program yet. */
@@ -74,7 +74,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
           fileAttachmentUrl: latest.fileName ?? "",
           status: latest.status,
           submittedAt: latest.submittedAt ?? "",
-          grade: latest.status === "graded" ? latest.score : null,
+          grade: isGraded(latest.status) ? latest.score : null,
           feedback: latest.feedback ?? "",
           ...(latest.notHandedIn ? { notHandedIn: true } : {}),
         };
@@ -82,7 +82,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
     } else {
       // A "not handed in" grade has no attempt to review, so it is never the latest attempt.
       attempts[id] = { openId: mine.find((item) => !handedIn(item))?.id, latestId: done.find((item) => !item.notHandedIn)?.id, used: mine.length };
-      const best = done.filter((item) => item.status === "graded" && item.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+      const best = done.filter((item) => isGraded(item.status) && item.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
       if (best) examGrades[id] = { examId: id, totalScore: best.score ?? 0, feedback: best.feedback ?? undefined, ...(best.notHandedIn ? { notHandedIn: true } : {}) };
     }
   }
@@ -110,8 +110,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       timeLimit: work.timeLimitMinutes ? `${work.timeLimitMinutes} minutes` : "No time limit",
       instructions: work.instructions ?? "",
       kind: work.type === "assignment" ? ("activity" as const) : undefined,
-      allowLate: work.allowLate,
-      allowResubmission: work.allowResubmission,
+      ...(work.type === "assignment" && work.turnIn ? { turnIn: work.turnIn } : {}),
       maxAttempts: work.maxAttempts ?? 1,
       closed: work.status === "closed",
       ...examSettings(work),
