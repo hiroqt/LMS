@@ -228,6 +228,12 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     await part(page, "Details").click();
     await page.getByRole("complementary", { name: "Summary" }).getByRole("button", { name: "Settings: No due date · 1 attempt · No time limit" }).click();
     await expect(part(page, "Settings")).toHaveAttribute("aria-selected", "true");
+    // Keyboard: arrow keys move between the tabs, and the URL follows.
+    await part(page, "Settings").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(part(page, "Questions")).toHaveAttribute("aria-selected", "true");
+    await expect(part(page, "Questions")).toBeFocused();
+    await expect(page).toHaveURL(/\?tab=questions$/);
   });
 
   test("a problem on a hidden part opens that part and focuses the field", async ({ page }) => {
