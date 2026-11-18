@@ -234,6 +234,8 @@ public sealed class AssignmentTests : IDisposable
         Assert.Contains(list.GetProperty("missing").EnumerateArray(), s => s.GetProperty("studentId").GetString() == Lia);
         var overview = await Json(await Instructor.GetAsync("/api/me/overview"));
         Assert.DoesNotContain(overview.GetProperty("submissions").EnumerateArray(), s => s.GetProperty("courseworkId").GetInt64() == id);
+        Assert.Equal(HttpStatusCode.NotFound, (await Instructor.GetAsync($"{Base}/{id}/submissions/{draftId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Instructor.PutAsJsonAsync($"{Base}/{id}/submissions/{draftId}/grade", new { points = 5 })).StatusCode);
 
         var turnedIn = await Json(await TurnIn(StudentA, id));
         Assert.Equal((draftId, "submitted", 1), (turnedIn.GetProperty("id").GetInt64(), turnedIn.GetProperty("status").GetString(), turnedIn.GetProperty("attemptNumber").GetInt32()));

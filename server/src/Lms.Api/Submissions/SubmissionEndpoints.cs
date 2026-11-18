@@ -441,6 +441,8 @@ public static class SubmissionEndpoints
         var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
         if (cw is null) return (null, null);
         var query = track ? db.Submissions : db.Submissions.AsNoTracking();
+        // An assignment draft is the student's own until it is turned in (D-044).
+        if (cw.Type == CourseworkType.Assignment) query = query.Where(s => s.Status != SubmissionStatus.InProgress);
         return (cw, await query.SingleOrDefaultAsync(s => s.Id == id && s.CourseworkId == cw.Id, ct));
     }
 
