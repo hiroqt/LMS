@@ -78,6 +78,7 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
 | E: assessment | Create → assessment builder → Publish → Classwork (D-040; was the one-MCQ form) | ✔ `instructor-more` | ✅ |
 | E: builder | Sections with every type; Save draft → Draft in Classwork → Edit draft; Publish refused while a question needs attention; dates can be cleared | ✔ `assessment-builder` | ✅ |
+| E: builder tabs | Details · Questions · Settings tabs with URLs; a problem on a hidden tab opens it and focuses the field; badges fit at 320px (D-056) | ✔ `assessment-builder` | ✅ |
 | E: import | Pasted or uploaded exam → draft questions with original text and warnings; nothing saved until Save (D-041) | ✔ `assessment-builder`, server `ImportTests` | ✅ |
 | PREVIEW | Preview as student; Check answers shows results and keys; nothing saved | ✔ `quiz-types` | ✅ |
 | GRADE (types) | Answers beside the key for every type; points override for typed answers kept on re-score (D-043, D-042) | ✔ `grading-accuracy` | ✅ |

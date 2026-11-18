@@ -550,3 +550,11 @@ and keep them maintainable in code: one place reads and checks them, one rules c
 `shared/api/viewer.ts` sends `X-Demo-User-Id`, `X-Demo-Role` and `X-Demo-Sandbox` on each `fetch`.
 An `<img src>`, `<iframe src>` or `<a href>` pointing at the API sends none of them. Fetch the file
 with the usual headers (`http.ts` already downloads blobs this way) and show it from an object URL.
+
+### L-076 · A force-mounted Radix tab panel is never hidden
+`2026-11-18` · hiro · scope: client · confidence: high
+`TabsContent` sets `hidden={!present}`, and `forceMount` makes `present` always true, so every
+panel shows at once. Pass `hidden={value !== current}` yourself (it is spread after Radix's), and
+keep layout classes like `flex` on an inner element. Also put a space between a tab's label and its
+badge: without one the name reads "Questions3" (`AssessmentBuilderPage.tsx`).
+

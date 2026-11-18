@@ -670,3 +670,19 @@ Built in Phase 2 of [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md).
   a blob (L-075): `nosniff`, `Content-Disposition: attachment`, `Content-Security-Policy: sandbox`.
   Another person's file is a 404. No signed URLs until sign-in decides how browsers authenticate.
 - Retention (D-042) deletes the files and keeps the grades.
+
+### D-056 · The assessment builder shows one part at a time, as tabs
+`2026-11-18` · hiro (assessments) · scope: instructor, e2e · confidence: medium
+Supersedes the one long page of D-040's builder. **Details · Questions · Settings** are tabs, each
+at its own URL (`?tab=details|questions|settings`, replace navigation and an optimistic tab, as
+D-043 and L-028). A new assessment opens on Details and a draft on Questions; the first save keeps
+the open tab. The Summary (Preview, Save draft, Publish, what needs attention) stays beside every
+tab and adds the settings at a glance, so nothing depends on which tab is open.
+- **No hidden problems:** tab labels carry tinted badges (fields to fix; the question count, with a
+  warning icon when some need attention). Save, Publish, and server errors open the tab of the
+  first problem and focus it; the Summary's question links open Questions.
+- **Panels stay mounted** (hidden, L-076), so the editor keeps its state and `jumpTo` works.
+- Phones: the tabs are three equal columns and a badge wraps under its label. Next buttons move on.
+- **Journey change (D-013):** specs open the tab a field is on before using it
+  (`assessment-builder`, `instructor-more` E, `question-sets` QS → E). The journeys are the same.
+
