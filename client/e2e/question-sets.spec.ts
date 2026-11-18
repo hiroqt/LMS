@@ -24,13 +24,18 @@ test.describe("Instructor · question sets (QS)", () => {
 
     // D-040: the assessment builder replaces the inline form; "Use a question set" is the same journey.
     await page.getByRole("textbox", { name: /Assessment title/ }).fill("Make-up quiz: variables");
+    // D-056: the builder's parts are tabs.
+    const part = (name: string) => page.getByRole("tablist", { name: "Assessment builder" }).getByRole("tab", { name: new RegExp(`^${name}`) });
+    await part("Settings").click();
     await page.getByRole("spinbutton", { name: /Attempts allowed/ }).fill("2");
+    await part("Questions").click();
     await page.getByRole("radio", { name: /^Use a question set/ }).check();
     // The set brings its own points and questions, so there is nothing to type for them.
     await expect(page.getByRole("spinbutton", { name: /^Points/ })).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: /^Question/ })).toHaveCount(0);
     await page.getByRole("button", { name: "Publish" }).click();
     await expect(page.getByText("Choose a question set before publishing.")).toBeVisible();
+    await expect(page.getByRole("combobox", { name: /Question set/ })).toBeFocused();
 
     await page.getByRole("combobox", { name: /Question set/ }).selectOption({ label: `${SET} · 5 questions · 20 points` });
     await page.getByRole("button", { name: "Publish" }).click();

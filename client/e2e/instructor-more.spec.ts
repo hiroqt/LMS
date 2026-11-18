@@ -81,6 +81,8 @@ test.describe("Instructor · class content (B, C, D, E)", () => {
     await createBlock(page, "Build and publish a quiz or exam");
     await expect(page.getByRole("heading", { level: 1, name: "New assessment" })).toBeVisible();
     await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Pop quiz: loops");
+    // D-056: the builder's parts are tabs; Next opens Questions.
+    await page.getByRole("button", { name: "Next: Questions" }).click();
     await page.getByRole("button", { name: /^Add question/ }).click();
     await page.getByRole("menuitem", { name: /^Multiple choice/ }).click();
     await page.getByRole("textbox", { name: "Question 1", exact: true }).fill("Which loop always runs at least once?");
