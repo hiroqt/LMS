@@ -643,3 +643,30 @@ paragraphs and the objectives stay `text-body-lg` until `@5xl` (larger, the miss
 Adds a Philosophy slide (both paragraphs, exact wording) between Goal and Core Values, so the
 billboard's slide buttons read Vision · Mission · Goal · Philosophy · Core Values. Only the Specific
 Objectives are now left to the Institutional profile dialog.
+
+### D-054 · Assignment rules come from the server; late work can have a last day; grades can wait until returned
+`2026-11-18` · hiro (assignments) · scope: instructor, student, server · confidence: medium
+Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md); shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §1–§4.
+- **One rule set:** `AssignmentRules.Evaluate` decides whether a student can turn work in and why
+  not. `POST …/submissions` uses it, and students receive its verdict as `turnIn` on each
+  assignment. The student page shows that verdict and no longer works out due dates, late work or
+  resubmission itself.
+- **New settings are columns** on `coursework`, like D-040's, and each arrives with the phase that
+  uses it, so the API never accepts a setting it ignores (L-074).
+- **`closeAt` ("accept until")** ends late work; a "not handed in" grade waits for it.
+- **`gradeRelease`:** `immediate` (default, today's behavior) or `returned`. Held grades reach
+  students only through `POST …/return`; `ToDtoAsync` is the one place that hides them.
+- **Drafts are private:** an assignment row `in_progress` is the student's draft. Instructors never
+  receive one, and grading progress and the close rule (D-036) count handed-in work only.
+
+### D-055 · Assignment files: disk storage behind interfaces, scanned, served only through the API
+`2026-11-18` · hiro (assignments) · scope: server, student, instructor · confidence: medium
+Built in Phase 2 of [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md).
+- `IFileStore` (disk; one folder per sandbox in Demo) and `IFileScanner` (ClamAV). Outside
+  Development and Demo the API refuses to start without a scanner, like a missing connection string.
+- Allowlist checked against the bytes: PDF, Word, PowerPoint, Excel, JPEG, PNG, TXT. Up to 5 files of
+  25 MB. Macro files refused. Random storage keys; the original name is cleaned and kept as data.
+- Files are downloaded only through `GET /api/files/{id}` with the workspace's headers and shown from
+  a blob (L-075): `nosniff`, `Content-Disposition: attachment`, `Content-Security-Policy: sandbox`.
+  Another person's file is a 404. No signed URLs until sign-in decides how browsers authenticate.
+- Retention (D-042) deletes the files and keeps the grades.

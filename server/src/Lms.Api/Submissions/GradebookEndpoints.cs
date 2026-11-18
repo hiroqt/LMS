@@ -64,7 +64,7 @@ public static class GradebookEndpoints
             from s in db.Submissions
             join c in db.Coursework on s.CourseworkId equals c.Id
             join g in db.Grades on s.Id equals g.SubmissionId
-            where c.ClassId == classId && c.Status != CourseworkStatus.Archived && s.Status == SubmissionStatus.Graded
+            where c.ClassId == classId && c.Status != CourseworkStatus.Archived && (s.Status == SubmissionStatus.Graded || s.Status == SubmissionStatus.Returned)
             select new { s.StudentId, s.CourseworkId, c.Type, c.MaxPoints, s.AttemptNumber, g.Points }).ToListAsync(ct);
 
         return students.Select(student =>

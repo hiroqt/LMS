@@ -12,17 +12,21 @@ namespace Lms.Api.Coursework;
 /// <param name="RosterCount">Instructors only: students active on the class list.</param>
 /// <param name="AnswerReview">What students see after submitting (see <see cref="Data.AnswerReview"/>). Students get it too, for the notices.</param>
 /// <param name="SpellingMode">How near misses in typed answers are scored (see <see cref="Data.SpellingMode"/>).</param>
+/// <param name="CloseAt">Assignments: the last moment late work is accepted (D-054).</param>
+/// <param name="GradeRelease">Assignments: when students see a grade (see <see cref="Data.GradeRelease"/>).</param>
+/// <param name="TurnIn">Students, assignments only: whether they can turn work in now, and why not (contract §2).</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
     long? QuestionnaireId, int QuestionCount, string Status, string AnswerReview, string SpellingMode, bool ShuffleQuestions, bool ShuffleChoices,
-    int? GradedCount = null, int? RosterCount = null);
+    int? GradedCount = null, int? RosterCount = null, DateTime? CloseAt = null, string GradeRelease = Data.GradeRelease.Immediate, TurnInStatus? TurnIn = null);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
     DateTimeOffset? DueAt, DateTimeOffset? AvailableFrom, bool? AllowLate, bool? AllowResubmission, int? MaxAttempts,
     int? TimeLimitMinutes, long? QuestionnaireId, string? Status,
     string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null,
-    bool? ClearDueAt = null, bool? ClearAvailableFrom = null);
+    bool? ClearDueAt = null, bool? ClearAvailableFrom = null,
+    DateTimeOffset? CloseAt = null, bool? ClearCloseAt = null, string? GradeRelease = null);
 
 /// <summary>
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
@@ -51,7 +55,8 @@ public static class CourseworkEndpoints
             var list = await ContentEndpoints.PageAsync(query.OrderBy(c => c.DueAt == null).ThenBy(c => c.DueAt).ThenBy(c => c.Id), page, pageSize, c => c, ct);
             var counts = await QuestionCountsAsync(db, list.Items, ct);
             var progress = await ProgressForAsync(db, user, list.Items, ct);
-            return TypedResults.Ok(new PagedList<CourseworkDto>(list.Items.Select(c => ToDto(c, user, counts, progress)).ToList(), list.Page, list.PageSize, list.Total));
+            var turnIn = await AssignmentRules.ForStudentAsync(db, user, list.Items, time.GetUtcNow().UtcDateTime, ct);
+            return TypedResults.Ok(new PagedList<CourseworkDto>(list.Items.Select(c => ToDto(c, user, counts, progress, turnIn)).ToList(), list.Page, list.PageSize, list.Total));
         }).WithName("ListCoursework");
 
         group.MapGet("/{id:long}", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -61,7 +66,8 @@ public static class CourseworkEndpoints
             if (denied is not null) return denied;
             var row = await VisibleTo(user, db.Coursework.AsNoTracking().Where(c => c.ClassId == classId && c.Id == id), time).SingleOrDefaultAsync(ct);
             if (row is null) return ContentEndpoints.NotFound("Coursework");
-            return await OkAsync(db, user, row, ct);
+            var turnIn = await AssignmentRules.ForStudentAsync(db, user, [row], time.GetUtcNow().UtcDateTime, ct);
+            return TypedResults.Ok(ToDto(row, user, await QuestionCountsAsync(db, [row], ct), await ProgressForAsync(db, user, [row], ct), turnIn));
         }).WithName("GetCoursework");
 
         group.MapPost("", async Task<IResult> (string classId, CourseworkInput input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -202,12 +208,24 @@ public static class CourseworkEndpoints
 
         if (row.Type == CourseworkType.Assignment)
         {
+            if (input.ClearCloseAt == true) row.CloseAt = null;
+            else if (input.CloseAt is { } close) row.CloseAt = close.UtcDateTime;
+            if (input.GradeRelease is not null) { if (GradeRelease.All.Contains(input.GradeRelease)) row.GradeRelease = input.GradeRelease; else errors.Add("gradeRelease", $"Choose one of: {string.Join(", ", GradeRelease.All)}."); }
+            // "Accept until" ends late work, so it needs late work and a due date before it (D-054).
+            if (row.CloseAt is { } last)
+            {
+                if (row.DueAt is not { } dueAt) errors.Add("closeAt", "Set a due date before the last day for late work.");
+                else if (!row.AllowLate) errors.Add("closeAt", "Accept late work to set a last day for it.");
+                else if (last <= dueAt) errors.Add("closeAt", "The last day for late work must be after the due date.");
+            }
             if (input.QuestionnaireId is not null) errors.Add("questionnaireId", "Assignments have no questions; use an exam.");
             if (input.MaxPoints is { } points) { if (points is <= 0 or > 1000) errors.Add("maxPoints", "Points must be more than 0 and at most 1000."); else row.MaxPoints = points; }
             else if (row.Id == 0) errors.Add("maxPoints", "Enter the points this assignment is worth.");
         }
         else
         {
+            if (input.CloseAt is not null || input.ClearCloseAt == true) errors.Add("closeAt", "Only assignments have a last day for late work.");
+            if (input.GradeRelease is not null) errors.Add("gradeRelease", "Exams show results by their answer review setting.");
             if (input.QuestionnaireId is { } qid)
             {
                 // Only the caller's own set, and only one for this class's subject (or one with no subject).
@@ -244,11 +262,12 @@ public static class CourseworkEndpoints
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
     }
 
-    internal static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts, Dictionary<long, GradingProgress>? progress)
+    internal static CourseworkDto ToDto(CourseworkRow c, CurrentUser user, Dictionary<long, int> counts, Dictionary<long, GradingProgress>? progress, Dictionary<long, TurnInStatus>? turnIn = null)
     {
         var p = user.IsInstructor ? progress?.GetValueOrDefault(c.Id) : null;
         return new(c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
             c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
-            c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, c.AnswerReview, c.SpellingMode, c.ShuffleQuestions, c.ShuffleChoices, p?.Graded, p?.Roster);
+            c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, c.AnswerReview, c.SpellingMode, c.ShuffleQuestions, c.ShuffleChoices, p?.Graded, p?.Roster,
+            c.CloseAt, c.GradeRelease, user.IsInstructor ? null : turnIn?.GetValueOrDefault(c.Id));
     }
 }

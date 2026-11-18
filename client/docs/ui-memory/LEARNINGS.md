@@ -537,3 +537,16 @@ Library waits on a `setTimeout(0)` after each action and only advances Jest's fa
 `vi.useFakeTimers({ shouldAdvanceTime: true })` with `userEvent.setup({ advanceTimers })`. Also,
 `user.unhover(container)` after clicking a child did not fire React's `onMouseLeave` on the
 container; `user.hover(document.body)` does.
+
+### L-074 · Coursework settings are columns, not JSON
+`2026-11-18` · hiro · scope: server · confidence: high
+The LMS API uses Oracle's `MySql.EntityFrameworkCore` in production and SQLite in tests and Demo.
+EF Core's JSON-mapped complex types are not dependable on either, so a settings object stored as
+JSON would behave differently in tests and production. Add settings as plain columns (as D-040 did)
+and keep them maintainable in code: one place reads and checks them, one rules class uses them.
+
+### L-075 · The workspace identity travels in headers, so `src` URLs to the API can't be authorized
+`2026-11-18` · hiro · scope: client, server · confidence: high
+`shared/api/viewer.ts` sends `X-Demo-User-Id`, `X-Demo-Role` and `X-Demo-Sandbox` on each `fetch`.
+An `<img src>`, `<iframe src>` or `<a href>` pointing at the API sends none of them. Fetch the file
+with the usual headers (`http.ts` already downloads blobs this way) and show it from an object URL.

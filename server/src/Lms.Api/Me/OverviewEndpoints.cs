@@ -77,6 +77,7 @@ public static class OverviewEndpoints
             var coursework = await courseworkQuery.OrderBy(c => c.DueAt == null).ThenBy(c => c.DueAt).ThenBy(c => c.Id).ToListAsync(ct);
             var counts = await CourseworkEndpoints.QuestionCountsAsync(db, coursework, ct);
             var progress = await CourseworkEndpoints.ProgressForAsync(db, user, coursework, ct);
+            var turnIn = await AssignmentRules.ForStudentAsync(db, user, coursework, time.GetUtcNow().UtcDateTime, ct);
 
             // Instructors: every handed-in attempt in their classes. Students: their own attempts, including an open one.
             var courseworkIds = coursework.Select(c => c.Id).ToList();
@@ -88,7 +89,7 @@ public static class OverviewEndpoints
             {
                 var rows = submissionRows.Where(s => s.CourseworkId == cw.Id).ToList();
                 if (rows.Count == 0) continue;
-                submissions.AddRange((await SubmissionEndpoints.ToDtoAsync(db, cw, rows, ct)).Select(d => new SubmissionItem(cw.Id, cw.ClassId, d)));
+                submissions.AddRange((await SubmissionEndpoints.ToDtoAsync(db, cw, rows, ct, forStudent: !user.IsInstructor)).Select(d => new SubmissionItem(cw.Id, cw.ClassId, d)));
             }
 
             // Instructors: every entry of their classes. Students: their own days only.
@@ -107,7 +108,7 @@ public static class OverviewEndpoints
                 modules.Select(m => new ModuleItem(m.Id, m.ClassId, m.ParentModuleId, m.Title, m.SortOrder)).ToList(),
                 materials.Select(m => new MaterialItem(m.Id, m.ClassId, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt)).ToList(),
                 announcements.Select(a => new AnnouncementItem(a.Id, a.ClassId, a.Title, a.Message, a.Status, a.PublishedAt, a.CreatedBy, a.CreatedBy is { } by ? names.GetValueOrDefault(by) : null)).ToList(),
-                coursework.Select(c => new CourseworkItem(c.ClassId, CourseworkEndpoints.ToDto(c, user, counts, progress))).ToList(),
+                coursework.Select(c => new CourseworkItem(c.ClassId, CourseworkEndpoints.ToDto(c, user, counts, progress, turnIn))).ToList(),
                 submissions,
                 roster.Select(s => new ClassStudent(s.ClassId, s.StudentId, s.FirstName, s.LastName)).ToList(),
                 classes.Select(c => gradebooks.FirstOrDefault(g => g.ClassId == c.Id) is { } g
