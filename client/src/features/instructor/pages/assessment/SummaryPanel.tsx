@@ -1,4 +1,4 @@
-import { Eye, Send, TriangleAlert } from "lucide-react";
+import { Eye, Send, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { Button } from "../../../../shared/ui/Button";
 import { QUESTION_TYPE_LABELS, type QuestionType } from "../../api/questionSets";
 
@@ -20,6 +20,9 @@ export interface SummaryPanelProps {
   onPreview: () => void;
   onSaveDraft: () => void;
   onPublish: () => void;
+  /** The settings at a glance ("Due Nov 20, 4:00 PM · 1 attempt · 30 min"); wide screens only. */
+  glance?: string;
+  onOpenSettings?: () => void;
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -29,7 +32,7 @@ const needAttention = (count: number) => `${count} ${count === 1 ? "needs" : "ne
  * The count, points, types, and what needs attention, with Preview, Save draft, and Publish.
  * Sticky beside the form on wide screens; a sticky bar at the bottom on phones.
  */
-export function SummaryPanel({ count, totalPoints, types, attention, status, dirty, saving, publishProblem, onJump, onPreview, onSaveDraft, onPublish }: SummaryPanelProps) {
+export function SummaryPanel({ count, totalPoints, types, attention, status, dirty, saving, publishProblem, onJump, onPreview, onSaveDraft, onPublish, glance, onOpenSettings }: SummaryPanelProps) {
   const busy = saving !== null;
   return (
     <aside
@@ -40,6 +43,16 @@ export function SummaryPanel({ count, totalPoints, types, attention, status, dir
       <div className="flex flex-col gap-1 text-body">
         <p className="m-0 font-semibold text-ink">{plural(count, "question", "questions")} · {plural(totalPoints, "point", "points")}</p>
         {types.length > 0 && <p className="m-0 hidden text-muted @4xl:block">{types.map((type) => QUESTION_TYPE_LABELS[type]).join(", ")}</p>}
+        {glance && onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="hidden min-h-touch items-center gap-2 self-start rounded-control border-0 bg-transparent px-0 text-left font-sans text-body text-primary-700 underline underline-offset-2 hover:text-primary-800 focus-visible:outline-3 focus-visible:outline-focus @4xl:flex"
+          >
+            <SlidersHorizontal aria-hidden className="size-4 shrink-0" />
+            <span>Settings: {glance}</span>
+          </button>
+        )}
         {attention.length > 0 && (
           <>
             {/* Phones: one button to the first; wide screens: every question, each a link to it. */}

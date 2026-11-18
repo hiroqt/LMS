@@ -1,5 +1,3 @@
-import { FileText } from "lucide-react";
-import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { CATEGORY_PRESETS, type AssessmentSettings, type SettingsErrors } from "../../api/assessments";
 
@@ -16,7 +14,7 @@ export function DetailsSection({ settings, errors, onChange, modules }: Settings
   const preset = (CATEGORY_PRESETS as readonly string[]).includes(settings.category) ? settings.category : OTHER;
   return (
     <section aria-labelledby="builder-details" className="flex flex-col gap-4">
-      <SectionHeading id="builder-details" title="Details" icon={<FileText />} />
+      <h2 id="builder-details" className="sr-only">Details</h2>
       <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4 sm:p-5">
         <Field label="Assessment title" required error={errors.title}>
           <Input data-focus="settings:title" value={settings.title} maxLength={200} onChange={(event) => onChange({ title: event.target.value })} />
@@ -29,7 +27,7 @@ export function DetailsSection({ settings, errors, onChange, modules }: Settings
             </Select>
           </Field>
           <Field label="Category" hint="How students see it listed." error={preset === OTHER ? undefined : errors.category}>
-            <Select value={preset} onChange={(event) => onChange({ category: event.target.value === OTHER ? "" : event.target.value })}>
+            <Select data-focus={preset === OTHER ? undefined : "settings:category"} value={preset} onChange={(event) => onChange({ category: event.target.value === OTHER ? "" : event.target.value })}>
               {CATEGORY_PRESETS.map((label) => <option key={label} value={label}>{label}</option>)}
               <option value={OTHER}>Another label</option>
             </Select>
@@ -41,7 +39,7 @@ export function DetailsSection({ settings, errors, onChange, modules }: Settings
           </Field>
         )}
         <Field label="Instructions" hint="Shown to students before they start." error={errors.instructions}>
-          <Textarea value={settings.instructions} rows={3} onChange={(event) => onChange({ instructions: event.target.value })} />
+          <Textarea data-focus="settings:instructions" value={settings.instructions} rows={3} onChange={(event) => onChange({ instructions: event.target.value })} />
         </Field>
       </div>
     </section>
