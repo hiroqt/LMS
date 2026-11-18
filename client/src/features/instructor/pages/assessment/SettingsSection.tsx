@@ -1,6 +1,4 @@
-import { SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
-import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { Field, Input } from "../../../../shared/ui/Field";
 import { ANSWER_REVIEW_OPTIONS, SPELLING_OPTIONS } from "../../api/assessments";
 import type { SettingsPartProps } from "./DetailsSection";
@@ -11,7 +9,7 @@ function RadioGroup<T extends string>({ legend, name, value, options, onChange, 
       <legend className="mb-1 p-0 text-body font-medium text-ink">{legend}</legend>
       {options.map((option) => (
         <label key={option.value} className="flex min-h-touch cursor-pointer items-start gap-3 py-2 text-body text-ink">
-          <input type="radio" name={name} value={option.value} checked={value === option.value} onChange={() => onChange(option.value)} className="mt-0.5 size-5 shrink-0 accent-primary-600" />
+          <input type="radio" name={name} value={option.value} data-focus={value === option.value ? `settings:${name}` : undefined} checked={value === option.value} onChange={() => onChange(option.value)} className="mt-0.5 size-5 shrink-0 accent-primary-600" />
           <span className="flex flex-col">
             <span>{option.label}</span>
             {option.hint && <span className="text-muted">{option.hint}</span>}
@@ -45,7 +43,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 export function SettingsSection({ settings, errors, onChange }: SettingsPartProps) {
   return (
     <section aria-labelledby="builder-settings" className="flex flex-col gap-4">
-      <SectionHeading id="builder-settings" title="Settings" icon={<SlidersHorizontal />} />
+      <h2 id="builder-settings" className="sr-only">Settings</h2>
       <Group title="Dates and limits">
         <div className="grid grid-cols-1 gap-4 @xl:grid-cols-2">
           <Field label="Available from" hint="Leave empty to make it available when you publish." error={errors.availableFrom}>
@@ -63,8 +61,8 @@ export function SettingsSection({ settings, errors, onChange }: SettingsPartProp
         </div>
       </Group>
       <Group title="Results and answers">
-        <RadioGroup legend="After submitting, students see" name="answer-review" value={settings.answerReview} options={ANSWER_REVIEW_OPTIONS} onChange={(answerReview) => onChange({ answerReview })} error={errors.answerReview} />
-        <RadioGroup legend="Spelling in typed answers" name="spelling-mode" value={settings.spellingMode} options={SPELLING_OPTIONS} onChange={(spellingMode) => onChange({ spellingMode })} error={errors.spellingMode} />
+        <RadioGroup legend="After submitting, students see" name="answerReview" value={settings.answerReview} options={ANSWER_REVIEW_OPTIONS} onChange={(answerReview) => onChange({ answerReview })} error={errors.answerReview} />
+        <RadioGroup legend="Spelling in typed answers" name="spellingMode" value={settings.spellingMode} options={SPELLING_OPTIONS} onChange={(spellingMode) => onChange({ spellingMode })} error={errors.spellingMode} />
       </Group>
       <Group title="Order">
         <div className="flex flex-col">

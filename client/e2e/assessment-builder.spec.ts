@@ -10,6 +10,9 @@ const CLASS = "/instructor/classes/biology";
 const BUILDER = `${CLASS}/assessments/new`;
 const tab = (page: Page, name: RegExp) => page.getByRole("tablist", { name: "Classroom sections" }).getByRole("tab", { name });
 const main = (page: Page) => page.getByRole("main");
+// D-056: the builder shows one part at a time, as tabs.
+const part = (page: Page, name: "Details" | "Questions" | "Settings") =>
+  page.getByRole("tablist", { name: "Assessment builder" }).getByRole("tab", { name: new RegExp(`^${name}`) });
 
 async function openBuilder(page: Page) {
   await openRole(page, "instructor");
@@ -18,6 +21,7 @@ async function openBuilder(page: Page) {
 }
 
 async function addQuestion(page: Page, type: RegExp, section?: number) {
+  await part(page, "Questions").click();
   const name = section === undefined ? /^Add question$/ : new RegExp(`^Add question to section ${section}$`);
   await main(page).getByRole("button", { name }).click();
   await page.getByRole("menuitem", { name: type }).click();
@@ -39,7 +43,10 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     await page.goto(`${CLASS}?tab=Create+content`);
     await page.locator("header").filter({ hasText: "Build and publish a quiz or exam" }).getByRole("button", { name: /Create/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "New assessment" })).toBeVisible();
-    await expect(main(page).getByRole("heading", { level: 2 })).toHaveText(["Details", "Questions", "Settings", "Summary"]);
+    // D-056: Details, Questions, and Settings are tabs; only the chosen one is shown, beside the Summary.
+    await expect(page.getByRole("tablist", { name: "Assessment builder" }).getByRole("tab")).toHaveText([/^Details/, /^Questions/, /^Settings/]);
+    await expect(part(page, "Details")).toHaveAttribute("aria-selected", "true");
+    await expect(main(page).getByRole("heading", { level: 2 })).toHaveText(["Details", "Summary"]);
     await page.getByRole("button", { name: /^Back to / }).click();
     await expect(tab(page, /^Create content/)).toHaveAttribute("aria-selected", "true");
   });
@@ -51,7 +58,8 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     await fillMultipleChoice(page, 1);
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: /^Draft saved at/ })).toBeVisible();
-    await expect(page).toHaveURL(/\/assessments\/\d+\/edit$/);
+    // The first save keeps the tab that was open (D-056).
+    await expect(page).toHaveURL(/\/assessments\/\d+\/edit\?tab=questions$/);
     // Still the same page: the question typed before saving is there.
     await expect(prompt(page, 1)).toHaveValue("Which organelle makes energy?");
 
@@ -89,7 +97,7 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     await expect(page.getByRole("button", { name: "Question 1, needs attention" })).toBeVisible();
     await page.getByRole("complementary", { name: "Summary" }).getByRole("button", { name: /^Question 2/ }).click();
     await expect(page.getByRole("button", { name: /^Question 2 · Multiple choice/ })).toBeFocused();
-    await expect(page).toHaveURL(/\/assessments\/new$/);
+    await expect(page).toHaveURL(/\/assessments\/new\?tab=questions$/);
   });
 
   test("needs the assessments API: an incomplete question saves as a draft and is marked by the server", async ({ page }) => {
@@ -108,6 +116,7 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     test.slow();
     await openBuilder(page);
     await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Unit test: cells");
+    await part(page, "Questions").click();
     await page.getByRole("textbox", { name: "Section 1 title" }).fill("Test I. Objective");
     await page.getByRole("spinbutton", { name: "Default points, section 1" }).fill("2");
     await page.getByRole("textbox", { name: "Directions for section 1" }).fill("Answer every item.");
@@ -170,6 +179,7 @@ test.describe("Instructor · assessment builder (D-040)", () => {
 
   test("needs the assessments API: pasted text imports into the editor with the original text and warnings", async ({ page }) => {
     await openBuilder(page);
+    await part(page, "Questions").click();
     await page.getByRole("radio", { name: /^Import from a file/ }).check();
     const dialog = page.getByRole("dialog", { name: "Import questions" });
     await expect(dialog).toBeVisible();
@@ -192,13 +202,66 @@ test.describe("Instructor · assessment builder (D-040)", () => {
     await dialog.getByRole("button", { name: "Read questions" }).click();
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Import summary" })).toContainText("Read 2 questions from the pasted text.");
-    await expect(page.getByRole("textbox", { name: /^Assessment title/ })).toHaveValue("Cell biology quiz");
     await expect(prompt(page, 1)).toHaveValue("Which organelle makes energy?");
     const second = main(page).getByRole("article", { name: /^Question 2/ });
     await second.getByText(/^Original text/).click();
     await expect(second.getByText("2. The basic unit of life.")).toBeVisible();
     await expect(second.getByText("Needs attention", { exact: true }).first()).toBeVisible();
     await expectNoAxeViolations(page);
+    await part(page, "Details").click();
+    await expect(page.getByRole("textbox", { name: /^Assessment title/ })).toHaveValue("Cell biology quiz");
+  });
+
+  test("each part has its own URL, a reload keeps it, and Next moves to the next part", async ({ page }) => {
+    await openBuilder(page);
+    await page.getByRole("button", { name: "Next: Questions" }).click();
+    await expect(part(page, "Questions")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name: /^Questions/ })).toBeFocused();
+    await expect(page).toHaveURL(/\/assessments\/new\?tab=questions$/);
+    await expect(page.getByRole("textbox", { name: /^Assessment title/ })).toHaveCount(0);
+    await page.reload();
+    await expect(part(page, "Questions")).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("button", { name: "Next: Settings" }).click();
+    await expect(page).toHaveURL(/\?tab=settings$/);
+    await expect(page.getByRole("spinbutton", { name: /^Attempts allowed/ })).toBeVisible();
+    // The Summary sums up the settings and opens them from any part.
+    await part(page, "Details").click();
+    await page.getByRole("complementary", { name: "Summary" }).getByRole("button", { name: "Settings: No due date · 1 attempt · No time limit" }).click();
+    await expect(part(page, "Settings")).toHaveAttribute("aria-selected", "true");
+    // Keyboard: arrow keys move between the tabs, and the URL follows.
+    await part(page, "Settings").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(part(page, "Questions")).toHaveAttribute("aria-selected", "true");
+    await expect(part(page, "Questions")).toBeFocused();
+    await expect(page).toHaveURL(/\?tab=questions$/);
+  });
+
+  test("a problem on a hidden part opens that part and focuses the field", async ({ page }) => {
+    await openBuilder(page);
+    await part(page, "Settings").click();
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(part(page, "Details")).toHaveAttribute("aria-selected", "true");
+    await expect(part(page, "Details")).toHaveAccessibleName("Details 1 field to fix");
+    await expect(page.getByRole("textbox", { name: /^Assessment title/ })).toBeFocused();
+
+    await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Cell quiz");
+    await part(page, "Settings").click();
+    await page.getByRole("spinbutton", { name: /^Attempts allowed/ }).fill("0");
+    await part(page, "Details").click();
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(part(page, "Settings")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("spinbutton", { name: /^Attempts allowed/ })).toBeFocused();
+    await expect(part(page, "Details")).toHaveAccessibleName("Details");
+  });
+
+  test("a question that needs attention is marked on its tab, and the Summary opens it from another part", async ({ page }) => {
+    await openBuilder(page);
+    await addQuestion(page, /^Multiple choice/);
+    await expect(part(page, "Questions")).toHaveAccessibleName("Questions 1 question, 1 needs attention");
+    await part(page, "Settings").click();
+    await page.getByRole("complementary", { name: "Summary" }).getByRole("button", { name: /^Question 1/ }).click();
+    await expect(part(page, "Questions")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("button", { name: /^Question 1 · Multiple choice/ })).toBeFocused();
   });
 });
 
@@ -207,6 +270,10 @@ test("Assessment builder: zero axe violations and text ≥14px with every questi
   await openBuilder(page);
   await expectNoAxeViolations(page);
   await expectReadableText(page);
+  await part(page, "Settings").click();
+  await expectNoAxeViolations(page);
+  await expectReadableText(page);
+  await part(page, "Details").click();
   await page.getByRole("textbox", { name: /^Assessment title/ }).fill("Every type");
   for (const type of [/^Multiple choice/, /^True or false/, /^Modified true or false/, /^Identification/, /^Enumeration/, /^Matching/, /^Essay/]) {
     await addQuestion(page, type);
@@ -227,8 +294,18 @@ test("Assessment builder does not scroll sideways at 320px, and the summary bar 
   await main(page).getByRole("button", { name: "Add section" }).click();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+  // Every tab fits with every badge showing (D-056): a field to fix on Details and Settings, and questions that need attention.
+  await part(page, "Settings").click();
+  await page.getByRole("spinbutton", { name: /^Attempts allowed/ }).fill("0");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(part(page, "Settings")).toHaveAccessibleName(/1 field to fix$/);
+  await expect(part(page, "Details")).toHaveAccessibleName(/1 field to fix$/);
+  const tabs = page.getByRole("tablist", { name: "Assessment builder" });
+  expect(await tabs.evaluate((list) => list.scrollWidth - list.clientWidth)).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   // The bar sticks to the bottom of the screen while the form scrolls.
-  await page.getByRole("heading", { level: 2, name: "Questions" }).scrollIntoViewIfNeeded();
+  await part(page, "Questions").click();
+  await main(page).getByRole("button", { name: "Add section" }).last().scrollIntoViewIfNeeded();
   await expect(page.getByRole("button", { name: "Publish" })).toBeInViewport();
   await expect(page.getByRole("button", { name: "Save draft" })).toBeInViewport();
 });

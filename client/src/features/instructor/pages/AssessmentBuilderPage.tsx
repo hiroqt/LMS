@@ -1,12 +1,16 @@
-import { useRef, useState, type ReactNode } from "react";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { CircleAlert, TriangleAlert } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { describeApiError } from "../../../shared/api/http";
 import { BackLink } from "../../../shared/components/BackLink";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { moduleChoices } from "../../../shared/lib/moduleTree";
+import { Badge } from "../../../shared/ui/Badge";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { useToast } from "../../../shared/ui/toast/useToast";
 import {
   courseworkErrors,
@@ -32,10 +36,11 @@ import { useGuardedNavigate } from "../hooks/useGuardedNavigate";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { useEditRevision } from "../hooks/useEditRevision";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
-import { instructorPaths } from "../paths";
+import { BUILDER_TABS, instructorPaths, isBuilderTab, type BuilderTab } from "../paths";
 import { DetailsSection } from "./assessment/DetailsSection";
 import { QuestionsSection } from "./assessment/QuestionsSection";
 import { SettingsSection } from "./assessment/SettingsSection";
+import { BUILDER_TAB_LABELS, defaultTab, errorCount, errorFields, settingsGlance, tabOfField } from "./assessment/builderTabs";
 import { SummaryPanel, type SavingAction } from "./assessment/SummaryPanel";
 
 interface BuilderStart {
@@ -159,6 +164,26 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
   const [publishProblem, setPublishProblem] = useState<string | undefined>();
   useUnsavedChanges(dirty);
 
+  // One part at a time (D-056), each at its own URL (`?tab=`). The tab shows at once and the URL
+  // follows (L-028). A draft opens on Questions; the default never changes on the first save,
+  // because that save writes the tab into the new URL.
+  const [params] = useSearchParams();
+  const [initialTab] = useState(() => defaultTab(Boolean(start)));
+  const requestedTab = params.get("tab");
+  const urlTab: BuilderTab = isBuilderTab(requestedTab) ? requestedTab : initialTab;
+  const [pendingTab, setPendingTab] = useState<BuilderTab | null>(null);
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- clears the optimistic tab once the URL catches up
+    if (pendingTab === urlTab) setPendingTab(null);
+  }, [pendingTab, urlTab]);
+  const tab = pendingTab ?? urlTab;
+  // Read after a save resolves, when this render's values may be stale.
+  const latest = useRef({ tab, examId });
+  useEffect(() => {
+    latest.current = { tab, examId };
+  }, [tab, examId]);
+  const tabList = useRef<HTMLDivElement>(null);
+
   const chosenSet = useQuestionSet(source === "use" ? Number(chosenSetId) : 0);
   const usesSet = source === "use";
   const shown = usesSet ? (chosenSet.data ? toDraftSections(chosenSet.data) : []) : sections;
@@ -178,8 +203,29 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     touch();
   };
 
+  /** Shows a tab now (so a control on it can take focus), and moves the URL to it. */
+  const show = (next: BuilderTab) => {
+    latest.current.tab = next;
+    flushSync(() => setPendingTab(next));
+    const id = latest.current.examId;
+    navigate(id === null ? instructorPaths.assessmentNew(room.id, next) : instructorPaths.assessmentEdit(room.id, id, next), { replace: true });
+  };
+  /** Shows a tab and moves focus to its panel, with the tabs in view. */
+  const openTab = (next: BuilderTab) => {
+    show(next);
+    document.querySelector<HTMLElement>(`[data-focus="tab:${next}"]`)?.focus({ preventScroll: true });
+    tabList.current?.scrollIntoView?.({ block: "start" });
+  };
+  /** Opens the tab a field is on and focuses the field (or the panel, for a field without a single control). */
+  const focusSetting = (field: Parameters<typeof tabOfField>[0]) => {
+    const where = tabOfField(field);
+    show(where);
+    if (!focusTarget(`settings:${field}`)) openTab(where);
+  };
+
   const jump = (key: string) => {
     if (usesSet) return;
+    show("questions");
     editor.current?.jumpTo(key);
   };
 
@@ -188,9 +234,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     setPublishProblem(undefined);
     const local = validateSettings(settings);
     setSettingsErrors(local);
-    const firstLocal = Object.keys(local)[0];
+    const firstLocal = errorFields(local)[0];
     if (firstLocal) {
-      focusTarget(`settings:${firstLocal}`);
+      focusSetting(firstLocal);
       toast.show({ title: action === "publish" ? "Could not publish" : "Could not save", description: "Check the highlighted fields.", tone: "danger" });
       return;
     }
@@ -204,7 +250,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
       if (refusal) {
         setReveal(true);
         setPublishProblem(refusal);
-        if (summary.attention[0]) jump(summary.attention[0].key);
+        if (usesSet) focusSetting("questions");
+        else if (summary.attention[0]) jump(summary.attention[0].key);
+        else openTab("questions");
         return;
       }
     }
@@ -231,8 +279,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     else if (!usesSet && outcome.setId !== null) setOwnSet((current) => ({ ...current, id: outcome.setId }));
     if (outcome.examId !== null && examId === null) {
       setExamId(outcome.examId);
+      latest.current.examId = outcome.examId;
       onCreated?.(String(outcome.examId));
-      navigate(instructorPaths.assessmentEdit(room.id, outcome.examId), { replace: true });
+      navigate(instructorPaths.assessmentEdit(room.id, outcome.examId, latest.current.tab), { replace: true });
     }
     if (outcome.saved) setSections((current) => applySaved(current, outcome.saved!, sent));
 
@@ -240,21 +289,24 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
       const errors = outcome.fieldErrors ?? {};
       if (outcome.stage === "set") {
         setSettingsErrors({ title: errors.title?.[0] ?? outcome.message });
-        focusTarget("settings:title");
+        focusSetting("title");
       } else if (outcome.stage === "questions") {
-        if (usesSet) setSettingsErrors({ questions: outcome.message });
-        else {
+        if (usesSet) {
+          setSettingsErrors({ questions: outcome.message });
+          focusSetting("questions");
+        } else {
           const mapped = mapFieldErrors(errors, sent);
           setQuestionErrors(mapped);
           const key = firstErrorKey(mapped, sections);
+          show("questions");
           if (key) editor.current?.jumpTo(key, (mapped.questions[key] ?? mapped.sections[key])?.[0]?.field);
         }
       } else {
         const mapped = courseworkErrors(errors);
         setSettingsErrors(mapped);
         if (mapped.publish) setPublishProblem(mapped.publish);
-        const first = Object.keys(mapped).find((key) => key !== "publish");
-        if (first) focusTarget(`settings:${first}`);
+        const first = errorFields(mapped)[0];
+        if (first) focusSetting(first);
       }
       toast.show({ title: action === "publish" ? "Could not publish" : "Could not save", description: outcome.message, tone: "danger" });
       return;
@@ -275,36 +327,67 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     toast.show({ title: "Draft saved", description: "Students can’t see it until you publish.", tone: "success" });
   };
 
+  const attentionCount = usesSet ? 0 : attention.length;
+  const tabBadges: Record<BuilderTab, ReactNode> = {
+    details: errorBadge(errorCount(settingsErrors, "details")),
+    questions: (
+      <Badge tone={attentionCount ? "warning" : "neutral"} className="px-2">
+        {attentionCount > 0 && <TriangleAlert aria-hidden className="size-4" />}
+        {summary.count}
+        <span className="sr-only">{` ${summary.count === 1 ? "question" : "questions"}${attentionCount ? `, ${attentionCount} ${attentionCount === 1 ? "needs" : "need"} attention` : ""}`}</span>
+      </Badge>
+    ),
+    settings: errorBadge(errorCount(settingsErrors, "settings")),
+  };
+
   return (
     <Frame room={room} title={examId === null ? "New assessment" : "Edit assessment"}>
       <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,1fr)_18rem] @7xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-w-0 flex-col gap-8">
-          <DetailsSection settings={settings} errors={settingsErrors} onChange={changeSettings} modules={modules} />
-          <QuestionsSection
-            source={source}
-            onSource={(next) => {
-              setSource(next);
-              touch();
-              if (next === "import" && !sections.some((section) => section.questions.length)) setImporting(true);
-            }}
-            sections={sections}
-            onSections={changeSections}
-            errors={questionErrors}
-            reveal={reveal}
-            imported={imported}
-            onDismissImport={() => setImported(null)}
-            onOpenImport={() => setImporting(true)}
-            subjectId={room.ismsSubjectId}
-            setId={chosenSetId}
-            onSetId={(id) => {
-              setChosenSetId(id);
-              touch();
-            }}
-            setError={settingsErrors.questions}
-            editorRef={editor}
-          />
-          <SettingsSection settings={settings} errors={settingsErrors} onChange={changeSettings} />
-        </div>
+        <Tabs value={tab} onValueChange={(value) => show(isBuilderTab(value) ? value : "details")} className="flex min-w-0 flex-col">
+          {/* Phones: three equal columns, and a badge wraps under its label instead of pushing Settings off screen. */}
+          <TabsList ref={tabList} aria-label="Assessment builder" className="grid grid-cols-3 @xl:flex">
+            {BUILDER_TABS.map((item) => (
+              <TabsTrigger key={item} value={item} className="flex-wrap justify-center gap-x-2 gap-y-1 py-1 @xl:flex-nowrap">
+                {BUILDER_TAB_LABELS[item]}
+                {/* The space keeps the name "Questions 3 questions", not "Questions3". */}
+                {tabBadges[item] && <> {tabBadges[item]}</>}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <BuilderPanel tab="details" current={tab}>
+            <DetailsSection settings={settings} errors={settingsErrors} onChange={changeSettings} modules={modules} />
+            <NextButton onClick={() => openTab("questions")}>Next: Questions</NextButton>
+          </BuilderPanel>
+          <BuilderPanel tab="questions" current={tab}>
+            <QuestionsSection
+              source={source}
+              onSource={(next) => {
+                setSource(next);
+                touch();
+                if (next === "import" && !sections.some((section) => section.questions.length)) setImporting(true);
+              }}
+              sections={sections}
+              onSections={changeSections}
+              errors={questionErrors}
+              reveal={reveal}
+              imported={imported}
+              onDismissImport={() => setImported(null)}
+              onOpenImport={() => setImporting(true)}
+              subjectId={room.ismsSubjectId}
+              setId={chosenSetId}
+              onSetId={(id) => {
+                setChosenSetId(id);
+                touch();
+              }}
+              setError={settingsErrors.questions}
+              editorRef={editor}
+            />
+            <NextButton onClick={() => openTab("settings")}>Next: Settings</NextButton>
+          </BuilderPanel>
+          <BuilderPanel tab="settings" current={tab}>
+            <SettingsSection settings={settings} errors={settingsErrors} onChange={changeSettings} />
+          </BuilderPanel>
+        </Tabs>
         <SummaryPanel
           count={summary.count}
           totalPoints={summary.totalPoints}
@@ -318,6 +401,8 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
           onPreview={() => void save("preview")}
           onSaveDraft={() => void save("draft")}
           onPublish={() => void save("publish")}
+          glance={settingsGlance(settings)}
+          onOpenSettings={() => openTab("settings")}
         />
       </div>
       <ImportDialog
@@ -334,5 +419,35 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
         }}
       />
     </Frame>
+  );
+}
+
+/** A tab's panel. It stays mounted while hidden, so the editor keeps its state and `jumpTo` works. */
+function BuilderPanel({ tab, current, children }: { tab: BuilderTab; current: BuilderTab; children: ReactNode }) {
+  return (
+    // Radix leaves a force-mounted panel visible; `hidden` is set here instead.
+    <TabsContent value={tab} forceMount hidden={tab !== current} data-focus={`tab:${tab}`} className="pt-6">
+      <div className="flex flex-col gap-6">{children}</div>
+    </TabsContent>
+  );
+}
+
+function NextButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <Button variant="secondary" className="self-end" onClick={onClick}>
+      {children}
+    </Button>
+  );
+}
+
+/** How many fields on a tab have an error; nothing when none do. */
+function errorBadge(count: number): ReactNode {
+  if (!count) return null;
+  return (
+    <Badge tone="danger" className="px-2">
+      <CircleAlert aria-hidden className="size-4" />
+      {count}
+      <span className="sr-only">{count === 1 ? " field to fix" : " fields to fix"}</span>
+    </Badge>
   );
 }

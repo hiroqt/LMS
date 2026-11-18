@@ -1,6 +1,5 @@
-import { FileUp, ListChecks } from "lucide-react";
+import { FileUp } from "lucide-react";
 import type { Ref } from "react";
-import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { cn } from "../../../../shared/lib/cn";
 import { Button } from "../../../../shared/ui/Button";
 import type { QuestionSource } from "../../api/assessments";
@@ -39,7 +38,7 @@ export function QuestionsSection(props: QuestionsSectionProps) {
   const hasDrafts = sections.some((section) => section.questions.length > 0);
   return (
     <section aria-labelledby="builder-questions" className="flex flex-col gap-4">
-      <SectionHeading id="builder-questions" title="Questions" icon={<ListChecks />} />
+      <h2 id="builder-questions" className="sr-only">Questions</h2>
       <fieldset className="m-0 flex flex-col gap-1 border-0 p-0 font-sans">
         <legend className="mb-1 p-0 text-body font-medium text-ink">How do you want to add questions?</legend>
         <div className="grid grid-cols-1 gap-2 @2xl:grid-cols-3">

@@ -49,7 +49,7 @@ export function QuestionSetPicker({ subjectId, value, onChange, error }: Questio
     : "The exam uses the set’s questions; dates, attempts, and time limit are this exam’s own.";
   return (
     <Field label="Question set" required error={error} hint={hint}>
-      <Select value={value} onChange={(event) => onChange(event.target.value)}>
+      <Select data-focus="settings:questions" value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Choose a question set</option>
         {options.map((set) => (
           <option key={set.id} value={set.id}>{set.title} · {setFacts(set)}</option>
