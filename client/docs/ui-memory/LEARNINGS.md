@@ -523,3 +523,17 @@ browser opens it. On a 2-core runner with parallel workers, the two together pas
 `e2e/global-setup.ts` now calls the API once per role and opens each workspace once before any
 test, instead of loosening the tests' timeouts. It began when the alphabetically first spec
 started using the API (`assessment-builder` before `attendance`).
+
+### L-072 · `Field`'s `error` marks the control invalid for any truthy value
+`2026-11-18` · saheejuu2 · scope: shared/ui · confidence: high
+`Field` sets `aria-invalid` with `Boolean(error)`, so passing `<FieldError message={null} />`
+(an element that renders nothing) still marks the input invalid and red. Pass
+`error={message && <FieldError message={message} />}` instead.
+
+### L-073 · Fake timers with user-event hang unless the clock also runs in real time
+`2026-11-18` · saheejuu2 · scope: tests · confidence: high
+With `vi.useFakeTimers()`, every `user.click` in `ProfileBillboard.test.tsx` timed out: Testing
+Library waits on a `setTimeout(0)` after each action and only advances Jest's fake clock. Use
+`vi.useFakeTimers({ shouldAdvanceTime: true })` with `userEvent.setup({ advanceTimers })`. Also,
+`user.unhover(container)` after clicking a child did not fire React's `onMouseLeave` on the
+container; `user.hover(document.body)` does.

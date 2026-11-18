@@ -518,3 +518,128 @@ Correct answers are shown only once the student can't start another attempt.
   submits itself at the attempt deadline.
 - **Validation status codes:** the API keeps its existing 400 validation response for every new
   rule; only import refusals are 422. The client treats both as field errors.
+
+### D-044 · `/login` is the sign-in page; it is frontend only until accounts exist
+`2026-11-18` · saheejuu2 (user request) · scope: auth, app/router · confidence: medium
+`/login` (`src/features/auth`) replaces the sign-in page of the previous system
+(trecemartirescitycollege.com) and keeps its contents: email and password, "Forgot password?",
+the choice of user type, the college's goal and core values, and the "Connect with us" links.
+It is drawn with the dashboard system: a flat sign-in card beside one filled tile, no
+`AppShell` (there is nothing to navigate yet), like `UnknownRolePage`.
+- **No request is sent.** The form checks only that the email and password are filled in, then
+  opens "Choose a workspace" (the previous "Select user type"), which goes to `/student`,
+  `/instructor`, or `/admin`. The page says so in an info note. The demo identity (D-032) is
+  unchanged, and `/` still opens the Student workspace.
+- **Password reset** validates the email and then says no email was sent. The previous page's
+  reCAPTCHA is left out until a server can verify it.
+- **College statements.** `features/auth/data/collegeProfile.ts` holds the name, goal, core
+  values, and links. The full Vision, Mission, Objectives, and Philosophy were not copied from
+  the old site; add the approved wording to `statements` and the tile shows its button.
+- When sign-in is built, replace the submit handler and the workspace dialog's contents; keep
+  the page's accessible names (`e2e/login.spec.ts`).
+
+### D-045 · The sign-in page is a full-height split, still without decoration
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Refines the look and states of D-044. Asked for a frosted-glass card, gradient background, and
+floating labels; kept to C-019 instead (Poppins, flat colors, 150 ms color changes only).
+- **Layout.** From the `@4xl/page` width, the form column (white) sits beside a full-height
+  `primary-800` college panel (`5fr`/`7fr` from `@7xl/page`); on phones the panel follows the
+  form. The four TMCC value letters on `accent-400` carry the visual weight. "Connect with us"
+  moved into the panel.
+- **Fields** (`AuthInput`, `PasswordInput`, `FieldError`) wrap the shared `Field`/`Input`:
+  leading icon, 48px height, error icon, a check when the email has been checked and passes,
+  and a Caps Lock notice. Labels stay visible above the field; no floating labels.
+- **Checking** (`useSignInForm`): a field is checked when left with text in it, or on submit,
+  then rechecked as it is typed in.
+- **Account service seam.** `LoginPage` takes `signIn` (default `api/demoAccount.ts`, which
+  waits 450 ms and returns all three roles). One role opens that workspace directly; several
+  open "Choose a workspace" listing only those. A rejected sign-in shows an alert. Replace
+  `demoSignIn` and `demoRequestPasswordReset` when accounts exist.
+
+### D-046 · The sign-in page shows the college's vision, mission, and goal as tabs
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-044's "College statements" bullet. The vision, mission, and goal are now in
+`collegeProfile.statements`, in the college's wording, and the green panel shows them as tabs
+(`CollegeStatements`, on the shared `Tabs`) above the core values; Vision is selected first.
+Every tab panel stays mounted in one grid cell and inactive ones are `invisible`, so the panel's
+height does not change with the tab. The "Vision, mission, and philosophy" dialog
+(`CollegeProfileDialog`) is removed. Objectives and Philosophy are still not on the page.
+The form stays on the left in the desktop split: DOM order is reading order (C-018), and the
+form comes first on phones.
+
+### D-047 · Core values first; the vision, mission, and goal open from a button
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-046's tabs: the statements were too long to show beside the sign-in form. The
+green panel now has the college name and the core values (larger tiles) at the top, and a
+"Vision, mission, and goal" button above the "Connect with us" links at the bottom. The button
+opens `CollegeProfileDialog`, which lists every entry of `collegeProfile.statements` under its
+own heading and icon. `CollegeStatements` (the tabs) is removed.
+
+### D-048 · The college's full statements, word for word, in a tabbed dialog
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-047's dialog contents. `collegeProfile.statements` now holds the college's own
+text for Vision, Mission (three paragraphs), Goal (with General and Specific Objectives),
+Philosophy, and Core Values, in that order. Keep it word for word, including its headings'
+capitalization; add nothing that the college did not supply. The panel button ("Vision, mission,
+goal, and philosophy") opens a dialog with one tab per statement; the tab row stays in view while
+a long tab scrolls. From `sm` the dialog hangs from near the top, so a taller tab grows it
+downward; on phones it is a fixed-height bottom sheet. `CoreValueList` draws the values on the
+panel and in the dialog from `collegeProfile.coreValues`, and its letters come from each name.
+
+### D-049 · Sign-in split puts the college on the left; profile dialog; Remember me
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-045's column order and D-047/D-048's dialog layout; the flat green system (C-019)
+and the college's exact wording (D-048) stay. From `@4xl/page` the college panel is the left
+column (brand, name, goal, core values, then the "Institutional profile" button and icon links)
+and the form sits in a white card on the canvas at the right. The DOM keeps the form first so
+phones show it first; grid placement (`col-start`) swaps the columns on wide screens, an
+exception to C-018 for this page. The submit button reads "Sign in to portal".
+- **Institutional profile** is one scrolling dialog with every statement as a section and a
+  pinned "Sections" row that scrolls to one and focuses its heading.
+- **Remember me** keeps only the email, in `tmcc-remembered-email` (`useRememberedEmail`), and
+  only after a successful sign-in; unticking it and signing in clears it.
+- **Links** are icon buttons with names (Facebook, website). Add YouTube or a support email only
+  with the college's real address.
+
+### D-050 · Sign-in form back on the left, without a card; core values fill the panel
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-049's column order and form card. The form is the left column again, on the white
+page with no card, under the brand; the college panel is on the right (`5fr`/`7fr` from
+`@7xl/page`). DOM order equals visual order again, so the C-018 exception is gone. To close the
+gap between the core values and the "Institutional profile" button, `CoreValueList fill` makes
+the grid take the panel's spare height from the panel's `@md` width: equal rows, the letter at
+the top of each tile and the name at the bottom. Phones keep compact rows.
+
+### D-051 · The college panel's middle is a rotating billboard
+`2026-11-18` · saheejuu2 (user request) · scope: auth, e2e · confidence: medium
+Supersedes D-050's growing core value tiles. `ProfileBillboard` cycles Vision, Mission (all three
+paragraphs), Goal (its name and the General Objectives), and Core Values, in the college's exact
+wording; the Institutional profile dialog still has every statement in full. It follows the
+WAI-ARIA carousel pattern: a slide stays up 4 s plus 150 ms a word (5–16 s); rotation pauses
+while the pointer is over it or focus is inside; Pause stops it until Play; it starts stopped
+under `prefers-reduced-motion`; slide buttons and arrows change slides at once; inactive slides
+are `aria-hidden` and `inert`. From the billboard's `@md` width the slides share one grid cell (no
+height change) and cross-fade with the 150 ms opacity change; narrower, only the current slide
+is laid out, because sharing the mission's height left the short slides mostly empty on phones. Exception to C-019 for this component: the time-left bar animates its
+width (a `transform` transition), because it shows a real timer. Glass, glow, and Framer Motion
+were asked for and left out (C-019, D-045). `e2e/login.spec.ts` now opens the Core Values slide
+before counting the values, since they are no longer always on screen.
+
+### D-052 · No Pause button on the billboard; the college panel gets the larger share
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Supersedes D-051's Pause/Play button, removed at the college's request. Rotation still pauses
+while the pointer is over the billboard or focus is inside it (tapping a slide button holds it
+on touch screens), and never starts under `prefers-reduced-motion`; known gap against the
+WAI-ARIA carousel pattern, which asks for a rotation control. The page split is now
+`minmax(26rem,2fr)`/`3fr` from `@4xl/page` and `minmax(32rem,1fr)`/`2fr` from `@7xl/page`; the panel's
+content is no longer capped at `max-w-2xl`, its padding is smaller, and the billboard's type steps
+up with its width: the goal's name reaches `text-display` at `@3xl`, the vision stays `text-section`
+and reaches `text-page` only from `@6xl` (asked twice to be smaller); the mission's
+paragraphs and the objectives stay `text-body-lg` until `@5xl` (larger, the mission no longer fit a
+900px-high screen). Each paragraph and list caps its own line length with `max-w-prose` (C-017).
+
+### D-053 · The billboard also shows the Philosophy
+`2026-11-18` · saheejuu2 (user request) · scope: auth · confidence: medium
+Adds a Philosophy slide (both paragraphs, exact wording) between Goal and Core Values, so the
+billboard's slide buttons read Vision · Mission · Goal · Philosophy · Core Values. Only the Specific
+Objectives are now left to the Institutional profile dialog.

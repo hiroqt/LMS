@@ -93,6 +93,19 @@
 | `src/features/admin/pages/UsersPage.tsx` | `UsersPage` |
 | `src/features/admin/pages/courses/ClassroomsTab.tsx` | `ClassroomsTab` |
 | `src/features/admin/pages/courses/SubjectsTab.tsx` | `SubjectsTab` |
+| `src/features/auth/LoginPage.tsx` | `LoginPage` |
+| `src/features/auth/components/AuthInput.tsx` | `AuthInput` |
+| `src/features/auth/components/BrandMark.tsx` | `BrandMark` |
+| `src/features/auth/components/CollegePanel.tsx` | `CollegePanel` |
+| `src/features/auth/components/CollegeProfileDialog.tsx` | `CollegeProfileDialog` |
+| `src/features/auth/components/CoreValueList.tsx` | `CoreValueList` |
+| `src/features/auth/components/FieldError.tsx` | `FieldError` |
+| `src/features/auth/components/PasswordInput.tsx` | `PasswordInput` |
+| `src/features/auth/components/ProfileBillboard.tsx` | `ProfileBillboard` |
+| `src/features/auth/components/ResetPasswordDialog.tsx` | `ResetPasswordDialog` |
+| `src/features/auth/components/SignInForm.tsx` | `SignInForm` |
+| `src/features/auth/components/SocialIcons.tsx` | `FacebookIcon` |
+| `src/features/auth/components/WorkspaceDialog.tsx` | `WorkspaceDialog` |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/instructor/components/AnswerBesideKey.tsx` | `QuestionPrompt`, `AnswerBesideKey` |
