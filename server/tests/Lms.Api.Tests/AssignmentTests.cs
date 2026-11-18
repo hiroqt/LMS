@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Lms.Api.Tests;
 
-/// <summary>Assignment turn-in through the API: closeAt, turnIn, grade release, drafts (D-044, contract §1–§4).</summary>
+/// <summary>Assignment turn-in through the API: closeAt, turnIn, grade release, drafts (D-054, contract §1–§4).</summary>
 public sealed class AssignmentTests : IDisposable
 {
     private readonly LmsApiFactory _factory = new();

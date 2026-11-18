@@ -47,7 +47,7 @@ describe("toStudentCatalog", () => {
     expect(catalog.completed).toEqual(["1", "2"]);
   });
 
-  it("passes the server's turn-in verdict to assignments only (D-044)", () => {
+  it("passes the server's turn-in verdict to assignments only (D-054)", () => {
     const verdict = { state: "turned_in", canTurnIn: false, reason: "already_turned_in", late: false } as const;
     const catalog = toStudentCatalog(overviewFixture((o) => {
       o.coursework[0]!.coursework.turnIn = verdict;

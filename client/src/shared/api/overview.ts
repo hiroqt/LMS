@@ -71,9 +71,9 @@ export interface Coursework {
   availableFrom: string | null;
   allowLate: boolean;
   allowResubmission: boolean;
-  /** Assignments: the last moment late work is accepted (D-044). */
+  /** Assignments: the last moment late work is accepted (D-054). */
   closeAt: string | null;
-  /** Assignments: when students see a grade (D-044). */
+  /** Assignments: when students see a grade (D-054). */
   gradeRelease: "immediate" | "returned";
   /** Students, assignments only: the server's turn-in verdict; null for instructors and exams. */
   turnIn: TurnIn | null;
@@ -88,7 +88,7 @@ export interface Coursework {
   rosterCount?: number | null;
 }
 
-/** Whether a student can turn an assignment in now, and why not (D-044, contract §2). */
+/** Whether a student can turn an assignment in now, and why not (D-054, contract §2). */
 export interface TurnIn {
   state: "assigned" | "missing" | "draft" | "turned_in" | "graded" | "returned" | "not_handed_in";
   canTurnIn: boolean;
@@ -98,7 +98,7 @@ export interface TurnIn {
   late: boolean;
 }
 
-/** Graded, whether or not it has been returned to the student yet (D-044). */
+/** Graded, whether or not it has been returned to the student yet (D-054). */
 export const isGraded = (status: Submission["status"]) => status === "graded" || status === "returned";
 
 export interface Submission {

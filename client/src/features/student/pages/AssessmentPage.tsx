@@ -41,7 +41,7 @@ function ActivityStatus({ submission, points }: { submission: ActivitySubmission
   );
 }
 
-/** Why the form is shown but can't be used; the server decides (D-044). */
+/** Why the form is shown but can't be used; the server decides (D-054). */
 const REFUSALS: Partial<Record<NonNullable<TurnIn["reason"]>, string>> = {
   past_due: "The due date has passed and late submissions are turned off.",
   past_close: "The last day for late work has passed.",

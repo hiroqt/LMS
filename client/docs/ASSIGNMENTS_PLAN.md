@@ -1,7 +1,7 @@
 # Assignments plan
 
 Easier setup for instructors, a smoother and safer way for students to hand in work, and settings
-that can grow without every new option becoming another checkbox. Decisions: D-044 and D-045 in
+that can grow without every new option becoming another checkbox. Decisions: D-054 and D-055 in
 [`ui-memory/DECISIONS.md`](ui-memory/DECISIONS.md). The API shapes are in
 [`ASSIGNMENTS_API_CONTRACT.md`](ASSIGNMENTS_API_CONTRACT.md).
 
@@ -21,11 +21,11 @@ The first draft of this plan was checked against the code and changed where it d
 
 - **Settings are columns,** like the assessment settings (D-040). The database provider is
   `MySql.EntityFrameworkCore` and tests run on SQLite; JSON-mapped settings are not reliable on
-  either (L-072). Maintainability comes from one place in code that reads and checks them.
+  either (L-074). Maintainability comes from one place in code that reads and checks them.
 - **There is no outbox yet** (planned with sign-in). Drafts are saved on the server, like quiz
   autosave (D-043).
 - **The identity is in request headers,** so `<img src>` or `<iframe src>` can't be authorized.
-  Files are fetched with the usual headers and shown from a blob (L-073). No signed URLs.
+  Files are fetched with the usual headers and shown from a blob (L-075). No signed URLs.
 - **Students already receive their own in-progress rows.** The client learns about assignment
   drafts before any exist (Phase 1).
 - **Hosting is not decided,** so files go to disk behind `IFileStore`. Cloud storage comes later.
@@ -40,7 +40,7 @@ The first draft of this plan was checked against the code and changed where it d
 
 | Phase | Scope | Visible change |
 |---|---|---|
-| 0 | This plan, the API contract, D-044, D-045, FLOW_PARITY rows | None |
+| 0 | This plan, the API contract, D-054, D-055, FLOW_PARITY rows | None |
 | 1 | `closeAt` and `gradeRelease` columns; `AssignmentRules` decides turn-in and the student page shows its verdict; grades held until returned (`POST …/return`); drafts private and ignored by grading progress; "not handed in" grades wait for the last day | None: the instructor UI sets neither new field yet, and every e2e spec passes unchanged |
 | 2 | Files (`IFileStore`, `IFileScanner`, checks, downloads); the assignment builder; the student "Your work" card with drafts, uploads, turn in, receipt, unsubmit; the assignment grading page with Return | Yes; two specs move from typing a file name to `setInputFiles` (journey change, new D-entry) |
 | 3 | Late penalties, extensions and excuse, rubrics (per class), comment bank, batch return, zip download | Yes |

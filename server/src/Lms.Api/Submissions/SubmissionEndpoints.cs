@@ -117,7 +117,7 @@ public static class SubmissionEndpoints
             if (cw is null || cw.Type != CourseworkType.Assignment) return ContentEndpoints.NotFound("Assignment");
             var now = time.GetUtcNow().UtcDateTime;
             var mine = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
-            // The same rules the student's page shows (D-044).
+            // The same rules the student's page shows (D-054).
             var verdict = AssignmentRules.Evaluate(cw, mine, now);
             if (verdict.Reason is { } reason) return Conflict(AssignmentRules.Message(reason, cw));
 
@@ -159,7 +159,7 @@ public static class SubmissionEndpoints
             var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
             if (cw is null) return ContentEndpoints.NotFound("Coursework");
             var rows = await db.Submissions.AsNoTracking().Where(s => s.CourseworkId == cw.Id).OrderBy(s => s.StudentId).ThenBy(s => s.AttemptNumber).ToListAsync(ct);
-            // An assignment draft is the student's own until it is turned in (D-044).
+            // An assignment draft is the student's own until it is turned in (D-054).
             if (cw.Type == CourseworkType.Assignment) rows = rows.Where(r => r.Status != SubmissionStatus.InProgress).ToList();
             var handedIn = rows.Where(r => r.Status != SubmissionStatus.InProgress).Select(r => r.StudentId).ToHashSet();
             var missing = (await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive).OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct))
@@ -263,7 +263,7 @@ public static class SubmissionEndpoints
             if (errors.Any) return errors.Result();
 
             var all = await db.Submissions.Where(s => s.CourseworkId == cw!.Id && s.StudentId == studentId).ToListAsync(ct);
-            // An assignment draft was never handed in, so it doesn't count as work (D-044).
+            // An assignment draft was never handed in, so it doesn't count as work (D-054).
             var rows = all.Where(s => cw!.Type == CourseworkType.Exam || s.Status != SubmissionStatus.InProgress).ToList();
             if (rows.Any(s => s.Status == SubmissionStatus.InProgress)) return Conflict("This student has an attempt in progress. Grade it once they submit.");
             if (rows.Any(s => !GradingRules.IsNotHandedIn(s))) return Conflict("This student handed in work. Grade their submission instead.");
@@ -298,7 +298,7 @@ public static class SubmissionEndpoints
             var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
             if (errors.Any) return errors.Result();
 
-            // An assignment draft was never handed in, so its student still counts as missing (D-044).
+            // An assignment draft was never handed in, so its student still counts as missing (D-054).
             var exam = cw!.Type == CourseworkType.Exam;
             var started = db.Submissions.Where(s => s.CourseworkId == cw.Id && (exam || s.Status != SubmissionStatus.InProgress)).Select(s => s.StudentId);
             var missing = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive && !started.Contains(s.StudentId))
@@ -332,7 +332,7 @@ public static class SubmissionEndpoints
             return TypedResults.Ok(new MissingGradeResult(rows.Count));
         }).WithName("GradeEveryoneWithoutSubmission");
 
-        // Returns graded assignments to students (D-044): the latest handed-in work of each named
+        // Returns graded assignments to students (D-054): the latest handed-in work of each named
         // student, or of everyone, when it has a grade. Assignments that hold grades show them then.
         work.MapPost("/return", async Task<IResult> (string classId, long courseworkId, ReturnInput? input, HttpContext http, ClassAccess access, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
         {
@@ -441,7 +441,7 @@ public static class SubmissionEndpoints
         var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
         if (cw is null) return (null, null);
         var query = track ? db.Submissions : db.Submissions.AsNoTracking();
-        // An assignment draft is the student's own until it is turned in (D-044).
+        // An assignment draft is the student's own until it is turned in (D-054).
         if (cw.Type == CourseworkType.Assignment) query = query.Where(s => s.Status != SubmissionStatus.InProgress);
         return (cw, await query.SingleOrDefaultAsync(s => s.Id == id && s.CourseworkId == cw.Id, ct));
     }

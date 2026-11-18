@@ -12,7 +12,7 @@ namespace Lms.Api.Coursework;
 /// <param name="RosterCount">Instructors only: students active on the class list.</param>
 /// <param name="AnswerReview">What students see after submitting (see <see cref="Data.AnswerReview"/>). Students get it too, for the notices.</param>
 /// <param name="SpellingMode">How near misses in typed answers are scored (see <see cref="Data.SpellingMode"/>).</param>
-/// <param name="CloseAt">Assignments: the last moment late work is accepted (D-044).</param>
+/// <param name="CloseAt">Assignments: the last moment late work is accepted (D-054).</param>
 /// <param name="GradeRelease">Assignments: when students see a grade (see <see cref="Data.GradeRelease"/>).</param>
 /// <param name="TurnIn">Students, assignments only: whether they can turn work in now, and why not (contract §2).</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
@@ -211,7 +211,7 @@ public static class CourseworkEndpoints
             if (input.ClearCloseAt == true) row.CloseAt = null;
             else if (input.CloseAt is { } close) row.CloseAt = close.UtcDateTime;
             if (input.GradeRelease is not null) { if (GradeRelease.All.Contains(input.GradeRelease)) row.GradeRelease = input.GradeRelease; else errors.Add("gradeRelease", $"Choose one of: {string.Join(", ", GradeRelease.All)}."); }
-            // "Accept until" ends late work, so it needs late work and a due date before it (D-044).
+            // "Accept until" ends late work, so it needs late work and a due date before it (D-054).
             if (row.CloseAt is { } last)
             {
                 if (row.DueAt is not { } dueAt) errors.Add("closeAt", "Set a due date before the last day for late work.");

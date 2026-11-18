@@ -42,7 +42,7 @@ export interface Assessment {
   instructions: string;
   /** Instructor-created assignments are "activity"; quizzes and exams have no kind. */
   kind?: "activity";
-  /** Assignments: the server's turn-in verdict (D-044). */
+  /** Assignments: the server's turn-in verdict (D-054). */
   turnIn?: TurnIn;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;

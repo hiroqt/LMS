@@ -524,14 +524,14 @@ browser opens it. On a 2-core runner with parallel workers, the two together pas
 test, instead of loosening the tests' timeouts. It began when the alphabetically first spec
 started using the API (`assessment-builder` before `attendance`).
 
-### L-072 · Coursework settings are columns, not JSON
+### L-074 · Coursework settings are columns, not JSON
 `2026-11-18` · hiro · scope: server · confidence: high
 The LMS API uses Oracle's `MySql.EntityFrameworkCore` in production and SQLite in tests and Demo.
 EF Core's JSON-mapped complex types are not dependable on either, so a settings object stored as
 JSON would behave differently in tests and production. Add settings as plain columns (as D-040 did)
 and keep them maintainable in code: one place reads and checks them, one rules class uses them.
 
-### L-073 · The workspace identity travels in headers, so `src` URLs to the API can't be authorized
+### L-075 · The workspace identity travels in headers, so `src` URLs to the API can't be authorized
 `2026-11-18` · hiro · scope: client, server · confidence: high
 `shared/api/viewer.ts` sends `X-Demo-User-Id`, `X-Demo-Role` and `X-Demo-Sandbox` on each `fetch`.
 An `<img src>`, `<iframe src>` or `<a href>` pointing at the API sends none of them. Fetch the file

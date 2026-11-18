@@ -32,7 +32,7 @@ public static class TurnInReason
 public sealed record TurnInStatus(string State, bool CanTurnIn, string? Reason, bool Late);
 
 /// <summary>
-/// The one place that decides whether a student can turn in an assignment (D-044). The turn-in
+/// The one place that decides whether a student can turn in an assignment (D-054). The turn-in
 /// endpoint enforces it, and students receive it as <c>turnIn</c>, so the browser never works the
 /// rules out itself.
 /// </summary>

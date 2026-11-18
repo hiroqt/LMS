@@ -172,4 +172,4 @@ Specs written against the classic Admin first, then run unchanged against the re
 | Submodules: instructor builds them, student sees them nested; Modules tabs pass axe and fit 320px (D-033) | ✔ `submodules` (`@all` for axe and 320px); tree rules in `moduleTree.test.ts` |
 | Question sets: copy is deep and owner-only; an exam uses only the instructor's own set for its class's subject (D-034) | ✔ `CourseworkTests` (server), `questionSets.test.ts` |
 | Question sets pages: zero axe violations, text ≥14px, no sideways scroll at 320px, reachable from the drawer | ✔ `question-sets` `@all`, `@mobile` |
-| Assignment turn-in rules come from the server (`turnIn`); late work ends at `closeAt`; grades held until returned; drafts private (D-044) | ✔ `AssignmentRulesTests`, `AssignmentTests` (server), `catalog.test.ts` |
+| Assignment turn-in rules come from the server (`turnIn`); late work ends at `closeAt`; grades held until returned; drafts private (D-054) | ✔ `AssignmentRulesTests`, `AssignmentTests` (server), `catalog.test.ts` |

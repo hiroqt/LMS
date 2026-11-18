@@ -3,7 +3,7 @@ using Lms.Api.Submissions;
 
 namespace Lms.Api.Tests;
 
-/// <summary>The turn-in rules of D-044 (contract §2), without the database.</summary>
+/// <summary>The turn-in rules of D-054 (contract §2), without the database.</summary>
 public sealed class AssignmentRulesTests
 {
     private static readonly DateTime Due = new(2026, 11, 20, 15, 59, 0, DateTimeKind.Utc);
