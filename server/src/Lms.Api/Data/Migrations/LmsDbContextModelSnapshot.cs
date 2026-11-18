@@ -280,6 +280,10 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(200)")
                         .HasColumnName("class_id");
 
+                    b.Property<DateTime?>("CloseAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("close_at");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
@@ -297,6 +301,14 @@ namespace Lms.Api.Data.Migrations
                     b.Property<DateTime?>("DueAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("due_at");
+
+                    b.Property<string>("GradeRelease")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("immediate")
+                        .HasColumnName("grade_release");
 
                     b.Property<string>("Instructions")
                         .HasColumnType("longtext")
@@ -412,6 +424,10 @@ namespace Lms.Api.Data.Migrations
                         .HasPrecision(8, 2)
                         .HasColumnType("decimal(8,2)")
                         .HasColumnName("points");
+
+                    b.Property<DateTime?>("ReturnedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("returned_at");
 
                     b.Property<long>("SubmissionId")
                         .HasColumnType("bigint")

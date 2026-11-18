@@ -100,6 +100,16 @@ public static class AnswerReview
     public static readonly IReadOnlyList<string> All = [ScoreOnly, Results, AnswersAfterDue, AnswersAfterSubmit];
 }
 
+/// <summary>When students see an assignment's grade (D-044).</summary>
+public static class GradeRelease
+{
+    /// <summary>As soon as it is saved (the behavior before D-044).</summary>
+    public const string Immediate = "immediate";
+    /// <summary>Once the instructor returns it (POST …/return).</summary>
+    public const string Returned = "returned";
+    public static readonly IReadOnlyList<string> All = [Immediate, Returned];
+}
+
 /// <summary>How near misses in typed answers are scored (D-040).</summary>
 public static class SpellingMode
 {
@@ -262,6 +272,10 @@ public sealed class Coursework : Audited
     public bool ShuffleQuestions { get; set; }
     /// <summary>Shuffle multiple-choice options, seeded by the attempt.</summary>
     public bool ShuffleChoices { get; set; }
+    /// <summary>Assignments: the last moment late work is accepted ("accept until"); needs <see cref="AllowLate"/> and a due date (D-044).</summary>
+    public DateTime? CloseAt { get; set; }
+    /// <summary>Assignments: see <see cref="Data.GradeRelease"/>.</summary>
+    public string GradeRelease { get; set; } = Data.GradeRelease.Immediate;
 }
 
 /// <summary>One attempt by one student.</summary>
@@ -307,6 +321,8 @@ public sealed class Grade : Audited
     public string? Feedback { get; set; }
     public string GradedBy { get; set; } = "";
     public DateTime GradedAt { get; set; }
+    /// <summary>When the instructor returned it, for assignments that hold grades until then (D-044).</summary>
+    public DateTime? ReturnedAt { get; set; }
 }
 
 /// <summary>Today's two category weights. Phase 3 replaces this with flexible grade components.</summary>

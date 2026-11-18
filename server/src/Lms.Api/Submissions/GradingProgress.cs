@@ -18,6 +18,9 @@ public static class GradingRules
     /// <summary>A grade the instructor recorded for a student who handed in nothing (D-036).</summary>
     public static bool IsNotHandedIn(Submission s) => s.SubmittedAt is null && s.Status != SubmissionStatus.InProgress;
 
+    /// <summary>Graded, whether or not it has been returned to the student yet (D-044).</summary>
+    public static bool IsGraded(string status) => status is SubmissionStatus.Graded or SubmissionStatus.Returned;
+
     public static async Task<Dictionary<long, GradingProgress>> ProgressAsync(LmsDbContext db, IReadOnlyCollection<CourseworkRow> rows, CancellationToken ct)
     {
         if (rows.Count == 0) return [];
@@ -37,13 +40,15 @@ public static class GradingRules
             var ungraded = students.Where(student =>
             {
                 var attempts = mine[student.StudentId].ToList();
+                // An assignment draft is not handed in, so it neither counts nor hides earlier work (D-044).
+                if (r.Type == CourseworkType.Assignment) attempts = attempts.Where(a => a.Status != SubmissionStatus.InProgress).ToList();
                 if (attempts.Count == 0) return true;
                 if (r.Type == CourseworkType.Assignment)
                 {
                     var latest = attempts.MaxBy(a => a.AttemptNumber)!;
-                    return !(latest.Status == SubmissionStatus.Graded && latest.HasGrade);
+                    return !(IsGraded(latest.Status) && latest.HasGrade);
                 }
-                return !attempts.Any(a => a.Status == SubmissionStatus.Graded && a.HasGrade);
+                return !attempts.Any(a => IsGraded(a.Status) && a.HasGrade);
             }).Select(s => new StudentRef(s.StudentId, $"{s.FirstName} {s.LastName}".Trim())).ToList();
             return new GradingProgress(students.Count - ungraded.Count, students.Count, ungraded);
         });

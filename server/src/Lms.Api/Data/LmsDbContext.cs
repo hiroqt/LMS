@@ -165,6 +165,7 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             // Existing exams keep today's behavior: which questions were right, strict spelling.
             e.Property(x => x.AnswerReview).HasMaxLength(30).IsRequired().HasDefaultValue(AnswerReview.Results);
             e.Property(x => x.SpellingMode).HasMaxLength(20).IsRequired().HasDefaultValue(SpellingMode.Strict);
+            e.Property(x => x.GradeRelease).HasMaxLength(20).IsRequired().HasDefaultValue(GradeRelease.Immediate);
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Restrict);
         });

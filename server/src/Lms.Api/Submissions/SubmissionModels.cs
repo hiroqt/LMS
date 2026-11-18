@@ -57,6 +57,12 @@ public sealed record SubmissionDto(long Id, string StudentId, string? StudentNam
 
 public sealed record StudentRef(string StudentId, string Name);
 
+/// <param name="StudentIds">Students to return to; null returns every student whose latest handed-in work is graded.</param>
+public sealed record ReturnInput(IReadOnlyList<string>? StudentIds);
+
+/// <param name="Returned">How many submissions were returned.</param>
+public sealed record ReturnResult(int Returned);
+
 /// <summary>A grade for a student who handed in nothing.</summary>
 public sealed record MissingGradeInput(decimal? Points, string? Feedback);
 
