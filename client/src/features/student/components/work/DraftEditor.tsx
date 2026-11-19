@@ -1,5 +1,6 @@
 import { Camera, FolderOpen, Send, WifiOff } from "lucide-react";
-import { useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useId, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { acceptFor, draftFailureMessage, fileTypeList, refusalBeforeUpload, removeDraftFile, saveDraft, turnInDraft, uploadDraftFile } from "../../../../shared/api/assignments";
 import type { Submission, SubmittedFile, TurnIn } from "../../../../shared/api/overview";
 import { AttachedFile } from "../../../../shared/components/files/AttachedFile";
@@ -9,6 +10,7 @@ import { Button } from "../../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
 import { Field, Input, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
+import { studentKeys } from "../../api/student";
 import { canRetry, filesLeftLabel, hasWork, isWebAddress, shouldRetrySave, turnInContents, withRow } from "../../api/work";
 import { useAutosave } from "../../hooks/useAutosave";
 import { pendingCount } from "../../hooks/uploadQueue";
@@ -73,7 +75,16 @@ function FileButton({ label, icon, accept, multiple, capture, disabled, onFiles,
 export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, newVersion, online, setRows, refresh, onTurnedIn }: DraftEditorProps) {
   const viewer = useStudentViewer();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const kinds = settings.submissionKinds;
+  // Until the draft exists, whichever request arrives first creates it and a second one at the
+  // same moment is refused. So the first upload and a save never overlap: the upload waits for
+  // the save in flight, and a save waits for the first upload (L-086).
+  const hasDraft = useRef(Boolean(draft));
+  useLayoutEffect(() => {
+    hasDraft.current = Boolean(draft);
+  });
+  const firstUpload = useRef<Promise<unknown> | null>(null);
   const headingId = useId();
   const [text, setText] = useState(draft?.text ?? "");
   const [link, setLink] = useState(draft?.link ?? "");
@@ -102,7 +113,9 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
     keyOf: () => "draft",
     save: async (changes) => {
       const last = changes[changes.length - 1];
-      if (last) stored(await saveDraft(viewer, classId, assessmentId, body(last)));
+      if (!last) return;
+      if (firstUpload.current) await firstUpload.current.catch(() => undefined);
+      stored(await saveDraft(viewer, classId, assessmentId, body(last)));
     },
     shouldRetry: shouldRetrySave,
     onFailure: (failure) => toast.show({ title: "Your work was not saved", description: draftFailureMessage(failure), tone: "danger" }),
@@ -110,9 +123,16 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
 
   const uploads = useUploadQueue({
     upload: async (file, options) => {
-      // The draft's text goes first, so two requests never both start a draft.
+      // The draft's text goes first; see `firstUpload` above for the other direction.
       await autosaver.flush();
-      return uploadDraftFile(viewer, classId, assessmentId, file, options);
+      const sending = uploadDraftFile(viewer, classId, assessmentId, file, options);
+      if (!hasDraft.current) {
+        firstUpload.current = sending;
+        void sending.catch(() => undefined).finally(() => {
+          if (firstUpload.current === sending) firstUpload.current = null;
+        });
+      }
+      return sending;
     },
     onStored: (row, file) => {
       stored(row);
@@ -120,6 +140,8 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
     },
     describe: (failure) => ({ message: draftFailureMessage(failure), retryable: canRetry(failure) }),
     onFailed: (file, message) => toast.show({ title: `Could not add ${file.name}`, description: message, tone: "danger" }),
+    // A cancel can land after the server stored the file; reading the draft again shows what is really on it.
+    onCancelled: () => void queryClient.invalidateQueries({ queryKey: studentKeys.work(viewer.id, assessmentId) }),
   }, !online);
 
   const files = draft?.files ?? [];
@@ -198,12 +220,12 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
 
       {kinds.includes("text") && (
         <Field label="Written answer" hint="Plain text. It saves as you type.">
-          <Textarea value={text} onChange={(event) => edit({ text: event.target.value })} rows={6} maxLength={20_000} />
+          <Textarea value={text} onChange={(event) => edit({ text: event.target.value })} rows={6} maxLength={20_000} readOnly={turningIn} />
         </Field>
       )}
       {kinds.includes("link") && (
         <Field label="Link" hint="A full web address, for example https://docs.example.com/my-work." error={linkError || undefined}>
-          <Input type="url" inputMode="url" autoComplete="url" value={link} onChange={(event) => edit({ link: event.target.value })}
+          <Input type="url" inputMode="url" autoComplete="url" value={link} readOnly={turningIn} onChange={(event) => edit({ link: event.target.value })}
             onBlur={() => setLinkError(linkValid ? "" : "Enter a full web address that starts with https:// or http://.")} maxLength={2_000} />
         </Field>
       )}
@@ -258,7 +280,8 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
 
       <TurnInDialog
         open={confirming}
-        onOpenChange={setConfirming}
+        // While the turn-in is on its way the dialog stays, and the answer can't be edited: nothing typed then could be saved.
+        onOpenChange={(open) => !turningIn && setConfirming(open)}
         items={turnInContents(draft, kinds)}
         late={turnIn.late}
         honorStatement={settings.honorStatement}

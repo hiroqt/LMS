@@ -11,6 +11,11 @@ export interface UploadQueueCallbacks {
   describe: (error: unknown) => { message: string; retryable: boolean };
   /** Told about each failure (not a cancel), after it is listed. */
   onFailed?: (file: File, message: string) => void;
+  /**
+   * Told when an upload that had started was cancelled. Its bytes may already have reached the
+   * server, so the caller reads the draft again instead of assuming the file is not on it.
+   */
+  onCancelled?: (file: File) => void;
 }
 
 /**
@@ -48,8 +53,10 @@ export function useUploadQueue(callbacks: UploadQueueCallbacks, paused: boolean)
       },
       (error: unknown) => {
         settle();
-        if (isCancelled(error)) dispatch({ type: "remove", key });
-        else {
+        if (isCancelled(error)) {
+          dispatch({ type: "remove", key });
+          latest.current.onCancelled?.(file);
+        } else {
           const { message, retryable } = latest.current.describe(error);
           dispatch({ type: "fail", key, error: message, retryable });
           latest.current.onFailed?.(file, message);
@@ -66,7 +73,12 @@ export function useUploadQueue(callbacks: UploadQueueCallbacks, paused: boolean)
   const add = useCallback((files: Array<{ file: File; refusal: string | null }>) => {
     dispatch({ type: "add", uploads: files.map(({ file, refusal }) => ({ key: `upload-${(counter.current += 1)}`, file, refusal })) });
   }, []);
-  const cancel = useCallback((key: string) => controllers.current.get(key)?.abort(), []);
+  // A file that is uploading is aborted; one still waiting its turn (or for a connection) has nothing to abort and is taken off the list.
+  const cancel = useCallback((key: string) => {
+    const controller = controllers.current.get(key);
+    if (controller) controller.abort();
+    else dispatch({ type: "remove", key });
+  }, []);
   const retry = useCallback((key: string) => dispatch({ type: "retry", key }), []);
   const remove = useCallback((key: string) => dispatch({ type: "remove", key }), []);
 
