@@ -1,5 +1,5 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
-import { seedAssignment, seedTurnedInAssignment } from "./assignmentFixtures";
+import { gradeWork, seedAssignment, seedRubric, seedTurnedInAssignment } from "./assignmentFixtures";
 import { INSTRUCTOR, STUDENT, callApi, expect, openRole, test, type Page } from "./fixtures";
 
 // The assignment builder (D-058, D-059; docs/ASSIGNMENTS_PLAN.md "Instructor"). Shapes follow
@@ -14,7 +14,7 @@ const part = (page: Page, name: "Details" | "Hand-in" | "Dates and grading") =>
 const summary = (page: Page) => page.getByRole("complementary", { name: "Summary" });
 const titleBox = (page: Page) => page.getByRole("textbox", { name: /^Assignment title/ });
 
-interface Work { id: number; title: string; status: string; maxPoints: number; submissionKinds: string[]; maxFiles: number; honorStatement: boolean; allowLate: boolean; closeAt: string | null; dueAt: string | null; gradeRelease: string }
+interface Work { id: number; title: string; status: string; maxPoints: number; submissionKinds: string[]; maxFiles: number; honorStatement: boolean; allowLate: boolean; closeAt: string | null; dueAt: string | null; gradeRelease: string; latePenaltyPercentPerDay: number; latePenaltyMaxPercent: number; rubricId: number | null }
 const listWork = async (page: Page, sandbox: string, viewer: typeof STUDENT) => (await callApi<{ items: Work[] }>(page, sandbox, viewer, "GET", "/api/classes/biology/coursework?pageSize=100")).items;
 const studentWork = (page: Page, sandbox: string) => listWork(page, sandbox, STUDENT);
 const instructorWork = (page: Page, sandbox: string) => listWork(page, sandbox, INSTRUCTOR);
@@ -240,6 +240,97 @@ test.describe("Instructor · assignment builder (D-059)", () => {
   });
 });
 
+test.describe("Instructor · late penalty and rubric in the builder (D-063)", () => {
+  test("a late penalty is worded in the Summary and saved", async ({ page, sandbox }) => {
+    await openBuilder(page);
+    await titleBox(page).fill("Penalty lab");
+    await part(page, "Dates and grading").click();
+    await page.getByLabel(/^Due date/).fill("2026-11-10T17:00");
+    await page.getByRole("checkbox", { name: /^Accept late work/ }).check();
+    await page.getByRole("checkbox", { name: /^Take points off late work/ }).check();
+    await page.getByRole("spinbutton", { name: /^Percent per day/ }).fill("10");
+    await page.getByRole("spinbutton", { name: /^Up to/ }).fill("50");
+    await expect(summary(page).getByRole("list", { name: "What students will read" })).toContainText("Late work loses 10% of its score for each day late, up to 50%.");
+    await summary(page).getByRole("button", { name: "Save draft" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Draft saved at/ })).toBeVisible();
+    expect((await instructorWork(page, sandbox)).find((item) => item.title === "Penalty lab")).toMatchObject({ latePenaltyPercentPerDay: 10, latePenaltyMaxPercent: 50 });
+
+    // Turning late work off sends no penalty.
+    await page.getByRole("checkbox", { name: /^Accept late work/ }).uncheck();
+    await expect(summary(page).getByRole("list", { name: "What students will read" })).not.toContainText("Late work loses");
+    await summary(page).getByRole("button", { name: "Save draft" }).click();
+    await expect.poll(async () => (await instructorWork(page, sandbox)).find((item) => item.title === "Penalty lab")?.latePenaltyPercentPerDay).toBe(0);
+  });
+
+  test("the late penalty needs a due date and late work, and says so", async ({ page }) => {
+    await openBuilder(page);
+    await titleBox(page).fill("Penalty check");
+    await part(page, "Dates and grading").click();
+    const penalty = page.getByRole("checkbox", { name: /^Take points off late work/ });
+    await expect(penalty).toBeDisabled();
+    await expect(penalty).toHaveAccessibleName(/Set a due date and accept late work first/);
+    await page.getByLabel(/^Due date/).fill("2026-11-10T17:00");
+    await expect(penalty).toBeDisabled();
+    await expect(penalty).toHaveAccessibleName(/Accept late work first/);
+    await page.getByRole("checkbox", { name: /^Accept late work/ }).check();
+    await expect(penalty).toBeEnabled();
+    await penalty.check();
+    await page.getByRole("spinbutton", { name: /^Percent per day/ }).fill("0");
+    await part(page, "Details").click();
+    await summary(page).getByRole("button", { name: "Save draft" }).click();
+    await expect(part(page, "Dates and grading")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("spinbutton", { name: /^Percent per day/ })).toBeFocused();
+    await expect(page.getByRole("spinbutton", { name: /^Percent per day/ })).toHaveAccessibleDescription(/Enter a whole percent from 1 to 100\./);
+    // Without late work the fields go, and nothing is checked or sent.
+    await page.getByRole("checkbox", { name: /^Accept late work/ }).uncheck();
+    await expect(page.getByRole("spinbutton", { name: /^Percent per day/ })).toHaveCount(0);
+    await expect(penalty).not.toBeChecked();
+    await expect(penalty).toBeDisabled();
+  });
+
+  test("a rubric sets the points to its total, is shown, and is saved", async ({ page, sandbox }) => {
+    const rubric = await seedRubric(page, sandbox);
+    await openBuilder(page);
+    await titleBox(page).fill("Rubric lab");
+    await part(page, "Dates and grading").click();
+    await page.getByRole("combobox", { name: /^Grade with a rubric/ }).selectOption({ label: "Lab report · 15 points" });
+    const shown = main(page).getByRole("region", { name: "Lab report" });
+    await expect(shown.getByRole("group", { name: /^Analysis/ })).toBeVisible();
+    await expect(shown.getByText("15 points in all")).toBeVisible();
+    await expect(summary(page).getByText("15 points", { exact: true })).toBeVisible();
+    await part(page, "Details").click();
+    const points = page.getByRole("spinbutton", { name: /^Points/ });
+    await expect(points).toHaveValue("15");
+    await expect(points).toHaveAttribute("readonly", "");
+    await expect(points).toHaveAccessibleDescription(/This assignment is worth its rubric's total/);
+    await summary(page).getByRole("button", { name: "Save draft" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Draft saved at/ })).toBeVisible();
+    expect((await instructorWork(page, sandbox)).find((item) => item.title === "Rubric lab")).toMatchObject({ rubricId: rubric.id, maxPoints: 15 });
+
+    // The rubrics page is one click away.
+    await part(page, "Dates and grading").click();
+    await main(page).getByRole("button", { name: "Manage rubrics" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Rubrics" })).toBeVisible();
+  });
+
+  test("the server's refusal to change the rubric of graded work lands on the field", async ({ page, sandbox }) => {
+    await seedRubric(page, sandbox);
+    const seeded = await seedTurnedInAssignment(page, sandbox, { title: "Graded lab" });
+    await gradeWork(page, sandbox, seeded.classId, seeded.courseworkId, seeded.submissionId, { points: 12 });
+    await openRole(page, "instructor");
+    await page.goto(`${CLASS}/assignments/${seeded.courseworkId}/edit?tab=dates`);
+    await expect(page.getByRole("heading", { level: 1, name: "Edit assignment" })).toBeVisible();
+    const picker = page.getByRole("combobox", { name: /^Grade with a rubric/ });
+    await picker.selectOption({ label: "Lab report · 15 points" });
+    await part(page, "Details").click();
+    await summary(page).getByRole("button", { name: "Save changes" }).click();
+    await expect(part(page, "Dates and grading")).toHaveAttribute("aria-selected", "true");
+    await expect(picker).toBeFocused();
+    await expect(picker).toHaveAccessibleDescription(/Work has already been graded, so the rubric can't be added, changed, or removed\./);
+    await expect(page.getByRole("status").filter({ hasText: "Could not save" })).toBeVisible();
+  });
+});
+
 test("Assignment builder: zero axe violations and text ≥14px on every tab @all", async ({ page, sandbox }) => {
   test.slow(); // several full axe scans (L-030)
   await seedAssignment(page, sandbox, { title: "Earlier lab" });
@@ -251,6 +342,7 @@ test("Assignment builder: zero axe violations and text ≥14px on every tab @all
   await part(page, "Hand-in").click();
   await expectNoAxeViolations(page);
   await part(page, "Dates and grading").click();
+  await page.getByRole("checkbox", { name: /^Take points off late work/ }).check();
   await expectNoAxeViolations(page);
   await expectReadableText(page);
   await part(page, "Details").click();
