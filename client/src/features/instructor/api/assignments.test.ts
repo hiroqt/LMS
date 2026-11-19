@@ -103,6 +103,11 @@ describe("the API body", () => {
     expect(body.closeAt).toBeUndefined();
   });
 
+  it("sends late work off while there is no due date", () => {
+    expect(assignmentBody(form({ allowLate: true }), { existing: true })).toMatchObject({ allowLate: false, clearDueAt: true, clearCloseAt: true });
+    expect(assignmentBody(form({ allowLate: true, dueAt: "2026-11-02T08:00" }), { existing: true }).allowLate).toBe(true);
+  });
+
   it("reads a saved assignment back into the form", () => {
     const dto = { id: 5, moduleId: 3, type: "assignment", title: "Lab", description: null, instructions: "Do it", maxPoints: 15, dueAt: null, availableFrom: null, closeAt: null, allowLate: true, allowResubmission: false, gradeRelease: "returned", submissionKinds: ["link"], allowedFileTypes: ["pdf"], maxFiles: 2, honorStatement: true, status: "published" } as unknown as Coursework;
     expect(formFromDto(dto)).toMatchObject({ moduleId: "3", description: "", points: "15", dueAt: "", submissionKinds: ["link"], maxFiles: 2, gradeRelease: "returned", honorStatement: true });
