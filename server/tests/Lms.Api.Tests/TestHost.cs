@@ -57,11 +57,14 @@ public sealed class FakeScanner : IFileScanner
     public ScanVerdict Verdict { get; set; } = ScanVerdict.Clean;
     public int Scans { get; private set; }
     public string PassedStatus => ScanStatus.Clean;
+    /// <summary>Runs while a file is being scanned, to stand in for whatever else happens during a slow scan.</summary>
+    public Func<Task>? DuringScan { get; set; }
 
-    public Task<ScanResult> ScanAsync(Stream content, CancellationToken ct)
+    public async Task<ScanResult> ScanAsync(Stream content, CancellationToken ct)
     {
         Scans++;
-        return Task.FromResult(new ScanResult(Verdict, Verdict == ScanVerdict.Infected ? "Test.Signature" : null));
+        if (DuringScan is { } during) await during();
+        return new ScanResult(Verdict, Verdict == ScanVerdict.Infected ? "Test.Signature" : null);
     }
 }
 

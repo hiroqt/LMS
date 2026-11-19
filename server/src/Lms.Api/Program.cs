@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<IsmsExceptionHandler>();
+builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 builder.Services.AddOpenApi();
 // Demo mode (Development tooling and browser tests only): SQLite per sandbox and a built-in fake
 // ISMS, so the API runs with no MySQL and no ISMS API. See Demo/DemoMode.cs.

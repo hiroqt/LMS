@@ -83,7 +83,8 @@ File types (the server decides the type from the file's bytes, and the name must
 | `text` | `.txt` | `text/plain; charset=utf-8` |
 
 Each file is at most 25 MB (26,214,400 bytes). The old Office formats (`.doc`, `.xls`, `.ppt`),
-macro-enabled files, ZIP and HEIC are refused (D-058).
+macro-enabled files, a document that attaches its template from the web or a network share, ZIP
+and HEIC are refused (D-058). Invisible format characters are dropped from file names.
 
 ## §6 Submissions carry a link and files (Phase 2)
 
@@ -139,6 +140,11 @@ only (404 for an exam). The student reads their draft from `my-submissions` (the
   per minute per student (429, `Retry-After: 60`). **A refused upload leaves nothing behind:** no
   draft is started, no row, no bytes (L-078). The answer to every 422 is one sentence for the
   student in `errors.file[0]`.
+- **Work turned in a moment ago stays as it was.** A save, an upload, or a file removal that
+  arrives after the draft was turned in (an upload can be scanning for a while) is a 409 ("This
+  work was turned in a moment ago…"; a removal is a 404) and changes nothing. Any two changes of
+  the same work that cross (a grade and "take back", two turn-ins) end the same way: the later one
+  is a 409 and does nothing (L-090).
 - **Turn-in** needs the usual verdict (409 with the reason's sentence), at least one thing the
   assignment takes (400 on `work`), nothing it doesn't take (400 on `work`, e.g. after the
   instructor changed the settings), and `honorStatement: true` when asked (400 on

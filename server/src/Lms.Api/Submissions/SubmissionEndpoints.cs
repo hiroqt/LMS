@@ -136,10 +136,17 @@ public static class SubmissionEndpoints
             // The student's draft becomes the turned-in work; otherwise a new version is added.
             var row = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress)
                 ?? new Submission { CourseworkId = cw.Id, StudentId = user.Id, AttemptNumber = NextAttempt(mine), StartedAt = now };
-            row.Status = SubmissionStatus.Submitted;
-            row.SubmittedAt = now;
             row.Text = text;
             row.FileName = fileName;
+            // A draft may carry files and a link; they are handed in with it, so they are checked as the draft route checks them.
+            if (row.Id != 0 && await DraftEndpoints.DraftProblemAsync(db, cw, row, ct) is { } problem)
+            {
+                await db.Entry(row).ReloadAsync(ct);
+                errors.Add("work", problem);
+                return errors.Result();
+            }
+            row.Status = SubmissionStatus.Submitted;
+            row.SubmittedAt = now;
             row.HonorAcceptedAt = cw.HonorStatement ? now : null;
             try { await ContentEndpoints.SaveWithAuditAsync(db, user, row, "submitted", "Assignment", () => row.Id, ct, "submissions"); }
             catch (DbUpdateException) { return Conflict("Another submission was saved at the same moment. Reload and try again."); }

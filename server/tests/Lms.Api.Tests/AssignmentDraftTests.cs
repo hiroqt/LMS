@@ -508,6 +508,90 @@ public sealed class AssignmentDraftTests : AssessmentTestBase
         Assert.Equal(HttpStatusCode.Forbidden, (await Instructor.PostAsync($"{Base}/{id}/unsubmit", null)).StatusCode);
     }
 
+    // ------------------------------------------------------------------------- work turned in a moment ago stays as it was
+
+    [Fact]
+    public async Task An_upload_that_finishes_after_the_draft_was_turned_in_is_not_added_to_it()
+    {
+        var id = await AssignmentAsync();
+        await Json(await StudentA.PutAsJsonAsync($"{Base}/{id}/draft", new { text = "Done" }));
+        // The student turns in while the file is still being scanned.
+        Factory.Scanner.DuringScan = async () => await Json(await TurnIn(StudentA, id));
+        var late = await Upload(StudentA, id, TestFiles.Pdf(), "late.pdf");
+        Factory.Scanner.DuringScan = null;
+        Assert.Contains("turned in a moment ago", await Refused(late, HttpStatusCode.Conflict));
+
+        var turnedIn = Assert.Single(await MineAsync(StudentA, id));
+        Assert.Equal("submitted", turnedIn.GetProperty("status").GetString());
+        Assert.Empty(turnedIn.GetProperty("files").EnumerateArray());
+        Assert.Equal((0, 0, 0), (await Factory.WithDbAsync(db => db.StoredFiles.CountAsync()), StoredFileCount(), PendingFileCount()));
+    }
+
+    [Fact]
+    public async Task A_save_or_a_grade_that_read_the_row_before_it_changed_does_not_overwrite_it()
+    {
+        var id = await AssignmentAsync(new { allowResubmission = true });
+        await Json(await StudentA.PutAsJsonAsync($"{Base}/{id}/draft", new { text = "Done" }));
+        var draftId = (await MineAsync(StudentA, id))[0].GetProperty("id").GetInt64();
+
+        // An autosave that loaded the draft, then the turn-in, then the autosave's write.
+        await Factory.WithDbAsync(async stale =>
+        {
+            var row = await stale.Submissions.SingleAsync(s => s.Id == draftId);
+            await Json(await TurnIn(StudentA, id));
+            row.Text = "Typed after turning in";
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
+            return 0;
+        });
+        Assert.Equal("Done", await Factory.WithDbAsync(db => db.Submissions.Where(s => s.Id == draftId).Select(s => s.Text).SingleAsync()));
+        // The draft's files are locked the same way: once it is turned in, it is no longer a draft to add to or take from.
+        Assert.False(await Factory.WithDbAsync(db => AssignmentFiles.LockDraftAsync(db, draftId, DateTime.UtcNow, CancellationToken.None)));
+
+        // A grade that loaded the work, then the student took it back, then the grade's write: the version stays withdrawn and ungraded.
+        await Factory.WithDbAsync(async stale =>
+        {
+            var row = await stale.Submissions.SingleAsync(s => s.Id == draftId);
+            await Json(await StudentA.PostAsync($"{Base}/{id}/unsubmit", null));
+            row.Status = SubmissionStatus.Graded;
+            stale.Grades.Add(new Grade { SubmissionId = row.Id, Points = 20, GradedBy = Teacher });
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
+            return 0;
+        });
+        Assert.Equal((SubmissionStatus.Withdrawn, 0), await Factory.WithDbAsync(async db => ((await db.Submissions.SingleAsync(s => s.Id == draftId)).Status, await db.Grades.CountAsync())));
+    }
+
+    [Fact]
+    public async Task The_older_turn_in_route_checks_a_drafts_files_as_the_draft_route_does()
+    {
+        var id = await AssignmentAsync();
+        await UploadedAsync(StudentA, id, TestFiles.Pdf("one"), "one.pdf");
+        await UploadedAsync(StudentA, id, TestFiles.Pdf("two"), "two.pdf");
+        await Json(await Instructor.PatchAsJsonAsync($"{Base}/{id}", new { maxFiles = 1 }));
+        Assert.Contains("at most 1 file", await Refused(await StudentA.PostAsJsonAsync($"{Base}/{id}/submissions", new { text = "Here" }), HttpStatusCode.BadRequest));
+        // Refused whole: still a draft, and its text was not replaced.
+        var draft = Assert.Single(await MineAsync(StudentA, id));
+        Assert.Equal(("in_progress", JsonValueKind.Null, 2), (draft.GetProperty("status").GetString(), draft.GetProperty("text").ValueKind, draft.GetProperty("files").GetArrayLength()));
+    }
+
+    // ------------------------------------------------------------------------- a held grade stays held everywhere
+
+    [Fact]
+    public async Task A_held_grade_does_not_show_in_the_students_gradebook_average()
+    {
+        var id = await AssignmentAsync(new { gradeRelease = "returned" });
+        await Json(await StudentA.PutAsJsonAsync($"{Base}/{id}/draft", new { text = "Done" }));
+        var submission = (await Json(await TurnIn(StudentA, id))).GetProperty("submission").GetProperty("id").GetInt64();
+        await Json(await Instructor.PutAsJsonAsync($"{Base}/{id}/submissions/{submission}/grade", new { points = 5 }));
+
+        JsonElement Activities(JsonElement gradebook) => gradebook.GetProperty("students").EnumerateArray().Single(s => s.GetProperty("studentId").GetString() == Lia).GetProperty("activities");
+        var mine = Activities(await Json(await StudentA.GetAsync("/api/classes/class-a/gradebook")));
+        Assert.Equal((0, JsonValueKind.Null), (mine.GetProperty("graded").GetInt32(), mine.GetProperty("average").ValueKind));
+        // The instructor's gradebook counts it, and the student's does once it is returned.
+        Assert.Equal(25m, Activities(await Json(await Instructor.GetAsync("/api/classes/class-a/gradebook"))).GetProperty("average").GetDecimal());
+        await Json(await Instructor.PostAsJsonAsync($"{Base}/{id}/return", new { }));
+        Assert.Equal(25m, Activities(await Json(await StudentA.GetAsync("/api/classes/class-a/gradebook"))).GetProperty("average").GetDecimal());
+    }
+
     // ------------------------------------------------------------------------- §6 the same file from two students
 
     [Fact]
