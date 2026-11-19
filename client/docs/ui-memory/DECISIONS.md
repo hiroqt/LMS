@@ -699,3 +699,29 @@ A narrow exception to C-016 and D-024, from [`WORKSPACE_ILLUSTRATIONS_PLAN.md`](
 - **How:** unDraw SVGs with the accent already `primary-600`, loaded as image files (no hex in a
   component), `alt=""`, intrinsic `width` and `height`, 64px tall and 88px from `sm`. Messages,
   controls, and routes are unchanged. Spec: `e2e/empty-illustrations.spec.ts`.
+
+### D-058 · Assignments Phase 2 and 3: the choices made before building
+`2026-11-19` · hiro (assignments) · scope: instructor, student, server · confidence: medium
+The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md); shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §5–§10.
+- **The assignment builder uses tabs,** like the assessment builder (D-056), not the collapsing
+  sections of the first plan: **Details · Hand-in · Dates and grading**, with the Summary beside
+  every tab.
+- **Modern Office files only** (`.docx`, `.pptx`, `.xlsx`). The old formats (`.doc`, `.xls`,
+  `.ppt`) are refused with "save it as …": a macro inside them can't be ruled out reliably.
+- **All of Phase 2's API ships first** (files, drafts, receipt, unsubmit, and the four hand-in
+  settings), so the three screens are built against one fixed contract. The settings are enforced
+  from that PR on, so the API still never accepts a setting it ignores (D-054).
+- **The virus scan runs inside the upload request.** A file is stored only after it passes, so
+  there is no "pending" file and no worker. If the scanner can't be reached the upload fails and
+  the student tries again.
+- **Taking work back keeps it:** the version becomes `withdrawn` (a submission status, not a new
+  column) and a draft with the same content takes its place. Instructors never receive withdrawn
+  versions. Work that has a grade can't be taken back, held or not; the refusal says only "This
+  work can no longer be taken back."
+- **A file belongs to versions through a link table,** so a new draft reuses the files of the
+  version it was copied from. The bytes are deleted when the last link goes.
+- **The submissions list is not paged or filtered on the server.** A class list is small; the
+  grading page filters what `GET …/submissions` already returns.
+- **Phase 3:** a late penalty is a percent of the *earned* score per calendar day late
+  (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
+  to the instructor, not the class.

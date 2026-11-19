@@ -42,7 +42,7 @@ The first draft of this plan was checked against the code and changed where it d
 |---|---|---|
 | 0 | This plan, the API contract, D-054, D-055, FLOW_PARITY rows | None |
 | 1 | `closeAt` and `gradeRelease` columns; `AssignmentRules` decides turn-in and the student page shows its verdict; grades held until returned (`POST …/return`); drafts private and ignored by grading progress; "not handed in" grades wait for the last day | None: the instructor UI sets neither new field yet, and every e2e spec passes unchanged |
-| 2 | Files (`IFileStore`, `IFileScanner`, checks, downloads); the assignment builder; the student "Your work" card with drafts, uploads, turn in, receipt, unsubmit; the assignment grading page with Return | Yes; two specs move from typing a file name to `setInputFiles` (journey change, new D-entry) |
+| 2 | Four PRs (D-058). **2A, the API:** files (`IFileStore`, `IFileScanner`, checks, downloads), drafts, the receipt, unsubmit, and the hand-in settings. **2B:** the assignment builder. **2C:** the student "Your work" card with drafts, uploads, turn in, receipt, unsubmit. **2D:** the assignment grading page with Return | Yes; two specs move from typing a file name to `setInputFiles` (journey change, new D-entry) |
 | 3 | Late penalties, extensions and excuse, rubrics (per class), comment bank, batch return, zip download | Yes |
 | Later | Cloud storage, originality checks (needs school approval), group work, peer review, notifications, real files for class materials | — |
 
@@ -50,11 +50,12 @@ New settings are added in the phase that uses them, so no setting is accepted an
 
 ## Instructor
 
-- **Builder** (`/instructor/classes/:classId/assignments/new` and `…/:id/edit`): Details, How
-  students hand in, Dates and late work, Grading, Integrity, and a presets row (Homework, In-class
-  activity, Project, Copy a previous assignment). Each section collapses to a one-line summary.
-  A summary panel (a bar on phones) shows the rules as students will read them, with Preview as
-  student, Save draft, and Publish.
+- **Builder** (`/instructor/classes/:classId/assignments/new` and `…/:id/edit`): three tabs like
+  the assessment builder (D-056, D-058): **Details**, **Hand-in** (what students hand in, file
+  types, how many files, the "my own work" statement), and **Dates and grading** (due date, late
+  work and its last day, resubmission, when grades show), with a presets row (Homework, In-class
+  activity, Project, Copy a previous assignment). A summary panel (a bar on phones) shows the
+  rules as students will read them, with Preview as student, Save draft, and Publish.
 - **Grading page** (`…/assignments/:id/grading`), like the exam grading page (D-043): a filtered
   list (Needs grading, Late, Missing, Graded, Returned), a file viewer, points and feedback,
   Save and next, Return.
@@ -83,7 +84,7 @@ New settings are added in the phase that uses them, so no setting is accepted an
 | # | Decision |
 |---|---|
 | 1 | Up to 5 files, 25 MB each, per turn-in |
-| 2 | PDF, Word, PowerPoint, Excel, JPEG, PNG, TXT; no ZIP; no HEIC (the picker asks for JPEG/PNG, so iPhones convert) |
+| 2 | PDF, Word, PowerPoint, Excel (`.docx`, `.pptx`, `.xlsx` only; D-058), JPEG, PNG, TXT; no ZIP; no HEIC (the picker asks for JPEG/PNG, so iPhones convert) |
 | 3 | Disk storage behind `IFileStore`; one folder per sandbox in Demo |
 | 4 | ClamAV behind `IFileScanner`; outside Development and Demo the API refuses to start without a scanner |
 | 5 | New assignments don't accept late work (today's default) |
