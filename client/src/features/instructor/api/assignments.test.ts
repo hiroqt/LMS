@@ -159,3 +159,71 @@ it("counts each student who handed in once, leaving out not-handed-in grades", (
     { activityId: "1", studentId: "d" },
   ], "1")).toBe(2);
 });
+
+describe("late penalty (contract §10)", () => {
+  const late = { dueAt: "2026-11-02T08:00", allowLate: true, latePenalty: true };
+
+  it("is sent only with late work and a due date, and is 0 otherwise", () => {
+    expect(assignmentBody(form({ ...late, latePenaltyPercentPerDay: "10", latePenaltyMaxPercent: "50" }), { existing: true })).toMatchObject({ latePenaltyPercentPerDay: 10, latePenaltyMaxPercent: 50 });
+    const noLate = assignmentBody(form({ ...late, allowLate: false }), { existing: true });
+    expect(noLate.latePenaltyPercentPerDay).toBe(0);
+    expect(noLate).not.toHaveProperty("latePenaltyMaxPercent");
+    expect(assignmentBody(form({ ...late, dueAt: "" }), { existing: true }).latePenaltyPercentPerDay).toBe(0);
+    expect(assignmentBody(form({ ...late, latePenalty: false }), { existing: false }).latePenaltyPercentPerDay).toBe(0);
+  });
+
+  it("checks whole percents from 1 to 100 only while it applies", () => {
+    expect(validateAssignment(form({ ...late, latePenaltyPercentPerDay: "0", latePenaltyMaxPercent: "101" }))).toMatchObject({
+      latePenaltyPercentPerDay: "Enter a whole percent from 1 to 100.",
+      latePenaltyMaxPercent: "Enter a whole percent from 1 to 100.",
+    });
+    expect(validateAssignment(form({ ...late, latePenaltyPercentPerDay: "2.5" })).latePenaltyPercentPerDay).toBeDefined();
+    expect(validateAssignment(form({ ...late, allowLate: false, latePenaltyPercentPerDay: "0" }))).toEqual({});
+    expect(errorFields(validateAssignment(form({ ...late, latePenaltyPercentPerDay: "" })))).toEqual(["latePenaltyPercentPerDay"]);
+  });
+
+  it("reads 0 per day as off, and a stored penalty as on", () => {
+    const dto = { id: 5, moduleId: 3, type: "assignment", title: "Lab", maxPoints: 15, latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100, rubricId: null } as unknown as Coursework;
+    expect(formFromDto(dto)).toMatchObject({ latePenalty: false, latePenaltyPercentPerDay: "10", latePenaltyMaxPercent: "100", rubricId: "" });
+    expect(formFromDto({ ...dto, latePenaltyPercentPerDay: 5, latePenaltyMaxPercent: 30, rubricId: 8 })).toMatchObject({ latePenalty: true, latePenaltyPercentPerDay: "5", latePenaltyMaxPercent: "30", rubricId: "8" });
+  });
+
+  it("is worded for students from the form", () => {
+    expect(handInRules(handInSettings(form({ ...late, latePenaltyPercentPerDay: "10", latePenaltyMaxPercent: "50" })))).toContain("Late work loses 10% of its score for each day late, up to 50%.");
+    expect(handInRules(handInSettings(form({ ...late, allowLate: false }))).join(" ")).not.toMatch(/loses/);
+  });
+
+  it("presets leave it alone; copying a previous assignment takes it and its rubric", () => {
+    const now = new Date(2026, 9, 23, 9, 0);
+    expect(applyPreset(form({ latePenalty: true, latePenaltyPercentPerDay: "7", rubricId: "3" }), "homework", now)).toMatchObject({ latePenalty: true, latePenaltyPercentPerDay: "7", rubricId: "3" });
+    const copied = copySettings(form(), { id: "9", moduleId: "4", title: "Old lab", maxScore: 15, allowLate: true, latePenaltyPercentPerDay: 5, latePenaltyMaxPercent: 40, rubricId: 3 });
+    expect(copied).toMatchObject({ latePenalty: true, latePenaltyPercentPerDay: "5", latePenaltyMaxPercent: "40", rubricId: "3", points: "15" });
+    expect(copySettings(form({ rubricId: "3", latePenalty: true }), { id: "9", moduleId: "4", title: "Old lab", maxScore: 15 })).toMatchObject({ rubricId: "", latePenalty: false });
+  });
+
+  it("server errors on the penalty land on its fields, on the Dates tab", () => {
+    const errors = mapServerErrors({ latePenaltyPercentPerDay: ["Accept late work to take points off it."] });
+    expect(errors).toEqual({ latePenaltyPercentPerDay: "Accept late work to take points off it." });
+    expect(errorCount(errors, "dates")).toBe(1);
+  });
+});
+
+describe("rubric (contract §12)", () => {
+  it("sends rubricId instead of points, and clearRubric when an update has none", () => {
+    const withRubric = assignmentBody(form({ rubricId: "4", points: "" }), { existing: true });
+    expect(withRubric).toMatchObject({ rubricId: 4 });
+    expect(withRubric).not.toHaveProperty("maxPoints");
+    expect(withRubric).not.toHaveProperty("clearRubric");
+    expect(assignmentBody(form(), { existing: true })).toMatchObject({ clearRubric: true, maxPoints: 10 });
+    expect(assignmentBody(form(), { existing: false })).not.toHaveProperty("clearRubric");
+  });
+
+  it("does not check the points while a rubric sets them", () => {
+    expect(validateAssignment(form({ rubricId: "4", points: "" }))).toEqual({});
+  });
+
+  it("puts the server's refusal on the rubric field", () => {
+    expect(mapServerErrors({ rubricId: ["Work has already been graded, so the rubric can't be added, changed, or removed."] }).rubricId).toMatch(/already been graded/);
+    expect(mapServerErrors({ clearRubric: ["x"] })).toEqual({ rubricId: "x" });
+  });
+});
