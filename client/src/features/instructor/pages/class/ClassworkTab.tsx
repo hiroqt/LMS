@@ -96,16 +96,24 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                 </span>
                 <Badge tone={item.closed || item.draft ? "neutral" : "success"}>{item.draft ? "Draft" : item.closed ? "Closed" : "Published"}</Badge>
                 {item.draft ? (
-                  <Button variant="secondary" aria-label={`Edit draft ${item.title}`} onClick={() => navigate(instructorPaths.assessmentEdit(room.id, item.id))} icon={<Pencil aria-hidden className="size-4" />}>
+                  <Button
+                    variant="secondary"
+                    aria-label={`Edit draft ${item.title}`}
+                    onClick={() => navigate(item.kind === "Assignment" ? instructorPaths.assignmentEdit(room.id, item.id) : instructorPaths.assessmentEdit(room.id, item.id))}
+                    icon={<Pencil aria-hidden className="size-4" />}
+                  >
                     Edit draft
                   </Button>
                 ) : (
                 <>
-                {item.kind === "Assessment" && (
-                  <Button variant="secondary" aria-label={`Grading for ${item.title}`} onClick={() => navigate(instructorPaths.examGrading(room.id, item.id))} icon={<ListChecks aria-hidden className="size-4" />}>
-                    Grading
-                  </Button>
-                )}
+                <Button
+                  variant="secondary"
+                  aria-label={`Grading for ${item.title}`}
+                  onClick={() => navigate(item.kind === "Assignment" ? instructorPaths.assignmentGrading(room.id, item.id) : instructorPaths.examGrading(room.id, item.id))}
+                  icon={<ListChecks aria-hidden className="size-4" />}
+                >
+                  Grading
+                </Button>
                 <Button
                   variant="secondary"
                   loading={busy === item.id}

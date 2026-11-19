@@ -127,6 +127,9 @@
 | `src/features/instructor/components/questionEditor/SaveImportDialog.tsx` | `SaveImportDialog` |
 | `src/features/instructor/pages/AssessmentBuilderPage.tsx` | `AssessmentBuilderPage` |
 | `src/features/instructor/pages/AssessmentPreviewPage.tsx` | `AssessmentPreviewPage` |
+| `src/features/instructor/pages/AssignmentBuilderPage.tsx` | `AssignmentBuilderPage` |
+| `src/features/instructor/pages/AssignmentGradingPage.tsx` | `AssignmentGradingPage` |
+| `src/features/instructor/pages/AssignmentPreviewPage.tsx` | `AssignmentPreviewPage` |
 | `src/features/instructor/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/instructor/pages/ExamGradingPage.tsx` | `ExamGradingPage` |
