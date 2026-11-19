@@ -181,7 +181,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.ToTable("submissions");
             e.HasKey(x => x.Id);
             e.Property(x => x.StudentId).HasMaxLength(IdLength).IsRequired();
-            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            // Checked on every update: a draft that was turned in, or work that was graded or taken
+            // back, a moment ago is never overwritten by a request that read the row before that.
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired().IsConcurrencyToken();
             e.Property(x => x.FileName).HasMaxLength(255);
             e.Property(x => x.Link).HasMaxLength(2000);
             e.HasOne<Coursework>().WithMany().HasForeignKey(x => x.CourseworkId).OnDelete(DeleteBehavior.Restrict);

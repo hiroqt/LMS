@@ -47,6 +47,16 @@ public sealed class FileSnifferTests
     }
 
     [Fact]
+    public void A_document_that_loads_its_template_from_elsewhere_is_refused()
+    {
+        Assert.Equal(FileSniffer.RemoteTemplate, Detect(TestFiles.DocxWithTemplate("https://example.test/macros.dotm"), "essay.docx").Refusal);
+        Assert.Equal(FileSniffer.RemoteTemplate, Detect(TestFiles.DocxWithTemplate("\\\\fileserver\\share\\macros.dotm"), "essay.docx").Refusal);
+        Assert.Equal(FileSniffer.RemoteTemplate, Detect(TestFiles.DocxWithTemplate("file://fileserver/share/macros.dotm"), "essay.docx").Refusal);
+        // A template on the author's own disk (a school template they started from) is fine.
+        Assert.Equal(FileKind.Docx, Detect(TestFiles.DocxWithTemplate("file:///C:/Users/lia/Documents/School%20report.dotx"), "essay.docx").Kind);
+    }
+
+    [Fact]
     public void Text_is_text_only_without_control_bytes()
     {
         Assert.Equal(FileKind.PlainText, Detect("Café ñ — notes"u8.ToArray(), "notes.txt").Kind);
@@ -64,6 +74,9 @@ public sealed class FileSnifferTests
     [InlineData("a\"b<c>d:e|f?g*.png", "a_b_c_d_e_f_g_.png")]
     [InlineData("tab\tand\nbreak.txt", "tab and break.txt")]
     [InlineData(".pdf", "pdf")]
+    // A right-to-left override would make this read "report‮fdp.exe"; it is dropped.
+    [InlineData("report\u202Eexe.pdf", "reportexe.pdf")]
+    [InlineData("zero\u200Bwidth\u2066.txt", "zerowidth.txt")]
     [InlineData("", "file")]
     [InlineData(null, "file")]
     public void Names_are_cleaned_and_kept_as_data(string? raw, string expected) => Assert.Equal(expected, FileNames.Clean(raw));

@@ -36,6 +36,12 @@ internal static class TestFiles
         ("word/document.xml", "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"/>"),
         ("word/vbaProject.bin", "macro"));
 
+    /// <summary>A Word document whose template is attached from <paramref name="target"/>.</summary>
+    public static byte[] DocxWithTemplate(string target) => Zip(
+        ("[Content_Types].xml", """<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"""),
+        ("word/document.xml", "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"/>"),
+        ("word/_rels/settings.xml.rels", $"""<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/attachedTemplate" Target="{target}" TargetMode="External"/></Relationships>"""));
+
     /// <summary>A zip that is not an Office document.</summary>
     public static byte[] PlainZip() => Zip(("notes.txt", "hello"));
 

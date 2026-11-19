@@ -1225,6 +1225,7 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")

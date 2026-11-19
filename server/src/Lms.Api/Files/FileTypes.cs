@@ -68,6 +68,7 @@ public static class FileSniffer
     public const string NotAccepted = "This file type is not accepted. Use PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), JPEG, PNG, or TXT.";
     public const string OldOffice = "Old Office files (.doc, .xls, .ppt) are not accepted. Save it as .docx, .xlsx, or .pptx and add it again.";
     public const string Macros = "This file contains macros, so it is not accepted. Save it without macros and add it again.";
+    public const string RemoteTemplate = "This document loads its template from another computer, so it is not accepted. Copy its content into a new document and add that.";
     public const string Damaged = "This file could not be read. Export it again and add the new copy.";
 
     /// <param name="content">Seekable; read from the start and left open.</param>
@@ -88,6 +89,7 @@ public static class FileSniffer
         {
             var (problem, types) = ZipGuard.Inspect(content, FileLimits.MaxZipEntries, FileLimits.MaxUnpackedBytes, ct);
             if (problem == ZipProblem.Macro) return new(null, Macros);
+            if (problem == ZipProblem.RemoteTemplate) return new(null, RemoteTemplate);
             if (problem != ZipProblem.None) return new(null, Damaged);
             // The main part's content type says which Office format this is; templates and other zips have none of these.
             kind = types.Contains("wordprocessingml.document.main+xml", StringComparison.Ordinal) ? FileKind.Docx
@@ -130,6 +132,8 @@ public static class FileNames
     public static string Clean(string? raw)
     {
         var name = ExamText.Clean(raw).Replace('\t', ' ').Replace('\n', ' ');
+        // Invisible format characters (right-to-left overrides and the like) can make "exe.pdf" read as "fdp.exe".
+        name = string.Concat(name.Where(c => char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format));
         name = name[(name.LastIndexOfAny(['/', '\\']) + 1)..];
         name = string.Concat(name.Select(c => c is '"' or '<' or '>' or ':' or '|' or '?' or '*' ? '_' : c)).Trim().TrimStart('.').Trim();
         var extension = Path.GetExtension(name);
