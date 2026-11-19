@@ -131,6 +131,18 @@ describe("Feedback states", () => {
     expect(await axeViolations()).toEqual([]);
   });
 
+  it("EmptyState shows an illustration instead of the icon, hidden from assistive technology", async () => {
+    const { container } = render(
+      <EmptyState icon={<svg data-testid="icon" />} illustration={{ src: "/reading.svg", width: 960, height: 512 }} title="No materials found." />,
+    );
+    const image = container.querySelector("img");
+    expect(image).toHaveAttribute("alt", "");
+    expect(image).toHaveAttribute("width", "960");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon")).not.toBeInTheDocument();
+    expect(await axeViolations()).toEqual([]);
+  });
+
   it("SkeletonGroup announces a loading label while the skeletons stay hidden", () => {
     render(<SkeletonGroup label="Loading classes"><Skeleton className="h-6" /></SkeletonGroup>);
     expect(screen.getByRole("status")).toHaveTextContent("Loading classes");
