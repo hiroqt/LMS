@@ -55,6 +55,7 @@
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
+| `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
@@ -175,6 +176,11 @@
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
 | `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
+| `src/features/student/components/work/DraftEditor.tsx` | `DraftEditor` |
+| `src/features/student/components/work/TurnInDialog.tsx` | `TurnInDialog` |
+| `src/features/student/components/work/UploadRow.tsx` | `UploadRow` |
+| `src/features/student/components/work/WorkContents.tsx` | `WorkContents` |
+| `src/features/student/components/work/YourWork.tsx` | `YourWork` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |
 | `src/features/student/pages/ClassPage.tsx` | `ClassPage` |

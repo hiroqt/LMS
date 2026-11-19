@@ -93,7 +93,7 @@ flowchart TD
 
 ## Prototype boundaries
 
-There is no sign-in yet: the student is a demo identity chosen on Today, which the LMS API accepts only in Development and Demo mode. Work, attempts and grades are saved by the LMS API; attachments are file names only. The academic calendar is sample data, not an official TMCC schedule.
+There is no sign-in yet: the student is a demo identity chosen on Today, which the LMS API accepts only in Development and Demo mode. Work, attempts, grades and uploaded assignment files are saved by the LMS API (D-055, D-060). The academic calendar is sample data, not an official TMCC schedule.
 
 ## Since the rebuild (2026-11-17)
 
@@ -107,6 +107,7 @@ The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` 
 - **Dashboard:** greeting with the date and term week, summary chips, Tasks & Assessments with due-date pills, My Classes, an Academic Calendar timeline, and the latest announcement.
 - **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
 - **Closed activities** (D-036): once the instructor closes an assignment or assessment it shows **Closed** and offers no hand-in or start; a grade the instructor gave without anything handed in reads **Not handed in** with the score (`e2e/close-activities.spec.ts`).
+- **Handing in an assignment** (D-060): the assignment page lists the instructions and the rules in plain words, and a **Your work** card shows the state (Assigned, Draft, Turned in, Missing, Graded, Returned, Not handed in, and Late). The written answer and link save as the student types; files are chosen (or photographed on phones) and upload one at a time with progress, Cancel, and Retry or Remove when one is refused. **Turn in** confirms exactly what is handed in (and "This is my own work" when asked), then shows a receipt with the time, the version, and each file's code, which stays after a reload. **Take back** and **Turn in a new version** appear when the assignment allows them; earlier versions are listed. Past the due date with late work off, the card gives the reason and nothing can be edited. Uploading and turning in need a connection, and the card says so offline (`e2e/assignment-work.spec.ts`).
 - **Question types** (D-040): besides multiple choice, quizzes can ask true or false, identification, enumeration, essay, modified true or false (the underlined phrase is read out), and matching. Section directions sit above their questions; the assessment page and the quiz header say how spelling is checked. Typed answers save on their own (D-043), and the submit dialog lists unanswered questions.
 - **Results** show Correct, Partly correct, Incorrect, or Waiting for grading per question, spelling notes, and the correct answers only when the instructor allows it; "Your score was updated" appears after the instructor fixes a key (`e2e/quiz-types.spec.ts`).
 

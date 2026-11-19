@@ -69,6 +69,18 @@ describe("toStudentCatalog", () => {
     expect(catalog.assessments.find((item) => item.id === "2")?.turnIn).toBeUndefined();
   });
 
+  it("carries an assignment's hand-in settings for the brief and the work card, and none for exams", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      Object.assign(o.coursework[0]!.coursework, { submissionKinds: ["file", "link"], allowedFileTypes: ["pdf"], maxFiles: 2, honorStatement: true, allowLate: true, closeAt: "2026-11-02T15:59:00Z", allowResubmission: true, gradeRelease: "returned" });
+    }));
+    const assignment = catalog.assessments.find((item) => item.id === "1");
+    expect(assignment?.handIn).toEqual({
+      submissionKinds: ["file", "link"], allowedFileTypes: ["pdf"], maxFiles: 2, honorStatement: true,
+      dueAt: assignment?.dueAt || null, allowLate: true, closeAt: "2026-11-02T15:59:00Z", allowResubmission: true, gradeRelease: "returned",
+    });
+    expect(catalog.assessments.find((item) => item.id === "2")?.handIn).toBeUndefined();
+  });
+
   it("shows a returned assignment's grade; a held one arrives as submitted with no score", () => {
     const returned = toStudentCatalog(overviewFixture((o) => {
       o.submissions[1]!.submission.status = "returned";
