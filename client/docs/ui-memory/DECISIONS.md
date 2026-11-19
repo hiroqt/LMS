@@ -725,3 +725,34 @@ The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNM
 - **Phase 3:** a late penalty is a percent of the *earned* score per calendar day late
   (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
   to the instructor, not the class.
+
+### D-061 · An assignment's grading page; the Submissions tab shows files and links to it
+`2026-11-19` · hiro (assignments, PR 2D) · scope: instructor, e2e · confidence: medium
+Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Instructor"; shapes: contract §3, §4, §6, §8.
+- **The page:** `/instructor/classes/:classId/assignments/:id/grading`, opened from Classwork's
+  **Grading** (like the exam's, D-043). One row per student on the class list, from
+  `GET …/submissions` (`items` plus `missing`), showing their **latest** version. Filter chips
+  with counts: All, Needs grading, Late, Missing, Graded, Returned. They overlap on purpose: late
+  work can also need grading, and a "not handed in" grade is both Missing and Graded. Rows are
+  ordered by last name. `?filter=&student=` hold the view, with an optimistic value (L-028).
+- **One student's work:** the version and when it was turned in (a "Late" badge with text), the
+  written answer, the link (opened only when `http(s)`, `noopener noreferrer`, the URL shown), and
+  the files (`AttachedFile`, "Same file as another student" in its note). Earlier versions are
+  listed and open read-only; the grade always goes on the latest.
+- **File viewer:** photos, PDF and `.txt` are shown from a blob fetched with the instructor's
+  headers (L-075, L-088); the first one that can be shown opens at once. Word, PowerPoint and
+  Excel say "Download only".
+- **Grading:** Save, and **Save and next** (the next student needing a grade after this one in
+  list order, wrapping to the top; focus moves to their name). Server field errors land on their
+  field. Students with nothing handed in: "Give a grade without work" and "Give 0 to everyone who
+  didn't hand in" (the D-036 actions); before the last day the server's sentence shows instead.
+- **Return** (only with `gradeRelease: "returned"`): the page says students don't see grades until
+  returned; **Return to <name>** and **Return all graded** confirm in a dialog with the count, then
+  toast how many the server returned. Held grades read "Graded, not returned" (lock icon) and
+  returned ones "Returned" (send icon).
+- **The class Submissions tab** keeps its queue and form; an assignment's review now shows its
+  files (`AttachedFile`) and link, the typed file name only for work from before uploads, and
+  **Open the grading page** (`?student=` set).
+- **Journey change:** `seedHandedInAssignment` and the `close-activities` setup hand in a real
+  file through the draft API, since a typed `fileName` is refused once 2C lands. Spec:
+  `e2e/assignment-grading.spec.ts`.
