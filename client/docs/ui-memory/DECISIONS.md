@@ -686,3 +686,16 @@ tab and adds the settings at a glance, so nothing depends on which tab is open.
 - **Journey change (D-013):** specs open the tab a field is on before using it
   (`assessment-builder`, `instructor-more` E, `question-sets` QS → E). The journeys are the same.
 
+
+### D-057 · An illustration is allowed in an empty state where nothing exists yet
+`2026-11-19` · hiro · scope: student, instructor, shared · confidence: medium
+A narrow exception to C-016 and D-024, from [`WORKSPACE_ILLUSTRATIONS_PLAN.md`](../WORKSPACE_ILLUSTRATIONS_PLAN.md).
+`EmptyState` takes an `illustration` from `src/shared/assets/illustrations` in place of its icon.
+- **Where:** Student My classes with no enrollment (Open Book), Student class Materials with no
+  materials (Reading), Instructor class Materials at "No materials yet" (Folder files).
+- **Never:** a search or filter miss (those keep the plain line or the icon), a dashboard, Admin,
+  an assessment being taken, loading, or an error. The Student dashboard's "not enrolled" tile
+  keeps its icon. A new placement needs an entry here.
+- **How:** unDraw SVGs with the accent already `primary-600`, loaded as image files (no hex in a
+  component), `alt=""`, intrinsic `width` and `height`, 64px tall and 88px from `sm`. Messages,
+  controls, and routes are unchanged. Spec: `e2e/empty-illustrations.spec.ts`.

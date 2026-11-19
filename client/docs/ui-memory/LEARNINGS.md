@@ -558,3 +558,11 @@ panel shows at once. Pass `hidden={value !== current}` yourself (it is spread af
 keep layout classes like `flex` on an inner element. Also put a space between a tab's label and its
 badge: without one the name reads "Questions3" (`AssessmentBuilderPage.tsx`).
 
+
+### L-077 · An empty state's action can share its name with the page's own button
+`2026-11-19` · hiro · scope: e2e, instructor · confidence: high
+Instructor Materials has "Add material" in the tab heading and again inside "No materials yet", so
+`getByRole("button", { name: "Add material" })` is a strict-mode error once the list is empty. The
+seed never shows that state; `e2e/empty-illustrations.spec.ts` reaches it by deleting the class's
+materials through the API in the test's sandbox. No seeded student is without classes, so the My
+classes picture is covered by the `EmptyState` unit test and a manual check only.
