@@ -77,6 +77,7 @@ describe("toStudentCatalog", () => {
     expect(assignment?.handIn).toEqual({
       submissionKinds: ["file", "link"], allowedFileTypes: ["pdf"], maxFiles: 2, honorStatement: true,
       dueAt: assignment?.dueAt || null, allowLate: true, closeAt: "2026-11-02T15:59:00Z", allowResubmission: true, gradeRelease: "returned",
+      latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100,
     });
     expect(catalog.assessments.find((item) => item.id === "2")?.handIn).toBeUndefined();
   });
