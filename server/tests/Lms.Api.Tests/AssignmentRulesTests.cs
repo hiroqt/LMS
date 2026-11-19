@@ -49,7 +49,31 @@ public sealed class AssignmentRulesTests
     {
         Submission[] mine = [Row(1, SubmissionStatus.Submitted)];
         Assert.Equal(new TurnInStatus(TurnInState.TurnedIn, false, TurnInReason.AlreadyTurnedIn, false), AssignmentRules.Evaluate(Assignment(), mine, Before));
-        Assert.Equal(new TurnInStatus(TurnInState.TurnedIn, true, null, false), AssignmentRules.Evaluate(Assignment(again: true), mine, Before));
+        Assert.Equal(new TurnInStatus(TurnInState.TurnedIn, true, null, false, CanUnsubmit: true), AssignmentRules.Evaluate(Assignment(again: true), mine, Before));
+    }
+
+    [Fact]
+    public void Work_can_be_taken_back_only_before_the_due_date_while_resubmission_is_on_and_until_it_is_graded()
+    {
+        Submission[] waiting = [Row(1, SubmissionStatus.Submitted)];
+        Assert.True(AssignmentRules.Evaluate(Assignment(again: true), waiting, Before).CanUnsubmit);
+        Assert.False(AssignmentRules.Evaluate(Assignment(), waiting, Before).CanUnsubmit);
+        Assert.False(AssignmentRules.Evaluate(Assignment(again: true, late: true), waiting, After).CanUnsubmit);
+        Assert.False(AssignmentRules.Evaluate(Assignment(again: true, status: CourseworkStatus.Closed), waiting, Before).CanUnsubmit);
+        Assert.False(AssignmentRules.Evaluate(Assignment(again: true), [], Before).CanUnsubmit);
+        // A held grade looks like work waiting for one, but it still can't be taken back.
+        Submission[] graded = [Row(1, SubmissionStatus.Graded)];
+        var held = AssignmentRules.Evaluate(Assignment(again: true, release: GradeRelease.Returned), graded, Before);
+        Assert.Equal((TurnInState.TurnedIn, false), (held.State, held.CanUnsubmit));
+    }
+
+    [Fact]
+    public void A_version_taken_back_no_longer_counts_as_handed_in()
+    {
+        Submission[] takenBack = [Row(1, SubmissionStatus.Withdrawn), Row(2, SubmissionStatus.InProgress)];
+        Assert.Equal(new TurnInStatus(TurnInState.Draft, true, null, false), AssignmentRules.Evaluate(Assignment(), takenBack, Before));
+        // With the draft gone too (never happens through the API), it is as if nothing was handed in.
+        Assert.Equal(TurnInState.Missing, AssignmentRules.Evaluate(Assignment(), [Row(1, SubmissionStatus.Withdrawn)], After).State);
     }
 
     [Fact]

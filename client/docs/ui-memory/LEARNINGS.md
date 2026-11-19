@@ -566,3 +566,35 @@ Instructor Materials has "Add material" in the tab heading and again inside "No 
 seed never shows that state; `e2e/empty-illustrations.spec.ts` reaches it by deleting the class's
 materials through the API in the test's sandbox. No seeded student is without classes, so the My
 classes picture is covered by the `EmptyState` unit test and a manual check only.
+
+### L-078 · A refused upload must not start a draft
+`2026-11-19` · hiro (assignments) · scope: server · confidence: high
+`POST …/draft/files` creates the draft when there is none, and a draft changes the student's state
+from "assigned" to "draft". Create it only after the file has passed every check (type, settings,
+virus scan): a wrong file must leave nothing behind, neither a row nor bytes
+(`AssignmentDraftTests.Files_that_are_not_accepted_are_refused_and_nothing_is_kept`). Until then,
+count room against the version the draft would be copied from (`Scope.CopySource`).
+
+### L-079 · Server tests and the dev scanner never use the EICAR file
+`2026-11-19` · hiro (assignments) · scope: server, e2e · confidence: high
+An antivirus on a developer's machine quarantines the EICAR test file the moment a test writes it,
+and can flag source that contains it. `NoScanner` (Development and Demo only) refuses a file that
+starts with `LMS-VIRUS-SCAN-TEST-FILE` instead, so tests and browser specs can show the refusal.
+The ClamAV client is tested against a local listener that speaks `INSTREAM`
+(`ClamAvScannerTests`); try the real EICAR file only by hand against a real clamd.
+
+### L-080 · Column names are letters and underscores only
+`2026-11-19` · hiro (assignments) · scope: server · confidence: high
+`DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
+fails it. Name the property for what it holds (`StoredFile.ContentHash`).
+
+### L-090 · A check at the start of a request is stale by the time a slow request writes
+`2026-11-19` · hiro (assignments) · scope: server · confidence: high
+An independent review found that an upload still being scanned could add its file to a draft the
+student had turned in meanwhile, and that a grade and "take back" could cross. `Submission.Status`
+is now a concurrency token, so an update of a row that changed since it was read fails
+(`DbUpdateConcurrencyException`, answered as 409 by `ConcurrencyExceptionHandler`). A draft's
+files are rows of their own, so routes that add or remove one first lock the draft with
+`AssignmentFiles.LockDraftAsync` inside their transaction; that also makes two uploads at once
+count each other on MySQL, where neither would see the other's uncommitted row. SQLite runs one
+writer at a time, so tests can't show the MySQL case: `FakeScanner.DuringScan` stands in for it.

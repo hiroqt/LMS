@@ -26,7 +26,7 @@ public static class GradebookEndpoints
             var students = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive)
                 .Where(s => user.IsInstructor || s.StudentId == user.Id)
                 .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
-            var rows = await RowsAsync(db, classId, settings, students, ct);
+            var rows = await RowsAsync(db, classId, settings, students, forStudent: !user.IsInstructor, ct);
             return TypedResults.Ok(new GradebookDto(settings.ActivityWeight, settings.ExamWeight, settings.PassingScore, rows));
         }).WithName("GetGradebook");
 
@@ -58,13 +58,15 @@ public static class GradebookEndpoints
     private static async Task<GradebookSetting> SettingsAsync(LmsDbContext db, string classId, CancellationToken ct) =>
         await db.GradebookSettings.AsNoTracking().SingleOrDefaultAsync(g => g.ClassId == classId, ct) ?? new GradebookSetting { ClassId = classId };
 
-    private static async Task<List<GradebookRow>> RowsAsync(LmsDbContext db, string classId, GradebookSetting settings, List<IsmsClassStudent> students, CancellationToken ct)
+    /// <param name="forStudent">The student's own view: a grade held until it is returned is not counted, so the average can't give it away (D-054).</param>
+    private static async Task<List<GradebookRow>> RowsAsync(LmsDbContext db, string classId, GradebookSetting settings, List<IsmsClassStudent> students, bool forStudent, CancellationToken ct)
     {
         var graded = await (
             from s in db.Submissions
             join c in db.Coursework on s.CourseworkId equals c.Id
             join g in db.Grades on s.Id equals g.SubmissionId
             where c.ClassId == classId && c.Status != CourseworkStatus.Archived && (s.Status == SubmissionStatus.Graded || s.Status == SubmissionStatus.Returned)
+                && (!forStudent || c.Type != CourseworkType.Assignment || c.GradeRelease != GradeRelease.Returned || s.Status == SubmissionStatus.Returned)
             select new { s.StudentId, s.CourseworkId, c.Type, c.MaxPoints, s.AttemptNumber, g.Points }).ToListAsync(ct);
 
         return students.Select(student =>

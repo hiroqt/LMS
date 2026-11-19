@@ -74,7 +74,7 @@ without a migration.
 | Group | Tables |
 |---|---|
 | ISMS reference (written only by the sync) | `isms_classes`, `isms_class_students` |
-| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `grades`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
+| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `stored_files`, `submission_files`, `grades`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
 
 Every LMS-owned row records `created_at`, `created_by`, `updated_at` and `updated_by`. ISMS people
 are stored by their ISMS reference ids, never as LMS accounts.
@@ -245,9 +245,13 @@ and order and gives points in proportion to the expected answers given. Matching
 proportion to correct pairs. Essays wait for the instructor. An exam with no essays is graded on
 submit (`graded_by` = `auto`). Points are rounded to two decimals.
 
-**Assignments (students).** `POST …/coursework/{id}/submissions` with `{ text?, fileName? }` (file name
-only). A second hand-in needs `allowResubmission`. `late` is true when handed in after the due date.
-`GET …/coursework/{id}/my-submissions` lists the student's own work with score and feedback.
+**Assignments (students).** A student works on a draft (text, a link, uploaded files), turns it in
+for a receipt, and can take it back before the due date: see
+[Assignment drafts and files](#assignment-drafts-and-files-d-055-d-058). The older
+`POST …/coursework/{id}/submissions` with `{ text?, fileName? }` (a typed file name, no file) still
+works. A second hand-in needs `allowResubmission`. `late` is true when handed in after the due date.
+`GET …/coursework/{id}/my-submissions` lists the student's own work with score and feedback,
+including their draft and any version they took back.
 
 **Grading (the class's instructor, also after ISMS stops offering the class).**
 
@@ -321,7 +325,8 @@ later without changing the endpoints.
 ## Attempt retention (D-042)
 
 Once a day (first run five minutes after startup) the API anonymizes old attempts: answer text,
-enumeration items, matching answers and `Submission.Text` are cleared, while scores, points and
+enumeration items, matching answers and a submission's text and link are cleared and its uploaded
+files are deleted (the `stored_files` row stays, without its name), while scores, points and
 grades stay. A term's attempts are cleared once it is more than `Lms:Retention:AttemptTerms` terms
 behind the current one, and only for classes ISMS no longer offers. Terms are ordered by ISMS school
 year and semester ids. Nothing runs when no class is offered. Each run that clears something writes
@@ -331,3 +336,54 @@ one metadata-only audit row. Demo mode has no retention job.
 |---|---|---|
 | `Lms:Retention:AttemptTerms` | 2 | to be confirmed by the registrar or data protection officer (RA 10173) |
 | `Lms:Retention:Enabled` | `true` | `false` turns the daily job off |
+
+## Assignment drafts and files (D-055, D-058)
+
+The shapes are in [`client/docs/ASSIGNMENTS_API_CONTRACT.md`](../client/docs/ASSIGNMENTS_API_CONTRACT.md) §5–§9.
+
+**Hand-in settings** on an assignment (`POST`/`PATCH …/coursework`): `submissionKinds` (`text`,
+`file`, `link`), `allowedFileTypes` (`pdf`, `word`, `powerpoint`, `excel`, `image`, `text`),
+`maxFiles` (1 to 5) and `honorStatement`. They are enforced on save, at upload and at turn-in.
+
+| Method | Route (under `/api/classes/{classId}/coursework/{id}`) | Notes |
+|---|---|---|
+| POST | `…/draft` | The student's draft, created when there is none. After turned-in work it starts as a copy of it |
+| PUT | `…/draft` | `{ text, link }` (autosave); null clears one |
+| POST | `…/draft/files` | One file, `multipart/form-data`, field `file`. 20 a minute per student |
+| DELETE | `…/draft/files/{fileId}` | Takes the file off the draft |
+| POST | `…/draft/turn-in` | `{ honorStatement? }`. Answers the work and a receipt; a repeat answers the same receipt |
+| POST | `…/unsubmit` | Takes back the latest turned-in work: it becomes `withdrawn` (kept, hidden from instructors) and a draft with the same content takes its place |
+| GET | `/api/files/{fileId}` | The file, as a download only (`nosniff`, attachment, `Content-Security-Policy: sandbox`) |
+
+**What happens to an upload.** It is streamed to `tmp/` in the file store while its size and
+SHA-256 are counted; its type is decided **from its bytes** (the name only has to agree); the
+assignment's settings are checked; it is sent to the virus scanner; and only then is it moved to
+its place under a random key and recorded in `stored_files`. A refused upload leaves nothing
+behind. Old Office formats, macro-enabled files, ZIP and anything unrecognized are refused with
+the reason. A file is on a draft or version through `submission_files`, so a new draft reuses the
+files of the version it was copied from; the bytes are deleted when the last link goes, and by
+[retention](#attempt-retention-d-042).
+
+**Who can download.** The student who uploaded the file, and the instructor of its class once
+the file is part of handed-in work (not a draft, not a version taken back). Everyone else gets
+the same 404 as for a file that doesn't exist.
+
+| Setting | Default | Notes |
+|---|---|---|
+| `Lms:Files:Root` | `App_Data/files` in Development; a folder per sandbox in Demo mode; otherwise **required** | Keep it outside any web root, back it up, and make it writable by the API only |
+| `Lms:Files:Scanner` | `none` in Development and Demo mode; otherwise **required** | `clamav` or `none`. `none` is refused outside Development and Demo mode. It is not a scanner: it refuses only a file that starts with `LMS-VIRUS-SCAN-TEST-FILE`, so the refusal can be tried out |
+| `Lms:Files:ClamAv:Host` / `Port` / `TimeoutSeconds` | `127.0.0.1` / `3310` / `60` | clamd over TCP (`INSTREAM`). Set clamd's `StreamMaxLength` to at least `26M` |
+| `Lms:Files:UploadsPerMinute` | 20 | Per student |
+
+The API refuses to start without a folder and a scanner, like a missing connection string. To
+try ClamAV locally:
+
+```bash
+cd server
+docker compose -f docker-compose.clamav.yml up -d        # first start downloads the virus database
+cd src/Lms.Api
+dotnet user-secrets set Lms:Files:Scanner clamav
+```
+
+When clamd can't be reached the upload fails with 503 and nothing is kept; the student tries again.
+

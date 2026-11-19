@@ -257,6 +257,11 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("allow_resubmission");
 
+                    b.Property<string>("AllowedFileTypes")
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("allowed_file_types");
+
                     b.Property<string>("AnswerReview")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -310,6 +315,10 @@ namespace Lms.Api.Data.Migrations
                         .HasDefaultValue("immediate")
                         .HasColumnName("grade_release");
 
+                    b.Property<bool>("HonorStatement")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("honor_statement");
+
                     b.Property<string>("Instructions")
                         .HasColumnType("longtext")
                         .HasColumnName("instructions");
@@ -317,6 +326,12 @@ namespace Lms.Api.Data.Migrations
                     b.Property<int?>("MaxAttempts")
                         .HasColumnType("int")
                         .HasColumnName("max_attempts");
+
+                    b.Property<int>("MaxFiles")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(5)
+                        .HasColumnName("max_files");
 
                     b.Property<decimal>("MaxPoints")
                         .HasPrecision(8, 2)
@@ -352,6 +367,14 @@ namespace Lms.Api.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("status");
+
+                    b.Property<string>("SubmissionKinds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasDefaultValue("text,file")
+                        .HasColumnName("submission_kinds");
 
                     b.Property<int?>("TimeLimitMinutes")
                         .HasColumnType("int")
@@ -1059,6 +1082,98 @@ namespace Lms.Api.Data.Migrations
                     b.ToTable("questionnaires", (string)null);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.StoredFile", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClassId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("class_id");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("content_hash");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("content_type");
+
+                    b.Property<long>("CourseworkId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("coursework_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("owner_id");
+
+                    b.Property<string>("ScanStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("scan_status");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_stored_files");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.HasIndex("CourseworkId", "ContentHash");
+
+                    b.ToTable("stored_files", (string)null);
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Submission", b =>
                 {
                     b.Property<long>("Id")
@@ -1092,6 +1207,15 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(255)")
                         .HasColumnName("file_name");
 
+                    b.Property<DateTime?>("HonorAcceptedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("honor_accepted_at");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("link");
+
                     b.Property<DateTime?>("ScoreUpdatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("score_updated_at");
@@ -1101,6 +1225,7 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
@@ -1212,6 +1337,24 @@ namespace Lms.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("submission_answers", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.SubmissionFile", b =>
+                {
+                    b.Property<long>("SubmissionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("submission_id");
+
+                    b.Property<long>("FileId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_id");
+
+                    b.HasKey("SubmissionId", "FileId")
+                        .HasName("PK_submission_files");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("submission_files", (string)null);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Announcement", b =>
@@ -1358,6 +1501,21 @@ namespace Lms.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.StoredFile", b =>
+                {
+                    b.HasOne("Lms.Api.Data.IsmsClass", null)
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lms.Api.Data.Coursework", null)
+                        .WithMany()
+                        .HasForeignKey("CourseworkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Submission", b =>
                 {
                     b.HasOne("Lms.Api.Data.Coursework", null)
@@ -1379,6 +1537,21 @@ namespace Lms.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("SelectedOptionId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Lms.Api.Data.Submission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.SubmissionFile", b =>
+                {
+                    b.HasOne("Lms.Api.Data.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Lms.Api.Data.Submission", null)
                         .WithMany()

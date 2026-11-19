@@ -1,5 +1,5 @@
 import { academicEvents, courses as demoCourses, featuredAnnouncements } from "../../../data.js";
-import { isGraded, meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
+import { isGraded, isHandedIn, meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
 import type { ActivitySubmission, Assessment, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
 
 /** Shown under the student's name; ISMS does not send a program yet. */
@@ -13,7 +13,8 @@ type DemoCourse = (typeof demoCourses)[number];
  */
 const demoExtras = new Map<string, DemoCourse>(demoCourses.map((course) => [course.id, course]));
 
-const handedIn = (submission: Submission) => submission.status !== "in_progress";
+/** A draft is not handed in, and neither is a version the student took back (D-058). */
+const handedIn = (submission: Submission) => isHandedIn(submission.status);
 
 function readTime(text: string | null): string {
   const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;

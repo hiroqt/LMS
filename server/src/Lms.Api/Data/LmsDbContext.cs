@@ -32,6 +32,8 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<Coursework> Coursework => Set<Coursework>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<SubmissionAnswer> SubmissionAnswers => Set<SubmissionAnswer>();
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<SubmissionFile> SubmissionFiles => Set<SubmissionFile>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<GradebookSetting> GradebookSettings => Set<GradebookSetting>();
     public DbSet<AttendanceMonth> AttendanceMonths => Set<AttendanceMonth>();
@@ -166,6 +168,10 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.AnswerReview).HasMaxLength(30).IsRequired().HasDefaultValue(AnswerReview.Results);
             e.Property(x => x.SpellingMode).HasMaxLength(20).IsRequired().HasDefaultValue(SpellingMode.Strict);
             e.Property(x => x.GradeRelease).HasMaxLength(20).IsRequired().HasDefaultValue(GradeRelease.Immediate);
+            // Existing assignments keep taking what the old form took: text and a file.
+            e.Property(x => x.SubmissionKinds).HasMaxLength(40).IsRequired().HasDefaultValue(SubmissionKind.Default);
+            e.Property(x => x.AllowedFileTypes).HasMaxLength(80);
+            e.Property(x => x.MaxFiles).HasDefaultValue(5);
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -175,11 +181,39 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.ToTable("submissions");
             e.HasKey(x => x.Id);
             e.Property(x => x.StudentId).HasMaxLength(IdLength).IsRequired();
-            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            // Checked on every update: a draft that was turned in, or work that was graded or taken
+            // back, a moment ago is never overwritten by a request that read the row before that.
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired().IsConcurrencyToken();
             e.Property(x => x.FileName).HasMaxLength(255);
+            e.Property(x => x.Link).HasMaxLength(2000);
             e.HasOne<Coursework>().WithMany().HasForeignKey(x => x.CourseworkId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.CourseworkId, x.StudentId, x.AttemptNumber }).IsUnique();
             e.HasIndex(x => x.StudentId);
+        });
+
+        b.Entity<StoredFile>(e =>
+        {
+            e.ToTable("stored_files");
+            ClassOwned(e, x => x.ClassId);
+            e.Property(x => x.OwnerId).HasMaxLength(IdLength).IsRequired();
+            e.Property(x => x.StorageKey).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Name).HasMaxLength(255).IsRequired();
+            e.Property(x => x.ContentType).HasMaxLength(120).IsRequired();
+            e.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ScanStatus).HasMaxLength(20).IsRequired();
+            e.HasOne<Coursework>().WithMany().HasForeignKey(x => x.CourseworkId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.StorageKey).IsUnique();
+            // "The same file from two students" is looked up per assignment.
+            e.HasIndex(x => new { x.CourseworkId, x.ContentHash });
+        });
+
+        b.Entity<SubmissionFile>(e =>
+        {
+            e.ToTable("submission_files");
+            e.HasKey(x => new { x.SubmissionId, x.FileId });
+            e.HasOne<Submission>().WithMany().HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<StoredFile>().WithMany().HasForeignKey(x => x.FileId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FileId);
         });
 
         b.Entity<SubmissionAnswer>(e =>

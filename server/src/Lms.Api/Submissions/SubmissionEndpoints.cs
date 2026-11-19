@@ -16,7 +16,7 @@ public static class SubmissionEndpoints
 {
     /// <summary>Extra time after a deadline for answers already on their way.</summary>
     public static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
-    private const int TextMax = 20_000;
+    internal const int TextMax = 20_000;
     /// <summary>Exam answers (contract §1): essays, typed answers, and each enumeration item.</summary>
     public const int EssayMax = 10_000;
     public const int TypedMax = 200;
@@ -126,15 +126,28 @@ public static class SubmissionEndpoints
             var fileName = errors.Optional("fileName", input.FileName, 255);
             if (fileName?.IndexOfAny(['/', '\\']) >= 0) errors.Add("fileName", "Use a file name without a folder path.");
             if (text is null && fileName is null) errors.Add("text", "Write something or attach a file.");
+            // The hand-in settings apply to this older route too (contract §5).
+            var kinds = SubmissionKind.Parse(cw.SubmissionKinds);
+            if (text is not null && !kinds.Contains(SubmissionKind.Text)) errors.Add("text", DraftEndpoints.NoText);
+            if (fileName is not null && !kinds.Contains(SubmissionKind.File)) errors.Add("fileName", DraftEndpoints.NoFiles);
+            if (cw.HonorStatement && input.HonorStatement != true) errors.Add("honorStatement", DraftEndpoints.ConfirmOwnWork);
             if (errors.Any) return errors.Result();
 
             // The student's draft becomes the turned-in work; otherwise a new version is added.
             var row = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress)
                 ?? new Submission { CourseworkId = cw.Id, StudentId = user.Id, AttemptNumber = NextAttempt(mine), StartedAt = now };
-            row.Status = SubmissionStatus.Submitted;
-            row.SubmittedAt = now;
             row.Text = text;
             row.FileName = fileName;
+            // A draft may carry files and a link; they are handed in with it, so they are checked as the draft route checks them.
+            if (row.Id != 0 && await DraftEndpoints.DraftProblemAsync(db, cw, row, ct) is { } problem)
+            {
+                await db.Entry(row).ReloadAsync(ct);
+                errors.Add("work", problem);
+                return errors.Result();
+            }
+            row.Status = SubmissionStatus.Submitted;
+            row.SubmittedAt = now;
+            row.HonorAcceptedAt = cw.HonorStatement ? now : null;
             try { await ContentEndpoints.SaveWithAuditAsync(db, user, row, "submitted", "Assignment", () => row.Id, ct, "submissions"); }
             catch (DbUpdateException) { return Conflict("Another submission was saved at the same moment. Reload and try again."); }
             return TypedResults.Created($"/api/classes/{classId}/coursework/{cw.Id}/submissions/{row.Id}", await ToDtoAsync(db, cw, [row], ct, forStudent: true) is [var dto] ? dto : null);
@@ -159,8 +172,8 @@ public static class SubmissionEndpoints
             var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
             if (cw is null) return ContentEndpoints.NotFound("Coursework");
             var rows = await db.Submissions.AsNoTracking().Where(s => s.CourseworkId == cw.Id).OrderBy(s => s.StudentId).ThenBy(s => s.AttemptNumber).ToListAsync(ct);
-            // An assignment draft is the student's own until it is turned in (D-054).
-            if (cw.Type == CourseworkType.Assignment) rows = rows.Where(r => r.Status != SubmissionStatus.InProgress).ToList();
+            // An assignment draft is the student's own until it is turned in (D-054), and so is a version they took back (D-058).
+            if (cw.Type == CourseworkType.Assignment) rows = rows.Where(GradingRules.IsHandedIn).ToList();
             var handedIn = rows.Where(r => r.Status != SubmissionStatus.InProgress).Select(r => r.StudentId).ToHashSet();
             var missing = (await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive).OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct))
                 .Where(s => !handedIn.Contains(s.StudentId)).Select(s => new StudentRef(s.StudentId, $"{s.FirstName} {s.LastName}".Trim())).ToList();
@@ -263,8 +276,8 @@ public static class SubmissionEndpoints
             if (errors.Any) return errors.Result();
 
             var all = await db.Submissions.Where(s => s.CourseworkId == cw!.Id && s.StudentId == studentId).ToListAsync(ct);
-            // An assignment draft was never handed in, so it doesn't count as work (D-054).
-            var rows = all.Where(s => cw!.Type == CourseworkType.Exam || s.Status != SubmissionStatus.InProgress).ToList();
+            // An assignment draft was never handed in, and a version taken back no longer is, so neither counts as work (D-054, D-058).
+            var rows = all.Where(s => cw!.Type == CourseworkType.Exam || GradingRules.IsHandedIn(s)).ToList();
             if (rows.Any(s => s.Status == SubmissionStatus.InProgress)) return Conflict("This student has an attempt in progress. Grade it once they submit.");
             if (rows.Any(s => !GradingRules.IsNotHandedIn(s))) return Conflict("This student handed in work. Grade their submission instead.");
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -300,7 +313,7 @@ public static class SubmissionEndpoints
 
             // An assignment draft was never handed in, so its student still counts as missing (D-054).
             var exam = cw!.Type == CourseworkType.Exam;
-            var started = db.Submissions.Where(s => s.CourseworkId == cw.Id && (exam || s.Status != SubmissionStatus.InProgress)).Select(s => s.StudentId);
+            var started = db.Submissions.Where(s => s.CourseworkId == cw.Id && (exam || (s.Status != SubmissionStatus.InProgress && s.Status != SubmissionStatus.Withdrawn))).Select(s => s.StudentId);
             var missing = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive && !started.Contains(s.StudentId))
                 .Select(s => s.StudentId).ToListAsync(ct);
             if (missing.Count == 0) return TypedResults.Ok(new MissingGradeResult(0));
@@ -345,7 +358,7 @@ public static class SubmissionEndpoints
             if (input?.StudentIds is { Count: > ReturnMax }) { var errors = new Errors(); errors.Add("studentIds", $"Return at most {ReturnMax} students at a time."); return errors.Result(); }
 
             var named = input?.StudentIds?.ToHashSet();
-            var handedIn = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.Status != SubmissionStatus.InProgress).ToListAsync(ct);
+            var handedIn = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.Status != SubmissionStatus.InProgress && s.Status != SubmissionStatus.Withdrawn).ToListAsync(ct);
             var latest = handedIn.GroupBy(s => s.StudentId).Select(g => g.MaxBy(s => s.AttemptNumber)!)
                 .Where(s => s.Status == SubmissionStatus.Graded && (named is null || named.Contains(s.StudentId))).ToList();
             var ids = latest.Select(s => s.Id).ToList();
@@ -381,7 +394,7 @@ public static class SubmissionEndpoints
         new() { CourseworkId = courseworkId, StudentId = studentId, AttemptNumber = attemptNumber, Status = SubmissionStatus.Graded };
 
     /// <summary>The number for a student's next row, after any draft or earlier version.</summary>
-    private static int NextAttempt(IReadOnlyCollection<Submission> mine) => mine.Count == 0 ? 1 : mine.Max(s => s.AttemptNumber) + 1;
+    internal static int NextAttempt(IReadOnlyCollection<Submission> mine) => mine.Count == 0 ? 1 : mine.Max(s => s.AttemptNumber) + 1;
 
     private static void Fill(Grade grade, decimal points, string? feedback, string by, DateTime at)
     {
@@ -414,13 +427,13 @@ public static class SubmissionEndpoints
 
     // ----------------------------------------------------------------- helpers
 
-    private static IResult Conflict(string title) => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: title);
+    internal static IResult Conflict(string title) => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: title);
 
-    private static void Audit(LmsDbContext db, CurrentUser user, string category, string action, string target, long id) =>
+    internal static void Audit(LmsDbContext db, CurrentUser user, string category, string action, string target, long id) =>
         db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = category, Action = action, Target = target, TargetId = id.ToString(System.Globalization.CultureInfo.InvariantCulture), Summary = $"{target} {action}" });
 
     /// <summary>Coursework a student can see: published or closed, and available. Closed work refuses changes.</summary>
-    private static Task<CourseworkRow?> VisibleAsync(LmsDbContext db, string classId, long id, TimeProvider time, CancellationToken ct)
+    internal static Task<CourseworkRow?> VisibleAsync(LmsDbContext db, string classId, long id, TimeProvider time, CancellationToken ct)
     {
         var now = time.GetUtcNow().UtcDateTime;
         return db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == id && c.ClassId == classId
@@ -441,8 +454,8 @@ public static class SubmissionEndpoints
         var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
         if (cw is null) return (null, null);
         var query = track ? db.Submissions : db.Submissions.AsNoTracking();
-        // An assignment draft is the student's own until it is turned in (D-054).
-        if (cw.Type == CourseworkType.Assignment) query = query.Where(s => s.Status != SubmissionStatus.InProgress);
+        // An assignment draft is the student's own until it is turned in (D-054), and so is a version they took back (D-058).
+        if (cw.Type == CourseworkType.Assignment) query = query.Where(s => s.Status != SubmissionStatus.InProgress && s.Status != SubmissionStatus.Withdrawn);
         return (cw, await query.SingleOrDefaultAsync(s => s.Id == id && s.CourseworkId == cw.Id, ct));
     }
 
@@ -542,6 +555,7 @@ public static class SubmissionEndpoints
         var students = rows.Select(r => r.StudentId).Distinct().ToList();
         var names = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == cw.ClassId && students.Contains(s.StudentId))
             .ToDictionaryAsync(s => s.StudentId, s => $"{s.FirstName} {s.LastName}".Trim(), ct);
+        var files = cw.Type == CourseworkType.Assignment ? await AssignmentFiles.DtosAsync(db, cw, ids, forInstructor: !forStudent, ct) : [];
         return rows.Select(r =>
         {
             grades.TryGetValue(r.Id, out var g);
@@ -549,7 +563,8 @@ public static class SubmissionEndpoints
             if (held) g = null;
             var status = held && r.Status == SubmissionStatus.Graded ? SubmissionStatus.Submitted : r.Status;
             return new SubmissionDto(r.Id, r.StudentId, names.GetValueOrDefault(r.StudentId), r.AttemptNumber, status, r.StartedAt, r.SubmittedAt,
-                cw.DueAt is { } due && r.SubmittedAt > due, r.Text, r.FileName, g?.Points, cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r));
+                cw.DueAt is { } due && r.SubmittedAt > due, r.Text, r.FileName, g?.Points, cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r),
+                r.Link, files.GetValueOrDefault(r.Id) ?? []);
         }).ToList();
     }
 }

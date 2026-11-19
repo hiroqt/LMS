@@ -55,6 +55,7 @@
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
+| `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
 | `src/shared/components/quiz/EnumerationAnswer.tsx` | `EnumerationAnswer` |
