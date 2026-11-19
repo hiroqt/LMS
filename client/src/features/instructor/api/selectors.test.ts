@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialData } from "../../admin/data/lmsData.js";
-import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, gradedLabel, notHandedInGrades, reviewQueue, searchInstructor, studentsWithoutWork, subjectOf, yearLevels, yearOf } from "./selectors";
+import { activeInstructors, classMark, classroomsOf, classWork, contentByModule, gradebookAverages, gradedLabel, notHandedInGrades, publishedWork, reviewQueue, searchInstructor, studentsWithoutWork, subjectOf, yearLevels, yearOf } from "./selectors";
 import type { User } from "./types";
 import type { RoleStore } from "./types";
 
@@ -90,15 +90,32 @@ describe("instructor selectors", () => {
     expect(gradedLabel(item!)).toBe("12 of 30 graded");
   });
 
-  it("marks a draft assessment, and never an assignment", () => {
+  it("marks a draft assessment and a draft assignment (D-059)", () => {
     const work = classWork({
-      activities: [{ id: "a", moduleId: "m", title: "Lab", maxScore: 5 }],
+      activities: [{ id: "a", moduleId: "m", title: "Lab", maxScore: 5 }, { id: "da", moduleId: "m", title: "Draft lab", maxScore: 5, draft: true }],
       exams: [
         { id: "d", moduleId: "m", title: "Draft quiz", totalMarks: 10, draft: true },
         { id: "p", moduleId: "m", title: "Live quiz", totalMarks: 10 },
       ],
     } as Parameters<typeof classWork>[0]);
-    expect(Object.fromEntries(work.map((item) => [item.id, item.draft]))).toEqual({ a: false, d: true, p: false });
+    expect(Object.fromEntries(work.map((item) => [item.id, item.draft]))).toEqual({ a: false, da: true, d: true, p: false });
+  });
+
+  it("leaves drafts out of the work students can see", () => {
+    const content = {
+      activities: [{ id: "a", moduleId: "m", title: "Lab", maxScore: 5, dueAt: "2026-11-02" }, { id: "da", moduleId: "m", title: "Draft lab", maxScore: 5, dueAt: "2026-11-01", draft: true }],
+      exams: [{ id: "d", classroomId: "c", moduleId: "m", title: "Draft quiz", totalMarks: 10, draft: true }],
+    };
+    expect(publishedWork(content).map((item) => item.id)).toEqual(["a"]);
+  });
+
+  it("labels drafts in a module", () => {
+    const grouped = contentByModule({
+      materials: [],
+      activities: [{ id: "a1", moduleId: "1", title: "ER diagram", maxScore: 10, draft: true }],
+      exams: [{ id: "e1", classroomId: "c", moduleId: "1", title: "Joins quiz", totalMarks: 10, draft: true }],
+    });
+    expect(grouped.get("1")?.map((item) => item.label)).toEqual(["Assignment · Draft", "Assessment · Draft"]);
   });
 
   it("finds students with no work and no not-handed-in grade, per assignment or assessment", () => {

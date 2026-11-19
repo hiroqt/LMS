@@ -2,14 +2,14 @@ import { ArrowRight, BookOpen, CalendarDays, ClipboardList, FileText } from "luc
 import { useState } from "react";
 import { Button } from "../../../../shared/ui/Button";
 import { Card } from "../../../../shared/ui/Card";
-import { classWork } from "../../api/selectors";
+import { classWork, publishedWork } from "../../api/selectors";
 import { dueLabel } from "./classUtils";
 import type { ClassTabProps } from "./shared";
 
 export function StreamTab({ room, subject, instructor, content, goTab }: ClassTabProps) {
   const [now] = useState(Date.now);
   const work = classWork(content);
-  const upcoming = work.filter((item) => item.dueAt && new Date(item.dueAt).getTime() >= now).slice(0, 4);
+  const upcoming = publishedWork(content).filter((item) => item.dueAt && new Date(item.dueAt).getTime() >= now).slice(0, 4);
   const name = `${instructor.firstName} ${instructor.lastName}`;
 
   return (
@@ -25,7 +25,7 @@ export function StreamTab({ room, subject, instructor, content, goTab }: ClassTa
           <Card key={item.id} className="flex items-start gap-3 p-4">
             <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-control bg-accent-100 text-accent-700"><ClipboardList className="size-5" /></span>
             <div className="flex flex-1 flex-col gap-1">
-              <strong className="text-body font-semibold">{item.kind} · {item.title}</strong>
+              <strong className="text-body font-semibold">{item.kind}{item.draft ? " · Draft" : ""} · {item.title}</strong>
               <span className="text-body text-muted">{dueLabel(item.dueAt)} · {item.points} points</span>
               <Button variant="ghost" className="-ml-4 self-start" onClick={() => goTab("Classwork")}>View classwork<ArrowRight aria-hidden className="size-4" /></Button>
             </div>

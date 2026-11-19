@@ -106,6 +106,12 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                   </Button>
                 ) : (
                 <>
+                {/* Assignments can change after publishing (D-059); a closed one opens read-only. */}
+                {item.kind === "Assignment" && (
+                  <Button variant="secondary" aria-label={`Edit ${item.title}`} onClick={() => navigate(instructorPaths.assignmentEdit(room.id, item.id))} icon={<Pencil aria-hidden className="size-4" />}>
+                    Edit
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   aria-label={`Grading for ${item.title}`}
