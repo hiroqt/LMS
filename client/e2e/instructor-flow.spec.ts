@@ -87,14 +87,14 @@ test.describe("Instructor · Grading round trip", () => {
   test("E → I → F → J: instructor publishes an assignment, student submits, instructor grades, student sees feedback", async ({ page }) => {
     const title = "Trace a loop by hand";
 
-    // E: publish an assignment from Create content.
+    // E: publish an assignment from Create content. D-059: it opens the assignment builder, not an inline form.
     await openClass(page);
     await classTab(page, /^Create content/).click();
     await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
-    await expect(page.getByRole("heading", { name: "Create an assignment" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "New assignment" })).toBeVisible();
     await page.getByRole("textbox", { name: /^Assignment title/ }).fill(title);
-    await page.getByRole("textbox", { name: "Instructions" }).fill("Write each iteration's variable values.");
-    await page.getByRole("button", { name: "Save and publish" }).click();
+    await page.getByRole("textbox", { name: /^Instructions/ }).fill("Write each iteration's variable values.");
+    await page.getByRole("button", { name: "Publish" }).click();
     await expect(classTab(page, /^Classwork\s?4/)).toBeVisible();
 
     // I: the student opens the assignment and submits a filename and comment.

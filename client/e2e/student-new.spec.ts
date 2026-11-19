@@ -136,9 +136,10 @@ test.describe("Rebuilt Student behavior", () => {
     await page.goto("/instructor");
     await page.getByRole("complementary").getByRole("button", { name: /^IT101 Introduction to Programming/ }).click();
     await page.getByRole("tab", { name: /^Create content/ }).click();
+    // D-059: Create opens the assignment builder.
     await page.locator("header").filter({ hasText: "Collect student work and provide feedback" }).getByRole("button", { name: /Create/ }).click();
     await page.getByRole("textbox", { name: /^Assignment title/ }).fill("Pseudocode for a vending machine");
-    await page.getByRole("button", { name: "Save and publish" }).click();
+    await page.getByRole("button", { name: "Publish" }).click();
     // Publishing is a server call (D-032): wait for it before leaving the page.
     await expect(page.getByRole("status").filter({ hasText: "Assignment published" })).toBeVisible();
 
