@@ -1,11 +1,13 @@
 import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, FolderTree, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { reading } from "../../../shared/assets/illustrations";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
 import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
 import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
+import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { courseModules, dueSoon, type ModuleEntry } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
@@ -245,14 +247,16 @@ function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog 
 
 function Materials({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
   const [query, setQuery] = useState("");
-  const shown = catalog.materials.filter((item) => item.courseId === course.id && `${item.title} ${item.kind}`.toLowerCase().includes(query.toLowerCase()));
+  const all = catalog.materials.filter((item) => item.courseId === course.id);
+  const shown = all.filter((item) => `${item.title} ${item.kind}`.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionHeading title="Class materials" />
         <ListSearch label="Search materials" placeholder="Search materials" value={query} onChange={setQuery} />
       </div>
-      <MaterialGrid materials={shown} />
+      {/* The class has none yet (D-057); a search that finds nothing keeps the plain line. */}
+      {all.length ? <MaterialGrid materials={shown} /> : <EmptyState illustration={reading} title="No materials found." />}
     </div>
   );
 }

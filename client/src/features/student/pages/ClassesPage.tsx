@@ -1,5 +1,5 @@
-import { BookOpen } from "lucide-react";
 import { useNavigate } from "react-router";
+import { openBook } from "../../../shared/assets/illustrations";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { ViewToggle } from "../../../shared/components/ViewToggle";
@@ -18,7 +18,7 @@ export default function ClassesPage() {
       {courses.length ? (
         <ClassList courses={courses} view={view} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
       ) : (
-        <EmptyState icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
+        <EmptyState illustration={openBook} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
       )}
     </>
   );

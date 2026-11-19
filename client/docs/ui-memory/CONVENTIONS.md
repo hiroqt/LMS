@@ -130,6 +130,7 @@ add `!important` by hand.
   the item name as the row header, and a focusable scroll frame (`ClassTable`).
 - Copy states facts. No taglines, no encouragement, no eyebrow that repeats the heading,
   no decorative illustration. If a line could sit on any product's page, delete it.
+  One exception (D-057): `EmptyState`'s `illustration`, only where nothing exists yet.
 - Cards have a uniform border. Do not add colored side or top stripes for identity.
 
 ### C-017 · Adaptive layout (D-025)

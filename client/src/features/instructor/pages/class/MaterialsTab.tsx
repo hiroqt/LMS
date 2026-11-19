@@ -1,5 +1,6 @@
 import { Archive, ArchiveRestore, Download, FileText, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { folderFiles } from "../../../../shared/assets/illustrations";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { moduleChoices, modulePath } from "../../../../shared/lib/moduleTree";
 import { Badge } from "../../../../shared/ui/Badge";
@@ -114,7 +115,7 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
         </ul>
       ) : (
         <EmptyState
-          icon={<FileText />}
+          {...(content.materials.length ? { icon: <FileText /> } : { illustration: folderFiles })}
           title={content.materials.length ? "No materials match these filters" : "No materials yet"}
           action={<Button variant="secondary" onClick={() => goTab("Create content", { create: "material" })}>Add material</Button>}
         />
