@@ -118,7 +118,7 @@ public static class SubmissionEndpoints
             var now = time.GetUtcNow().UtcDateTime;
             var mine = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
             // The same rules the student's page shows (D-054).
-            var verdict = AssignmentRules.Evaluate(cw, mine, now);
+            var verdict = AssignmentRules.Evaluate(cw, mine, now, await AssignmentRules.ExceptionAsync(db, cw.Id, user.Id, ct));
             if (verdict.Reason is { } reason) return Conflict(AssignmentRules.Message(reason, cw));
 
             var errors = new Errors();
@@ -170,7 +170,9 @@ public static class SubmissionEndpoints
             var handedIn = rows.Where(r => r.Status != SubmissionStatus.InProgress).Select(r => r.StudentId).ToHashSet();
             var missing = (await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive).OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct))
                 .Where(s => !handedIn.Contains(s.StudentId)).Select(s => new StudentRef(s.StudentId, $"{s.FirstName} {s.LastName}".Trim())).ToList();
-            return TypedResults.Ok(new SubmissionList(await ToDtoAsync(db, cw, rows, ct), missing));
+            var exceptions = await db.CourseworkExceptions.AsNoTracking().Where(e => e.CourseworkId == cw.Id).OrderBy(e => e.StudentId)
+                .Select(e => new ExceptionDto(e.StudentId, e.DueAt, e.CloseAt, e.Excused)).ToListAsync(ct);
+            return TypedResults.Ok(new SubmissionList(await ToDtoAsync(db, cw, rows, ct), missing, exceptions));
         }).WithName("ListSubmissions");
 
         work.MapGet("/submissions/{id:long}", async Task<IResult> (string classId, long courseworkId, long id, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -200,8 +202,15 @@ public static class SubmissionEndpoints
             var errors = new Errors();
             var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
             decimal total;
+            List<GradeRubricScore>? rubricScores = null;
+            // An assignment with a rubric is scored by it: a level for every criterion, and the points are their sum (contract §12).
+            if (cw!.Type == CourseworkType.Assignment && cw.RubricId is { } rubricId && !GradingRules.IsNotHandedIn(row))
+            {
+                rubricScores = await Rubrics.RubricEndpoints.ScoreAsync(db, rubricId, input.Rubric, errors, ct);
+                total = rubricScores.Sum(s => s.Points);
+            }
             // A "not handed in" grade has no answers to add up, so an exam's one also takes plain points.
-            if (cw!.Type == CourseworkType.Assignment || GradingRules.IsNotHandedIn(row))
+            else if (cw.Type == CourseworkType.Assignment || GradingRules.IsNotHandedIn(row))
             {
                 if (input.Points is not { } points || points < 0 || points > cw.MaxPoints) { errors.Add("points", $"Give a score from 0 to {cw.MaxPoints}."); total = 0; }
                 else total = Math.Round(points, 2);
@@ -247,9 +256,23 @@ public static class SubmissionEndpoints
             grade.Feedback = feedback;
             grade.GradedBy = user.Id;
             grade.GradedAt = time.GetUtcNow().UtcDateTime;
+            // The raw points stay as given; the penalty is worked out when the grade is read (D-062).
+            if (cw.Type == CourseworkType.Assignment && input.WaivePenalty is { } waive) grade.PenaltyWaived = waive;
             // A correction to returned work reaches the student at once (contract §3).
             if (row.Status != SubmissionStatus.Returned) row.Status = SubmissionStatus.Graded;
-            await ContentEndpoints.SaveWithAuditAsync(db, user, null, "graded", GradingRules.IsNotHandedIn(row) ? NotHandedIn : cw.Type == CourseworkType.Exam ? "Exam attempt" : "Assignment", () => row.Id, ct, "grading");
+            await using (var transaction = await db.Database.BeginTransactionAsync(ct))
+            {
+                await db.SaveChangesAsync(ct);
+                if (rubricScores is not null)
+                {
+                    await db.GradeRubricScores.Where(s => s.GradeId == grade.Id).ExecuteDeleteAsync(ct);
+                    foreach (var score in rubricScores) score.GradeId = grade.Id;
+                    db.GradeRubricScores.AddRange(rubricScores);
+                }
+                Audit(db, user, "grading", "graded", GradingRules.IsNotHandedIn(row) ? NotHandedIn : cw.Type == CourseworkType.Exam ? "Exam attempt" : "Assignment", row.Id);
+                await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
             return TypedResults.Ok((await ToDtoAsync(db, cw, [row], ct))[0]);
         }).WithName("GradeSubmission");
 
@@ -260,10 +283,13 @@ public static class SubmissionEndpoints
             var user = http.CurrentUser();
             var (_, denied) = await access.ForGradingAsync(classId, user, ct);
             if (denied is not null) return denied;
-            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, time.GetUtcNow().UtcDateTime, ct);
-            if (invalid is not null) return invalid;
             var student = await db.IsmsClassStudents.AsNoTracking().SingleOrDefaultAsync(s => s.ClassId == classId && s.StudentId == studentId && s.IsActive, ct);
             if (student is null) return ContentEndpoints.NotFound("Student");
+            // This student's own dates decide when their grade is allowed (contract §11).
+            var exception = await AssignmentRules.ExceptionAsync(db, courseworkId, studentId, ct);
+            var (cw, invalid) = await GradableAsync(db, classId, courseworkId, input.Points, time.GetUtcNow().UtcDateTime, ct, exception);
+            if (invalid is not null) return invalid;
+            if (exception?.Excused == true) return Conflict("This student is excused from this assignment, so there is nothing to grade.");
             var errors = new Errors();
             var feedback = errors.Optional("feedback", input.Feedback, FeedbackMax);
             if (errors.Any) return errors.Result();
@@ -309,11 +335,16 @@ public static class SubmissionEndpoints
             var started = db.Submissions.Where(s => s.CourseworkId == cw.Id && (exam || (s.Status != SubmissionStatus.InProgress && s.Status != SubmissionStatus.Withdrawn))).Select(s => s.StudentId);
             var missing = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == classId && s.IsActive && !started.Contains(s.StudentId))
                 .Select(s => s.StudentId).ToListAsync(ct);
-            if (missing.Count == 0) return TypedResults.Ok(new MissingGradeResult(0));
+            // Excused students have nothing to grade; a student whose own last day has not passed waits for it (contract §11).
+            var now = time.GetUtcNow().UtcDateTime;
+            var exceptions = await db.CourseworkExceptions.AsNoTracking().Where(e => e.CourseworkId == cw.Id && missing.Contains(e.StudentId)).ToListAsync(ct);
+            var excused = exceptions.Where(e => e.Excused).Select(e => e.StudentId).ToHashSet();
+            var waiting = exceptions.Where(e => !e.Excused && cw.Status == CourseworkStatus.Published && StudentDates.For(cw, e).LastDay is { } last && now <= last).Select(e => e.StudentId).ToHashSet();
+            missing = missing.Where(id => !excused.Contains(id) && !waiting.Contains(id)).ToList();
+            if (missing.Count == 0) return TypedResults.Ok(new MissingGradeResult(0, waiting.Count));
 
             var drafts = await db.Submissions.AsNoTracking().Where(s => s.CourseworkId == cw.Id && missing.Contains(s.StudentId))
                 .GroupBy(s => s.StudentId).Select(g => new { StudentId = g.Key, Last = g.Max(s => s.AttemptNumber) }).ToDictionaryAsync(x => x.StudentId, x => x.Last, ct);
-            var now = time.GetUtcNow().UtcDateTime;
             var points = Math.Round(input.Points!.Value, 2);
             var rows = missing.Select(id => NotHandedInRecord(cw.Id, id, drafts.GetValueOrDefault(id) + 1)).ToList();
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -335,7 +366,7 @@ public static class SubmissionEndpoints
             });
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return TypedResults.Ok(new MissingGradeResult(rows.Count));
+            return TypedResults.Ok(new MissingGradeResult(rows.Count, waiting.Count));
         }).WithName("GradeEveryoneWithoutSubmission");
 
         // Returns graded assignments to students (D-054): the latest handed-in work of each named
@@ -398,15 +429,18 @@ public static class SubmissionEndpoints
     }
 
     /// <summary>Published or closed coursework of the class, and points within its maximum.</summary>
-    private static async Task<(CourseworkRow? Coursework, IResult? Invalid)> GradableAsync(LmsDbContext db, string classId, long courseworkId, decimal? points, DateTime now, CancellationToken ct)
+    /// <param name="exception">One student's own dates, when the grade is for that student alone (contract §11).</param>
+    private static async Task<(CourseworkRow? Coursework, IResult? Invalid)> GradableAsync(LmsDbContext db, string classId, long courseworkId, decimal? points, DateTime now, CancellationToken ct, CourseworkException? exception = null)
     {
         var cw = await db.Coursework.AsNoTracking().SingleOrDefaultAsync(c => c.Id == courseworkId && c.ClassId == classId, ct);
         if (cw is null) return (null, ContentEndpoints.NotFound("Coursework"));
         if (cw.Status is not (CourseworkStatus.Published or CourseworkStatus.Closed)) return (null, Conflict("Only published or closed coursework can be graded."));
         // A "not handed in" grade blocks the student from handing in, so it waits for the last day
         // (the due date, or the last day for late work) unless the instructor has already closed the work.
-        if (cw.Status == CourseworkStatus.Published && AssignmentRules.LastDay(cw) is { } last && now <= last)
-            return (null, Conflict(cw.CloseAt is null
+        var dates = StudentDates.For(cw, exception);
+        if (cw.Status == CourseworkStatus.Published && dates.LastDay is { } last && now <= last)
+            return (null, Conflict(dates.Extended ? "This student has their own dates and can still hand in. Grade them after their last day passes."
+                : cw.CloseAt is null
                 ? "Students can still hand in until the due date. Grade those who didn't hand in after it passes."
                 : "Students can still hand in late work until the last day. Grade those who didn't hand in after it passes."));
         if (points is not { } p || p < 0 || p > cw.MaxPoints)
@@ -548,16 +582,30 @@ public static class SubmissionEndpoints
         var students = rows.Select(r => r.StudentId).Distinct().ToList();
         var names = await db.IsmsClassStudents.AsNoTracking().Where(s => s.ClassId == cw.ClassId && students.Contains(s.StudentId))
             .ToDictionaryAsync(s => s.StudentId, s => $"{s.FirstName} {s.LastName}".Trim(), ct);
-        var files = cw.Type == CourseworkType.Assignment ? await AssignmentFiles.DtosAsync(db, cw, ids, forInstructor: !forStudent, ct) : [];
+        var assignment = cw.Type == CourseworkType.Assignment;
+        var files = assignment ? await AssignmentFiles.DtosAsync(db, cw, ids, forInstructor: !forStudent, ct) : [];
+        // A student's own due date decides "late" and the penalty (contract §10, §11).
+        var exceptions = assignment
+            ? await db.CourseworkExceptions.AsNoTracking().Where(e => e.CourseworkId == cw.Id && students.Contains(e.StudentId)).ToDictionaryAsync(e => e.StudentId, ct)
+            : [];
+        var gradeIds = grades.Values.Select(g => g.Id).ToList();
+        var rubricScores = assignment && cw.RubricId is not null
+            ? (await db.GradeRubricScores.AsNoTracking().Where(s => gradeIds.Contains(s.GradeId)).ToListAsync(ct)).ToLookup(s => s.GradeId)
+            : null;
         return rows.Select(r =>
         {
             grades.TryGetValue(r.Id, out var g);
             var held = forStudent && !AssignmentRules.GradeVisibleToStudent(cw, r);
             if (held) g = null;
             var status = held && r.Status == SubmissionStatus.Graded ? SubmissionStatus.Submitted : r.Status;
+            var due = StudentDates.For(cw, exceptions.GetValueOrDefault(r.StudentId)).DueAt;
+            var daysLate = assignment ? LatePenalty.DaysLate(due, r.SubmittedAt) : 0;
+            var penalty = g is null ? 0 : LatePenalty.Percent(cw, daysLate, g.PenaltyWaived);
             return new SubmissionDto(r.Id, r.StudentId, names.GetValueOrDefault(r.StudentId), r.AttemptNumber, status, r.StartedAt, r.SubmittedAt,
-                cw.DueAt is { } due && r.SubmittedAt > due, r.Text, r.FileName, g?.Points, cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r),
-                r.Link, files.GetValueOrDefault(r.Id) ?? []);
+                due is { } d && r.SubmittedAt > d, r.Text, r.FileName, g is null ? null : LatePenalty.Apply(g.Points, penalty), cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r),
+                r.Link, files.GetValueOrDefault(r.Id) ?? [],
+                daysLate, penalty, g?.PenaltyWaived ?? false, g?.Points,
+                g is null || rubricScores is null ? [] : rubricScores[g.Id].OrderBy(s => s.CriterionId).Select(s => new RubricScoreDto(s.CriterionId, s.LevelId, s.Points)).ToList());
         }).ToList();
     }
 }

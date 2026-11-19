@@ -37,11 +37,14 @@ public static class GradingRules
             from s in db.Submissions
             where ids.Contains(s.CourseworkId)
             select new { s.CourseworkId, s.StudentId, s.AttemptNumber, s.Status, HasGrade = db.Grades.Any(g => g.SubmissionId == s.Id) }).ToListAsync(ct);
+        // An excused student is out of the count for that assignment: not on its roster, never "still to grade" (D-062).
+        var excused = (await db.CourseworkExceptions.AsNoTracking().Where(e => ids.Contains(e.CourseworkId) && e.Excused).Select(e => new { e.CourseworkId, e.StudentId }).ToListAsync(ct))
+            .Select(e => (e.CourseworkId, e.StudentId)).ToHashSet();
 
         return rows.ToDictionary(r => r.Id, r =>
         {
             var mine = work.Where(w => w.CourseworkId == r.Id).ToLookup(w => w.StudentId);
-            var students = roster.Where(s => s.ClassId == r.ClassId).ToList();
+            var students = roster.Where(s => s.ClassId == r.ClassId && !excused.Contains((r.Id, s.StudentId))).ToList();
             var ungraded = students.Where(student =>
             {
                 var attempts = mine[student.StudentId].ToList();

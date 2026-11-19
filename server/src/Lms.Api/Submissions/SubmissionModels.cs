@@ -69,13 +69,30 @@ public sealed record TurnInReceipt(SubmissionDto Submission, Receipt Receipt);
 
 /// <param name="Late">Submitted after the due date.</param>
 /// <param name="NotHandedIn">A grade the instructor gave a student who handed in nothing (D-036): no work, no submitted time.</param>
+/// <param name="Late">Submitted after the due date (the student's own, when they have one; contract §11).</param>
+/// <param name="Score">The score after any late penalty (contract §10).</param>
 /// <param name="FileName">A file name typed before files were uploaded (D-055); null for newer work.</param>
 /// <param name="Link">Assignments: a link the student handed in.</param>
 /// <param name="Files">Assignments: the uploaded files of this draft or version; empty for exams.</param>
+/// <param name="DaysLate">Calendar days late; 0 when on time.</param>
+/// <param name="PenaltyPercent">The percent the late penalty takes off; 0 when none or waived.</param>
+/// <param name="PenaltyWaived">The instructor waived this student's late penalty.</param>
+/// <param name="RawScore">The points the instructor gave, before the penalty.</param>
+/// <param name="RubricScores">The level chosen for each criterion, when graded with a rubric (contract §12).</param>
 public sealed record SubmissionDto(long Id, string StudentId, string? StudentName, int AttemptNumber, string Status,
     DateTime? StartedAt, DateTime? SubmittedAt, bool Late, string? Text, string? FileName,
     decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt, bool NotHandedIn = false,
-    string? Link = null, IReadOnlyList<FileDto>? Files = null);
+    string? Link = null, IReadOnlyList<FileDto>? Files = null,
+    int DaysLate = 0, decimal PenaltyPercent = 0, bool PenaltyWaived = false, decimal? RawScore = null, IReadOnlyList<RubricScoreDto>? RubricScores = null);
+
+public sealed record RubricScoreDto(long CriterionId, long LevelId, decimal Points);
+
+/// <summary>One student's own dates or excuse for an assignment (contract §11).</summary>
+public sealed record ExceptionDto(string StudentId, DateTime? DueAt, DateTime? CloseAt, bool Excused);
+
+/// <param name="DueAt">Required; after the assignment's due date.</param>
+/// <param name="CloseAt">The student's own last day for late work; needs late work to be accepted.</param>
+public sealed record ExtensionInput(DateTimeOffset? DueAt, DateTimeOffset? CloseAt);
 
 public sealed record StudentRef(string StudentId, string Name);
 
@@ -89,17 +106,22 @@ public sealed record ReturnResult(int Returned);
 public sealed record MissingGradeInput(decimal? Points, string? Feedback);
 
 /// <param name="Graded">How many students received the grade.</param>
-public sealed record MissingGradeResult(int Graded);
+/// <param name="Waiting">Students skipped because their own last day has not passed (contract §11).</param>
+public sealed record MissingGradeResult(int Graded, int Waiting = 0);
 
 /// <param name="Missing">Students on the class list with no handed-in work and no "not handed in" grade yet.</param>
-public sealed record SubmissionList(IReadOnlyList<SubmissionDto> Items, IReadOnlyList<StudentRef> Missing);
+/// <param name="Exceptions">Every student's own dates or excuse for this assignment.</param>
+public sealed record SubmissionList(IReadOnlyList<SubmissionDto> Items, IReadOnlyList<StudentRef> Missing, IReadOnlyList<ExceptionDto>? Exceptions = null);
 
 /// <summary>An attempt with the correct answers beside the student's, for grading.</summary>
 public sealed record SubmissionDetail(SubmissionDto Submission, IReadOnlyList<QuestionDto> Questions, IReadOnlyList<AnswerDto> Answers);
 
 /// <param name="Points">Assignments: the score. Exams: ignored; the total is the sum of answer points.</param>
 /// <param name="AnswerPoints">Exams: points per question id, required for every essay, optional to override others.</param>
-public sealed record GradeInput(decimal? Points, string? Feedback, IReadOnlyDictionary<long, decimal>? AnswerPoints);
+/// <param name="WaivePenalty">Assignments: waive (or stop waiving) this student's late penalty; null leaves it as it is.</param>
+/// <param name="Rubric">Assignments with a rubric: the level chosen for each criterion (criterion id to level id); the score is their sum.</param>
+public sealed record GradeInput(decimal? Points, string? Feedback, IReadOnlyDictionary<long, decimal>? AnswerPoints,
+    bool? WaivePenalty = null, IReadOnlyDictionary<long, long>? Rubric = null);
 
 // ------------------------------------------------------------------- gradebook
 

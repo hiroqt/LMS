@@ -20,11 +20,15 @@ namespace Lms.Api.Coursework;
 /// <param name="AllowedFileTypes">Assignments: the file types accepted (see <see cref="FileTypes"/>).</param>
 /// <param name="MaxFiles">Assignments: files per turn-in.</param>
 /// <param name="HonorStatement">Assignments: the student confirms "This is my own work" to turn in.</param>
+/// <param name="LatePenaltyPercentPerDay">Assignments: percent off the earned score per calendar day late; 0 is none (contract §10).</param>
+/// <param name="LatePenaltyMaxPercent">Assignments: the most a late penalty takes off.</param>
+/// <param name="RubricId">Assignments: the rubric it is graded with (contract §12).</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
     long? QuestionnaireId, int QuestionCount, string Status, string AnswerReview, string SpellingMode, bool ShuffleQuestions, bool ShuffleChoices,
     int? GradedCount = null, int? RosterCount = null, DateTime? CloseAt = null, string GradeRelease = Data.GradeRelease.Immediate, TurnInStatus? TurnIn = null,
-    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int MaxFiles = FileLimits.MaxFilesPerTurnIn, bool HonorStatement = false);
+    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int MaxFiles = FileLimits.MaxFilesPerTurnIn, bool HonorStatement = false,
+    int LatePenaltyPercentPerDay = 0, int LatePenaltyMaxPercent = 100, long? RubricId = null);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
@@ -33,7 +37,8 @@ public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title
     string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null,
     bool? ClearDueAt = null, bool? ClearAvailableFrom = null,
     DateTimeOffset? CloseAt = null, bool? ClearCloseAt = null, string? GradeRelease = null,
-    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int? MaxFiles = null, bool? HonorStatement = null);
+    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int? MaxFiles = null, bool? HonorStatement = null,
+    int? LatePenaltyPercentPerDay = null, int? LatePenaltyMaxPercent = null, long? RubricId = null, bool? ClearRubric = null);
 
 /// <summary>
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
@@ -238,8 +243,27 @@ public static class CourseworkEndpoints
             }
             if (input.MaxFiles is { } maxFiles) { if (maxFiles is < 1 or > FileLimits.MaxFilesPerTurnIn) errors.Add("maxFiles", $"Allow 1 to {FileLimits.MaxFilesPerTurnIn} files."); else row.MaxFiles = maxFiles; }
             if (input.HonorStatement is { } honor) row.HonorStatement = honor;
+            // Late penalty (contract §10): a percent of the earned score per calendar day late, up to a cap.
+            if (input.LatePenaltyPercentPerDay is { } perDay) { if (perDay is < 0 or > 100) errors.Add("latePenaltyPercentPerDay", "Use 0 to 100 percent a day (0 means no penalty)."); else row.LatePenaltyPercentPerDay = perDay; }
+            if (input.LatePenaltyMaxPercent is { } cap) { if (cap is < 1 or > 100) errors.Add("latePenaltyMaxPercent", "Use 1 to 100 percent."); else row.LatePenaltyMaxPercent = cap; }
+            if (row.LatePenaltyPercentPerDay > 0)
+            {
+                if (row.DueAt is null) errors.Add("latePenaltyPercentPerDay", "Set a due date to take points off late work.");
+                else if (!row.AllowLate) errors.Add("latePenaltyPercentPerDay", "Accept late work to take points off it.");
+            }
             if (input.QuestionnaireId is not null) errors.Add("questionnaireId", "Assignments have no questions; use an exam.");
-            if (input.MaxPoints is { } points) { if (points is <= 0 or > 1000) errors.Add("maxPoints", "Points must be more than 0 and at most 1000."); else row.MaxPoints = points; }
+            // A rubric (contract §12): the assignment is then worth the rubric's total, as an exam is worth its questions.
+            if (input.ClearRubric == true || input.RubricId is not null)
+            {
+                var next = input.ClearRubric == true ? null : input.RubricId;
+                if (next != row.RubricId && row.Id != 0 && await Rubrics.RubricEndpoints.GradedWithRubricAsync(db, row.Id, ct))
+                    errors.Add("rubricId", "Work has been graded with this rubric, so it can't be changed or removed.");
+                else if (next is { } rubricId && !await db.Rubrics.AnyAsync(r => r.Id == rubricId && r.ClassId == classId, ct))
+                    errors.Add("rubricId", "Choose one of this class's rubrics.");
+                else row.RubricId = next;
+            }
+            if (row.RubricId is { } rubric) row.MaxPoints = await Rubrics.RubricEndpoints.TotalPointsAsync(db, rubric, ct);
+            else if (input.MaxPoints is { } points) { if (points is <= 0 or > 1000) errors.Add("maxPoints", "Points must be more than 0 and at most 1000."); else row.MaxPoints = points; }
             else if (row.Id == 0) errors.Add("maxPoints", "Enter the points this assignment is worth.");
         }
         else
@@ -251,6 +275,9 @@ public static class CourseworkEndpoints
             if (input.AllowedFileTypes is not null) errors.Add("allowedFileTypes", assignmentsOnly);
             if (input.MaxFiles is not null) errors.Add("maxFiles", assignmentsOnly);
             if (input.HonorStatement is not null) errors.Add("honorStatement", assignmentsOnly);
+            if (input.LatePenaltyPercentPerDay is not null) errors.Add("latePenaltyPercentPerDay", "Only assignments have a late penalty.");
+            if (input.LatePenaltyMaxPercent is not null) errors.Add("latePenaltyMaxPercent", "Only assignments have a late penalty.");
+            if (input.RubricId is not null || input.ClearRubric == true) errors.Add("rubricId", "Only assignments are graded with a rubric.");
             if (input.QuestionnaireId is { } qid)
             {
                 // Only the caller's own set, and only one for this class's subject (or one with no subject).
@@ -294,6 +321,7 @@ public static class CourseworkEndpoints
             c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
             c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, c.AnswerReview, c.SpellingMode, c.ShuffleQuestions, c.ShuffleChoices, p?.Graded, p?.Roster,
             c.CloseAt, c.GradeRelease, user.IsInstructor ? null : turnIn?.GetValueOrDefault(c.Id),
-            SubmissionKind.Parse(c.SubmissionKinds), FileTypes.Parse(c.AllowedFileTypes), c.MaxFiles, c.HonorStatement);
+            SubmissionKind.Parse(c.SubmissionKinds), FileTypes.Parse(c.AllowedFileTypes), c.MaxFiles, c.HonorStatement,
+            c.LatePenaltyPercentPerDay, c.LatePenaltyMaxPercent, c.RubricId);
     }
 }
