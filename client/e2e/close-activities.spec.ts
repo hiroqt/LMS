@@ -1,4 +1,4 @@
-import { callApi, expect, INSTRUCTOR, openRole, STUDENT, test, type Page } from "./fixtures";
+import { callApi, expect, INSTRUCTOR, openRole, STUDENT, test, type Page, uploadAsStudent } from "./fixtures";
 
 // Closing an activity once every student is graded (D-036): INSTRUCTOR_USER_FLOW CLOSE and
 // STUDENT_USER_FLOW CLOSED. Every demo student (12) is in the biology class.
@@ -14,7 +14,8 @@ async function setUp(page: Page, sandbox: string): Promise<string> {
     dueAt: "2026-10-22T09:00:00Z", allowLate: true,
   });
   // Alex hands in; the other eleven hand in nothing.
-  await callApi(page, sandbox, STUDENT, "POST", `/api/classes/biology/coursework/${work.id}/submissions`, { fileName: "lab-report.pdf" });
+  await uploadAsStudent(page, sandbox, `/api/classes/biology/coursework/${work.id}/draft/files`, { name: "lab-report.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n%%EOF\n", "latin1") });
+  await callApi(page, sandbox, STUDENT, "POST", `/api/classes/biology/coursework/${work.id}/draft/turn-in`, { honorStatement: true });
   return String(work.id);
 }
 
