@@ -1,7 +1,7 @@
 # Assignments API contract
 
 The shapes for [`ASSIGNMENTS_PLAN.md`](ASSIGNMENTS_PLAN.md). §1–§4 are Phase 1; §5–§9 are Phase 2
-(D-058); §10 is the outline for Phase 3, settled in detail when it starts. Routes are under
+(D-058); §10–§13 are Phase 3 (D-058, D-062). Routes are under
 `/api/classes/{classId}/coursework`. Validation errors are the usual 400 field errors; refusals
 are 409 with a plain `title`.
 
@@ -177,12 +177,103 @@ which keeps the grades.
 | `Lms:Files:ClamAv:Host` / `Port` / `TimeoutSeconds` | `127.0.0.1` / `3310` / `60` | clamd, over TCP (`INSTREAM`). Its `StreamMaxLength` must be at least 26M. |
 | `Lms:Files:UploadsPerMinute` | 20 | Per student. |
 
-## §10 Phase 3 outline
+## §10 Late penalties (Phase 3)
 
-- **Late penalties:** `latePenaltyPercentPerDay`, `latePenaltyMaxPercent`: a percent of the earned
-  score per calendar day late (Asia/Manila), up to the cap; the grade keeps the raw points and the
-  penalty applied, and can be waived per student.
-- **Extensions and excused work:** `PUT …/students/{id}/extension`, `POST …/students/{id}/excuse`;
-  `turnIn.state` gains `excused`, which leaves the average and the close rule.
-- **Rubrics** per class, locked once used; a comment bank per instructor; batch Return;
-  `GET …/submissions.zip` (streamed, size-capped).
+| Field | Type | Default | Rules |
+|---|---|---|---|
+| `latePenaltyPercentPerDay` | 0 to 100 | 0 (no penalty) | Taken off the earned score for each calendar day late. Above 0 it needs `allowLate: true` and a `dueAt` (400 otherwise). Assignments only. |
+| `latePenaltyMaxPercent` | 1 to 100 | 100 | The most a late penalty can take off. |
+
+- **Days late** are calendar days in the school's time zone (`Lms:TimeZone`, Asia/Manila): the
+  date the work was turned in minus the date it was due, and at least 1 for any late work. Due
+  Nov 20, 4:00 PM: turned in Nov 20, 6:00 PM or any time on Nov 21 is 1 day; Nov 22 is 2 days.
+  A student's own due date (§11) is used when they have one.
+- **The grade keeps the points the instructor gave.** `PUT …/submissions/{id}/grade` still takes
+  the raw `points`; `waivePenalty: true` (or `false`) sets whether this student's penalty is
+  waived. The penalty is worked out from the assignment's settings whenever the grade is read, so
+  changing the settings or the due date changes every unwaived late grade.
+- `SubmissionDto` gains `daysLate` (0 when on time), `penaltyPercent` (0 when none or waived),
+  `penaltyWaived`, and `rawScore`. **`score` is the score after the penalty**, rounded to two
+  decimals; the gradebook uses it. A "not handed in" grade never has a penalty. A held grade
+  (§3) hides `rawScore` too.
+
+## §11 A student's own dates, and excused work (Phase 3)
+
+All for the class's instructor, assignments only (409 for an exam), a student active on the class
+list (404 otherwise).
+
+| Route (under `…/coursework/{id}/students/{studentId}`) | Does |
+|---|---|
+| `PUT …/extension` | `{ "dueAt": "…", "closeAt": "…" }`. `dueAt` is required and must be after the assignment's due date (409 when the assignment has none). `closeAt` is optional, needs `allowLate`, and must be after this `dueAt`. Answers the `ExceptionDto`. |
+| `DELETE …/extension` | Back to the class's dates. 204. |
+| `PUT …/excuse` | The student is excused. Answers the `ExceptionDto`. |
+| `DELETE …/excuse` | No longer excused. 204. |
+
+```json
+{ "studentId": "STU-1", "dueAt": "2026-11-24T07:59:00Z", "closeAt": null, "excused": false }
+```
+
+- **Own dates.** The student's due date is `dueAt`; their last day for late work is `closeAt`,
+  or, when that is null and the assignment has a last day, the later of the assignment's last day
+  and the student's due date. `late`, `daysLate`, the turn-in verdict, taking work back, and the
+  moment a "not handed in" grade is allowed all use the student's own dates.
+- **Excused.** `turnIn.state` is `excused` and `turnIn.reason` is `excused`: nothing can be handed
+  in ("Your instructor excused you from this assignment."). An excused student is not counted in
+  the gradebook average for this assignment (graded or not), in `gradedCount` / `rosterCount`, or
+  by the close rule; "not handed in" grades skip them (409 for the one-student route).
+- `turnIn` gains `dueAt` and `closeAt` (the student's own, or the assignment's) and `extended`
+  (true when they differ from the class's).
+- `GET …/coursework/{id}/submissions` gains `exceptions`: every `ExceptionDto` of the assignment.
+  `POST …/grade-missing` answers `{ graded, waiting }`: `waiting` is how many students were
+  skipped because their own last day has not passed.
+- One metadata-only audit row per change.
+
+## §12 Rubrics (Phase 3)
+
+A rubric belongs to a class. Routes under `/api/classes/{classId}/rubrics`, the class's
+instructor only (students read an assignment's rubric through the last route).
+
+| Method | Route | Notes |
+|---|---|---|
+| GET | `…/rubrics` | The class's rubrics. |
+| POST | `…/rubrics` | `RubricInput`. 201. |
+| GET | `…/rubrics/{id}` | |
+| PUT | `…/rubrics/{id}` | `RubricInput`; replaces the criteria. A **locked** rubric takes a new `title` only: sending `criteria` is a 409 ("This rubric has been used to grade. Copy it to change its criteria."). |
+| POST | `…/rubrics/{id}/copy` | An unlocked copy, "… (copy)". 201. |
+| DELETE | `…/rubrics/{id}` | 409 when it is locked or an assignment uses it. |
+| GET | `/api/classes/{classId}/coursework/{id}/rubric` | The assignment's rubric, for the instructor and for students who can see the assignment. 404 when it has none. |
+
+```json
+{ "id": 3, "title": "Lab report", "totalPoints": 20, "locked": false, "usedBy": 1,
+  "criteria": [ { "id": 7, "title": "Analysis", "description": null,
+                  "levels": [ { "id": 21, "title": "Complete", "description": null, "points": 10 },
+                              { "id": 22, "title": "Partial", "description": null, "points": 5 },
+                              { "id": 23, "title": "Missing", "description": null, "points": 0 } ] } ] }
+```
+
+- `RubricInput`: `title` (1–120), `criteria` 1–12, each `title` (1–120), `description` (≤ 500),
+  and 2–6 `levels` with `title` (1–60), `description` (≤ 500), and `points` 0–1000. `totalPoints`
+  is the sum of each criterion's highest level and must be above 0 and at most 1000.
+- **Locked** once any grade has used it. `usedBy` is how many assignments use it.
+- **On an assignment:** `rubricId` (a rubric of the same class; `clearRubric: true` removes it;
+  assignments only). The assignment is then worth the rubric's `totalPoints`, and a sent
+  `maxPoints` is ignored. Changing or removing the rubric after work was graded with it is a 409.
+  `CourseworkDto` gains `rubricId`.
+- **Grading with a rubric:** `PUT …/submissions/{id}/grade` takes
+  `"rubric": { "<criterionId>": <levelId> }` with a level for every criterion (400 on
+  `rubric[<criterionId>]` otherwise); the points are the sum, and a sent `points` is ignored. A
+  "not handed in" grade takes plain `points`. `SubmissionDto` gains `rubricScores`:
+  `[{ "criterionId": 7, "levelId": 21, "points": 10 }]`, hidden while the grade is held.
+
+## §13 Comment bank and downloading everything (Phase 3)
+
+- **Comment bank**, the instructor's own, at `/api/comment-bank`: `GET` (newest first),
+  `POST { "text": "…" }` (1–500 characters; the same text again answers the existing one),
+  `PUT …/{id}`, `DELETE …/{id}`. At most 200. Students get 403.
+- **`GET …/coursework/{id}/submissions.zip`** (the class's instructor, assignments only): every
+  student's latest handed-in version, one folder per student ("Abad, Lia (STU-1)"), holding their
+  files and, when they wrote an answer or gave a link, `answer.txt`. Streamed;
+  `Content-Disposition: attachment`. When the files add up to more than 250 MB it is a 409
+  ("These files add up to more than 250 MB. Download them from each student's work instead.").
+  One metadata-only audit row.
+- **Batch return** is `POST …/return` with `studentIds` (§3).

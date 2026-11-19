@@ -725,3 +725,23 @@ The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNM
 - **Phase 3:** a late penalty is a percent of the *earned* score per calendar day late
   (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
   to the instructor, not the class.
+
+### D-062 · Assignments Phase 3: penalties are worked out, not stored; exceptions are per student
+`2026-11-19` · hiro (assignments) · scope: server, instructor, student · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§13. Builds on D-058.
+- **A late penalty is computed whenever a grade is read,** from the assignment's settings, the
+  student's own due date, and when the work was turned in. The grade row keeps the instructor's
+  raw points and one flag, `penalty_waived`. Nothing has to be recomputed when a due date or the
+  penalty changes, and `late` and the penalty can never disagree. The cost: changing the settings
+  changes grades already returned, as changing the points always has.
+- **Days late are calendar days in the school's time zone** (`Lms:TimeZone`, Asia/Manila), at
+  least 1 for any late work, so "10% per day" means what a student expects.
+- **One `coursework_exceptions` row per student and assignment** holds their own due date, their
+  own last day, and "excused". `AssignmentRules.Evaluate` takes it, so the turn-in verdict, the
+  draft routes, taking work back, `late`, the penalty and "not handed in" grades all agree.
+- **Excused means out of the count:** not in the gradebook average, the graded progress, or the
+  close rule, whether or not work was graded.
+- **A rubric locks once a grade uses it,** like a question set (D-034): copy it to change it. An
+  assignment with a rubric is worth the rubric's total, as an exam is worth its questions.
+- **The zip is built as it is sent** and capped at 250 MB, because the browser has to hold it in
+  memory to save it (L-075).
