@@ -67,7 +67,7 @@ test.describe("Close an activity @all", () => {
     await expect(page.getByRole("heading", { level: 1, name: TITLE })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Closed. Your instructor is no longer accepting work" })).toBeVisible();
     await expect(page.getByText("Submitted · 9 / 10 points")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Submit work|Resubmit work/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(Turn in|Choose files|Take back)/ })).toHaveCount(0);
 
     // Jamie, who handed in nothing, sees "Not handed in" with the grade.
     await page.goto("/student");
@@ -75,7 +75,7 @@ test.describe("Close an activity @all", () => {
     await expect(page.getByRole("heading", { level: 1, name: /Jamie/ })).toBeVisible();
     await page.goto(`/student/assessments/${id}`);
     await expect(page.getByText("Not handed in · 0 / 10 points")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Submit work/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(Turn in|Choose files|Take back)/ })).toHaveCount(0);
   });
 
   test("CLOSE: a closed activity reopens", async ({ page, sandbox }) => {

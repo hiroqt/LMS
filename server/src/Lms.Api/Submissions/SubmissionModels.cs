@@ -45,6 +45,7 @@ public sealed record AnswerInput(long QuestionId, long? OptionId, string? Text, 
 
 public sealed record AnswersInput(IReadOnlyList<AnswerInput>? Answers);
 
+/// <param name="FileName">No longer accepted (400): files are uploaded to the draft (contract §6).</param>
 /// <param name="HonorStatement">True when the student confirmed "This is my own work"; needed when the assignment asks for it.</param>
 public sealed record AssignmentSubmit(string? Text, string? FileName, bool? HonorStatement = null);
 

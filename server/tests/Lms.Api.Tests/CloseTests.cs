@@ -92,7 +92,7 @@ public sealed class CloseTests : IDisposable
     }
 
     private async Task<long> HandInAsync(string student, long assignment) =>
-        (await Json(await Student(student).PostAsJsonAsync($"{Base}/{assignment}/submissions", new { fileName = "erd.png" }))).GetProperty("id").GetInt64();
+        (await Json(await Student(student).PostAsJsonAsync($"{Base}/{assignment}/submissions", new { text = "My ER diagram" }))).GetProperty("id").GetInt64();
 
     private Task<HttpResponseMessage> GradeAsync(long coursework, long submission, decimal points) =>
         Instructor.PutAsJsonAsync($"{Base}/{coursework}/submissions/{submission}/grade", new { points });
@@ -224,7 +224,7 @@ public sealed class CloseTests : IDisposable
         await Json(await CloseAsync(work));
         await Json(await CloseAsync(exam));
 
-        var handIn = await Problem(await Student(Lia).PostAsJsonAsync($"{Base}/{work}/submissions", new { fileName = "v2.png" }), HttpStatusCode.Conflict);
+        var handIn = await Problem(await Student(Lia).PostAsJsonAsync($"{Base}/{work}/submissions", new { text = "Version 2" }), HttpStatusCode.Conflict);
         Assert.Equal("This assignment is closed and no longer accepts work.", handIn.GetProperty("title").GetString());
         Assert.Contains("closed", (await Problem(await Student(Lia).PostAsync($"{Base}/{exam}/attempts", null), HttpStatusCode.Conflict)).GetProperty("title").GetString());
         await Problem(await Student(Lia).PutAsJsonAsync($"{Base}/{exam}/attempts/{open}/answers", new { answers = Array.Empty<object>() }), HttpStatusCode.Conflict);
@@ -266,7 +266,7 @@ public sealed class CloseTests : IDisposable
         // The student sees it as not handed in, and can no longer hand in.
         var mine = await Json(await Student(Noa).GetAsync($"{Base}/{work}/my-submissions"));
         Assert.True(mine[0].GetProperty("notHandedIn").GetBoolean());
-        Assert.Equal(HttpStatusCode.Conflict, (await Student(Noa).PostAsJsonAsync($"{Base}/{work}/submissions", new { fileName = "late.png" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await Student(Noa).PostAsJsonAsync($"{Base}/{work}/submissions", new { text = "Late work" })).StatusCode);
 
         // It is no longer in the missing list; the instructor's list carries the flag.
         var list = await Json(await Instructor.GetAsync($"{Base}/{work}/submissions"));
