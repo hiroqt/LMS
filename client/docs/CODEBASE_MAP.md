@@ -7,7 +7,7 @@
 - `src/shared/ui` — design-system primitives (Button, Field, Dialog, Tabs, Menu, Card, Badge, EmptyState, Skeleton, Toaster); reference page at `/ui-kit` (`src/features/design-system`).
 - `src/shared/layout` — `AppShell` (sidebar, Student bottom bar, Instructor drawer, skip link, connection banner, focus on navigation) and `PageHeader`. `src/shared/hooks` — `useNetworkStatus`, `useMediaQuery`.
 - `src/features/student/` — the rebuilt Student UI: `api/` (catalog, selectors, progress store, submissions), `hooks/` (catalog query, progress, quiz clock), `pages/` (Today, Tasks, Calendar, Classes, Class, Assessment, Quiz, Result, Material), `paths.ts` (URLs).
-- `src/features/instructor/` — the rebuilt Instructor UI: `api/` (store, selectors, actions), `pages/` (Overview, Classes, Class with tabs in `pages/class/`, Gradebook), `components/` (class card, year filter, Create class dialog), `paths.ts`.
+- `src/features/instructor/` — the rebuilt Instructor UI: `api/` (store, selectors, actions), `pages/` (Overview, Classes, Class with tabs in `pages/class/`, Gradebook, the assessment builder with `pages/assessment/`, and the assignment builder with `pages/assignment/` and `api/assignments.ts`, D-059), `components/` (class card, year filter, Create class dialog), `paths.ts`.
 - `src/shared/components/` also holds dashboard pieces both roles use (StatCard, SectionHeading, BackLink, MonthGrid, FeaturedNewsCarousel).
 - `e2e/` — Playwright flow-parity, routing, platform, and accessibility-baseline specs (`playwright.config.ts`).
 - `docs/ui-memory/` — shared revamp memory: decisions, conventions, learnings, flow-parity status, and generated inventories (`scripts/memory-sync.ts`).

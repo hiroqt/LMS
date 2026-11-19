@@ -587,3 +587,17 @@ The ClamAV client is tested against a local listener that speaks `INSTREAM`
 `2026-11-19` · hiro (assignments) · scope: server · confidence: high
 `DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
 fails it. Name the property for what it holds (`StoredFile.ContentHash`).
+
+### L-081 · `GET …/coursework` answers a page, not an array
+`2026-11-19` · hiro (assignments) · scope: e2e, server · confidence: high
+The list routes return `{ items, page, pageSize, total }` (`PagedList`). A spec that reads the list
+with `callApi` must take `.items` (and pass `pageSize` when the class may hold more than one page).
+`.find is not a function` is the symptom.
+
+### L-082 · A builder's cached copy must be dropped after a save
+`2026-11-19` · hiro (assignments) · scope: instructor · confidence: high
+The builders read their record with `staleTime: Infinity`, so a refetch never replaces what is being
+edited. Without more, leaving and reopening the builder in the same tab showed the copy read before
+the last save. `useSaveAssignment` invalidates the detail without refetching (`refetchType: "none"`),
+and the loader waits only for a fetch started on mount (`isFetching && !isFetchedAfterMount`), so a
+later background refetch never swaps the form out.
