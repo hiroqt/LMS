@@ -142,6 +142,12 @@
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
 | `src/features/instructor/pages/assessment/SummaryPanel.tsx` | `SummaryPanel` |
+| `src/features/instructor/pages/assignment/AssignmentSummary.tsx` | `AssignmentSummary` |
+| `src/features/instructor/pages/assignment/DatesTab.tsx` | `DatesTab` |
+| `src/features/instructor/pages/assignment/DetailsTab.tsx` | `DetailsTab` |
+| `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
+| `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
+| `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
 | `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
 | `src/features/instructor/pages/assignmentGrading/GradeEveryoneMissing.tsx` | `GradeEveryoneMissing` |
 | `src/features/instructor/pages/assignmentGrading/GradePanel.tsx` | `GradeForm`, `NoWorkGradeForm` |

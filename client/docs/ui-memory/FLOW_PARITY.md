@@ -76,7 +76,8 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |
 | E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
-| E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
+| E: assignment | Create → assignment builder → Publish → Classwork (D-059; was the inline form) | ✔ `instructor-flow` E → I → F → J, `student-new` | ✅ |
+| E: assignment builder | Details · Hand-in · Dates and grading tabs with URLs; presets and Copy a previous assignment; a problem on a hidden tab (or a server field error) opens it and focuses the field; the last day needs late work and a due date; Save draft → Draft in Classwork → Edit draft → Publish → students see it; Preview saves first; a published one is edited with Save changes and a note when work was handed in; a closed one is read-only; leave-without-saving; 320px and axe (D-059) | ✔ `assignment-builder` | ✅ |
 | E: assessment | Create → assessment builder → Publish → Classwork (D-040; was the one-MCQ form) | ✔ `instructor-more` | ✅ |
 | E: builder | Sections with every type; Save draft → Draft in Classwork → Edit draft; Publish refused while a question needs attention; dates can be cleared | ✔ `assessment-builder` | ✅ |
 | E: builder tabs | Details · Questions · Settings tabs with URLs; a problem on a hidden tab opens it and focuses the field; badges fit at 320px (D-056) | ✔ `assessment-builder` | ✅ |

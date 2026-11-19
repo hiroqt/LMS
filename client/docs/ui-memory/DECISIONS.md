@@ -726,6 +726,39 @@ The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNM
   (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
   to the instructor, not the class.
 
+### D-059 · Assignments are created in the assignment builder; drafts and edits after publishing
+`2026-11-19` · hiro (assignments) · scope: instructor, e2e · confidence: medium
+Built in PR 2B of [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) on D-058's tabs; shapes: contract §1, §5.
+- **Journey change (D-013):** "Create assignment" opens `…/assignments/new` instead of the inline
+  form, which now holds materials only (the old `?create=activity` link redirects). The journey is the
+  same: title, instructions, Publish, and the assignment is in Classwork. `instructor-flow` E and
+  `student-new` press **Publish** instead of "Save and publish"; `assignment-builder` covers the rest.
+- **Tabs:** Details (module, title, short description, instructions, points) · Hand-in (written
+  answer, files, link; file types and 1–5 files only when Files is chosen; the own-work statement) ·
+  Dates and grading (available from, due date, late work and "accept until", resubmission, when grades
+  show). A choice that makes a field meaningless hides it or disables it with the reason: late work
+  needs a due date, and "accept until" shows only with both (a hidden one is sent as `clearCloseAt`).
+- **Summary:** the points, the rules as students read them (`handInRules`, the student page's own
+  sentences), each field to fix as a link that opens its tab and focuses it, and Preview as student,
+  Save draft, Publish. Preview saves first. Server field errors are mapped onto the fields the same way.
+- **Presets** only fill the form and never touch the title, text, or module. A due date already
+  chosen is kept; otherwise the preset's is set (11:59 PM), and the last day follows it.
+  - Homework: 20 points; written answer and files; PDF, Word, photos; up to 3 files; own-work
+    statement; due in 7 days; late work until 2 days after; resubmission; grades at once.
+  - In-class activity: 10 points; written answer and files; PDF and photos (a photo of paper work);
+    up to 2 files; no statement; due today; no late work; no resubmission; grades at once.
+  - Project: 100 points; files and a link; every file type; up to 5 files; own-work statement; due
+    in 14 days; late work until 3 days after; resubmission; grades when returned.
+  - Copy a previous assignment: one of this class's assignments; its points, hand-in, late work,
+    resubmission, and grade release. Not its title, text, module, or dates (nor its last day).
+- **Editing after publishing** is allowed, unlike exams: the same builder with one **Save changes**
+  (the status is not sent, so it stays published), and "N students have handed in; work already
+  handed in is not checked again" when some have. A closed assignment is shown read-only with
+  "Reopen it to change it". Classwork rows of assignments have **Edit**.
+- **Drafts elsewhere** behave like draft assessments: "Draft" on Classwork, Create content (Edit
+  draft), Modules ("Assignment · Draft") and the Stream cards; left out of the Stream's Upcoming, the
+  Overview calendar, and Submissions' "Didn't hand in" (`publishedWork`).
+
 ### D-060 · Students hand in assignments with real files on a "Your work" card
 `2026-11-19` · hiro (assignments, PR 2C) · scope: student, e2e · confidence: medium
 Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Students"; shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §2, §5–§8.

@@ -5,7 +5,7 @@ import { CourseHeader } from "../../../shared/components/CourseHeader";
 import { Button } from "../../../shared/ui/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { useToast } from "../../../shared/ui/toast/useToast";
-import { classContent, classMark, classWork, subjectOf, yearOf } from "../api/selectors";
+import { classContent, classMark, classWork, publishedWork, subjectOf, yearOf } from "../api/selectors";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { CLASS_TABS, instructorPaths, isClassTab, isContentType, type ClassTab, type ContentType } from "../paths";
 import { AnnouncementsTab } from "./class/AnnouncementsTab";
@@ -124,7 +124,7 @@ export default function ClassPage() {
             instructor={instructor}
             onSelect={(id) => goTab("Submissions", { review: id })}
             store={store}
-            work={classWork(content)}
+            work={publishedWork(content)}
             students={content.students}
             classroomId={room.id}
           />

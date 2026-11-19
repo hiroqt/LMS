@@ -37,8 +37,8 @@ function monthMarks(store: RoleStore, roomIds: Set<string>): CalendarMark[] {
   const moduleRoom = new Map(store.modules.map((module) => [module.id, module.classroomId]));
   return [
     ...events.map((item) => ({ id: item.id, title: item.title, date: new Date(`${item.date}T12:00:00`), kind: "event" as const })),
-    ...store.exams.filter((item) => item.dueAt && item.status !== "inactive" && roomIds.has(item.classroomId)).map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt ?? ""), kind: "deadline" as const })),
-    ...store.activities.filter((item) => item.dueAt && roomIds.has(moduleRoom.get(item.moduleId) ?? "")).map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt ?? ""), kind: "deadline" as const })),
+    ...store.exams.filter((item) => item.dueAt && !item.draft && item.status !== "inactive" && roomIds.has(item.classroomId)).map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt ?? ""), kind: "deadline" as const })),
+    ...store.activities.filter((item) => item.dueAt && !item.draft && roomIds.has(moduleRoom.get(item.moduleId) ?? "")).map((item) => ({ id: item.id, title: item.title, date: new Date(item.dueAt ?? ""), kind: "deadline" as const })),
   ];
 }
 
