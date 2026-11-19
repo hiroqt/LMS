@@ -32,6 +32,8 @@ export interface GradeFormProps {
   onOpenExamGrading?: () => void;
   /** Assignments: opens the assignment's grading page (file viewer, versions, Return). */
   onOpenAssignmentGrading?: () => void;
+  /** Assignments graded with a rubric take levels, not one score: they are graded on the grading page (D-064). */
+  byRubric?: boolean;
 }
 
 const toPoints = (value: string) => (value.trim() === "" ? Number.NaN : Number(value));
@@ -42,7 +44,7 @@ const unscored = (points: number | null | undefined): points is null | undefined
  * essays need points, and typed answers (identification, enumeration, modified true or false)
  * can be overridden; both go through the grade endpoint's `answerPoints`.
  */
-export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGrading, onOpenAssignmentGrading }: GradeFormProps) {
+export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGrading, onOpenAssignmentGrading, byRubric = false }: GradeFormProps) {
   const toast = useToast();
   const { instructorId } = useInstructorSession();
   const viewer: Viewer = { id: instructorId, role: "instructor" };
@@ -64,7 +66,7 @@ export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGradin
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || (item.kind === "activity" && byRubric)) return;
     let answerPoints: Record<string, number> | undefined;
     let value = Number(score);
     if (item.kind === "activity") {
@@ -147,9 +149,13 @@ export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGradin
               Open the grading page
             </Button>
           )}
-          <Field label={`Score (0–${item.maxScore})`} required error={error || undefined}>
-            <Input type="number" inputMode="numeric" min={0} max={item.maxScore} value={score} onChange={(event) => setScore(event.target.value)} />
-          </Field>
+          {byRubric ? (
+            <p className="m-0 rounded-control bg-canvas p-3 text-body">This assignment is graded with a rubric. Open the grading page to choose a level for each criterion.</p>
+          ) : (
+            <Field label={`Score (0–${item.maxScore})`} required error={error || undefined}>
+              <Input type="number" inputMode="numeric" min={0} max={item.maxScore} value={score} onChange={(event) => setScore(event.target.value)} />
+            </Field>
+          )}
         </>
       ) : attempt.isPending ? (
         <SkeletonGroup label="Loading the attempt" className="flex flex-col gap-2"><Skeleton className="h-6 w-2/3" /><Skeleton className="h-20 w-full" /></SkeletonGroup>
@@ -206,7 +212,7 @@ export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGradin
       </Field>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={saving}>Save grade</Button>
+        <Button type="submit" disabled={saving || (item.kind === "activity" && byRubric)}>Save grade</Button>
       </div>
     </form>
   );
@@ -393,6 +399,7 @@ export function SubmissionsTab({ items, selectedId, onSelect, store, work, stude
               onDone={() => onSelect(undefined)}
               onOpenExamGrading={selected.kind === "exam" ? () => navigate(instructorPaths.examGrading(selected.classroomId, selected.courseworkId)) : undefined}
               onOpenAssignmentGrading={selected.kind === "activity" ? () => navigate(instructorPaths.assignmentGrading(selected.classroomId, selected.courseworkId, { student: selected.student?.id })) : undefined}
+              byRubric={selected.kind === "activity" && Boolean(store.activities.find((activity) => activity.id === selected.courseworkId)?.rubricId)}
             />
           ) : (
             <p className="m-0 self-start rounded-card border border-dashed border-line-strong p-4 text-body text-muted">Choose a submission to review it and save a grade.</p>
