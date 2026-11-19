@@ -11,7 +11,7 @@ import { featuredSlides } from "../../../shared/lib/schoolNews";
 import { termStatus } from "../../../shared/lib/term";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting } from "../api/selectors";
+import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting, needsWork } from "../api/selectors";
 import type { Assessment, StudentCatalog } from "../api/types";
 import { ClassList } from "../components/ClassList";
 import { AssessmentTypeIcon } from "../components/visuals";
@@ -119,7 +119,7 @@ function CalendarPanel({ catalog, completed, now, className }: { catalog: Studen
   const today = new Date(now);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const entries = calendarEntries(catalog.assessments, catalog.academicEvents)
-    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && completed.includes(entry.assessment.id)))
+    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && !needsWork(entry.assessment, completed)))
     .slice(0, 4);
   const courseName = (id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
   return (
