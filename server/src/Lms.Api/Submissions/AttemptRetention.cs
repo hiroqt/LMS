@@ -55,8 +55,9 @@ public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions>
         var submissions = db.Submissions.Where(s => db.Coursework.Any(c => c.Id == s.CourseworkId && classIds.Contains(c.ClassId)));
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var texts = await submissions.Where(s => s.Text != null || s.Link != null)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, (string?)null).SetProperty(x => x.Link, (string?)null), ct);
+        // A typed file name (before D-055) can name the student as easily as their text can.
+        var texts = await submissions.Where(s => s.Text != null || s.Link != null || s.FileName != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, (string?)null).SetProperty(x => x.Link, (string?)null).SetProperty(x => x.FileName, (string?)null), ct);
         var answers = await db.SubmissionAnswers.Where(a => a.AnswerText != null && submissions.Any(s => s.Id == a.SubmissionId))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.AnswerText, (string?)null), ct);
         // Marked so no re-score ever reads the cleared answers as wrong ones.

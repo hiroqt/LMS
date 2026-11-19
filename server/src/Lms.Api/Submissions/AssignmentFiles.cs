@@ -1,5 +1,4 @@
 using Lms.Api.Data;
-using Lms.Api.Files;
 using Microsoft.EntityFrameworkCore;
 using CourseworkRow = Lms.Api.Data.Coursework;
 
@@ -54,13 +53,24 @@ internal static class AssignmentFiles
     }
 
     /// <summary>
-    /// Takes a file off a submission and saves. When nothing else uses the file, its row is marked
-    /// deleted and its bytes are removed. False when the file is not on that submission.
+    /// Locks a draft for the rest of the transaction and confirms it is still a draft. The draft's
+    /// files are rows of their own, so adding or removing one would not otherwise notice that the
+    /// draft was turned in a moment ago, or see another upload that has not committed yet. False
+    /// when it is no longer a draft. Call inside a transaction, before reading the draft's files.
     /// </summary>
-    public static async Task<bool> UnlinkAsync(LmsDbContext db, IFileStore store, long submissionId, long fileId, DateTime now, CancellationToken ct)
+    public static async Task<bool> LockDraftAsync(LmsDbContext db, long submissionId, DateTime now, CancellationToken ct) =>
+        await db.Submissions.Where(s => s.Id == submissionId && s.Status == SubmissionStatus.InProgress)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UpdatedAt, now), ct) == 1;
+
+    /// <summary>
+    /// Takes a file off a submission and saves. When nothing else uses the file, its row is marked
+    /// deleted and its storage key is returned for the caller to delete <b>after the transaction
+    /// commits</b>. <c>Found</c> is false when the file is not on that submission.
+    /// </summary>
+    public static async Task<(bool Found, string? UnusedKey)> UnlinkAsync(LmsDbContext db, long submissionId, long fileId, DateTime now, CancellationToken ct)
     {
         var link = await db.SubmissionFiles.SingleOrDefaultAsync(l => l.SubmissionId == submissionId && l.FileId == fileId, ct);
-        if (link is null) return false;
+        if (link is null) return (false, null);
         db.SubmissionFiles.Remove(link);
         string? unused = null;
         if (!await db.SubmissionFiles.AnyAsync(l => l.FileId == fileId && l.SubmissionId != submissionId, ct))
@@ -70,7 +80,6 @@ internal static class AssignmentFiles
             unused = file.StorageKey;
         }
         await db.SaveChangesAsync(ct);
-        if (unused is not null) store.Delete(unused);
-        return true;
+        return (true, unused);
     }
 }

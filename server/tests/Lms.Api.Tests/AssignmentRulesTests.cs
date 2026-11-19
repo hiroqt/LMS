@@ -155,6 +155,23 @@ public sealed class AssignmentRulesTests
     }
 
     [Fact]
+    public void An_extension_never_leaves_a_student_with_less_time_than_the_class()
+    {
+        // The instructor extended one student to +2h, then moved the whole class to +5h.
+        var cw = Assignment();
+        cw.DueAt = Due.AddHours(5);
+        var stale = new CourseworkException { DueAt = Due.AddHours(2) };
+        Assert.Equal(new StudentDates(Due.AddHours(5), null, false, false), StudentDates.For(cw, stale));
+        var verdict = AssignmentRules.Evaluate(cw, [], Due.AddHours(3), stale);
+        Assert.Equal((TurnInState.Assigned, true, false), (verdict.State, verdict.CanTurnIn, verdict.Extended));
+        // The same for the last day, and when the class's due date was removed altogether.
+        var late = Assignment(late: true, closeAt: Due.AddDays(4));
+        Assert.Equal(Due.AddDays(4), StudentDates.For(late, new CourseworkException { DueAt = Due.AddDays(1), CloseAt = Due.AddDays(2) }).CloseAt);
+        cw.DueAt = null;
+        Assert.Equal(new StudentDates(null, null, false, false), StudentDates.For(cw, stale));
+    }
+
+    [Fact]
     public void An_excused_student_has_nothing_to_hand_in()
     {
         var excused = new CourseworkException { Excused = true };

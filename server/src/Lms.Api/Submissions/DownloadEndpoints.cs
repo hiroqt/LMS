@@ -45,9 +45,13 @@ public static class DownloadEndpoints
             });
             await db.SaveChangesAsync(ct);
 
+            // One folder per student, never shared: a long name is cut before its id, and a name that still collides gets a number.
+            var usedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var folders = latest
-                .Select(s => (Submission: s, Folder: names.TryGetValue(s.StudentId, out var n) ? FileNames.Clean($"{n.LastName}, {n.FirstName} ({s.StudentId})") : FileNames.Clean(s.StudentId)))
-                .OrderBy(x => x.Folder, StringComparer.OrdinalIgnoreCase).ToList();
+                .Select(s => (Submission: s, Name: names.TryGetValue(s.StudentId, out var n) ? FileNames.Clean($"{n.LastName}, {n.FirstName}") : "Student"))
+                .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.Submission.StudentId, StringComparer.Ordinal)
+                .Select(x => (x.Submission, Folder: Unique(usedFolders, $"{(x.Name.Length > 60 ? x.Name[..60].TrimEnd() : x.Name)} ({FileNames.Clean(x.Submission.StudentId)})")))
+                .ToList();
             http.Response.Headers.XContentTypeOptions = "nosniff";
             http.Response.Headers.CacheControl = "private, no-store";
             return TypedResults.Stream(async body =>

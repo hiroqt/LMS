@@ -256,8 +256,9 @@ public static class CourseworkEndpoints
             if (input.ClearRubric == true || input.RubricId is not null)
             {
                 var next = input.ClearRubric == true ? null : input.RubricId;
-                if (next != row.RubricId && row.Id != 0 && await Rubrics.RubricEndpoints.GradedWithRubricAsync(db, row.Id, ct))
-                    errors.Add("rubricId", "Work has been graded with this rubric, so it can't be changed or removed.");
+                // The rubric decides what the assignment is worth, so it can't change under grades already given.
+                if (next != row.RubricId && row.Id != 0 && await Rubrics.RubricEndpoints.HasGradesAsync(db, row.Id, ct))
+                    errors.Add("rubricId", "Work has already been graded, so the rubric can't be added, changed, or removed.");
                 else if (next is { } rubricId && !await db.Rubrics.AnyAsync(r => r.Id == rubricId && r.ClassId == classId, ct))
                     errors.Add("rubricId", "Choose one of this class's rubrics.");
                 else row.RubricId = next;

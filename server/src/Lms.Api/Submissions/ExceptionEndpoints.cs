@@ -31,6 +31,7 @@ public static class ExceptionEndpoints
             if (close is not null)
             {
                 if (!cw.AllowLate) errors.Add("closeAt", "This assignment doesn't accept late work, so there is no last day to set.");
+                else if (cw.CloseAt is null) errors.Add("closeAt", "This assignment accepts late work with no last day, so this student needs none either.");
                 else if (due is not null && close <= due) errors.Add("closeAt", "The last day for late work must be after this student's due date.");
             }
             if (errors.Any) return errors.Result();

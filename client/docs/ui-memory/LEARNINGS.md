@@ -587,3 +587,14 @@ The ClamAV client is tested against a local listener that speaks `INSTREAM`
 `2026-11-19` · hiro (assignments) · scope: server · confidence: high
 `DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
 fails it. Name the property for what it holds (`StoredFile.ContentHash`).
+
+### L-090 · A check at the start of a request is stale by the time a slow request writes
+`2026-11-19` · hiro (assignments) · scope: server · confidence: high
+An independent review found that an upload still being scanned could add its file to a draft the
+student had turned in meanwhile, and that a grade and "take back" could cross. `Submission.Status`
+is now a concurrency token, so an update of a row that changed since it was read fails
+(`DbUpdateConcurrencyException`, answered as 409 by `ConcurrencyExceptionHandler`). A draft's
+files are rows of their own, so routes that add or remove one first lock the draft with
+`AssignmentFiles.LockDraftAsync` inside their transaction; that also makes two uploads at once
+count each other on MySQL, where neither would see the other's uncommitted row. SQLite runs one
+writer at a time, so tests can't show the MySQL case: `FakeScanner.DuringScan` stands in for it.

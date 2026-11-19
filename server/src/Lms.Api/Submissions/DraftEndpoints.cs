@@ -23,6 +23,7 @@ public static class DraftEndpoints
     internal const string NoFiles = "This assignment doesn't take files.";
     internal const string NoLink = "This assignment doesn't take a link.";
     internal const string ConfirmOwnWork = "Confirm that this is your own work.";
+    internal const string NoLongerADraft = "This work was turned in a moment ago, so it can no longer be changed. Reload to see it.";
     private const int LinkMax = 2_000;
     private const string FileField = "file";
 
@@ -61,7 +62,9 @@ public static class DraftEndpoints
             if (failed is not null) return failed;
             draft!.Text = text;
             draft.Link = link;
-            await db.SaveChangesAsync(ct);
+            // Turned in a moment ago by another request: the turned-in work stays as it was.
+            try { await db.SaveChangesAsync(ct); }
+            catch (DbUpdateConcurrencyException) { return SubmissionEndpoints.Conflict(NoLongerADraft); }
             return TypedResults.Ok(await DtoAsync(db, scope.Cw, draft, ct));
         }).WithName("SaveDraft");
 
@@ -116,6 +119,21 @@ public static class DraftEndpoints
                 try
                 {
                     await using var transaction = await db.Database.BeginTransactionAsync(ct);
+                    // The scan can take a while; the draft may have been turned in meanwhile, and
+                    // another upload may be finishing. The lock settles both (see LockDraftAsync).
+                    if (!await AssignmentFiles.LockDraftAsync(db, draft!.Id, scope.Now, ct))
+                    {
+                        await transaction.RollbackAsync(ct);
+                        store.Delete(key);
+                        return SubmissionEndpoints.Conflict(NoLongerADraft);
+                    }
+                    var onDraft = (await AssignmentFiles.RowsAsync(db, [draft.Id], ct))[draft.Id].ToList();
+                    if (onDraft.Count >= cw.MaxFiles || onDraft.Any(f => f.ContentHash == pending.Sha256))
+                    {
+                        await transaction.RollbackAsync(ct);
+                        store.Delete(key);
+                        return onDraft.Count >= cw.MaxFiles ? SubmissionEndpoints.Conflict(AtMost(cw.MaxFiles)) : FileRefused("You already added this file.");
+                    }
                     var file = new StoredFile
                     {
                         ClassId = cw.ClassId, CourseworkId = cw.Id, OwnerId = scope.User.Id, StorageKey = key, Name = name,
@@ -123,15 +141,8 @@ public static class DraftEndpoints
                     };
                     db.StoredFiles.Add(file);
                     await db.SaveChangesAsync(ct);
-                    db.SubmissionFiles.Add(new SubmissionFile { SubmissionId = draft!.Id, FileId = file.Id });
+                    db.SubmissionFiles.Add(new SubmissionFile { SubmissionId = draft.Id, FileId = file.Id });
                     await db.SaveChangesAsync(ct);
-                    // Two uploads at the same moment can both find room; the count after saving settles it.
-                    if ((await AssignmentFiles.RowsAsync(db, [draft.Id], ct))[draft.Id].Count() > cw.MaxFiles)
-                    {
-                        await transaction.RollbackAsync(ct);
-                        store.Delete(key);
-                        return SubmissionEndpoints.Conflict(AtMost(cw.MaxFiles));
-                    }
                     await transaction.CommitAsync(ct);
                 }
                 catch
@@ -148,8 +159,15 @@ public static class DraftEndpoints
         {
             var (scope, refused) = await OpenAsync(classId, courseworkId, http, access, db, time, ct);
             if (refused is not null) return refused;
-            if (scope!.Draft is not { } draft || !await AssignmentFiles.UnlinkAsync(db, store, draft.Id, fileId, scope.Now, ct))
-                return ContentEndpoints.NotFound("File");
+            if (scope!.Draft is not { } draft) return ContentEndpoints.NotFound("File");
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            // Turned in a moment ago: the file stays on the turned-in work.
+            if (!await AssignmentFiles.LockDraftAsync(db, draft.Id, scope.Now, ct)) return ContentEndpoints.NotFound("File");
+            var (found, unusedKey) = await AssignmentFiles.UnlinkAsync(db, draft.Id, fileId, scope.Now, ct);
+            if (!found) return ContentEndpoints.NotFound("File");
+            await transaction.CommitAsync(ct);
+            // The bytes go only once the database says nothing uses them.
+            if (unusedKey is not null) store.Delete(unusedKey);
             return TypedResults.Ok(await DtoAsync(db, scope.Cw, draft, ct));
         }).WithName("RemoveDraftFile");
 
@@ -166,17 +184,7 @@ public static class DraftEndpoints
             }
             if (scope.Verdict.Reason is { } reason) return SubmissionEndpoints.Conflict(AssignmentRules.Message(reason, cw));
 
-            var files = (await AssignmentFiles.RowsAsync(db, [draft.Id], ct))[draft.Id].ToList();
-            var kinds = SubmissionKind.Parse(cw.SubmissionKinds);
-            // The settings can change after a draft was started, so the draft is checked against today's.
-            if (draft.Text is not null && !kinds.Contains(SubmissionKind.Text)) return Work("This assignment no longer takes a written answer. Clear yours to turn in.");
-            if (draft.Link is not null && !kinds.Contains(SubmissionKind.Link)) return Work("This assignment no longer takes a link. Remove yours to turn in.");
-            if (files.Count > 0 && !kinds.Contains(SubmissionKind.File)) return Work("This assignment no longer takes files. Remove yours to turn in.");
-            if (files.Count > cw.MaxFiles) return Work($"{AtMost(cw.MaxFiles)} Remove some to turn in.");
-            var allowed = FileTypes.Parse(cw.AllowedFileTypes);
-            if (files.FirstOrDefault(f => FileKind.TypeOf(f.ContentType) is not { } type || !allowed.Contains(type)) is { } unwanted)
-                return Work($"This assignment no longer takes files like {unwanted.Name}. Remove it to turn in.");
-            if (draft.Text is null && draft.Link is null && files.Count == 0) return Work("Add your work before you turn it in.");
+            if (await DraftProblemAsync(db, cw, draft, ct) is { } problem) return Work(problem);
             if (cw.HonorStatement && input?.HonorStatement != true)
             {
                 var errors = new Errors();
@@ -314,6 +322,25 @@ public static class DraftEndpoints
             // Not valid multipart.
         }
         return (null, "");
+    }
+
+    /// <summary>
+    /// Why a draft can't be turned in as it stands, or null when it can. The settings can change
+    /// after a draft was started, so it is checked against today's. Both turn-in routes use this.
+    /// </summary>
+    internal static async Task<string?> DraftProblemAsync(LmsDbContext db, CourseworkRow cw, Submission draft, CancellationToken ct)
+    {
+        var files = (await AssignmentFiles.RowsAsync(db, [draft.Id], ct))[draft.Id].ToList();
+        var kinds = SubmissionKind.Parse(cw.SubmissionKinds);
+        if (draft.Text is not null && !kinds.Contains(SubmissionKind.Text)) return "This assignment no longer takes a written answer. Clear yours to turn in.";
+        if (draft.Link is not null && !kinds.Contains(SubmissionKind.Link)) return "This assignment no longer takes a link. Remove yours to turn in.";
+        if (files.Count > 0 && !kinds.Contains(SubmissionKind.File)) return "This assignment no longer takes files. Remove yours to turn in.";
+        if (files.Count > cw.MaxFiles) return $"{AtMost(cw.MaxFiles)} Remove some to turn in.";
+        var allowed = FileTypes.Parse(cw.AllowedFileTypes);
+        if (files.FirstOrDefault(f => FileKind.TypeOf(f.ContentType) is not { } type || !allowed.Contains(type)) is { } unwanted)
+            return $"This assignment no longer takes files like {unwanted.Name}. Remove it to turn in.";
+        if (draft.Text is null && draft.Link is null && draft.FileName is null && files.Count == 0) return "Add your work before you turn it in.";
+        return null;
     }
 
     private static string AtMost(int max) => $"This assignment takes at most {max} {(max == 1 ? "file" : "files")}.";

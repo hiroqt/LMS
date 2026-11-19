@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Lms.Api.Data.Migrations
 {
     [DbContext(typeof(LmsDbContext))]
-    [Migration("20261119081732_AssignmentPhase3")]
+    [Migration("20261119085003_AssignmentPhase3")]
     partial class AssignmentPhase3
     {
         /// <inheritdoc />
@@ -1498,6 +1498,7 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")

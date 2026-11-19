@@ -13,6 +13,8 @@ internal enum ZipProblem
     TooBig,
     /// <summary>Carries macros.</summary>
     Macro,
+    /// <summary>Attaches a template from the web or a network share, which can bring macros in when the file is opened.</summary>
+    RemoteTemplate,
 }
 
 /// <summary>
@@ -49,7 +51,9 @@ internal static class ZipGuard
             {
                 ct.ThrowIfCancellationRequested();
                 if (IsMacro(entry.FullName)) return (ZipProblem.Macro, "");
-                var contentTypes = entry.FullName == "[Content_Types].xml" ? new MemoryStream() : null;
+                // Relationship parts are small; they say whether a template is attached from elsewhere.
+                var keep = entry.FullName == "[Content_Types].xml" || entry.FullName.EndsWith(".rels", StringComparison.OrdinalIgnoreCase);
+                var contentTypes = keep ? new MemoryStream() : null;
 
                 using var content = entry.Open();
                 int read;
@@ -57,20 +61,45 @@ internal static class ZipGuard
                 {
                     unpacked += read;
                     if (unpacked > maxUnpackedBytes) return (ZipProblem.TooBig, "");
-                    contentTypes?.Write(buffer, 0, read);
+                    if (contentTypes is { Length: < 1024 * 1024 }) contentTypes.Write(buffer, 0, read);
+                }
+                if (contentTypes is null) continue;
+                var text = Encoding.UTF8.GetString(contentTypes.ToArray());
+                if (entry.FullName != "[Content_Types].xml")
+                {
+                    if (AttachesRemoteTemplate(text)) return (ZipProblem.RemoteTemplate, "");
+                    continue;
                 }
 
                 // A macro-enabled document says so in its content types, whatever its name.
-                if (contentTypes is not null)
-                {
-                    types = Encoding.UTF8.GetString(contentTypes.ToArray());
-                    if (types.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || types.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))
-                        return (ZipProblem.Macro, "");
-                }
+                types = text;
+                if (types.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || types.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))
+                    return (ZipProblem.Macro, "");
             }
             return (ZipProblem.None, types);
         }
         catch (InvalidDataException) { return (ZipProblem.Unreadable, ""); }
+    }
+
+    /// <summary>
+    /// An <c>attachedTemplate</c> relationship whose target is a web address or a network share.
+    /// A template on the author's own disk (a school template they started from) is left alone:
+    /// it is not fetched from anywhere a stranger controls.
+    /// </summary>
+    internal static bool AttachesRemoteTemplate(string relationships)
+    {
+        foreach (var relationship in relationships.Split("<Relationship ", StringSplitOptions.RemoveEmptyEntries).Skip(1))
+        {
+            if (!relationship.Contains("attachedTemplate", StringComparison.OrdinalIgnoreCase) || !relationship.Contains("External", StringComparison.OrdinalIgnoreCase)) continue;
+            var at = relationship.IndexOf("Target=\"", StringComparison.OrdinalIgnoreCase);
+            if (at < 0) continue;
+            var target = relationship[(at + 8)..].TrimStart();
+            if (target.StartsWith("http:", StringComparison.OrdinalIgnoreCase) || target.StartsWith("https:", StringComparison.OrdinalIgnoreCase)
+                || target.StartsWith("ftp:", StringComparison.OrdinalIgnoreCase) || target.StartsWith("\\\\", StringComparison.Ordinal)
+                || target.StartsWith("file://", StringComparison.OrdinalIgnoreCase) && !target.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     private static bool IsMacro(string name) =>

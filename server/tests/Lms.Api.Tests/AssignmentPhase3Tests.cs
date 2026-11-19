@@ -127,8 +127,10 @@ public sealed class AssignmentPhase3Tests : AssessmentTestBase
         Assert.Equal(HttpStatusCode.Forbidden, (await StudentA.PutAsJsonAsync($"{Base}/{id}/students/{Lia}/extension", new { dueAt = due.AddDays(2) })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await As(OtherTeacher, "instructor").PutAsJsonAsync($"{Base}/{id}/students/{Lia}/extension", new { dueAt = due.AddDays(2) })).StatusCode);
 
-        var late = await AssignmentAsync(new { dueAt = due, allowLate = true });
+        var late = await AssignmentAsync(new { dueAt = due, allowLate = true, closeAt = due.AddDays(1) });
         Assert.Contains("after this student's due date", await Refused(await Extend(late, Lia, new { dueAt = due.AddDays(2), closeAt = due.AddDays(2) }), HttpStatusCode.BadRequest));
+        var openEnded = await AssignmentAsync(new { dueAt = due, allowLate = true });
+        Assert.Contains("no last day, so this student needs none", await Refused(await Extend(openEnded, Lia, new { dueAt = due.AddDays(2), closeAt = due.AddDays(3) }), HttpStatusCode.BadRequest));
         var undated = await AssignmentAsync();
         Assert.Contains("no due date to extend", await Refused(await Extend(undated, Lia, new { dueAt = due.AddDays(2) }), HttpStatusCode.Conflict));
         var (exam, _) = await ExamAsync();
@@ -340,7 +342,7 @@ public sealed class AssignmentPhase3Tests : AssessmentTestBase
         // Locked: a new title only; the assignment keeps it; a copy can change.
         Assert.Contains("Copy it to change its criteria", await Refused(await Instructor.PutAsJsonAsync($"{Rubrics}/{rubricId}", LabReport()), HttpStatusCode.Conflict));
         Assert.Equal("Lab report (final)", (await Json(await Instructor.PutAsJsonAsync($"{Rubrics}/{rubricId}", new { title = "Lab report (final)" }))).GetProperty("title").GetString());
-        Assert.Contains("can't be changed or removed", await Refused(await Instructor.PatchAsJsonAsync($"{Base}/{id}", new { clearRubric = true }), HttpStatusCode.BadRequest));
+        Assert.Contains("can't be added, changed, or removed", await Refused(await Instructor.PatchAsJsonAsync($"{Base}/{id}", new { clearRubric = true }), HttpStatusCode.BadRequest));
         var copy = await Json(await Instructor.PostAsync($"{Rubrics}/{rubricId}/copy", null));
         Assert.Equal(("Lab report (final) (copy)", false, 8m), (copy.GetProperty("title").GetString(), copy.GetProperty("locked").GetBoolean(), copy.GetProperty("totalPoints").GetDecimal()));
         Assert.Equal(HttpStatusCode.NoContent, (await Instructor.DeleteAsync($"{Rubrics}/{copy.GetProperty("id").GetInt64()}")).StatusCode);
@@ -351,6 +353,29 @@ public sealed class AssignmentPhase3Tests : AssessmentTestBase
         Factory.Time.Now = due.AddMinutes(1);
         var notHandedIn = await Json(await Instructor.PutAsJsonAsync($"{Base}/{id}/students/{Max}/grade", new { points = 0 }));
         Assert.Equal(0m, (await Json(await Grade(id, notHandedIn.GetProperty("id").GetInt64(), new { points = 2 }))).GetProperty("rawScore").GetDecimal() - 2);
+    }
+
+    [Fact]
+    public async Task A_rubric_cannot_be_added_or_resized_under_grades_already_given()
+    {
+        var small = (await RubricAsync()).GetProperty("id").GetInt64();   // worth 15
+        var id = await AssignmentAsync(new { maxPoints = 100 });
+        var submission = await HandInAsync(StudentA, id);
+        await Json(await Grade(id, submission, new { points = 90 }));
+        // Attaching it would make the 90 a score out of 15.
+        Assert.Contains("already been graded", await Refused(await Instructor.PatchAsJsonAsync($"{Base}/{id}", new { rubricId = small }), HttpStatusCode.BadRequest));
+        Assert.Equal(100m, (await Json(await Instructor.GetAsync($"{Base}/{id}"))).GetProperty("maxPoints").GetDecimal());
+
+        // A rubric in use by an assignment that has only a plain "not handed in" grade is not locked, but its total can't change either.
+        var due = Now.AddHours(1);
+        var other = await AssignmentAsync(new { title = "With rubric", rubricId = small, dueAt = due });
+        Factory.Time.Now = due.AddMinutes(1);
+        await Json(await Instructor.PutAsJsonAsync($"{Base}/{other}/students/{Max}/grade", new { points = 3 }));
+        Assert.False((await Json(await Instructor.GetAsync($"{Rubrics}/{small}"))).GetProperty("locked").GetBoolean());
+        Assert.Contains("has grades", await Refused(await Instructor.PutAsJsonAsync($"{Rubrics}/{small}", new { criteria = new object[] { new { title = "Only", levels = new object[] { new { title = "A", points = 2 }, new { title = "B", points = 0 } } } } }), HttpStatusCode.Conflict));
+        Assert.Equal(15m, (await Json(await Instructor.GetAsync($"{Base}/{other}"))).GetProperty("maxPoints").GetDecimal());
+        // Its title can still change.
+        await Json(await Instructor.PutAsJsonAsync($"{Rubrics}/{small}", new { title = "Lab report (2026)" }));
     }
 
     [Fact]
@@ -446,6 +471,21 @@ public sealed class AssignmentPhase3Tests : AssessmentTestBase
         Assert.Equal(HttpStatusCode.NotFound, (await As(OtherTeacher, "instructor").GetAsync($"{Base}/{id}/submissions.zip")).StatusCode);
         var (exam, _) = await ExamAsync();
         Assert.Contains("Only an assignment", await Refused(await Instructor.GetAsync($"{Base}/{exam}/submissions.zip"), HttpStatusCode.Conflict));
+    }
+
+    [Fact]
+    public async Task Students_with_the_same_long_name_get_their_own_folders_in_the_zip()
+    {
+        var id = await AssignmentAsync();
+        var name = new string('n', 100);
+        await Factory.WithDbAsync(db => db.IsmsClassStudents.ExecuteUpdateAsync(s => s.SetProperty(x => x.FirstName, name).SetProperty(x => x.LastName, name)));
+        await HandInAsync(StudentA, id, "Lia's");
+        await HandInAsync(StudentB, id, "Max's");
+        using var zip = new ZipArchive(await (await Instructor.GetAsync($"{Base}/{id}/submissions.zip")).Content.ReadAsStreamAsync());
+        var folders = zip.Entries.Select(e => e.FullName.Split('/')[0]).ToList();
+        Assert.Equal(2, folders.Distinct().Count());
+        Assert.Contains(folders, f => f.EndsWith("(STU-1)"));
+        Assert.Contains(folders, f => f.EndsWith("(STU-2)"));
     }
 
     [Fact]

@@ -41,18 +41,22 @@ public sealed record TurnInStatus(string State, bool CanTurnIn, string? Reason, 
 
 /// <summary>
 /// The dates that apply to one student for one assignment (D-062): the class's, or their own from
-/// a <see cref="CourseworkException"/>. With their own due date and no last day of their own, the
-/// last day is the later of the class's last day and their due date, so an extension never ends
-/// before it starts.
+/// a <see cref="CourseworkException"/>. <b>An exception gives a student more time, never less:</b>
+/// their due date applies only while it is after the class's (the class's may have been moved
+/// past it since), and their last day is never before the class's last day or their own due date.
+/// When the class accepts late work with no last day, neither has the student one.
 /// </summary>
 public readonly record struct StudentDates(DateTime? DueAt, DateTime? CloseAt, bool Extended, bool Excused)
 {
     public static StudentDates For(CourseworkRow cw, CourseworkException? exception)
     {
-        if (exception?.DueAt is not { } due) return new(cw.DueAt, cw.CloseAt, false, exception?.Excused == true);
-        var close = exception.CloseAt ?? (cw.CloseAt is { } last ? (last > due ? last : due) : (DateTime?)null);
-        return new(due, close, true, exception.Excused);
+        var excused = exception?.Excused == true;
+        if (cw.DueAt is not { } classDue || exception?.DueAt is not { } own || own <= classDue) return new(cw.DueAt, cw.CloseAt, false, excused);
+        DateTime? close = cw.CloseAt is { } classClose ? Later(Later(exception.CloseAt ?? own, classClose), own) : null;
+        return new(own, close, true, excused);
     }
+
+    private static DateTime Later(DateTime a, DateTime b) => a > b ? a : b;
 
     /// <summary>When this student stops handing in for good: their last day for late work, otherwise their due date.</summary>
     public DateTime? LastDay => CloseAt ?? DueAt;

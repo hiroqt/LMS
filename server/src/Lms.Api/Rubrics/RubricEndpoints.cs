@@ -86,6 +86,9 @@ public static class RubricEndpoints
             if (rubric is null) return ContentEndpoints.NotFound("Rubric");
             var locked = await IsLockedAsync(db, id, ct);
             if (locked && input.Criteria is not null) return Conflict(LockedMessage);
+            // Not locked, but an assignment using it may hold plain-point grades; a new total would rescale them.
+            if (input.Criteria is not null && await db.Grades.AnyAsync(g => db.Submissions.Any(s => s.Id == g.SubmissionId && db.Coursework.Any(c => c.Id == s.CourseworkId && c.RubricId == id)), ct))
+                return Conflict("An assignment that uses this rubric has grades. Copy the rubric to change its criteria.");
 
             var errors = new Errors();
             if (input.Title is not null) rubric.Title = errors.Required("title", input.Title, TitleMax, "a title") ?? rubric.Title;
@@ -242,9 +245,13 @@ public static class RubricEndpoints
         return rubric is null ? 0 : (await ToDtosAsync(db, [rubric], ct))[0].TotalPoints;
     }
 
-    /// <summary>Whether any work of the assignment was graded with a rubric: its rubric can then no longer change.</summary>
-    internal static Task<bool> GradedWithRubricAsync(LmsDbContext db, long courseworkId, CancellationToken ct) =>
-        db.GradeRubricScores.AnyAsync(score => db.Grades.Any(g => g.Id == score.GradeId && db.Submissions.Any(s => s.Id == g.SubmissionId && s.CourseworkId == courseworkId)), ct);
+    /// <summary>
+    /// Whether the assignment has any grade, with a rubric or as plain points ("not handed in"
+    /// grades too). Its rubric can then no longer change: the rubric sets what the assignment is
+    /// worth, and a grade of 90 must not become 90 out of 10.
+    /// </summary>
+    internal static Task<bool> HasGradesAsync(LmsDbContext db, long courseworkId, CancellationToken ct) =>
+        db.Grades.AnyAsync(g => db.Submissions.Any(s => s.Id == g.SubmissionId && s.CourseworkId == courseworkId), ct);
 
     /// <summary>
     /// Reads the levels an instructor chose (criterion id to level id) into score rows, adding a

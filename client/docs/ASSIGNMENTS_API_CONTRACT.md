@@ -83,7 +83,8 @@ File types (the server decides the type from the file's bytes, and the name must
 | `text` | `.txt` | `text/plain; charset=utf-8` |
 
 Each file is at most 25 MB (26,214,400 bytes). The old Office formats (`.doc`, `.xls`, `.ppt`),
-macro-enabled files, ZIP and HEIC are refused (D-058).
+macro-enabled files, a document that attaches its template from the web or a network share, ZIP
+and HEIC are refused (D-058). Invisible format characters are dropped from file names.
 
 ## §6 Submissions carry a link and files (Phase 2)
 
@@ -139,6 +140,11 @@ only (404 for an exam). The student reads their draft from `my-submissions` (the
   per minute per student (429, `Retry-After: 60`). **A refused upload leaves nothing behind:** no
   draft is started, no row, no bytes (L-078). The answer to every 422 is one sentence for the
   student in `errors.file[0]`.
+- **Work turned in a moment ago stays as it was.** A save, an upload, or a file removal that
+  arrives after the draft was turned in (an upload can be scanning for a while) is a 409 ("This
+  work was turned in a moment ago…"; a removal is a 404) and changes nothing. Any two changes of
+  the same work that cross (a grade and "take back", two turn-ins) end the same way: the later one
+  is a 409 and does nothing (L-090).
 - **Turn-in** needs the usual verdict (409 with the reason's sentence), at least one thing the
   assignment takes (400 on `work`), nothing it doesn't take (400 on `work`, e.g. after the
   instructor changed the settings), and `honorStatement: true` when asked (400 on
@@ -204,7 +210,7 @@ list (404 otherwise).
 
 | Route (under `…/coursework/{id}/students/{studentId}`) | Does |
 |---|---|
-| `PUT …/extension` | `{ "dueAt": "…", "closeAt": "…" }`. `dueAt` is required and must be after the assignment's due date (409 when the assignment has none). `closeAt` is optional, needs `allowLate`, and must be after this `dueAt`. Answers the `ExceptionDto`. |
+| `PUT …/extension` | `{ "dueAt": "…", "closeAt": "…" }`. `dueAt` is required and must be after the assignment's due date (409 when the assignment has none). `closeAt` is optional, needs `allowLate` and an assignment that has a last day, and must be after this `dueAt`. Answers the `ExceptionDto`. |
 | `DELETE …/extension` | Back to the class's dates. 204. |
 | `PUT …/excuse` | The student is excused. Answers the `ExceptionDto`. |
 | `DELETE …/excuse` | No longer excused. 204. |
@@ -213,9 +219,11 @@ list (404 otherwise).
 { "studentId": "STU-1", "dueAt": "2026-11-24T07:59:00Z", "closeAt": null, "excused": false }
 ```
 
-- **Own dates.** The student's due date is `dueAt`; their last day for late work is `closeAt`,
-  or, when that is null and the assignment has a last day, the later of the assignment's last day
-  and the student's due date. `late`, `daysLate`, the turn-in verdict, taking work back, and the
+- **Own dates give more time, never less.** The student's due date is `dueAt` while it is after
+  the assignment's (if the assignment's due date is later moved past it, the assignment's
+  applies again and `extended` is false). Their last day for late work is the latest of their
+  `closeAt`, the assignment's last day, and their own due date; when the assignment accepts late
+  work with no last day, the student has none either. `late`, `daysLate`, the turn-in verdict, taking work back, and the
   moment a "not handed in" grade is allowed all use the student's own dates.
 - **Excused.** `turnIn.state` is `excused` and `turnIn.reason` is `excused`: nothing can be handed
   in ("Your instructor excused you from this assignment."). An excused student is not counted in
@@ -257,8 +265,10 @@ instructor only (students read an assignment's rubric through the last route).
 - **Locked** once any grade has used it. `usedBy` is how many assignments use it.
 - **On an assignment:** `rubricId` (a rubric of the same class; `clearRubric: true` removes it;
   assignments only). The assignment is then worth the rubric's `totalPoints`, and a sent
-  `maxPoints` is ignored. Changing or removing the rubric after work was graded with it is a 409.
-  `CourseworkDto` gains `rubricId`.
+  `maxPoints` is ignored. Once the assignment has any grade (with a rubric or plain points),
+  adding, changing, or removing its rubric is a 400 on `rubricId`, and changing the criteria of a
+  rubric it uses is a 409: a grade of 90 must not become 90 out of 10. `CourseworkDto` gains
+  `rubricId`.
 - **Grading with a rubric:** `PUT …/submissions/{id}/grade` takes
   `"rubric": { "<criterionId>": <levelId> }` with a level for every criterion (400 on
   `rubric[<criterionId>]` otherwise); the points are the sum, and a sent `points` is ignored. A
