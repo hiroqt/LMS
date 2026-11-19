@@ -185,7 +185,9 @@
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
 | `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
+| `src/features/student/components/work/AssignmentWork.tsx` | `AssignmentWork` |
 | `src/features/student/components/work/DraftEditor.tsx` | `DraftEditor` |
+| `src/features/student/components/work/GradeSummary.tsx` | `GradeSummary` |
 | `src/features/student/components/work/TurnInDialog.tsx` | `TurnInDialog` |
 | `src/features/student/components/work/UploadRow.tsx` | `UploadRow` |
 | `src/features/student/components/work/WorkContents.tsx` | `WorkContents` |
