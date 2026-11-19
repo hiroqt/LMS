@@ -137,6 +137,9 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
   const [presetNote, setPresetNote] = useState("");
   const { dirty, touch, begin } = useEditRevision();
   const readOnly = mode === "closed";
+  // Publishing leaves the page when it succeeds, so nothing can be changed while it is on its way:
+  // a change made then would be neither published nor asked about.
+  const locked = readOnly || saving === "publish";
   useUnsavedChanges(dirty);
 
   // One part at a time (D-058), each at its own URL (`?tab=`); the tab shows at once and the URL follows (L-028).
@@ -235,10 +238,10 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
     }
     if (mode === "published") {
       setStatus(`Changes saved at ${time()}.`);
-      if (action !== "preview") toast.show({ title: "Changes saved", description: form.title.trim(), tone: "success" });
+      toast.show({ title: "Changes saved", description: form.title.trim(), tone: "success" });
     } else {
       setStatus(`Draft saved at ${time()}.`);
-      if (action !== "preview") toast.show({ title: "Draft saved", description: "Students can’t see it until you publish.", tone: "success" });
+      toast.show({ title: "Draft saved", description: "Students can’t see it until you publish.", tone: "success" });
     }
     return true;
   };
@@ -291,13 +294,13 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
                 );
               })}
             </TabsList>
-            <Panel tab="details" current={tab} readOnly={readOnly} onNext={() => openTab("hand-in")}>
+            <Panel tab="details" current={tab} readOnly={locked} onNext={() => openTab("hand-in")}>
               <DetailsTab form={form} errors={errors} onChange={change} modules={modules} />
             </Panel>
-            <Panel tab="hand-in" current={tab} readOnly={readOnly} onNext={() => openTab("dates")}>
+            <Panel tab="hand-in" current={tab} readOnly={locked} onNext={() => openTab("dates")}>
               <HandInTab form={form} errors={errors} onChange={change} />
             </Panel>
-            <Panel tab="dates" current={tab} readOnly={readOnly}>
+            <Panel tab="dates" current={tab} readOnly={locked}>
               <DatesTab form={form} errors={errors} onChange={change} />
             </Panel>
           </Tabs>

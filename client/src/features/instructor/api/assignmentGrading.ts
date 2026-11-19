@@ -113,6 +113,20 @@ export function nextToGrade(rows: StudentRow[], currentId: string | undefined): 
   return ordered.find((row) => row.status === "needs-grading" && row.studentId !== currentId);
 }
 
+/**
+ * "Save and next" stays in the list the instructor chose: the next student needing a grade among
+ * those the filter shows, and only when none is left there, the next one in the whole class.
+ */
+export function nextToGradeIn(rows: StudentRow[], filter: GradingFilter, currentId: string | undefined): StudentRow | undefined {
+  const shown = rows.filter((row) => matchesFilter(row, filter) || row.studentId === currentId);
+  return nextToGrade(shown, currentId) ?? nextToGrade(rows, currentId);
+}
+
+/** After a dialog whose button is gone (the work was returned, nobody is missing any more): focus goes to the student's work, or the page heading. */
+export function focusStudentWork(): void {
+  (document.getElementById("student-work-title") ?? document.querySelector<HTMLElement>("main h1"))?.focus();
+}
+
 /** Graded and not returned yet: what "Return all graded" returns. */
 export const returnable = (rows: StudentRow[]) => rows.filter((row) => row.status === "graded");
 

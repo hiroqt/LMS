@@ -11,7 +11,7 @@ import { Skeleton, SkeletonGroup } from "../../../shared/ui/Skeleton";
 import {
   filterCounts,
   isGradingFilter,
-  nextToGrade,
+  nextToGradeIn,
   notHandedInRefusal,
   returnable,
   studentRows,
@@ -110,7 +110,7 @@ export default function AssignmentGradingPage() {
             row={selected}
             viewer={viewer}
             refusal={refusal}
-            next={nextToGrade(rows, selected.studentId)}
+            next={nextToGradeIn(rows, filter, selected.studentId)}
             onNext={(id) => { setArrival({ studentId: id, how: "next" }); go({ filter, student: id }); }}
             arrival={arrival?.studentId === selected.studentId ? arrival.how : undefined}
             onReturn={() => setReturning({ name: selected.name, studentIds: [selected.studentId], count: 1 })}

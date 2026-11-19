@@ -5,6 +5,7 @@ import {
   filterCounts,
   matchesFilter,
   nextToGrade,
+  nextToGradeIn,
   notHandedInRefusal,
   returnable,
   rowStatus,
@@ -80,6 +81,25 @@ describe("nextToGrade", () => {
 
   it("is nothing when no one else needs grading", () => {
     expect(nextToGrade(rows.filter((row) => row.studentId !== "s5"), "s0")).toBeUndefined();
+  });
+});
+
+describe("nextToGradeIn", () => {
+  // Needing a grade: Mia Bell (s5, on time) and Alex Rivera (s0, late), plus a second late student.
+  const rows = studentRows({ ...list, items: [...list.items, version({ id: 7, studentId: "s6", studentName: "Zed Young", status: "submitted", late: true })] });
+
+  it("stays among the students the filter shows", () => {
+    // In "Late", after Alex comes Zed, not Mia, who is next in the whole class.
+    expect(nextToGrade(rows, "s0")?.studentId).toBe("s6");
+    expect(nextToGradeIn(rows, "late", "s6")?.studentId).toBe("s0");
+    expect(nextToGrade(rows, "s6")?.studentId).toBe("s5");
+    expect(nextToGradeIn(rows, "all", "s6")?.studentId).toBe("s5");
+  });
+
+  it("moves on to the rest of the class only when nobody in the filter is left", () => {
+    const oneLate = studentRows(list);
+    expect(nextToGradeIn(oneLate, "late", "s0")?.studentId).toBe("s5");
+    expect(nextToGradeIn(oneLate.filter((row) => row.studentId !== "s5"), "late", "s0")).toBeUndefined();
   });
 });
 

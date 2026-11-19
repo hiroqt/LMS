@@ -4,7 +4,7 @@ import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog
 import { Field, Input } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { useInstructorActions } from "../../api/actions";
-import { studentsLabel, useRefreshAssignmentGrading } from "../../api/assignmentGrading";
+import { focusStudentWork, studentsLabel, useRefreshAssignmentGrading } from "../../api/assignmentGrading";
 import type { Activity } from "../../api/types";
 
 /**
@@ -38,6 +38,8 @@ export function GradeEveryoneMissing({ classId, activity, missing, refusal }: { 
       return;
     }
     setOpen(false);
+    // Nobody is missing any more, so this section and its button are gone; focus goes to the work shown (L-015).
+    requestAnimationFrame(focusStudentWork);
     toast.show({ title: "Grades saved", description: `${value} / ${activity.maxScore} for ${studentsLabel(result.graded)} who didn't hand in`, tone: "success" });
   };
 

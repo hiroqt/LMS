@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { studentsLabel, useReturnGrades } from "../../api/assignmentGrading";
+import { focusStudentWork, studentsLabel, useReturnGrades } from "../../api/assignmentGrading";
 
 export interface ReturnRequest {
   /** One student's name, or null for "Return all graded". */
@@ -17,6 +17,8 @@ export function ReturnDialog({ classId, assignmentId, title, request, onClose }:
   const toast = useToast();
   const giveBack = useReturnGrades(classId, assignmentId);
   const [saving, setSaving] = useState(false);
+  // After a Return its button is gone or disabled, so focus can't go back to it (L-015).
+  const returned = useRef(false);
 
   const confirm = async () => {
     if (!request) return;
@@ -27,6 +29,7 @@ export function ReturnDialog({ classId, assignmentId, title, request, onClose }:
       toast.show({ title: "Could not return the work", description: result.message, tone: "danger" });
       return;
     }
+    returned.current = true;
     onClose();
     toast.show({ title: `Returned to ${studentsLabel(result.returned)}`, description: result.returned ? "They can now see their grade and feedback." : "Nothing was graded and waiting to be returned.", tone: "success" });
   };
@@ -37,6 +40,12 @@ export function ReturnDialog({ classId, assignmentId, title, request, onClose }:
         <DialogContent
           title={request.name ? `Return ${request.name}'s work?` : "Return all graded work?"}
           description={`${studentsLabel(request.count)} will see their grade and feedback for “${title}”.`}
+          onCloseAutoFocus={(event) => {
+            if (!returned.current) return;
+            returned.current = false;
+            event.preventDefault();
+            requestAnimationFrame(focusStudentWork);
+          }}
           footer={
             <>
               <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>

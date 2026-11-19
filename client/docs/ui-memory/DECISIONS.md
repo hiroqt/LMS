@@ -808,3 +808,8 @@ Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Instructor"; shapes: cont
 - **Journey change:** `seedHandedInAssignment` and the `close-activities` setup hand in a real
   file through the draft API, since a typed `fileName` is refused once 2C lands. Spec:
   `e2e/assignment-grading.spec.ts`.
+- **Save and next stays in the chosen filter** (added after review): the next student needing a
+  grade among those the filter shows, and only when none is left there, the next in the class
+  (`nextToGradeIn`). After Return, or after everyone missing is graded, focus goes to the
+  student's work, because the button that opened the dialog is gone (L-015).
+

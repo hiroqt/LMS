@@ -648,3 +648,15 @@ files are rows of their own, so routes that add or remove one first lock the dra
 `AssignmentFiles.LockDraftAsync` inside their transaction; that also makes two uploads at once
 count each other on MySQL, where neither would see the other's uncommitted row. SQLite runs one
 writer at a time, so tests can't show the MySQL case: `FakeScanner.DuringScan` stands in for it.
+
+### L-091 · Until a draft exists, its first save and first upload must not overlap
+`2026-11-19` · hiro (assignments) · scope: student · confidence: high
+Supersedes the claim in L-086 that waiting for the queued save is enough. Either request creates
+the draft, and the server refuses the second one at the same moment (409). An independent review
+found the other direction: a save that starts *after* the first upload began. `DraftEditor` now
+holds a save back while the first upload is on its way (`firstUpload`), and only then; once the
+draft exists, saves and uploads run freely. The same review found that Cancel did nothing on a
+file still waiting its turn (there is no request to abort: take it off the list), that a cancel
+can land after the server stored the file (read the draft again), and that text typed while a
+turn-in is on its way was dropped (the fields are read-only and the dialog stays until it
+answers). Tests: `DraftEditor.test.tsx`, `useUploadQueue.test.tsx`.
