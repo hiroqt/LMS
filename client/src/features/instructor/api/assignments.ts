@@ -299,6 +299,9 @@ export function handInSettings(form: AssignmentForm): HandInSettings {
     closeAt: closeAtApplies(form) ? (instant(form.closeAt) ?? null) : null,
     allowResubmission: form.allowResubmission,
     gradeRelease: form.gradeRelease,
+    // The builder has no late-penalty fields yet (Phase 3).
+    latePenaltyPercentPerDay: 0,
+    latePenaltyMaxPercent: 100,
   };
 }
 

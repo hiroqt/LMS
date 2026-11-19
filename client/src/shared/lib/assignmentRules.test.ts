@@ -1,10 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { handInRules, type HandInSettings } from "./assignmentRules";
+import { handInRules, latePenaltyRule, type HandInSettings } from "./assignmentRules";
 
 const base: HandInSettings = {
   submissionKinds: ["text", "file"], allowedFileTypes: ["pdf", "word", "powerpoint", "excel", "image", "text"], maxFiles: 5, honorStatement: false,
-  dueAt: null, allowLate: false, closeAt: null, allowResubmission: false, gradeRelease: "immediate",
+  dueAt: null, allowLate: false, closeAt: null, allowResubmission: false, gradeRelease: "immediate", latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100,
 };
+
+describe("latePenaltyRule", () => {
+  const late = { dueAt: "2026-11-20T07:59:00Z", allowLate: true, latePenaltyPercentPerDay: 10, latePenaltyMaxPercent: 50 };
+
+  it("words the penalty per day and its cap", () => {
+    expect(latePenaltyRule(late)).toBe("Late work loses 10% of its score for each day late, up to 50%.");
+    expect(latePenaltyRule({ ...late, latePenaltyMaxPercent: 100 })).toBe("Late work loses 10% of its score for each day late.");
+    // A cap no higher than one day's penalty adds nothing to say.
+    expect(latePenaltyRule({ ...late, latePenaltyMaxPercent: 10 })).toBe("Late work loses 10% of its score for each day late.");
+  });
+
+  it("says nothing without a penalty, a due date, or late work", () => {
+    expect(latePenaltyRule({ ...late, latePenaltyPercentPerDay: 0 })).toBeNull();
+    expect(latePenaltyRule({ ...late, dueAt: null })).toBeNull();
+    expect(latePenaltyRule({ ...late, allowLate: false })).toBeNull();
+  });
+
+  it("is one of the rules students read, after the late-work rule", () => {
+    const rules = handInRules({ ...base, ...late });
+    expect(rules[rules.indexOf("Late work is accepted and is marked late.") + 1]).toBe("Late work loses 10% of its score for each day late, up to 50%.");
+  });
+});
 
 describe("handInRules", () => {
   it("words the defaults", () => {

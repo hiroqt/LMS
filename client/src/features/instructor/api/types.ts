@@ -1,4 +1,4 @@
-import type { FileTypeKey, SubmissionKind, SubmittedFile } from "../../../shared/api/overview";
+import type { FileTypeKey, RubricScore, SubmissionKind, SubmittedFile } from "../../../shared/api/overview";
 
 /** The shared role store (tmcc-lms-roles-v1) as the Instructor UI uses it. */
 
@@ -94,6 +94,11 @@ export interface Activity {
   allowedFileTypes?: FileTypeKey[];
   maxFiles?: number;
   honorStatement?: boolean;
+  /** Percent off the earned score per calendar day late (0 is none) and its cap (D-062, contract §10). */
+  latePenaltyPercentPerDay?: number;
+  latePenaltyMaxPercent?: number;
+  /** The rubric it is graded with, when it has one (contract §12). */
+  rubricId?: number;
   /** Saved from the assignment builder without publishing; students cannot see it (D-058). */
   draft?: boolean;
   status?: string;
@@ -149,8 +154,15 @@ export interface ActivitySubmission {
   files?: SubmittedFile[];
   /** `submitted`, `graded`, or `returned` (D-054). Instructors never receive drafts or versions taken back. */
   status: string;
-  /** Handed in after the due date. */
+  /** Handed in after the due date (the student's own, when they have one). */
   late?: boolean;
+  /** Calendar days late, the percent the penalty takes off, whether it is waived, and the points before it (contract §10). `grade` is the score after the penalty. */
+  daysLate?: number;
+  penaltyPercent?: number;
+  penaltyWaived?: boolean;
+  rawScore?: number | null;
+  /** The level chosen for each criterion, when graded with a rubric (contract §12). */
+  rubricScores?: RubricScore[];
   submittedAt?: string;
   gradedAt?: string;
   grade: number | null;

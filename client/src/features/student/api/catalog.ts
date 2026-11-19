@@ -41,6 +41,8 @@ function handInSettings(work: Coursework): HandInSettings {
     closeAt: work.closeAt ?? null,
     allowResubmission: work.allowResubmission,
     gradeRelease: work.gradeRelease ?? "immediate",
+    latePenaltyPercentPerDay: work.latePenaltyPercentPerDay ?? 0,
+    latePenaltyMaxPercent: work.latePenaltyMaxPercent ?? 100,
   };
 }
 

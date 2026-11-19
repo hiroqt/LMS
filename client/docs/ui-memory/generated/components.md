@@ -56,6 +56,7 @@
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
+| `src/shared/components/assignment/RubricView.tsx` | `RubricView` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
@@ -138,6 +139,8 @@
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
 | `src/features/instructor/pages/QuestionSetsPage.tsx` | `QuestionSetsPage` |
+| `src/features/instructor/pages/RubricPage.tsx` | `RubricPage` |
+| `src/features/instructor/pages/RubricsPage.tsx` | `RubricsPage` |
 | `src/features/instructor/pages/assessment/DetailsSection.tsx` | `DetailsSection` |
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |

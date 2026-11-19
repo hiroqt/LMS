@@ -85,6 +85,12 @@ export interface Coursework {
   maxFiles: number;
   /** Assignments: the student confirms "This is my own work" to turn in. */
   honorStatement: boolean;
+  /** Assignments: percent off the earned score per calendar day late; 0 is no penalty (D-062, contract §10). */
+  latePenaltyPercentPerDay: number;
+  /** Assignments: the most a late penalty takes off, 1 to 100. */
+  latePenaltyMaxPercent: number;
+  /** Assignments: the rubric it is graded with, when it has one (contract §12). */
+  rubricId: number | null;
   maxAttempts: number | null;
   timeLimitMinutes: number | null;
   questionnaireId: number | null;
@@ -101,14 +107,21 @@ export type FileTypeKey = "pdf" | "word" | "powerpoint" | "excel" | "image" | "t
 
 /** Whether a student can turn an assignment in now, and why not (D-054, contract §2). */
 export interface TurnIn {
-  state: "assigned" | "missing" | "draft" | "turned_in" | "graded" | "returned" | "not_handed_in";
+  /** `excused`: the instructor excused the student; nothing to hand in, and it doesn't count (D-062). */
+  state: "assigned" | "missing" | "draft" | "turned_in" | "graded" | "returned" | "not_handed_in" | "excused";
   canTurnIn: boolean;
   /** Null when `canTurnIn`; otherwise the first rule that refuses. */
-  reason: "closed" | "not_handed_in" | "already_turned_in" | "past_close" | "past_due" | null;
+  reason: "closed" | "excused" | "not_handed_in" | "already_turned_in" | "past_close" | "past_due" | null;
   /** Turning in now would be late. */
   late: boolean;
   /** The latest turned-in work can be taken back now (D-058, contract §7). */
   canUnsubmit: boolean;
+  /** This student's due date: their own when the instructor gave them one, otherwise the assignment's (contract §11). */
+  dueAt: string | null;
+  /** This student's last day for late work. */
+  closeAt: string | null;
+  /** The dates are the student's own, later than the class's. */
+  extended: boolean;
 }
 
 /** Graded, whether or not it has been returned to the student yet (D-054). */
@@ -119,6 +132,12 @@ export const isGraded = (status: Submission["status"]) => status === "graded" ||
  * receives `withdrawn` rows; instructors never do.
  */
 export const isHandedIn = (status: Submission["status"]) => status !== "in_progress" && status !== "withdrawn";
+
+export interface RubricScore {
+  criterionId: number;
+  levelId: number;
+  points: number;
+}
 
 /** An uploaded file on a draft or a version (contract §6). */
 export interface SubmittedFile {
@@ -150,6 +169,16 @@ export interface Submission {
   link: string | null;
   /** Assignments: the uploaded files of this draft or version; empty for exams. */
   files: SubmittedFile[];
+  /** Calendar days late (Asia/Manila), counted from the student's own due date; 0 when on time (contract §10). */
+  daysLate: number;
+  /** The percent the late penalty takes off; 0 when none or waived. `score` is the score after it. */
+  penaltyPercent: number;
+  /** The instructor waived this student's late penalty. */
+  penaltyWaived: boolean;
+  /** The points the instructor gave, before the penalty; null with no grade or while the grade is held. */
+  rawScore: number | null;
+  /** The level chosen for each criterion, when graded with a rubric (contract §12); empty otherwise. */
+  rubricScores: RubricScore[];
   score: number | null;
   maxPoints: number;
   feedback: string | null;

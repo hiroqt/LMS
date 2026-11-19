@@ -17,6 +17,7 @@ export const WORK_STATES: Record<TurnIn["state"], { label: string; tone: BadgeTo
   graded: { label: "Graded", tone: "success" },
   returned: { label: "Returned", tone: "success" },
   not_handed_in: { label: "Not handed in", tone: "danger" },
+  excused: { label: "Excused", tone: "neutral" },
 };
 
 /** Badges for the work card: the state, and "Late" when the work turned in was late. */
@@ -29,6 +30,7 @@ export function workBadges(turnIn: TurnIn, current: Submission | undefined): Arr
 /** Why nothing can be handed in now. Past due and past the last day keep the page's earlier wording. */
 export const REFUSALS: Record<NonNullable<TurnIn["reason"]>, string> = {
   closed: "This assignment is closed. Your instructor is no longer accepting work.",
+  excused: "Your instructor excused you from this assignment. There is nothing to hand in, and it does not count toward your grade.",
   not_handed_in: "Your instructor recorded a grade without a submission, so nothing more can be handed in.",
   already_turned_in: "You have turned this in. This assignment takes one turn-in only.",
   past_due: "The due date has passed and late submissions are turned off.",

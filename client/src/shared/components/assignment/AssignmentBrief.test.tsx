@@ -6,7 +6,7 @@ import { AssignmentBrief } from "./AssignmentBrief";
 
 const settings: HandInSettings = {
   submissionKinds: ["text", "file"], allowedFileTypes: ["pdf"], maxFiles: 2, honorStatement: true,
-  dueAt: null, allowLate: false, closeAt: null, allowResubmission: true, gradeRelease: "returned",
+  dueAt: null, allowLate: false, closeAt: null, allowResubmission: true, gradeRelease: "returned", latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100,
 };
 
 describe("AssignmentBrief", () => {
