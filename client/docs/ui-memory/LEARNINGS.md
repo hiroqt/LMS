@@ -587,3 +587,20 @@ The ClamAV client is tested against a local listener that speaks `INSTREAM`
 `2026-11-19` · hiro (assignments) · scope: server · confidence: high
 `DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
 fails it. Name the property for what it holds (`StoredFile.ContentHash`).
+
+### L-087 · `late` is worked out from today's due date, and the two clocks differ
+`2026-11-19` · hiro (assignments, PR 2D) · scope: e2e, server · confidence: high
+The server computes a version's `late` when it is read (`submittedAt > dueAt`), so moving the due
+date changes it for work already handed in. In Demo the API's clock starts at `Lms:Demo:Now` when
+the process starts and keeps running, while each test's browser clock starts at that instant when
+the test starts, so they disagree by minutes. For on-time and late work in one spec, set `dueAt`
+just after an earlier turn-in's `submittedAt` (`assignment-grading` filters test); never compare
+the browser's "now" with a due date taken from the API's clock.
+
+### L-088 · Show a stored file from a blob typed by the client, never by the response
+`2026-11-19` · hiro (assignments, PR 2D) · scope: instructor · confidence: high
+The grading page's viewer re-wraps the fetched bytes as `new Blob([blob], { type })` with a type
+from an allowlist (PNG, JPEG, PDF) and reads `.txt` with `blob.text()` into a `<pre>`, so nothing
+is ever rendered as HTML. Object URLs are revoked when the file changes or the viewer unmounts
+(`useStoredFile`). The client sets no Content-Security-Policy today; one added later must allow
+`blob:` in `img-src` and `frame-src`, or the viewer goes blank.
