@@ -46,7 +46,8 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Q (types) | Every question type answered; section directions; spelling notice; typed answers autosave and survive reload; unanswered list on submit (D-040, D-043) | ✔ `quiz-types` | ✅ |
 | R (review modes) | Score only / which were right / correct answers after submit or due; Waiting for grading; keys only once no attempt is left (D-040, D-042) | ✔ `quiz-types` | ✅ |
 | MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
-| Activity | Submit an assignment (filename + comment) | ✔ `instructor-flow` E → I → F → J | ✅ |
+| Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
+| Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
 | Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
 | D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | ✅ |
 
@@ -84,6 +85,10 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | GRADE (types) | Answers beside the key for every type; points override for typed answers kept on re-score (D-043, D-042) | ✔ `grading-accuracy` | ✅ |
 | SPELL | Accept or reject near misses; count on the Classwork row | ✔ `grading-accuracy` | ✅ |
 | KEY | Item analysis flags a likely wrong key → Fix answer key → attempts re-scored, students see "score updated" | ✔ `grading-accuracy` | ✅ |
+| AGRADE | Classwork Grading → assignment grading page: filters with counts, `?filter=&student=` survive reload, versions, link, files in the viewer (PDF, photo, text), download, "Same file as another student" (D-061) | ✔ `assignment-grading` | ✅ |
+| AGRADE: save | Save and next in list order; out-of-range score on the field; grade without work after the last day, the server's sentence before it; Give 0 to everyone (D-061, D-036) | ✔ `assignment-grading` | ✅ |
+| RETURN | Held grades: student sees none until Return (one student, then Return all graded, each confirmed with the count) (D-061, D-054) | ✔ `assignment-grading` | ✅ |
+| REVIEW (files) | Submissions tab shows an assignment's files and link; Open the grading page (D-061) | ✔ `assignment-grading`, `instructor-new` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
 | MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |

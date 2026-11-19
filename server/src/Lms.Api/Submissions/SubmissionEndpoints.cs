@@ -123,22 +123,20 @@ public static class SubmissionEndpoints
 
             var errors = new Errors();
             var text = errors.Optional("text", input.Text, TextMax);
-            var fileName = errors.Optional("fileName", input.FileName, 255);
-            if (fileName?.IndexOfAny(['/', '\\']) >= 0) errors.Add("fileName", "Use a file name without a folder path.");
-            if (text is null && fileName is null) errors.Add("text", "Write something or attach a file.");
+            // A typed file name stood in for a file before uploads existed (D-055); now the file itself is added to the draft.
+            if (!string.IsNullOrWhiteSpace(input.FileName)) errors.Add("fileName", "A file name is no longer accepted. Add the file itself to your work, then turn it in.");
             // The hand-in settings apply to this older route too (contract §5).
             var kinds = SubmissionKind.Parse(cw.SubmissionKinds);
             if (text is not null && !kinds.Contains(SubmissionKind.Text)) errors.Add("text", DraftEndpoints.NoText);
-            if (fileName is not null && !kinds.Contains(SubmissionKind.File)) errors.Add("fileName", DraftEndpoints.NoFiles);
             if (cw.HonorStatement && input.HonorStatement != true) errors.Add("honorStatement", DraftEndpoints.ConfirmOwnWork);
             if (errors.Any) return errors.Result();
 
             // The student's draft becomes the turned-in work; otherwise a new version is added.
             var row = mine.FirstOrDefault(s => s.Status == SubmissionStatus.InProgress)
                 ?? new Submission { CourseworkId = cw.Id, StudentId = user.Id, AttemptNumber = NextAttempt(mine), StartedAt = now };
-            row.Text = text;
-            row.FileName = fileName;
+            if (text is not null) row.Text = text;
             // A draft may carry files and a link; they are handed in with it, so they are checked as the draft route checks them.
+            if (row.Id == 0 && text is null) { errors.Add("text", "Write your answer, or add files to your work and turn that in."); return errors.Result(); }
             if (row.Id != 0 && await DraftEndpoints.DraftProblemAsync(db, cw, row, ct) is { } problem)
             {
                 await db.Entry(row).ReloadAsync(ct);

@@ -1,4 +1,5 @@
 import { expectNoAxeViolations, expectReadableText } from "./a11y";
+import { pdfFile } from "./assignmentFixtures";
 import { expect, test, type Page, demoAssessment, demoMaterial } from "./fixtures";
 
 // The rebuilt Student UI (Phase 2): strict accessibility on every screen, and
@@ -145,10 +146,13 @@ test.describe("Rebuilt Student behavior", () => {
     await useNewStudentUi(page);
     await page.goto("/student/tasks");
     await page.getByRole("button", { name: /Pseudocode for a vending machine/ }).click();
-    await page.getByRole("button", { name: "Submit work" }).click();
-    await expect(page.getByText("Enter the filename of the work you are turning in.")).toBeVisible();
-    await page.getByRole("textbox", { name: /Attachment filename/ }).fill("vending.pdf");
-    await page.getByRole("button", { name: "Submit work" }).click();
+    // A real file is uploaded and turned in (D-060); there is nothing to turn in until work is added.
+    const work = page.getByRole("region", { name: "Your work" });
+    await expect(work.getByRole("button", { name: "Turn in", exact: true })).toBeDisabled();
+    await work.getByLabel("Choose files").setInputFiles(pdfFile("vending.pdf"));
+    await expect(work.getByRole("list", { name: "Files on your draft" })).toContainText("vending.pdf");
+    await work.getByRole("button", { name: "Turn in", exact: true }).click();
+    await page.getByRole("dialog", { name: "Turn in your work?" }).getByRole("button", { name: "Turn in" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Waiting for instructor review" })).toBeVisible();
 
     await page.goto("/instructor");

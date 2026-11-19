@@ -116,4 +116,22 @@ describe("autosave", () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith([typed(2, "late")]);
   });
+
+  it("saves an assignment draft as one key: only the latest text and link go out, and a failure keeps them", async () => {
+    const statuses: SaveStatus[] = [];
+    let fail = true;
+    const save = vi.fn((_changes: Array<{ text: string; link: string }>) => (fail ? Promise.reject(new Error("offline")) : Promise.resolve()));
+    const autosaver = createAutosaver({ save, keyOf: () => "draft", onStatus: (status) => statuses.push(status) });
+    autosaver.change({ text: "Fir", link: "" }, false);
+    autosaver.change({ text: "First draft", link: "https://example.com" }, false);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(save).toHaveBeenLastCalledWith([{ text: "First draft", link: "https://example.com" }]);
+    expect(statuses.at(-1)).toBe("retrying");
+    expect(autosaver.hasUnsaved()).toBe(true);
+    fail = false;
+    await vi.advanceTimersByTimeAsync(retryDelayMs(1));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith([{ text: "First draft", link: "https://example.com" }]);
+    expect(statuses.at(-1)).toBe("saved");
+  });
 });

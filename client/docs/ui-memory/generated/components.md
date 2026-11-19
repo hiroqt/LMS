@@ -55,6 +55,7 @@
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
+| `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
@@ -141,6 +142,14 @@
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
 | `src/features/instructor/pages/assessment/SummaryPanel.tsx` | `SummaryPanel` |
+| `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
+| `src/features/instructor/pages/assignmentGrading/GradeEveryoneMissing.tsx` | `GradeEveryoneMissing` |
+| `src/features/instructor/pages/assignmentGrading/GradePanel.tsx` | `GradeForm`, `NoWorkGradeForm` |
+| `src/features/instructor/pages/assignmentGrading/ReturnDialog.tsx` | `ReturnDialog` |
+| `src/features/instructor/pages/assignmentGrading/StatusBadge.tsx` | `StatusBadge`, `LateBadge` |
+| `src/features/instructor/pages/assignmentGrading/StudentList.tsx` | `StudentList` |
+| `src/features/instructor/pages/assignmentGrading/StudentWork.tsx` | `StudentWork` |
+| `src/features/instructor/pages/assignmentGrading/WorkFiles.tsx` | `WorkFiles` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
 | `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
@@ -167,6 +176,11 @@
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
 | `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
+| `src/features/student/components/work/DraftEditor.tsx` | `DraftEditor` |
+| `src/features/student/components/work/TurnInDialog.tsx` | `TurnInDialog` |
+| `src/features/student/components/work/UploadRow.tsx` | `UploadRow` |
+| `src/features/student/components/work/WorkContents.tsx` | `WorkContents` |
+| `src/features/student/components/work/YourWork.tsx` | `YourWork` |
 | `src/features/student/pages/AssessmentPage.tsx` | `AssessmentPage` |
 | `src/features/student/pages/CalendarPage.tsx` | `CalendarPage` |
 | `src/features/student/pages/ClassPage.tsx` | `ClassPage` |

@@ -1,4 +1,5 @@
 import type { TurnIn } from "../../../shared/api/overview";
+import type { HandInSettings } from "../../../shared/lib/assignmentRules";
 import type { AnswerReview, SpellingMode } from "../../../shared/components/quiz/types";
 
 /** Shapes of the Student workspace data, built from the LMS API overview (D-032). */
@@ -44,6 +45,8 @@ export interface Assessment {
   kind?: "activity";
   /** Assignments: the server's turn-in verdict (D-054). */
   turnIn?: TurnIn;
+  /** Assignments: how work is handed in (contract §1, §5), for the brief and the work card. */
+  handIn?: HandInSettings;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;
   /** The instructor closed it: no more hand-ins or attempts (D-036). */

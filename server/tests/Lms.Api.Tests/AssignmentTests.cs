@@ -67,8 +67,8 @@ public sealed class AssignmentTests : IDisposable
         return (await Json(await Instructor.PostAsJsonAsync(Base, body))).GetProperty("id").GetInt64();
     }
 
-    private Task<HttpResponseMessage> TurnIn(HttpClient client, long id, string fileName = "er.pdf") =>
-        client.PostAsJsonAsync($"{Base}/{id}/submissions", new { fileName });
+    private Task<HttpResponseMessage> TurnIn(HttpClient client, long id, string text = "See my ER diagram.") =>
+        client.PostAsJsonAsync($"{Base}/{id}/submissions", new { text });
 
     private async Task<JsonElement> TurnInStatusAsync(HttpClient client, long id) => (await Json(await client.GetAsync($"{Base}/{id}"))).GetProperty("turnIn");
 

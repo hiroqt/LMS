@@ -192,7 +192,7 @@ public sealed class SubmissionTests : IDisposable
 
         Assert.Equal(HttpStatusCode.Conflict, (await StudentA.PostAsync($"{Base}/{strictExam}/attempts", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await StudentA.PostAsJsonAsync($"{Base}/{strictAssignment}/submissions", new { text = "Here" })).StatusCode);
-        var late = await StudentA.PostAsJsonAsync($"{Base}/{lenient}/submissions", new { fileName = "erd.png" });
+        var late = await StudentA.PostAsJsonAsync($"{Base}/{lenient}/submissions", new { text = "My ER diagram" });
         Assert.Equal(HttpStatusCode.Created, late.StatusCode);
         Assert.True((await Json(late)).GetProperty("late").GetBoolean());
     }
@@ -202,8 +202,11 @@ public sealed class SubmissionTests : IDisposable
     {
         await SeedAsync();
         var once = await AssignmentAsync();
-        Assert.Equal(HttpStatusCode.BadRequest, (await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { fileName = "../x.png" })).StatusCode);
-        var first = await Json(await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { text = "My diagram", fileName = "erd.png" }));
+        // A typed file name is no longer work: the file itself is uploaded to the draft (D-055).
+        Assert.Equal(HttpStatusCode.BadRequest, (await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { fileName = "erd.png" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { text = "My diagram", fileName = "erd.png" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { })).StatusCode);
+        var first = await Json(await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { text = "My diagram" }));
         Assert.Equal(HttpStatusCode.Conflict, (await StudentA.PostAsJsonAsync($"{Base}/{once}/submissions", new { text = "Again" })).StatusCode);
 
         var sid = first.GetProperty("id").GetInt64();

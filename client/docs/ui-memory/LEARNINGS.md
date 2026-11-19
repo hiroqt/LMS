@@ -588,6 +588,42 @@ The ClamAV client is tested against a local listener that speaks `INSTREAM`
 `DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
 fails it. Name the property for what it holds (`StoredFile.ContentHash`).
 
+### L-084 · `getByText("Saved")` finds the autosave status twice
+`2026-11-19` · hiro (assignments) · scope: e2e · confidence: high
+`SaveStatusNote` shows the state in an `aria-hidden` span and announces it in an `sr-only`
+`role="status"`, so a text locator is a strict-mode error. Select the announcement instead:
+`getByRole("status").filter({ hasText: /^Saved$/ })` (`e2e/assignment-work.spec.ts`).
+
+### L-085 · A count-of-zero check on a renamed control passes forever
+`2026-11-19` · hiro (assignments) · scope: e2e · confidence: high
+`close-activities.spec.ts` asserts `getByRole("button", { name: /Submit work/ })` has count 0 on a
+closed assignment. The Your work card (D-060) has no "Submit work" at all, so that line can no
+longer fail. When a control is renamed, update absence checks to the new names ("Turn in",
+"Choose files") or pair them with a check that the page shows the control when it is allowed.
+
+### L-086 · Upload a draft's files one at a time
+`2026-11-19` · hiro (assignments) · scope: student · confidence: medium
+The first upload (or text save) creates the draft. Two requests at once can both try, and the
+server refuses the second ("Another draft was started at the same moment"). `useUploadQueue` sends
+one file at a time and flushes the autosave before each, so only one request can start the draft.
+
+### L-087 · `late` is worked out from today's due date, and the two clocks differ
+`2026-11-19` · hiro (assignments, PR 2D) · scope: e2e, server · confidence: high
+The server computes a version's `late` when it is read (`submittedAt > dueAt`), so moving the due
+date changes it for work already handed in. In Demo the API's clock starts at `Lms:Demo:Now` when
+the process starts and keeps running, while each test's browser clock starts at that instant when
+the test starts, so they disagree by minutes. For on-time and late work in one spec, set `dueAt`
+just after an earlier turn-in's `submittedAt` (`assignment-grading` filters test); never compare
+the browser's "now" with a due date taken from the API's clock.
+
+### L-088 · Show a stored file from a blob typed by the client, never by the response
+`2026-11-19` · hiro (assignments, PR 2D) · scope: instructor · confidence: high
+The grading page's viewer re-wraps the fetched bytes as `new Blob([blob], { type })` with a type
+from an allowlist (PNG, JPEG, PDF) and reads `.txt` with `blob.text()` into a `<pre>`, so nothing
+is ever rendered as HTML. Object URLs are revoked when the file changes or the viewer unmounts
+(`useStoredFile`). The client sets no Content-Security-Policy today; one added later must allow
+`blob:` in `img-src` and `frame-src`, or the viewer goes blank.
+
 ### L-090 · A check at the start of a request is stale by the time a slow request writes
 `2026-11-19` · hiro (assignments) · scope: server · confidence: high
 An independent review found that an upload still being scanned could add its file to a draft the

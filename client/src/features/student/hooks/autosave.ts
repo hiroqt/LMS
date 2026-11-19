@@ -1,10 +1,12 @@
 import type { AnswerInput } from "../../../shared/components/quiz/types";
 
 /**
- * Autosave for quiz answers, without React so it can be tested with fake timers.
+ * Autosave for quiz answers and assignment drafts, without React so it can be tested with fake
+ * timers. Each change has a key (a quiz question, or the one draft); only the latest value of a
+ * key is kept.
  *
  * - A choice saves at once; a typed answer saves after `delay` ms without typing.
- * - Only the latest value of each question is sent, and only one save is in
+ * - Only the latest value of each key is sent, and only one save is in
  *   flight at a time; changes made meanwhile go out in the next save.
  * - A failed save keeps its answers (unless newer ones replaced them) and is
  *   retried with a growing wait, while `shouldRetry` says a retry can help.
@@ -12,8 +14,10 @@ import type { AnswerInput } from "../../../shared/components/quiz/types";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "retrying" | "failed";
 
-export interface AutosaveOptions {
-  save: (answers: AnswerInput[]) => Promise<unknown>;
+export interface AutosaveOptions<T = AnswerInput> {
+  save: (changes: T[]) => Promise<unknown>;
+  /** What a change replaces; quiz answers are keyed by question. */
+  keyOf?: (change: T) => string | number;
   onStatus: (status: SaveStatus) => void;
   /** Called when a save fails for good (a retry cannot help, for example time is up). */
   onFailure?: (error: unknown) => void;
@@ -24,9 +28,9 @@ export interface AutosaveOptions {
   retryDelay?: (attempt: number) => number;
 }
 
-export interface Autosaver {
-  /** Records an answer; `now` saves it at once (choices), otherwise after the idle delay. */
-  change: (answer: AnswerInput, now: boolean) => void;
+export interface Autosaver<T = AnswerInput> {
+  /** Records a change; `now` saves it at once (choices), otherwise after the idle delay. */
+  change: (change: T, now: boolean) => void;
   /** Saves everything not yet saved, now. Resolves true when nothing is left unsaved. */
   flush: () => Promise<boolean>;
   /** Waits for a save in flight and pauses saving (before submitting, which sends every answer). */
@@ -47,8 +51,10 @@ export const SAVE_STATUS_LABELS: Record<SaveStatus, string> = {
 export const AUTOSAVE_DELAY_MS = 1000;
 export const retryDelayMs = (attempt: number) => Math.min(2000 * 2 ** (attempt - 1), 15_000);
 
-export function createAutosaver({ save, onStatus, onFailure, shouldRetry = () => true, delay = AUTOSAVE_DELAY_MS, retryDelay = retryDelayMs }: AutosaveOptions): Autosaver {
-  const pending = new Map<number, AnswerInput>();
+const byQuestion = (change: unknown) => (change as AnswerInput).questionId;
+
+export function createAutosaver<T = AnswerInput>({ save, keyOf = byQuestion, onStatus, onFailure, shouldRetry = () => true, delay = AUTOSAVE_DELAY_MS, retryDelay = retryDelayMs }: AutosaveOptions<T>): Autosaver<T> {
+  const pending = new Map<string | number, T>();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let chain: Promise<unknown> = Promise.resolve();
   let failures = 0;
@@ -70,8 +76,8 @@ export function createAutosaver({ save, onStatus, onFailure, shouldRetry = () =>
     try {
       await save(batch);
     } catch (error) {
-      // Put back what failed, unless a newer value for that question arrived meanwhile.
-      for (const answer of batch) if (!pending.has(answer.questionId)) pending.set(answer.questionId, answer);
+      // Put back what failed, unless a newer value for that key arrived meanwhile.
+      for (const change of batch) if (!pending.has(keyOf(change))) pending.set(keyOf(change), change);
       if (stopped) return false;
       if (!shouldRetry(error)) {
         onStatus("failed");
@@ -99,8 +105,8 @@ export function createAutosaver({ save, onStatus, onFailure, shouldRetry = () =>
   }
 
   return {
-    change(answer, now) {
-      pending.set(answer.questionId, answer);
+    change(change, now) {
+      pending.set(keyOf(change), change);
       if (stopped) return;
       if (now) void flush();
       // A retry already waiting keeps its schedule; otherwise wait for a pause in typing.

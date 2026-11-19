@@ -1,20 +1,16 @@
 import { AlarmClock, ArrowRight, CalendarDays, Check, ClipboardCheck, Clock3, Eye, FileText, ListChecks, Lock, ShieldCheck, SpellCheck } from "lucide-react";
-import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { ANSWER_REVIEW_NOTES, SPELLING_RULES } from "../../../shared/components/quiz/answers";
 import { formatDue } from "../../../shared/lib/format";
 import { Badge } from "../../../shared/ui/Badge";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
-import { Field, Input, Textarea } from "../../../shared/ui/Field";
-import { useToast } from "../../../shared/ui/toast/useToast";
-import { failureMessage, submitAssignment } from "../api/student";
-import { useRefreshStudent, useStudentViewer } from "../hooks/useStudentCatalog";
 import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
-import type { TurnIn } from "../../../shared/api/overview";
+import { AssignmentBrief } from "../../../shared/components/assignment/AssignmentBrief";
 import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
+import { YourWork } from "../components/work/YourWork";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -41,67 +37,9 @@ function ActivityStatus({ submission, points }: { submission: ActivitySubmission
   );
 }
 
-/** Why the form is shown but can't be used; the server decides (D-054). */
-const REFUSALS: Partial<Record<NonNullable<TurnIn["reason"]>, string>> = {
-  past_due: "The due date has passed and late submissions are turned off.",
-  past_close: "The last day for late work has passed.",
-};
-
-/** The form shows while handing in is possible, or only blocked by a date; otherwise there is nothing to hand in. */
-const showsTurnInForm = (turnIn: TurnIn | undefined): turnIn is TurnIn =>
-  Boolean(turnIn && (turnIn.canTurnIn || (turnIn.reason && REFUSALS[turnIn.reason])));
-
-function TurnInForm({ assessment, submitted, turnIn }: { assessment: Assessment; submitted: boolean; turnIn: TurnIn }) {
-  const closed = !turnIn.canTurnIn;
-  const toast = useToast();
-  const [fileName, setFileName] = useState("");
-  const [comment, setComment] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const viewer = useStudentViewer();
-  const refresh = useRefreshStudent();
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (saving) return;
-    if (!fileName.trim()) {
-      setError("Enter the filename of the work you are turning in.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await submitAssignment(viewer, assessment.courseId, assessment.id, { fileName, comment });
-      await refresh();
-    } catch (failure) {
-      toast.show({ title: "Could not hand in your work", description: failureMessage(failure), tone: "danger" });
-      return;
-    } finally {
-      setSaving(false);
-    }
-    setFileName("");
-    setComment("");
-    setError("");
-    toast.show({ title: submitted ? "New version submitted" : "Work submitted", description: assessment.title, tone: "success" });
-  };
-
-  return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 font-sans text-section font-semibold">{submitted ? "Submit a new version" : "Turn in your work"}</h2>
-        <p className="m-0 text-body text-muted">
-          {turnIn.reason ? REFUSALS[turnIn.reason] : "Use the filename of the document you prepared for this class. Only the filename is saved for now."}
-        </p>
-      </div>
-      <Field label="Attachment filename" required error={error || undefined}>
-        <Input value={fileName} onChange={(event) => setFileName(event.target.value)} placeholder="research-notes.pdf" disabled={closed} autoComplete="off" />
-      </Field>
-      <Field label="Comment for instructor">
-        <Textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={3} placeholder="Add a note about your work" disabled={closed} />
-      </Field>
-      <Button type="submit" disabled={closed || saving} className="self-start">{submitted ? "Resubmit work" : "Submit work"}<ArrowRight aria-hidden className="size-4" /></Button>
-    </form>
-  );
-}
+/** "Written answer, files" for the details card. */
+const KIND_WORDS = { text: "Written answer", file: "Files", link: "Link" } as const;
+const handInWords = (assessment: Assessment) => (assessment.handIn?.submissionKinds ?? ["text", "file"]).map((kind) => KIND_WORDS[kind]).join(", ");
 
 export default function AssessmentPage() {
   const { assessmentId = "" } = useParams();
@@ -125,7 +63,7 @@ export default function AssessmentPage() {
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
   const facts: Array<[string, string, typeof ListChecks]> = [
-    [isActivity ? "Submission" : "Questions", isActivity ? "File + comment" : String(assessment.questionCount ?? 0), ListChecks],
+    [isActivity ? "Hand in" : "Questions", isActivity ? handInWords(assessment) : String(assessment.questionCount ?? 0), ListChecks],
     ["Time limit", isActivity ? "—" : assessment.timeLimit, Clock3],
     ["Points", `${assessment.points} pts`, ClipboardCheck],
     ["Due date", formatDue(assessment.dueAt), CalendarDays],
@@ -156,19 +94,21 @@ export default function AssessmentPage() {
             </p>
           )}
 
-          <Card className="flex flex-col gap-2 p-5">
-            <h2 className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
-            <p className="m-0 text-body whitespace-pre-line">{assessment.instructions}</p>
-            <p className="m-0 text-body text-muted">
-              {isActivity ? "Attach the filename for your work and leave a note for your instructor." : "Answer every question. You may revisit questions before submitting."}
-            </p>
-            {!isActivity && assessment.spellingMode && (
-              <p className="m-0 flex items-center gap-2 text-body text-ink"><SpellCheck aria-hidden className="size-4 shrink-0 text-muted" />{SPELLING_RULES[assessment.spellingMode]}.</p>
-            )}
-            {!isActivity && assessment.answerReview && (
-              <p className="m-0 flex items-center gap-2 text-body text-ink"><Eye aria-hidden className="size-4 shrink-0 text-muted" />{ANSWER_REVIEW_NOTES[assessment.answerReview]}</p>
-            )}
-          </Card>
+          {isActivity && assessment.handIn ? (
+            <AssignmentBrief instructions={assessment.instructions} settings={assessment.handIn} />
+          ) : (
+            <Card className="flex flex-col gap-2 p-5">
+              <h2 className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
+              <p className="m-0 text-body whitespace-pre-line">{assessment.instructions}</p>
+              <p className="m-0 text-body text-muted">Answer every question. You may revisit questions before submitting.</p>
+              {assessment.spellingMode && (
+                <p className="m-0 flex items-center gap-2 text-body text-ink"><SpellCheck aria-hidden className="size-4 shrink-0 text-muted" />{SPELLING_RULES[assessment.spellingMode]}.</p>
+              )}
+              {assessment.answerReview && (
+                <p className="m-0 flex items-center gap-2 text-body text-ink"><Eye aria-hidden className="size-4 shrink-0 text-muted" />{ANSWER_REVIEW_NOTES[assessment.answerReview]}</p>
+              )}
+            </Card>
+          )}
 
           {!isActivity && (
             <p className="m-0 flex items-start gap-3 rounded-card bg-accent-100 p-4 text-body text-ink">
@@ -182,7 +122,9 @@ export default function AssessmentPage() {
               <Lock aria-hidden className="size-4 text-muted" />Closed. Your instructor is no longer accepting work for this {isActivity ? "assignment" : "assessment"}.
             </p>
           )}
-          {isActivity && showsTurnInForm(assessment.turnIn) && <TurnInForm assessment={assessment} submitted={Boolean(submission)} turnIn={assessment.turnIn} />}
+          {isActivity && assessment.turnIn && assessment.handIn && (
+            <YourWork classId={assessment.courseId} assessmentId={assessment.id} settings={assessment.handIn} turnIn={assessment.turnIn} />
+          )}
         </article>
 
         <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
