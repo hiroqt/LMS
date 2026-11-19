@@ -1,3 +1,4 @@
+import { pdfFile } from "./assignmentFixtures";
 import { expect, openRole, test, type Page } from "./fixtures";
 
 // Journeys from docs/INSTRUCTOR_USER_FLOW.md. Letters refer to the chart connectors.
@@ -97,13 +98,16 @@ test.describe("Instructor · Grading round trip", () => {
     await page.getByRole("button", { name: "Save and publish" }).click();
     await expect(classTab(page, /^Classwork\s?4/)).toBeVisible();
 
-    // I: the student opens the assignment and submits a filename and comment.
+    // I: the student opens the assignment, writes a note, uploads a file, and turns it in (D-060).
     await openRole(page, "student");
     await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Tasks" }).click();
     await page.getByRole("button", { name: new RegExp(title) }).click();
-    await page.getByRole("textbox", { name: "Attachment filename" }).fill("loop-trace.pdf");
-    await page.getByRole("textbox", { name: "Comment for instructor" }).fill("Done on paper, scanned.");
-    await page.getByRole("button", { name: "Submit work" }).click();
+    const work = page.getByRole("region", { name: "Your work" });
+    await work.getByRole("textbox", { name: "Written answer" }).fill("Done on paper, scanned.");
+    await work.getByLabel("Choose files").setInputFiles(pdfFile("loop-trace.pdf"));
+    await expect(work.getByRole("list", { name: "Files on your draft" })).toContainText("loop-trace.pdf");
+    await work.getByRole("button", { name: "Turn in", exact: true }).click();
+    await page.getByRole("dialog", { name: "Turn in your work?" }).getByRole("button", { name: "Turn in" }).click();
     await expect(page.getByText(/Waiting for instructor review/)).toBeVisible();
 
     // F: the submission is waiting in the instructor's review queue.
