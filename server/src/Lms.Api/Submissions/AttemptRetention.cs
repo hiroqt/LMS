@@ -1,4 +1,5 @@
 using Lms.Api.Data;
+using Lms.Api.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -20,14 +21,15 @@ public readonly record struct Term(int SchoolYearId, int SemesterId) : IComparab
 /// <param name="Terms">Terms whose attempts were checked.</param>
 /// <param name="Submissions">Submissions whose text was cleared.</param>
 /// <param name="Answers">Answers whose text, items or matches were cleared.</param>
-public sealed record RetentionResult(int Terms, int Submissions, int Answers);
+/// <param name="Files">Uploaded files that were deleted (D-055).</param>
+public sealed record RetentionResult(int Terms, int Submissions, int Answers, int Files = 0);
 
 /// <summary>
 /// Anonymizes old attempts (contract §7): answer text, items and matches, and the submission's
-/// text are cleared and the submission is marked anonymized; scores, points and grades stay. Terms are ordered by ISMS school year and
+/// text and link are cleared, its uploaded files are deleted, and the submission is marked anonymized; scores, points and grades stay. Terms are ordered by ISMS school year and
 /// semester ids (both increase over time), and only classes ISMS no longer offers are touched.
 /// </summary>
-public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions> options, TimeProvider time)
+public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions> options, TimeProvider time, IFileStore files, ILogger<AttemptRetention> logger)
 {
     /// <summary>The known terms that are more than <paramref name="keep"/> terms behind <paramref name="current"/>.</summary>
     public static IReadOnlyList<Term> ExpiredTerms(IEnumerable<Term> known, Term current, int keep)
@@ -53,24 +55,36 @@ public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions>
         var submissions = db.Submissions.Where(s => db.Coursework.Any(c => c.Id == s.CourseworkId && classIds.Contains(c.ClassId)));
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var texts = await submissions.Where(s => s.Text != null).ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, (string?)null), ct);
+        var texts = await submissions.Where(s => s.Text != null || s.Link != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, (string?)null).SetProperty(x => x.Link, (string?)null), ct);
         var answers = await db.SubmissionAnswers.Where(a => a.AnswerText != null && submissions.Any(s => s.Id == a.SubmissionId))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.AnswerText, (string?)null), ct);
         // Marked so no re-score ever reads the cleared answers as wrong ones.
         var now = time.GetUtcNow().UtcDateTime;
         await submissions.Where(s => s.AnonymizedAt == null).ExecuteUpdateAsync(s => s.SetProperty(x => x.AnonymizedAt, now), ct);
-        if (texts + answers > 0)
+        // Uploaded files go too: the row stays as a record that a file existed, without its name.
+        var keys = await db.StoredFiles.Where(f => f.DeletedAt == null && classIds.Contains(f.ClassId)).Select(f => f.StorageKey).ToListAsync(ct);
+        if (keys.Count > 0)
+            await db.StoredFiles.Where(f => f.DeletedAt == null && classIds.Contains(f.ClassId))
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.DeletedAt, now).SetProperty(x => x.Name, ""), ct);
+        if (texts + answers + keys.Count > 0)
         {
             // Metadata only: counts, never content.
             db.AuditLog.Add(new AuditLogEntry
             {
                 ActorId = LmsDbContext.SystemActor, ActorRole = LmsDbContext.SystemActor, Category = "retention", Action = "anonymized", Target = "Attempts",
-                Summary = $"Anonymized {texts} submissions and {answers} answers from {expired.Count} terms",
+                Summary = $"Anonymized {texts} submissions and {answers} answers, and deleted {keys.Count} files, from {expired.Count} terms",
             });
             await db.SaveChangesAsync(ct);
         }
         await transaction.CommitAsync(ct);
-        return new RetentionResult(expired.Count, texts, answers);
+        // The bytes go only once the database says they are gone; a file that can't be deleted now is logged, not retried.
+        foreach (var key in keys)
+        {
+            try { files.Delete(key); }
+            catch (Exception e) { logger.LogWarning(e, "Retention could not delete stored file {Key}", key); }
+        }
+        return new RetentionResult(expired.Count, texts, answers, keys.Count);
     }
 }
 

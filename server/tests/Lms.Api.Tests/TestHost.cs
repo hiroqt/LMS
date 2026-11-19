@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Lms.Api.Data;
+using Lms.Api.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +51,20 @@ public sealed class ManualTimeProvider : TimeProvider
     public override DateTimeOffset GetUtcNow() => Now;
 }
 
+/// <summary>Stands in for ClamAV: answers what the test sets, and counts the scans.</summary>
+public sealed class FakeScanner : IFileScanner
+{
+    public ScanVerdict Verdict { get; set; } = ScanVerdict.Clean;
+    public int Scans { get; private set; }
+    public string PassedStatus => ScanStatus.Clean;
+
+    public Task<ScanResult> ScanAsync(Stream content, CancellationToken ct)
+    {
+        Scans++;
+        return Task.FromResult(new ScanResult(Verdict, Verdict == ScanVerdict.Infected ? "Test.Signature" : null));
+    }
+}
+
 public sealed class LmsApiFactory : WebApplicationFactory<Program>
 {
     public const string ClientId = "lms-test-client";
@@ -58,6 +73,9 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
 
     public StubIsmsHandler Isms { get; } = new();
     public ManualTimeProvider Time { get; } = new();
+    public FakeScanner Scanner { get; } = new();
+    /// <summary>Where this factory's uploaded files are kept; deleted with it.</summary>
+    public string FilesRoot { get; } = Path.Combine(Path.GetTempPath(), $"lms-files-test-{Guid.NewGuid():N}");
 
     private readonly Dictionary<string, string?> _settings = new()
     {
@@ -78,6 +96,10 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
         ["Lms:Retention:Enabled"] = "false",
         // Content endpoints need a "viewing as" identity; Development turns this on.
         ["Lms:DemoIdentity:Enabled"] = "true",
+        // Satisfies the startup check; the ClamAV registration is replaced with FakeScanner below.
+        ["Lms:Files:Scanner"] = "clamav",
+        // Tests upload far more than a student would.
+        ["Lms:Files:UploadsPerMinute"] = "1000",
     };
 
     // A temp-file SQLite database per factory (no MySQL server needed).
@@ -100,6 +122,7 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(_environment);
+        _settings.TryAdd("Lms:Files:Root", FilesRoot);
         foreach (var (key, value) in _settings)
         {
             builder.UseSetting(key, value);
@@ -112,6 +135,8 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<LmsDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<LmsDbContext>>();
             services.AddDbContext<LmsDbContext>(o => o.UseSqlite($"Data Source={_dbFile};Pooling=False"));
+            services.RemoveAll<IFileScanner>();
+            services.AddSingleton<IFileScanner>(Scanner);
         });
     }
 
@@ -139,5 +164,6 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
     {
         base.Dispose(disposing);
         try { File.Delete(_dbFile); } catch (IOException) { }
+        try { if (Directory.Exists(FilesRoot)) Directory.Delete(FilesRoot, recursive: true); } catch (IOException) { }
     }
 }

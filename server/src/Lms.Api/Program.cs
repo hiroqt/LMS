@@ -5,6 +5,7 @@ using Lms.Api.Submissions;
 using Lms.Api.Data;
 using Lms.Api.Demo;
 using Lms.Api.Endpoints;
+using Lms.Api.Files;
 using Lms.Api.Import;
 using Lms.Api.Isms;
 using Lms.Api.Me;
@@ -46,6 +47,9 @@ else
     builder.Services.AddHostedService<RetentionWorker>();
 }
 builder.Services.AddScoped<ClassAccess>();
+// Student uploads (D-055): the file store, the virus scanner and the upload rate limit.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddLmsFiles(builder.Configuration, builder.Environment, demo);
 
 // CORS origins come from Cors:AllowedOrigins (only http://localhost:5173 in Development).
 // Read lazily so test hosts and environment overrides apply. Never allow-any-origin.
@@ -84,6 +88,7 @@ else
 }
 
 app.UseCors();
+app.UseRateLimiter();
 
 app.MapLmsEndpoints();
 app.MapContentEndpoints();
@@ -92,6 +97,8 @@ app.MapImportEndpoints();
 app.MapAnswerKeyEndpoints();
 app.MapCourseworkEndpoints();
 app.MapSubmissionEndpoints();
+app.MapDraftEndpoints();
+app.MapFileEndpoints();
 app.MapAccuracyEndpoints();
 app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();

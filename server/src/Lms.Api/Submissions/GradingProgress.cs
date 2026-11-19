@@ -18,6 +18,11 @@ public static class GradingRules
     /// <summary>A grade the instructor recorded for a student who handed in nothing (D-036).</summary>
     public static bool IsNotHandedIn(Submission s) => s.SubmittedAt is null && s.Status != SubmissionStatus.InProgress;
 
+    /// <summary>Work an instructor can see and grade: neither a draft nor a version the student took back (D-054, D-058).</summary>
+    public static bool IsHandedIn(Submission s) => IsHandedIn(s.Status);
+
+    public static bool IsHandedIn(string status) => status is not (SubmissionStatus.InProgress or SubmissionStatus.Withdrawn);
+
     /// <summary>Graded, whether or not it has been returned to the student yet (D-054).</summary>
     public static bool IsGraded(string status) => status is SubmissionStatus.Graded or SubmissionStatus.Returned;
 
@@ -40,8 +45,8 @@ public static class GradingRules
             var ungraded = students.Where(student =>
             {
                 var attempts = mine[student.StudentId].ToList();
-                // An assignment draft is not handed in, so it neither counts nor hides earlier work (D-054).
-                if (r.Type == CourseworkType.Assignment) attempts = attempts.Where(a => a.Status != SubmissionStatus.InProgress).ToList();
+                // An assignment draft or a version taken back is not handed in, so it neither counts nor hides earlier work (D-054, D-058).
+                if (r.Type == CourseworkType.Assignment) attempts = attempts.Where(a => IsHandedIn(a.Status)).ToList();
                 if (attempts.Count == 0) return true;
                 if (r.Type == CourseworkType.Assignment)
                 {

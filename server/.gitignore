@@ -2,3 +2,6 @@
 bin/
 obj/
 TestResults/
+
+# Student uploads in Development (Lms:Files:Root defaults to src/Lms.Api/App_Data/files).
+App_Data/

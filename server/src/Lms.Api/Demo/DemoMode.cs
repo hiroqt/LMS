@@ -64,10 +64,15 @@ public sealed class DemoDatabases(DemoOptions options, DemoSeed seed, ILogger<De
 
     public string ConnectionString(string sandbox) => $"Data Source={Path.Combine(options.DataDirectory, $"lms-{sandbox}.db")};Pooling=False";
 
+    /// <summary>Where a sandbox keeps the files its students upload (D-055).</summary>
+    public static string FilesDirectory(DemoOptions options, string sandbox) => Path.Combine(options.DataDirectory, "files", sandbox);
+
     public void ResetAll()
     {
         Directory.CreateDirectory(options.DataDirectory);
         foreach (var file in Directory.GetFiles(options.DataDirectory, "lms-*.db*")) File.Delete(file);
+        var files = Path.Combine(options.DataDirectory, "files");
+        if (Directory.Exists(files)) Directory.Delete(files, recursive: true);
     }
 
     /// <summary>Creates and seeds the sandbox's database once per process.</summary>

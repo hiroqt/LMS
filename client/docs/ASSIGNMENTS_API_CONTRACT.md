@@ -119,7 +119,7 @@ only (404 for an exam). The student reads their draft from `my-submissions` (the
 | Route | Does | Answers |
 |---|---|---|
 | `POST …/draft` | Returns the draft, creating it when there is none. A new draft after turned-in work starts as a copy of that work (text, link, files). | 200 or 201, `SubmissionDto` |
-| `PUT …/draft` | `{ "text": "…", "link": "https://…" }` replaces both (send null to clear). Creates the draft when there is none. Autosave. | 200, `SubmissionDto` |
+| `PUT …/draft` | `{ "text": "…", "link": "https://…" }` replaces both (send null to clear). Creates the draft when there is none (with the files of the latest version, as above). Autosave. | 200, `SubmissionDto` |
 | `POST …/draft/files` | One file, `multipart/form-data`, field `file`. Creates the draft when there is none. | 201, `SubmissionDto` |
 | `DELETE …/draft/files/{fileId}` | Takes the file off the draft. | 200, `SubmissionDto` |
 | `POST …/draft/turn-in` | `{ "honorStatement": true }` (needed only when the assignment asks for it). | 200, `TurnInReceipt` |
@@ -132,10 +132,13 @@ only (404 for an exam). The student reads their draft from `my-submissions` (the
   `http://` or `https://` URL. `text` or `link` for a kind the assignment doesn't take is a 400 on
   that field.
 - **Checks on upload**, in this order: the assignment takes files (409); the draft has room (409,
-  "This assignment takes at most N files."); the file is not empty and at most 25 MB (422 on
-  `file`); the type is recognized from the bytes, allowed for this assignment, and matches the
-  name (422 on `file`); the virus scan passes (422 on `file`; 503 when the scanner can't be
-  reached). At most 20 uploads per minute per student (429).
+  "This assignment takes at most N files."); there is a `file` part, not empty and at most 25 MB
+  (422 on `file`); the type is recognized from the bytes, matches the name, and is allowed for
+  this assignment (422 on `file`); the same bytes are not on the draft already (422 on `file`);
+  the virus scan passes (422 on `file`; 503 when the scanner can't be reached). At most 20 uploads
+  per minute per student (429, `Retry-After: 60`). **A refused upload leaves nothing behind:** no
+  draft is started, no row, no bytes (L-078). The answer to every 422 is one sentence for the
+  student in `errors.file[0]`.
 - **Turn-in** needs the usual verdict (409 with the reason's sentence), at least one thing the
   assignment takes (400 on `work`), nothing it doesn't take (400 on `work`, e.g. after the
   instructor changed the settings), and `honorStatement: true` when asked (400 on
@@ -170,7 +173,7 @@ which keeps the grades.
 | Setting | Default | Notes |
 |---|---|---|
 | `Lms:Files:Root` | `App_Data/files` in Development; the sandbox folder in Demo; otherwise required | Where file bytes are kept. The API refuses to start without it. |
-| `Lms:Files:Scanner` | `none` in Development and Demo; otherwise required | `clamav` or `none`. `none` is refused outside Development and Demo. With `none`, only the EICAR test file is refused, so the refusal can be tried out. |
+| `Lms:Files:Scanner` | `none` in Development and Demo; otherwise required | `clamav` or `none`. `none` is refused outside Development and Demo. `none` is not a scanner: it refuses only a file that starts with the text `LMS-VIRUS-SCAN-TEST-FILE`, so the refusal can be tried out and tested (L-079). |
 | `Lms:Files:ClamAv:Host` / `Port` / `TimeoutSeconds` | `127.0.0.1` / `3310` / `60` | clamd, over TCP (`INSTREAM`). Its `StreamMaxLength` must be at least 26M. |
 | `Lms:Files:UploadsPerMinute` | 20 | Per student. |
 
