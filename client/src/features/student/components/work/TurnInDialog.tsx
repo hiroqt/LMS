@@ -11,6 +11,8 @@ export interface TurnInDialogProps {
   items: ConfirmItem[];
   /** Turning in now would be late (the server's `turnIn.late`). */
   late: boolean;
+  /** When late and the assignment has a penalty: what turning in now would lose (`latePenaltyNow`). */
+  latePenalty?: string | null;
   /** The assignment asks the student to confirm "This is my own work". */
   honorStatement: boolean;
   /** Whether this replaces work already turned in. */
@@ -21,7 +23,7 @@ export interface TurnInDialogProps {
 }
 
 /** Asks before turning in, listing what goes to the instructor, and the honor statement when asked. */
-export function TurnInDialog({ open, onOpenChange, items, late, honorStatement, newVersion, busy, onConfirm, onCloseAutoFocus }: TurnInDialogProps) {
+export function TurnInDialog({ open, onOpenChange, items, late, latePenalty, honorStatement, newVersion, busy, onConfirm, onCloseAutoFocus }: TurnInDialogProps) {
   const [ownWork, setOwnWork] = useState(false);
   const checkboxId = useId();
   // Each opening asks again: the box starts unticked.
@@ -56,7 +58,7 @@ export function TurnInDialog({ open, onOpenChange, items, late, honorStatement, 
           </dl>
           {late && (
             <p className="m-0 flex items-start gap-2 rounded-control bg-warning-soft p-3 text-body text-ink">
-              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />The due date has passed. This turn-in will be marked late.
+              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" /><span>The due date has passed. This turn-in will be marked late.{latePenalty && <> {latePenalty}</>}</span>
             </p>
           )}
           {honorStatement && (
