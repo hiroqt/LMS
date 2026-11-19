@@ -725,3 +725,22 @@ The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNM
 - **Phase 3:** a late penalty is a percent of the *earned* score per calendar day late
   (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
   to the instructor, not the class.
+
+### D-060 · Students hand in assignments with real files on a "Your work" card
+`2026-11-19` · hiro (assignments, PR 2C) · scope: student, e2e · confidence: medium
+Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Students"; shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §2, §5–§8.
+- **The journey "hand in an assignment" changed:** the student no longer types a file name and a
+  comment and presses Submit work. The assignment page shows the instructions and the rules
+  (`shared/components/assignment/AssignmentBrief`, the same sentences as the builder) and a
+  **Your work** card: a written answer and a link that save themselves (the quiz autosave, D-043),
+  files chosen or photographed and uploaded one at a time with progress, Cancel, Retry and Remove,
+  then **Turn in**, confirmed in a dialog that lists exactly what is handed in (and asks "This is my
+  own work" when the assignment does). A receipt (time, version, each file's code) stays on the page.
+- **Take back** and **Turn in a new version** appear only when the server's `turnIn` allows them;
+  earlier versions are listed. When `turnIn.canTurnIn` is false the card shows the reason and
+  nothing editable. Opening the page creates nothing: the first save or upload starts the draft.
+- **Uploading and turning in need a connection** (C-014): offline, the card says so and disables
+  them; typing stays on screen and saves on reconnect.
+- The client no longer sends `fileName`; `submitAssignment` is gone. Specs changed with it:
+  `instructor-flow` step I and `student-new` "reaches the classic instructor queue" now upload a
+  file and turn in; `e2e/assignment-work.spec.ts` covers the card.

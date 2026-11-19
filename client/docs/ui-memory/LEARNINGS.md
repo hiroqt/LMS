@@ -587,3 +587,22 @@ The ClamAV client is tested against a local listener that speaks `INSTREAM`
 `2026-11-19` · hiro (assignments) · scope: server · confidence: high
 `DatabaseTests.Tables_and_columns_are_snake_case` refuses a digit, so a property named `Sha256`
 fails it. Name the property for what it holds (`StoredFile.ContentHash`).
+
+### L-084 · `getByText("Saved")` finds the autosave status twice
+`2026-11-19` · hiro (assignments) · scope: e2e · confidence: high
+`SaveStatusNote` shows the state in an `aria-hidden` span and announces it in an `sr-only`
+`role="status"`, so a text locator is a strict-mode error. Select the announcement instead:
+`getByRole("status").filter({ hasText: /^Saved$/ })` (`e2e/assignment-work.spec.ts`).
+
+### L-085 · A count-of-zero check on a renamed control passes forever
+`2026-11-19` · hiro (assignments) · scope: e2e · confidence: high
+`close-activities.spec.ts` asserts `getByRole("button", { name: /Submit work/ })` has count 0 on a
+closed assignment. The Your work card (D-060) has no "Submit work" at all, so that line can no
+longer fail. When a control is renamed, update absence checks to the new names ("Turn in",
+"Choose files") or pair them with a check that the page shows the control when it is allowed.
+
+### L-086 · Upload a draft's files one at a time
+`2026-11-19` · hiro (assignments) · scope: student · confidence: medium
+The first upload (or text save) creates the draft. Two requests at once can both try, and the
+server refuses the second ("Another draft was started at the same moment"). `useUploadQueue` sends
+one file at a time and flushes the autosave before each, so only one request can start the draft.
