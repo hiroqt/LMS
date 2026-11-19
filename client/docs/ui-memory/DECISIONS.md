@@ -832,3 +832,42 @@ Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–�
   assignment with a rubric is worth the rubric's total, as an exam is worth its questions.
 - **The zip is built as it is sent** and capped at 250 MB, because the browser has to hold it in
   memory to save it (L-075).
+
+### D-063 · Late penalty and rubric in the assignment builder; a class's rubrics pages
+`2026-11-19` · hiro (assignments, PR 3B) · scope: instructor, e2e · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10, §12. Builds on D-059 and D-062.
+- **Late penalty** (Dates and grading, under late work): "Take points off late work", then
+  **Percent per day** (whole, 1–100) and **Up to** (whole, 1–100, default 100). It is available only
+  with a due date and "Accept late work"; otherwise the box is disabled and its hint says which is
+  missing. A stored 0 per day shows as off (10% is ready when it is turned on). When late work or
+  the due date is off, or the box is unchecked, the body sends `latePenaltyPercentPerDay: 0` and
+  leaves the cap alone. The Summary's "What students will read" gets the sentence from `handInRules`.
+- **Rubric** (Dates and grading, in the **Grading** group, renamed from "Grades"): "Grade with a
+  rubric" is a native select of the class's rubrics ("Lab report · 15 points") or "No rubric", with
+  the chosen one shown read-only by `RubricView` and a **Manage rubrics** button (through the
+  unsaved-changes guard). With a rubric, Details' Points is read-only, shows the rubric's total, and
+  says "This assignment is worth its rubric's total"; the body sends `rubricId` and no `maxPoints`.
+  An update without one sends `clearRubric: true`. The server's refusal once work is graded (400 on
+  `rubricId`) lands on the select, whose tab opens and which takes focus. The client does not
+  pre-disable the select for graded work: the server's sentence is the one place that rule lives.
+- **Presets leave the penalty and the rubric alone**: a preset is about how work is handed in, and
+  a rubric belongs to a class. **Copy a previous assignment copies both** (same class, so the
+  rubric is valid; they are grading settings, like late work and grade release).
+- **Rubrics page** `…/rubrics`: cards with the title, "15 points · 2 criteria · used by 1
+  assignment", a warning **Locked** badge with a sentence, and Open, Copy, Delete. Delete confirms in
+  a dialog that names the rubric; the server's 409 sentence shows in the dialog (and a toast) and
+  the dialog stays. After a delete, focus goes to the page heading. Reached from Create content
+  ("Manage rubrics") and from the builder.
+- **Rubric editor** `…/rubrics/new`, `…/rubrics/:id`: title; 1–12 criteria (move up/down and remove
+  with buttons; focus follows the moved card), each with a title, optional description and 2–6
+  levels (title, points, optional description). A new rubric starts with one criterion of
+  Complete 10 / Partial 5 / Missing 0. The running total and Save sit in an aside (sticky beside
+  the form at `@4xl`, a bottom bar on phones) so a toast never covers Save (L-092). Errors use the
+  server's paths (`criteria[1].levels[0].points`) on the client too, so local and server errors
+  land on the same inputs (`data-focus="rubric:<path>"`) and the first takes focus. A **locked**
+  rubric shows its criteria with `RubricView` and "This rubric has been used to grade. Copy it to
+  change its criteria.", lets the title change (only the title is sent), and offers **Copy
+  rubric**, which opens the copy. Leaving with unsaved changes asks first.
+- Code: `api/rubrics.ts` (calls, keys, form model, checks, error mapping, totals; tested),
+  `pages/RubricsPage.tsx`, `pages/RubricPage.tsx`, `pages/rubrics/`. Specs: `assignment-builder`
+  (four tests added, no journey changed), `rubrics`.
