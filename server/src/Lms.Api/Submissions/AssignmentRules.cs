@@ -29,7 +29,8 @@ public static class TurnInReason
 }
 
 /// <param name="Late">Handing in now would be late.</param>
-public sealed record TurnInStatus(string State, bool CanTurnIn, string? Reason, bool Late);
+/// <param name="CanUnsubmit">The latest turned-in work can be taken back now (contract §7).</param>
+public sealed record TurnInStatus(string State, bool CanTurnIn, string? Reason, bool Late, bool CanUnsubmit = false);
 
 /// <summary>
 /// The one place that decides whether a student can turn in an assignment (D-054). The turn-in
@@ -41,7 +42,7 @@ public static class AssignmentRules
     /// <param name="mine">Every submission row of this student for this assignment, drafts included.</param>
     public static TurnInStatus Evaluate(CourseworkRow cw, IReadOnlyCollection<Submission> mine, DateTime now)
     {
-        var handedIn = mine.Where(s => s.Status != SubmissionStatus.InProgress).ToList();
+        var handedIn = mine.Where(GradingRules.IsHandedIn).ToList();
         var notHandedIn = handedIn.Any(GradingRules.IsNotHandedIn);
         var latest = handedIn.Where(s => !GradingRules.IsNotHandedIn(s)).MaxBy(s => s.AttemptNumber);
         var pastDue = cw.DueAt is { } due && now > due;
@@ -60,8 +61,14 @@ public static class AssignmentRules
             : pastDue && !cw.AllowLate ? TurnInReason.PastDue
             : null;
 
-        return new TurnInStatus(state, reason is null, reason, pastDue);
+        // Taking work back: before the due date, while resubmission is on, and only until it has a grade (D-058).
+        var canUnsubmit = cw.Status == CourseworkStatus.Published && cw.AllowResubmission && !pastDue && !notHandedIn
+            && latest is { Status: SubmissionStatus.Submitted };
+
+        return new TurnInStatus(state, reason is null, reason, pastDue, canUnsubmit);
     }
+
+    public const string CannotUnsubmit = "This work can no longer be taken back.";
 
     /// <summary>The state a student sees for handed-in work: a held grade looks like work waiting for one.</summary>
     private static string StateOf(CourseworkRow cw, Submission row) => row.Status switch

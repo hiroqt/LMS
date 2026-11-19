@@ -15,7 +15,12 @@ export const isGradingView = (value: unknown): value is GradingView => GRADING_V
 export const BUILDER_TABS = ["details", "questions", "settings"] as const;
 export type BuilderTab = (typeof BUILDER_TABS)[number];
 export const isBuilderTab = (value: unknown): value is BuilderTab => BUILDER_TABS.includes(value as BuilderTab);
-const builderQuery = (tab?: BuilderTab) => (tab ? `?tab=${tab}` : "");
+const builderQuery = (tab?: BuilderTab | AssignmentTab) => (tab ? `?tab=${tab}` : "");
+
+/** The parts of the assignment builder, one tab each (D-058); each has its own URL (`?tab=`). */
+export const ASSIGNMENT_TABS = ["details", "hand-in", "dates"] as const;
+export type AssignmentTab = (typeof ASSIGNMENT_TABS)[number];
+export const isAssignmentTab = (value: unknown): value is AssignmentTab => ASSIGNMENT_TABS.includes(value as AssignmentTab);
 
 export const instructorPaths = {
   overview: "/instructor",
@@ -41,12 +46,26 @@ export const instructorPaths = {
   assessmentEdit: (classId: string, id: number | string, tab?: BuilderTab) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/${id}/edit${builderQuery(tab)}`,
   /** "Preview as student" (built by the preview page's own stream). */
   assessmentPreview: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/assessments/${id}/preview`,
+  /** The assignment builder (D-058): new, or editing a draft or a published assignment. */
+  assignmentNew: (classId: string, tab?: AssignmentTab) => `/instructor/classes/${encodeURIComponent(classId)}/assignments/new${builderQuery(tab)}`,
+  assignmentEdit: (classId: string, id: number | string, tab?: AssignmentTab) => `/instructor/classes/${encodeURIComponent(classId)}/assignments/${id}/edit${builderQuery(tab)}`,
+  /** "Preview as student" for an assignment. */
+  assignmentPreview: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/assignments/${id}/preview`,
+  /** One assignment's grading: its students, their files, points and feedback, and Return (D-058). */
+  assignmentGrading: (classId: string, id: number | string, extra: { student?: string; filter?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (extra.filter) params.set("filter", extra.filter);
+    if (extra.student) params.set("student", extra.student);
+    const query = params.toString();
+    return `/instructor/classes/${encodeURIComponent(classId)}/assignments/${id}/grading${query ? `?${query}` : ""}`;
+  },
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,
   /**
-   * The shell's page key. The builder's first save moves it from …/assessments/new to
-   * …/assessments/{id}/edit; that is the same page, so focus must stay where it is.
+   * The shell's page key. A builder's first save moves it from …/assessments/new to
+   * …/assessments/{id}/edit (and the same for …/assignments/); that is the same page, so
+   * focus must stay where it is.
    */
-  pageKey: (pathname: string) => pathname.replace(/\/assessments\/\d+\/edit$/, "/assessments/new"),
+  pageKey: (pathname: string) => pathname.replace(/\/(assessments|assignments)\/\d+\/edit$/, "/$1/new"),
   gradebook: (classId?: string) => (classId ? `/instructor/gradebook?class=${encodeURIComponent(classId)}` : "/instructor/gradebook"),
 };

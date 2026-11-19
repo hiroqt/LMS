@@ -69,3 +69,33 @@ Content-Type: application/json
 GET {{lms}}/api/classes/{{classId}}/announcements
 X-Demo-User-Id: STU-0011
 X-Demo-Role: student
+
+### Assignment draft as a student (contract §7): save, add a file, turn in
+@assignmentId = replace-with-an-assignment-id
+PUT {{lms}}/api/classes/{{classId}}/coursework/{{assignmentId}}/draft
+X-Demo-User-Id: STU-0011
+X-Demo-Role: student
+Content-Type: application/json
+
+{ "text": "See the attached diagram.", "link": null }
+
+### Add a file to the draft (type decided from the bytes; scanned before it is kept)
+POST {{lms}}/api/classes/{{classId}}/coursework/{{assignmentId}}/draft/files
+X-Demo-User-Id: STU-0011
+X-Demo-Role: student
+Content-Type: multipart/form-data; boundary=lms
+
+--lms
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+Entities: Student, Class, Enrollment.
+--lms--
+
+### Turn the draft in; the answer is the receipt
+POST {{lms}}/api/classes/{{classId}}/coursework/{{assignmentId}}/draft/turn-in
+X-Demo-User-Id: STU-0011
+X-Demo-Role: student
+Content-Type: application/json
+
+{}

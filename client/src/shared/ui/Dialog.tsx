@@ -14,6 +14,11 @@ export interface DialogContentProps {
   /** Buttons row. Put the primary action last. */
   footer?: ReactNode;
   className?: string;
+  /**
+   * Runs as the dialog closes, before focus returns to what opened it. Call `preventDefault()` and
+   * focus something else when that control is gone, e.g. after the action replaced it (L-015).
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /**
@@ -21,7 +26,7 @@ export interface DialogContentProps {
  * dismiss it, and the title and description are announced. On phones it
  * becomes a bottom sheet.
  */
-export function DialogContent({ title, description, children, footer, className }: DialogContentProps) {
+export function DialogContent({ title, description, children, footer, className, onCloseAutoFocus }: DialogContentProps) {
   return (
     <Primitive.Portal>
       <Primitive.Overlay className="fixed inset-0 z-40 bg-ink/40" />
@@ -33,6 +38,7 @@ export function DialogContent({ title, description, children, footer, className 
           className,
         )}
         {...(description ? {} : { "aria-describedby": undefined })}
+        {...(onCloseAutoFocus ? { onCloseAutoFocus } : {})}
       >
         <div className="flex items-start gap-3 border-b border-line px-5 py-4">
           <div className="flex min-w-0 flex-1 flex-col gap-1">

@@ -79,10 +79,11 @@ public static class OverviewEndpoints
             var progress = await CourseworkEndpoints.ProgressForAsync(db, user, coursework, ct);
             var turnIn = await AssignmentRules.ForStudentAsync(db, user, coursework, time.GetUtcNow().UtcDateTime, ct);
 
-            // Instructors: every handed-in attempt in their classes. Students: their own attempts, including an open one.
+            // Instructors: every handed-in attempt in their classes. Students: their own attempts, including an open one
+            // and any version they took back.
             var courseworkIds = coursework.Select(c => c.Id).ToList();
             var submissionRows = await db.Submissions.AsNoTracking().Where(s => courseworkIds.Contains(s.CourseworkId))
-                .Where(s => user.IsInstructor ? s.Status != SubmissionStatus.InProgress : s.StudentId == user.Id)
+                .Where(s => user.IsInstructor ? s.Status != SubmissionStatus.InProgress && s.Status != SubmissionStatus.Withdrawn : s.StudentId == user.Id)
                 .OrderBy(s => s.Id).ToListAsync(ct);
             var submissions = new List<SubmissionItem>();
             foreach (var cw in coursework)

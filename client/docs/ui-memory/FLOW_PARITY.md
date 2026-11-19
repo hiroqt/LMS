@@ -46,7 +46,8 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Q (types) | Every question type answered; section directions; spelling notice; typed answers autosave and survive reload; unanswered list on submit (D-040, D-043) | ✔ `quiz-types` | ✅ |
 | R (review modes) | Score only / which were right / correct answers after submit or due; Waiting for grading; keys only once no attempt is left (D-040, D-042) | ✔ `quiz-types` | ✅ |
 | MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
-| Activity | Submit an assignment (filename + comment) | ✔ `instructor-flow` E → I → F → J | ✅ |
+| Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
+| Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
 | Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
 | D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | ✅ |
 
@@ -75,7 +76,8 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |
 | E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
-| E: assignment | Assignment form → Classwork | ✔ `instructor-flow` E → I → F → J | ✅ |
+| E: assignment | Create → assignment builder → Publish → Classwork (D-059; was the inline form) | ✔ `instructor-flow` E → I → F → J, `student-new` | ✅ |
+| E: assignment builder | Details · Hand-in · Dates and grading tabs with URLs; presets and Copy a previous assignment; a problem on a hidden tab (or a server field error) opens it and focuses the field; the last day needs late work and a due date; Save draft → Draft in Classwork → Edit draft → Publish → students see it; Preview saves first; a published one is edited with Save changes and a note when work was handed in; a closed one is read-only; leave-without-saving; 320px and axe (D-059) | ✔ `assignment-builder` | ✅ |
 | E: assessment | Create → assessment builder → Publish → Classwork (D-040; was the one-MCQ form) | ✔ `instructor-more` | ✅ |
 | E: builder | Sections with every type; Save draft → Draft in Classwork → Edit draft; Publish refused while a question needs attention; dates can be cleared | ✔ `assessment-builder` | ✅ |
 | E: builder tabs | Details · Questions · Settings tabs with URLs; a problem on a hidden tab opens it and focuses the field; badges fit at 320px (D-056) | ✔ `assessment-builder` | ✅ |
@@ -84,6 +86,10 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | GRADE (types) | Answers beside the key for every type; points override for typed answers kept on re-score (D-043, D-042) | ✔ `grading-accuracy` | ✅ |
 | SPELL | Accept or reject near misses; count on the Classwork row | ✔ `grading-accuracy` | ✅ |
 | KEY | Item analysis flags a likely wrong key → Fix answer key → attempts re-scored, students see "score updated" | ✔ `grading-accuracy` | ✅ |
+| AGRADE | Classwork Grading → assignment grading page: filters with counts, `?filter=&student=` survive reload, versions, link, files in the viewer (PDF, photo, text), download, "Same file as another student" (D-061) | ✔ `assignment-grading` | ✅ |
+| AGRADE: save | Save and next in list order; out-of-range score on the field; grade without work after the last day, the server's sentence before it; Give 0 to everyone (D-061, D-036) | ✔ `assignment-grading` | ✅ |
+| RETURN | Held grades: student sees none until Return (one student, then Return all graded, each confirmed with the count) (D-061, D-054) | ✔ `assignment-grading` | ✅ |
+| REVIEW (files) | Submissions tab shows an assignment's files and link; Open the grading page (D-061) | ✔ `assignment-grading`, `instructor-new` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
 | MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |
 | F, REVIEW | Pending submission → review | ✔ `instructor-flow` | ✅ |

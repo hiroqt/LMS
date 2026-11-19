@@ -88,6 +88,31 @@ public sealed class DemoModeTests : IDisposable
     }
 
     [Fact]
+    public async Task Each_sandbox_keeps_its_own_files_and_only_the_test_file_is_refused()
+    {
+        var teacher = As("instructor-1", CurrentUser.Instructor, "sandbox-a");
+        var module = (await Json(await teacher.GetAsync("/api/classes/biology/modules")))[0].GetProperty("id").GetInt64();
+        var created = await Json(await teacher.PostAsJsonAsync("/api/classes/biology/coursework", new { type = "assignment", moduleId = module, title = "Cell diagram", maxPoints = 10, status = "published" }));
+        var id = created.GetProperty("id").GetInt64();
+        var student = As("s0", CurrentUser.Student, "sandbox-a");
+
+        using var flagged = TestFiles.Form(System.Text.Encoding.ASCII.GetBytes(Lms.Api.Files.NoScanner.TestMarker), "notes.txt");
+        var refused = await student.PostAsync($"/api/classes/biology/coursework/{id}/draft/files", flagged);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+        Assert.Contains("virus scan flagged", await refused.Content.ReadAsStringAsync());
+
+        using var form = TestFiles.Form(TestFiles.Pdf(), "cell.pdf");
+        var uploaded = await student.PostAsync($"/api/classes/biology/coursework/{id}/draft/files", form);
+        Assert.Equal(HttpStatusCode.Created, uploaded.StatusCode);
+        var fileId = (await Json(uploaded)).GetProperty("files")[0].GetProperty("id").GetInt64();
+        Assert.Equal(TestFiles.Pdf(), await (await student.GetAsync($"/api/files/{fileId}")).Content.ReadAsByteArrayAsync());
+
+        // The bytes are in this sandbox's folder, and another sandbox has neither the row nor the file.
+        Assert.Single(Directory.GetFiles(Path.Combine(_dir, "files", "sandbox-a"), "*", SearchOption.AllDirectories));
+        Assert.Equal(HttpStatusCode.NotFound, (await As("s0", CurrentUser.Student, "sandbox-b").GetAsync($"/api/files/{fileId}")).StatusCode);
+    }
+
+    [Fact]
     public async Task The_demo_database_has_the_attendance_tables()
     {
         var saved = await As("instructor-1", CurrentUser.Instructor).PutAsJsonAsync("/api/classes/biology/attendance/2026/10", new { schoolDays = 20, entries = new[] { new { studentId = "s0", daysPresent = 18 } } });

@@ -142,6 +142,32 @@ public static class SubmissionStatus
     public const string Submitted = "submitted";
     public const string Graded = "graded";
     public const string Returned = "returned";
+    /// <summary>Assignments: turned-in work the student took back (D-058). Kept, and never shown to instructors.</summary>
+    public const string Withdrawn = "withdrawn";
+}
+
+/// <summary>What a student may hand in for an assignment (contract §5). Stored as a comma-separated column (L-074).</summary>
+public static class SubmissionKind
+{
+    public const string Text = "text";
+    public const string File = "file";
+    public const string Link = "link";
+    public static readonly IReadOnlyList<string> All = [Text, File, Link];
+    public const string Default = "text,file";
+
+    public static IReadOnlyList<string> Parse(string? stored) =>
+        (stored ?? Default).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(All.Contains).Distinct().ToList() is { Count: > 0 } kinds
+            ? All.Where(kinds.Contains).ToList() : Parse(Default);
+
+    public static string Store(IEnumerable<string> kinds) => string.Join(',', All.Where(kinds.Contains));
+}
+
+/// <summary>How a stored file was checked for malware (D-055).</summary>
+public static class ScanStatus
+{
+    public const string Clean = "clean";
+    /// <summary>Development and Demo only: no scanner is configured there.</summary>
+    public const string NotScanned = "not_scanned";
 }
 
 /// <summary>A unit of a class. A parent module makes this a submodule (used from Phase 3).</summary>
@@ -276,6 +302,14 @@ public sealed class Coursework : Audited
     public DateTime? CloseAt { get; set; }
     /// <summary>Assignments: see <see cref="Data.GradeRelease"/>.</summary>
     public string GradeRelease { get; set; } = Data.GradeRelease.Immediate;
+    /// <summary>Assignments: see <see cref="SubmissionKind"/>.</summary>
+    public string SubmissionKinds { get; set; } = SubmissionKind.Default;
+    /// <summary>Assignments: accepted file types, comma-separated (see Files/FileTypes); null accepts every allowed type.</summary>
+    public string? AllowedFileTypes { get; set; }
+    /// <summary>Assignments: files per turn-in, 1 to 5.</summary>
+    public int MaxFiles { get; set; } = 5;
+    /// <summary>Assignments: the student confirms "This is my own work" to turn in.</summary>
+    public bool HonorStatement { get; set; }
 }
 
 /// <summary>One attempt by one student.</summary>
@@ -289,12 +323,48 @@ public sealed class Submission : Audited
     public DateTime? StartedAt { get; set; }
     public DateTime? SubmittedAt { get; set; }
     public string? Text { get; set; }
-    /// <summary>Filename only: files are not uploaded yet.</summary>
+    /// <summary>A file name the student typed before files were uploaded (before D-055). Never set by new work.</summary>
     public string? FileName { get; set; }
+    /// <summary>Assignments: a link the student handed in.</summary>
+    public string? Link { get; set; }
+    /// <summary>Assignments: when the student confirmed the honor statement for this turn-in.</summary>
+    public DateTime? HonorAcceptedAt { get; set; }
     /// <summary>When a regrade (a key fix or a spelling change) last changed this attempt's score.</summary>
     public DateTime? ScoreUpdatedAt { get; set; }
     /// <summary>When retention cleared this attempt's text (contract §7); such an attempt is never re-scored.</summary>
     public DateTime? AnonymizedAt { get; set; }
+}
+
+/// <summary>
+/// A file a student uploaded (D-055). The bytes live in the file store under <see cref="StorageKey"/>;
+/// this row is what the LMS knows about them. It belongs to submissions through <see cref="SubmissionFile"/>.
+/// </summary>
+public sealed class StoredFile : Audited
+{
+    public long Id { get; set; }
+    public string ClassId { get; set; } = "";
+    public long CourseworkId { get; set; }
+    /// <summary>The student who uploaded it.</summary>
+    public string OwnerId { get; set; } = "";
+    /// <summary>Random; never derived from the name.</summary>
+    public string StorageKey { get; set; } = "";
+    /// <summary>The name the student gave it, cleaned. Shown and used for the download only.</summary>
+    public string Name { get; set; } = "";
+    /// <summary>Decided from the bytes, never from the upload's header.</summary>
+    public string ContentType { get; set; } = "";
+    public long Size { get; set; }
+    /// <summary>The SHA-256 of the bytes, in lowercase hex.</summary>
+    public string ContentHash { get; set; } = "";
+    public string ScanStatus { get; set; } = Data.ScanStatus.NotScanned;
+    /// <summary>When the bytes were deleted: no version uses the file any more, or retention removed it.</summary>
+    public DateTime? DeletedAt { get; set; }
+}
+
+/// <summary>A file on one draft or version. A new draft reuses the files of the version it was copied from.</summary>
+public sealed class SubmissionFile
+{
+    public long SubmissionId { get; set; }
+    public long FileId { get; set; }
 }
 
 public sealed class SubmissionAnswer : Audited

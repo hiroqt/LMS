@@ -1,5 +1,7 @@
 import { academicEvents, courses as demoCourses, featuredAnnouncements } from "../../../data.js";
-import { isGraded, meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
+import { isGraded, isHandedIn, meetingLabel, type Coursework, type Overview, type Submission } from "../../../shared/api/overview";
+import { FILE_TYPE_KEYS } from "../../../shared/api/assignments";
+import type { HandInSettings } from "../../../shared/lib/assignmentRules";
 import type { ActivitySubmission, Assessment, AttemptSummary, Course, ExamGrade, StudentCatalog } from "./types";
 
 /** Shown under the student's name; ISMS does not send a program yet. */
@@ -13,7 +15,8 @@ type DemoCourse = (typeof demoCourses)[number];
  */
 const demoExtras = new Map<string, DemoCourse>(demoCourses.map((course) => [course.id, course]));
 
-const handedIn = (submission: Submission) => submission.status !== "in_progress";
+/** A draft is not handed in, and neither is a version the student took back (D-058). */
+const handedIn = (submission: Submission) => isHandedIn(submission.status);
 
 function readTime(text: string | null): string {
   const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;
@@ -26,7 +29,22 @@ function examSettings(work: Coursework & Partial<Pick<Assessment, "answerReview"
   return { ...(work.answerReview ? { answerReview: work.answerReview } : {}), ...(work.spellingMode ? { spellingMode: work.spellingMode } : {}) };
 }
 
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+/** How an assignment is handed in (contract §1, §5). An older API without these fields gets the contract's defaults. */
+function handInSettings(work: Coursework): HandInSettings {
+  return {
+    submissionKinds: work.submissionKinds?.length ? work.submissionKinds : ["text", "file"],
+    allowedFileTypes: work.allowedFileTypes?.length ? work.allowedFileTypes : FILE_TYPE_KEYS,
+    maxFiles: work.maxFiles ?? 5,
+    honorStatement: work.honorStatement ?? false,
+    dueAt: work.dueAt,
+    allowLate: work.allowLate,
+    closeAt: work.closeAt ?? null,
+    allowResubmission: work.allowResubmission,
+    gradeRelease: work.gradeRelease ?? "immediate",
+  };
+}
+
+const shortDate =(iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 /**
  * Builds the Student workspace from the LMS API overview (D-032). The school
@@ -111,6 +129,7 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       instructions: work.instructions ?? "",
       kind: work.type === "assignment" ? ("activity" as const) : undefined,
       ...(work.type === "assignment" && work.turnIn ? { turnIn: work.turnIn } : {}),
+      ...(work.type === "assignment" ? { handIn: handInSettings(work) } : {}),
       maxAttempts: work.maxAttempts ?? 1,
       closed: work.status === "closed",
       ...examSettings(work),

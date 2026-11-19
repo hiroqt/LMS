@@ -45,15 +45,38 @@ public sealed record AnswerInput(long QuestionId, long? OptionId, string? Text, 
 
 public sealed record AnswersInput(IReadOnlyList<AnswerInput>? Answers);
 
-public sealed record AssignmentSubmit(string? Text, string? FileName);
+/// <param name="FileName">No longer accepted (400): files are uploaded to the draft (contract §6).</param>
+/// <param name="HonorStatement">True when the student confirmed "This is my own work"; needed when the assignment asks for it.</param>
+public sealed record AssignmentSubmit(string? Text, string? FileName, bool? HonorStatement = null);
+
+/// <summary>What autosave sends: both fields replace what the draft has; null clears one (contract §7).</summary>
+public sealed record DraftInput(string? Text, string? Link);
+
+public sealed record TurnInInput(bool? HonorStatement);
+
+/// <summary>An uploaded file on a draft or a version (contract §6).</summary>
+/// <param name="Code">The first 8 characters of the file's SHA-256, as on the receipt.</param>
+/// <param name="SameAsAnotherStudent">Instructors only: another student handed in the same bytes for this assignment.</param>
+public sealed record FileDto(long Id, string Name, string ContentType, long Size, string Code, bool? SameAsAnotherStudent = null);
+
+public sealed record ReceiptFile(long Id, string Name, long Size, string Code);
+
+/// <summary>Proof of a turn-in: when, and exactly which files (contract §7).</summary>
+public sealed record Receipt(long SubmissionId, int AttemptNumber, DateTime SubmittedAt, bool Late, IReadOnlyList<ReceiptFile> Files);
+
+public sealed record TurnInReceipt(SubmissionDto Submission, Receipt Receipt);
 
 // ------------------------------------------------------------- instructor side
 
 /// <param name="Late">Submitted after the due date.</param>
 /// <param name="NotHandedIn">A grade the instructor gave a student who handed in nothing (D-036): no work, no submitted time.</param>
+/// <param name="FileName">A file name typed before files were uploaded (D-055); null for newer work.</param>
+/// <param name="Link">Assignments: a link the student handed in.</param>
+/// <param name="Files">Assignments: the uploaded files of this draft or version; empty for exams.</param>
 public sealed record SubmissionDto(long Id, string StudentId, string? StudentName, int AttemptNumber, string Status,
     DateTime? StartedAt, DateTime? SubmittedAt, bool Late, string? Text, string? FileName,
-    decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt, bool NotHandedIn = false);
+    decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt, bool NotHandedIn = false,
+    string? Link = null, IReadOnlyList<FileDto>? Files = null);
 
 public sealed record StudentRef(string StudentId, string Name);
 

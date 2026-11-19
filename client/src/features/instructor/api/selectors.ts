@@ -86,11 +86,19 @@ export interface WorkItem {
 
 /** Assignments and assessments of a class, soonest due first; undated last. */
 export function classWork(content: Pick<ClassContent, "activities" | "exams">): WorkItem[] {
-  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), draft: "draft" in item && Boolean(item.draft), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
+  const progress = (item: Activity | Exam) => ({ closed: Boolean(item.closed), draft: Boolean(item.draft), gradedCount: item.gradedCount ?? 0, rosterCount: item.rosterCount ?? 0 });
   return [
     ...content.activities.map((item) => ({ id: item.id, title: item.title, kind: "Assignment" as const, dueAt: item.dueAt, points: item.maxScore, status: item.status, ...progress(item) })),
     ...content.exams.map((item) => ({ id: item.id, title: item.title, kind: "Assessment" as const, dueAt: item.dueAt, points: item.totalMarks, status: item.status, ...progress(item) })),
   ].sort((a, b) => (a.dueAt || "9999").localeCompare(b.dueAt || "9999"));
+}
+
+/**
+ * The work students can see: drafts (assignments and assessments, D-040, D-059) are left out
+ * of what is due, of "Didn't hand in", and of anything to grade.
+ */
+export function publishedWork(content: Pick<ClassContent, "activities" | "exams">): WorkItem[] {
+  return classWork(content).filter((item) => !item.draft);
 }
 
 /** "12 of 30 graded". */
@@ -127,7 +135,7 @@ export interface ModuleItem {
   kind: "material" | "activity" | "exam";
   id: string;
   title: string;
-  /** "Material · Reading", "Assignment", "Assessment". */
+  /** "Material · Reading", "Assignment", "Assessment", "Assignment · Draft". */
   label: string;
   archived: boolean;
 }
@@ -144,8 +152,8 @@ export function contentByModule(content: Pick<ClassContent, "materials" | "activ
     byModule.set(moduleId, [...(byModule.get(moduleId) ?? []), item]);
   };
   for (const item of content.materials) add(item.moduleId, { kind: "material", id: item.id, title: item.title, label: `Material · ${item.kind ?? "Study guide"}`, archived: item.status === "archived" });
-  for (const item of content.activities) add(item.moduleId, { kind: "activity", id: item.id, title: item.title, label: "Assignment", archived: false });
-  for (const item of content.exams) add(item.moduleId, { kind: "exam", id: item.id, title: item.title, label: "Assessment", archived: false });
+  for (const item of content.activities) add(item.moduleId, { kind: "activity", id: item.id, title: item.title, label: item.draft ? "Assignment · Draft" : "Assignment", archived: false });
+  for (const item of content.exams) add(item.moduleId, { kind: "exam", id: item.id, title: item.title, label: item.draft ? "Assessment · Draft" : "Assessment", archived: false });
   return byModule;
 }
 

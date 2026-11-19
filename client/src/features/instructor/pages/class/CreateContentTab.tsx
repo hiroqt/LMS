@@ -14,69 +14,41 @@ import type { ClassTabProps } from "./shared";
 
 type Errors = Record<string, string | undefined>;
 
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <label className="flex min-h-touch cursor-pointer items-center gap-3 font-sans text-body text-ink">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="size-5 accent-primary-600" />
-      {label}
-    </label>
-  );
-}
-
-/** The inline forms; assessments have their own builder page (D-040). */
-type InlineType = Exclude<ContentType, "exam">;
-
-const titles: Record<InlineType, string> = { material: "Upload class material", activity: "Create an assignment" };
-
-function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { type: InlineType; onDone: (saved: boolean) => void }) {
+/** The inline form is for materials only; assignments and assessments have builder pages (D-040, D-059). */
+function MaterialForm({ room, content, onDone }: Pick<ClassTabProps, "room" | "content"> & { onDone: (saved: boolean) => void }) {
   const toast = useToast();
   const choices = moduleChoices(content.modules);
-  const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide", points: "10" });
-  const [flags, setFlags] = useState({ allowLate: false, allowResubmission: false });
+  const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide" });
   const [file, setFile] = useState<{ name: string; type: string; size: string } | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const set = (key: string) => (event: { target: { value: string } }) => setValues((current) => ({ ...current, [key]: event.target.value }));
   const v = (key: string) => values[key] ?? "";
-
-  const validate = (): Errors => {
-    const next: Errors = { title: v("title").trim() ? undefined : "Enter a title." };
-    if (type !== "material") {
-      const points = Number(v("points"));
-      next.points = v("points") && points > 0 ? undefined : "Enter points greater than 0.";
-    }
-    return next;
-  };
 
   const actions = useInstructorActions();
   const [saving, setSaving] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving) return;
-    const next = validate();
+    const next: Errors = { title: v("title").trim() ? undefined : "Enter a title." };
     setErrors(next);
     if (Object.values(next).some(Boolean)) return;
-    const common = { moduleId: v("moduleId"), title: v("title"), instructions: v("instructions"), dueAt: v("dueAt"), points: Number(v("points")) };
     setSaving(true);
-    const result =
-      type === "material"
-        ? await actions.createMaterial(room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size })
-        : await actions.createActivity(room.id, { ...common, ...flags });
+    const result = await actions.createMaterial(room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size });
     setSaving(false);
     if (!result.ok) {
       // Show the server's messages on the matching fields.
-      setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field === "maxPoints" ? "points" : field, messages[0]])));
+      setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field, messages[0]])));
       toast.show({ title: "Could not publish", description: result.message, tone: "danger" });
       return;
     }
-    toast.show({ title: `${type === "material" ? "Material" : "Assignment"} published`, description: v("title").trim(), tone: "success" });
+    toast.show({ title: "Material published", description: v("title").trim(), tone: "success" });
     onDone(true);
   };
 
-  const label = type === "material" ? "Material title" : "Assignment title";
   return (
     <form onSubmit={submit} noValidate aria-labelledby="content-form-title" className="flex flex-col gap-4 rounded-card border border-primary-200 bg-surface p-5">
       <div className="flex flex-col gap-1">
-        <h3 id="content-form-title" className="m-0 font-sans text-section font-semibold">{titles[type]}</h3>
+        <h3 id="content-form-title" className="m-0 font-sans text-section font-semibold">Upload class material</h3>
         <p className="m-0 text-body text-muted">This content will be shared with {room.section}.</p>
       </div>
       <Field label="Curriculum Unit / Module" hint="A module, or one of its submodules.">
@@ -84,59 +56,37 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
           {choices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
         </Select>
       </Field>
-      <Field label={label} required error={errors.title}>
+      <Field label="Material title" required error={errors.title}>
         <Input value={v("title")} onChange={set("title")} />
       </Field>
-      {type === "material" ? (
-        <>
-          <Field label="Resource type">
-            <Select value={v("kind")} onChange={set("kind")}>
-              {RESOURCE_TYPES.map((kind) => <option key={kind} value={kind}>{kind}</option>)}
-            </Select>
-          </Field>
-          <Field label="Description & Learning Objectives">
-            <Textarea value={v("description")} onChange={set("description")} rows={3} />
-          </Field>
-          <Field label="Attach file / document" hint="PDF, DOCX, PPTX, TXT, or ZIP. The demo keeps the file name and size only.">
-            <Input
-              type="file"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
-              className="py-2.5 file:mr-3 file:rounded-control file:border-0 file:bg-primary-100 file:px-3 file:py-1.5 file:font-sans file:text-body file:font-semibold file:text-primary-700"
-              onChange={(event) => {
-                const picked = event.target.files?.[0];
-                if (!picked) return;
-                const size = (picked.size / (1024 * 1024)).toFixed(1);
-                setFile({ name: picked.name, type: picked.name.split(".").pop()?.toLowerCase() || "pdf", size: `${Number(size) > 0 ? size : "0.5"} MB` });
-                if (!v("title")) setValues((current) => ({ ...current, title: picked.name.replace(/\.[^/.]+$/, "") }));
-              }}
-            />
-          </Field>
-          {file && (
-            <p className="m-0 flex items-center gap-2 rounded-control bg-canvas p-2 text-body">
-              <FileUp aria-hidden className="size-4 text-primary-700" />
-              <span className="flex-1">{file.name} ({file.size})</span>
-              <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFile(null)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:text-ink focus-visible:outline-3 focus-visible:outline-focus"><X aria-hidden className="size-4" /></button>
-            </p>
-          )}
-        </>
-      ) : (
-        <>
-          <Field label="Instructions">
-            <Textarea value={v("instructions")} onChange={set("instructions")} rows={3} />
-          </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Due date" hint="Leave empty for no due date.">
-              <Input type="datetime-local" value={v("dueAt")} onChange={set("dueAt")} />
-            </Field>
-            <Field label="Points" required error={errors.points}>
-              <Input type="number" inputMode="numeric" min={1} value={v("points")} onChange={set("points")} />
-            </Field>
-          </div>
-          <div className="flex flex-col">
-            <Check label="Accept late work" checked={flags.allowLate} onChange={(value) => setFlags((current) => ({ ...current, allowLate: value }))} />
-            <Check label="Allow resubmission" checked={flags.allowResubmission} onChange={(value) => setFlags((current) => ({ ...current, allowResubmission: value }))} />
-          </div>
-        </>
+      <Field label="Resource type">
+        <Select value={v("kind")} onChange={set("kind")}>
+          {RESOURCE_TYPES.map((kind) => <option key={kind} value={kind}>{kind}</option>)}
+        </Select>
+      </Field>
+      <Field label="Description & Learning Objectives">
+        <Textarea value={v("description")} onChange={set("description")} rows={3} />
+      </Field>
+      <Field label="Attach file / document" hint="PDF, DOCX, PPTX, TXT, or ZIP. The demo keeps the file name and size only.">
+        <Input
+          type="file"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
+          className="py-2.5 file:mr-3 file:rounded-control file:border-0 file:bg-primary-100 file:px-3 file:py-1.5 file:font-sans file:text-body file:font-semibold file:text-primary-700"
+          onChange={(event) => {
+            const picked = event.target.files?.[0];
+            if (!picked) return;
+            const size = (picked.size / (1024 * 1024)).toFixed(1);
+            setFile({ name: picked.name, type: picked.name.split(".").pop()?.toLowerCase() || "pdf", size: `${Number(size) > 0 ? size : "0.5"} MB` });
+            if (!v("title")) setValues((current) => ({ ...current, title: picked.name.replace(/\.[^/.]+$/, "") }));
+          }}
+        />
+      </Field>
+      {file && (
+        <p className="m-0 flex items-center gap-2 rounded-control bg-canvas p-2 text-body">
+          <FileUp aria-hidden className="size-4 text-primary-700" />
+          <span className="flex-1">{file.name} ({file.size})</span>
+          <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFile(null)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:text-ink focus-visible:outline-3 focus-visible:outline-focus"><X aria-hidden className="size-4" /></button>
+        </p>
       )}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={() => onDone(false)}>Cancel</Button>
@@ -149,7 +99,7 @@ function ContentForm({ type, room, content, onDone }: Pick<ClassTabProps, "room"
 interface CategoryItem {
   key: string;
   label: string;
-  /** A draft assessment opens in the builder. */
+  /** A draft opens in its builder. */
   onEdit?: () => void;
 }
 
@@ -188,33 +138,26 @@ function Category({ title, note, icon, type, items, onCreate }: { title: string;
 
 export function CreateContentTab({ room, content, goTab, open }: ClassTabProps & { open?: ContentType }) {
   const navigate = useNavigate();
-  // Assessments have their own builder (D-040); the old ?create=exam link still leads there.
+  // Assignments and assessments have their own builders (D-040, D-059); the old ?create= links still lead there.
   if (open === "exam") return <Navigate to={instructorPaths.assessmentNew(room.id)} replace />;
-  const create = (type: ContentType) => (type === "exam" ? navigate(instructorPaths.assessmentNew(room.id)) : goTab("Create content", { create: type }));
+  if (open === "activity") return <Navigate to={instructorPaths.assignmentNew(room.id)} replace />;
+  const create = (type: ContentType) =>
+    type === "exam" ? navigate(instructorPaths.assessmentNew(room.id)) : type === "activity" ? navigate(instructorPaths.assignmentNew(room.id)) : goTab("Create content", { create: type });
+  const listed = (item: { id: string; title: string; draft?: boolean }, edit: (id: string) => string): CategoryItem => ({
+    key: item.id,
+    label: item.draft ? `${item.title} · Draft` : item.title,
+    onEdit: item.draft ? () => navigate(edit(item.id)) : undefined,
+  });
   return (
     <div className="flex flex-col gap-4">
       <SectionHeading title="Create and organize" />
       <p className="m-0 -mt-2 text-body text-muted">Choose what you want to share with this class.</p>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => ({ key: item.id, label: `${item.title} · ${item.kind ?? "Material"}` }))} onCreate={create} />
-        <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => ({ key: item.id, label: item.title }))} onCreate={create} />
-        <Category title="Assessments" note="Build and publish a quiz or exam" icon={<GraduationCap />} type="exam" items={content.exams.map((item) => ({
-            key: item.id,
-            label: item.draft ? `${item.title} · Draft` : item.title,
-            onEdit: item.draft ? () => navigate(instructorPaths.assessmentEdit(room.id, item.id)) : undefined,
-          }))}
-          onCreate={create}
-        />
+        <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => listed(item, (id) => instructorPaths.assignmentEdit(room.id, id)))} onCreate={create} />
+        <Category title="Assessments" note="Build and publish a quiz or exam" icon={<GraduationCap />} type="exam" items={content.exams.map((item) => listed(item, (id) => instructorPaths.assessmentEdit(room.id, id)))} onCreate={create} />
       </div>
-      {open && (
-        <ContentForm
-          key={open}
-          type={open}
-          room={room}
-          content={content}
-          onDone={(saved) => goTab(saved ? (open === "material" ? "Materials" : "Classwork") : "Create content")}
-        />
-      )}
+      {open === "material" && <MaterialForm key={open} room={room} content={content} onDone={(saved) => goTab(saved ? "Materials" : "Create content")} />}
     </div>
   );
 }
