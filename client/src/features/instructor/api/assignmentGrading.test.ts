@@ -303,3 +303,26 @@ describe("writeResult", () => {
     expect(await writeResult(() => Promise.resolve())).toEqual({ ok: true });
   });
 });
+
+describe("afterPenalty", () => {
+  it("rounds half away from zero exactly as the server's decimals do", () => {
+    // 7.5 × 0.63 is 4.725: floating point would give 4.72, the server stores 4.73.
+    expect(afterPenalty(7.5, 37)).toBe(4.73);
+    expect(afterPenalty(2.5, 13)).toBe(2.18);
+    expect(afterPenalty(4.5, 7)).toBe(4.19);
+    expect(afterPenalty(18, 20)).toBe(14.4);
+    expect(afterPenalty(18.52, 10)).toBe(16.67);
+    expect(afterPenalty(20, 0)).toBe(20);
+    expect(afterPenalty(20, 100)).toBe(0);
+    expect(afterPenalty(0, 50)).toBe(0);
+  });
+
+  it("agrees with exact arithmetic for every half point and percent", () => {
+    for (let half = 0; half <= 200; half += 1)
+      for (let percent = 0; percent <= 100; percent += 1) {
+        // Exact, in integers: (half × 50 cents) × (100 − percent) hundredths, rounded half up to cents.
+        const exact = Math.floor((half * 50 * (100 - percent) + 50) / 100) / 100;
+        expect(afterPenalty(half / 2, percent)).toBe(exact);
+      }
+  });
+});

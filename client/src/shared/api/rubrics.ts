@@ -58,5 +58,6 @@ export function rubricTotal(rubric: Pick<Rubric, "criteria">, chosen: Record<num
     if (level) points += level.points;
     else complete = false;
   }
-  return { points, complete };
+  // Level points can have two decimals; adding them as floats would show 2.3000000000000003.
+  return { points: Math.round(points * 100) / 100, complete };
 }

@@ -237,10 +237,15 @@ export function penaltyPercentFor(activity: Pick<Activity, "latePenaltyPercentPe
   return Math.min(perDay * daysLate, Math.min(100, Math.max(1, activity.latePenaltyMaxPercent ?? 100)));
 }
 
-/** The points left after a penalty, rounded to two decimals half away from zero, as the server rounds. */
+/**
+ * The points left after a penalty, rounded to two decimals half away from zero, exactly as the
+ * server does with decimals: worked out in whole ten-thousandths, because 7.5 × 0.63 in floating
+ * point is 4.7249…, which would show 4.72 where the server stores 4.73.
+ */
 export function afterPenalty(raw: number, percent: number): number {
-  const value = (raw * (100 - percent)) / 100;
-  return Math.sign(value) * Math.round((Math.abs(value) + Number.EPSILON) * 100) / 100;
+  const tenThousandths = Math.round(Math.abs(raw) * 100) * Math.round((100 - percent) * 100);
+  const cents = Math.floor((tenThousandths + 5000) / 10000);
+  return (Math.sign(raw) * cents) / 100;
 }
 
 /** Whether this assignment takes points off late work. */

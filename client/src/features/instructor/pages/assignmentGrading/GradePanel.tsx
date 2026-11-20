@@ -153,7 +153,7 @@ export function GradeForm({ classId, activity, row, latest, next, onNext }: Grad
       {penalised && (
         <div className="flex flex-col gap-2 rounded-control bg-canvas p-3">
           {rule && <p className="m-0 text-body">{rule}</p>}
-          <p className="m-0 text-body font-semibold" aria-live="polite">{sum ?? (byRubric ? "Choose the levels to see the score after the penalty." : "Enter the points to see the score after the penalty.")}</p>
+          <p className="m-0 text-body font-semibold">{sum ?? (byRubric ? "Choose the levels to see the score after the penalty." : "Enter the points to see the score after the penalty.")}</p>
           <label className="flex min-h-touch cursor-pointer items-center gap-3 font-sans text-body text-ink">
             <input type="checkbox" checked={waived} onChange={(event) => setWaived(event.target.checked)} className="size-5 shrink-0 accent-primary-600" />
             <span>Waive the late penalty for this student</span>

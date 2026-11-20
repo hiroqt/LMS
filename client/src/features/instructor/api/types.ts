@@ -213,6 +213,15 @@ export interface AttendanceRecord {
   daysPresent: Record<string, number>;
 }
 
+export interface ActivityException {
+  activityId: string;
+  classroomId: string;
+  studentId: string;
+  dueAt?: string;
+  closeAt?: string;
+  excused: boolean;
+}
+
 export interface RoleStore {
   users: User[];
   subjects: Subject[];
@@ -227,6 +236,8 @@ export interface RoleStore {
   announcements?: Announcement[];
   gradebookSettings: Record<string, GradebookSetting>;
   attendance: AttendanceRecord[];
+  /** Each student's own dates or excuse for an assignment (contract §11). */
+  activityExceptions: ActivityException[];
   systemAdministration?: { settings: { currentTermId: string }; terms: Array<{ id: string; name: string }> };
 }
 

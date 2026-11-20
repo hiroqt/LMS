@@ -256,7 +256,7 @@ function RubricEditor({ room, start }: { room: Classroom; start?: Rubric }) {
           className="sticky bottom-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface p-3 @4xl:top-20 @4xl:bottom-auto @4xl:flex-col @4xl:items-stretch @4xl:self-start @4xl:p-5"
         >
           <div className="flex min-w-0 flex-col">
-            <p aria-live="polite" className="m-0 font-sans text-body font-semibold text-ink">Total: {pointsLabel(locked && saved ? saved.totalPoints : total)}</p>
+            <p className="m-0 font-sans text-body font-semibold text-ink">Total: {pointsLabel(locked && saved ? saved.totalPoints : total)}</p>
             {errors.general && <p role="alert" className="m-0 text-body font-medium text-danger">{errors.general}</p>}
             {dirty && <p className="m-0 text-body text-muted">Unsaved changes</p>}
           </div>

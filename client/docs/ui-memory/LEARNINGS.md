@@ -700,3 +700,16 @@ minutes (L-087). The suite's "now" is 09:00 in Manila, so a due date exactly two
 `serverNow` (rounded to the minute) is 2 days late by both clocks, and the dialog's "2 days late"
 matches the grade's `daysLate`. `e2e/assignment-work-more.spec.ts` builds every date that way
 (`daysFrom`) and formats expected dates in Asia/Manila like `formatDue`.
+
+### L-098 · Never preview money-like arithmetic in floating point; and a second way to grade must say the same thing
+`2026-11-20` · hiro (assignments) · scope: instructor, shared · confidence: high
+An independent review of the Phase 3 screens found the late-penalty preview a cent off the server
+for thousands of inputs (7.5 less 37% is 4.725: floats give 4.72, the server's decimals 4.73).
+`afterPenalty` now works in whole ten-thousandths, and `rubricTotal` rounds its sum to cents. It
+also found that the class Submissions tab, a second place to grade, took one score and said
+"18 / 20" for late work that scored 14.4: it now sends rubric and penalized-late work to the
+assignment's grading page, and the overview carries `exceptions` so excused students are not
+listed there as having handed in nothing. When a rule gets a second screen, check the first one.
+Also from that review: `fileNameFrom` (`http.ts`) reads `filename*=` first and never URI-decodes a
+plain `filename`, since "Lab 100% done" is not an encoding; and `latePenaltyRule` says "loses N%"
+when the cap is reached on the first day.

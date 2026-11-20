@@ -8,8 +8,10 @@ export type HandInSettings = Pick<Coursework, "submissionKinds" | "allowedFileTy
 /** "Late work loses 10% of its score for each day late, up to 50%." Null when the assignment has no penalty. */
 export function latePenaltyRule(settings: Pick<HandInSettings, "dueAt" | "allowLate" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent">): string | null {
   if (!settings.dueAt || !settings.allowLate || settings.latePenaltyPercentPerDay <= 0) return null;
-  const cap = settings.latePenaltyMaxPercent < 100 && settings.latePenaltyMaxPercent > settings.latePenaltyPercentPerDay ? `, up to ${settings.latePenaltyMaxPercent}%` : "";
-  return `Late work loses ${settings.latePenaltyPercentPerDay}% of its score for each day late${cap}.`;
+  const { latePenaltyPercentPerDay: perDay, latePenaltyMaxPercent: cap } = settings;
+  // The cap is reached on the first day late, so "for each day" would promise more than is ever taken.
+  if (cap <= perDay) return `Late work loses ${cap}% of its score.`;
+  return `Late work loses ${perDay}% of its score for each day late${cap < 100 ? `, up to ${cap}%` : ""}.`;
 }
 
 /** "a written answer, a link, and up to 3 files" */

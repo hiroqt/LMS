@@ -111,13 +111,15 @@ export function gradedLabel(item: Pick<WorkItem, "gradedCount" | "rosterCount">)
  * this assignment or assessment (D-036). An exam attempt still in progress is not in
  * the instructor's data, so the server has the last word and refuses those.
  */
-export function studentsWithoutWork(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions">, item: Pick<WorkItem, "id" | "kind">, students: User[]): User[] {
+export function studentsWithoutWork(store: Pick<RoleStore, "activitySubmissions" | "examSubmissions"> & Partial<Pick<RoleStore, "activityExceptions">>, item: Pick<WorkItem, "id" | "kind">, students: User[]): User[] {
   const done = new Set(
     item.kind === "Assignment"
       ? store.activitySubmissions.filter((record) => record.activityId === item.id).map((record) => record.studentId)
       : store.examSubmissions.filter((record) => record.examId === item.id).map((record) => record.studentId),
   );
-  return students.filter((student) => !done.has(student.id));
+  // An excused student has nothing to hand in and nothing to grade (D-062).
+  const excused = new Set(item.kind === "Assignment" ? (store.activityExceptions ?? []).filter((record) => record.activityId === item.id && record.excused).map((record) => record.studentId) : []);
+  return students.filter((student) => !done.has(student.id) && !excused.has(student.id));
 }
 
 /** Students given a grade without handing anything in, with that grade. */
@@ -214,7 +216,8 @@ const averageOf = (values: number[]) => (values.length ? Math.round(values.reduc
 
 /** Illustrative category averages from graded work only (classic rule). */
 export function gradebookAverages(store: RoleStore, roomId: string): { activities: CategoryAverage; exams: CategoryAverage } {
-  const activityGrades = store.activitySubmissions.filter((item) => item.classroomId === roomId && item.grade !== null && item.grade !== undefined);
+  // Excused work is not counted, graded or not (D-062).
+  const activityGrades = store.activitySubmissions.filter((item) => item.classroomId === roomId && item.grade !== null && item.grade !== undefined && !item.excused);
   const examGrades = store.examSubmissions.filter((item) => item.classroomId === roomId && item.status === "graded");
   const maxOf = (activityId: string) => store.activities.find((item) => item.id === activityId)?.maxScore || 1;
   return {

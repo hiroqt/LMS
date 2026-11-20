@@ -209,6 +209,8 @@ export interface Overview {
   gradebooks: Array<{ classId: string; activityWeight: number; examWeight: number; passingScore: number }>;
   /** Newest month first. Recorded only; not part of the gradebook (D-035). */
   attendance: Array<{ classId: string; month: AttendanceMonth }>;
+  /** Instructors: each student's own dates or excuse for an assignment (contract §11); empty for students. */
+  exceptions: Array<{ courseworkId: number; classId: string; studentId: string; dueAt: string | null; closeAt: string | null; excused: boolean }>;
 }
 
 export interface People {

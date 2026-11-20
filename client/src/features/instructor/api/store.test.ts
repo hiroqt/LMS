@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { overviewFixture } from "../../../shared/api/overviewFixture";
-import { classContent, classroomsOf, gradebookAverages, reviewQueue } from "./selectors";
+import { classContent, classroomsOf, gradebookAverages, reviewQueue, studentsWithoutWork } from "./selectors";
 import { toRoleStore } from "./store";
 
 const people = { instructors: [{ id: "EMP-1", name: "Ana Reyes" }, { id: "EMP-2", name: "Ben Cruz" }], students: [] };
@@ -63,5 +63,28 @@ describe("toRoleStore", () => {
     }), people);
     expect(s.activitySubmissions.map((item) => [item.id, item.excused])).toEqual([["31", true], ["32", false]]);
     expect(reviewQueue(s, classroomsOf(s, "EMP-1")).map((item) => item.id)).toEqual(["32"]);
+    // Her graded work would not count either.
+    s.activitySubmissions[0]!.grade = 5;
+    s.activitySubmissions[1]!.grade = 10;
+    expect(gradebookAverages(s, "class-a").activities).toEqual({ graded: 1, average: 100 });
+  });
+
+  it("does not list an excused student as having handed in nothing", () => {
+    const s = toRoleStore(overviewFixture((o) => {
+      o.submissions = [];
+      o.exceptions = [
+        { courseworkId: 1, classId: "class-a", studentId: "STU-1", dueAt: null, closeAt: null, excused: true },
+        { courseworkId: 1, classId: "class-a", studentId: "STU-2", dueAt: "2026-11-05T15:59:00Z", closeAt: null, excused: false },
+      ];
+    }), people);
+    expect(s.activityExceptions).toEqual([
+      { activityId: "1", classroomId: "class-a", studentId: "STU-1", excused: true },
+      { activityId: "1", classroomId: "class-a", studentId: "STU-2", dueAt: "2026-11-05T15:59:00Z", excused: false },
+    ]);
+    const students = classContent(s, "class-a").students;
+    // Lia is excused; Max only has more time, so he is still missing.
+    expect(studentsWithoutWork(s, { id: "1", kind: "Assignment" }, students).map((user) => user.id)).toEqual(["STU-2"]);
+    // An excuse for an assignment says nothing about an exam.
+    expect(studentsWithoutWork(s, { id: "2", kind: "Assessment" }, students).map((user) => user.id)).toEqual(["STU-1", "STU-2"]);
   });
 });

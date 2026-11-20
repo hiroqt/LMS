@@ -24,6 +24,14 @@ describe("rubric sums", () => {
     expect(chosenLevels([{ criterionId: 7, levelId: 21, points: 10 }])).toEqual({ 7: 21 });
     expect(chosenLevels(undefined)).toEqual({});
   });
+
+  it("adds decimal level points without float noise", () => {
+    const decimals = { criteria: [
+      { id: 1, title: "A", description: null, levels: [{ id: 11, title: "x", description: null, points: 2.1 }] },
+      { id: 2, title: "B", description: null, levels: [{ id: 21, title: "y", description: null, points: 0.2 }] },
+    ] };
+    expect(rubricTotal(decimals, { 1: 11, 2: 21 })).toEqual({ points: 2.3, complete: true });
+  });
 });
 
 describe("RubricView", () => {

@@ -22,10 +22,15 @@ type Mine = { status: string; score: number | null; rawScore: number | null; pen
 const latestOf = async (page: Page, sandbox: string, id: string, courseworkId: string) =>
   (await callApi<Mine[]>(page, sandbox, student(id), "GET", `/api/classes/biology/coursework/${courseworkId}/my-submissions`)).at(-1);
 
-/** An assignment due two calendar days before the API's "now", taking late work. */
+/**
+ * An assignment that was due at noon in Manila two calendar days before the API's "today",
+ * taking late work. Counted in calendar days, so work turned in now is 2 days late at any time
+ * of day (a due time relative to "now" would be 3 days back in the first minute after midnight).
+ */
 async function lateAssignment(page: Page, sandbox: string, settings: Record<string, unknown> = {}) {
-  const now = await serverNow(page, sandbox);
-  return seedAssignment(page, sandbox, { title: TITLE, settings: { dueAt: new Date(now.getTime() - 2 * DAY - 60_000).toISOString(), allowLate: true, ...settings } });
+  const manila = new Date((await serverNow(page, sandbox)).getTime() + 8 * 60 * 60 * 1000);
+  const dueAt = new Date(Date.UTC(manila.getUTCFullYear(), manila.getUTCMonth(), manila.getUTCDate() - 2, 12 - 8));
+  return seedAssignment(page, sandbox, { title: TITLE, settings: { dueAt: dueAt.toISOString(), allowLate: true, ...settings } });
 }
 
 test.describe("Assignment grading · Phase 3", () => {
@@ -243,7 +248,8 @@ test.describe("Assignment grading · Phase 3", () => {
 
   test("Download all work saves one zip; with nothing handed in it is disabled with the reason", async ({ page, sandbox }) => {
     const empty = await seedAssignment(page, sandbox, { title: "Nothing yet" });
-    const { classId, courseworkId } = await seedAssignment(page, sandbox, { title: TITLE });
+    // A title with a percent sign and brackets: the server's file name keeps them, and reading it must not fail.
+    const { classId, courseworkId } = await seedAssignment(page, sandbox, { title: "Lab 100% (final)" });
     await turnInWork(page, sandbox, classId, courseworkId, { viewer: student("s0"), text: "My answer.", files: [pdfFile()] });
     await openRole(page, "instructor");
 
@@ -254,8 +260,33 @@ test.describe("Assignment grading · Phase 3", () => {
     await page.goto(gradingPath(courseworkId));
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download all work (.zip)" }).click();
-    expect((await download).suggestedFilename()).toMatch(/\.zip$/);
+    // The server's own name for it (the page's fallback would be "Lab 100 final-work.zip").
+    expect((await download).suggestedFilename()).toBe("Lab 100% (final)-work.zip");
     await expect(toast(page, "Work downloaded")).toBeVisible();
+  });
+
+  test("the class Submissions tab sends penalized late work to the grading page, and leaves excused students out", async ({ page, sandbox }) => {
+    const { classId, courseworkId } = await lateAssignment(page, sandbox, { latePenaltyPercentPerDay: 10 });
+    const work = await turnInWork(page, sandbox, classId, courseworkId, { viewer: student("s0"), files: [pdfFile()] });
+    await excuse(page, sandbox, classId, courseworkId, "s1");
+    await openRole(page, "instructor");
+
+    // One score typed there would not say what it becomes, so this work is graded on the assignment's page.
+    await page.goto(`/instructor/classes/biology?tab=Submissions&review=${work.id}`);
+    await expect(page.getByText("This work is late, and this assignment takes points off late work.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save grade" })).toBeDisabled();
+    await expect(page.getByRole("spinbutton", { name: /Score/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "Open the grading page" }).click();
+    await expect(page.getByRole("region", { name: "Alex Rivera" }).getByText("Late work loses 10% of its score for each day late.")).toBeVisible();
+
+    // Jamie (s1) is excused: not one of the students who "handed in nothing" there.
+    await page.goto("/instructor/classes/biology?tab=Submissions");
+    const panel = page.getByRole("region", { name: "Didn't hand in" });
+    await panel.getByRole("combobox", { name: "Assignment or assessment" }).selectOption({ label: TITLE });
+    const missing = page.getByRole("list", { name: `Didn't hand in ${TITLE}` });
+    await expect(missing.getByRole("listitem")).toHaveCount(10);
+    await expect(missing.getByText("Jamie Lee")).toHaveCount(0);
+    await expect(missing.getByText("Alex Rivera")).toHaveCount(0);
   });
 
   test("zero axe violations and text ≥14px with Phase 3 on screen @all", async ({ page, sandbox }) => {

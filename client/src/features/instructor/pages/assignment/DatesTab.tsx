@@ -134,10 +134,8 @@ export function DatesTab({ form, errors, onChange, rubrics }: TabPartProps & { r
             data-focus="assignment:rubricId"
             value={form.rubricId}
             disabled={rubrics.status !== "success" && !form.rubricId}
-            onChange={(event) => {
-              const next = rubrics.list.find((item) => String(item.id) === event.target.value);
-              onChange({ rubricId: event.target.value, ...(next ? { points: String(next.totalPoints) } : {}) });
-            }}
+            // The points the instructor typed are kept for when the rubric is taken off again; with a rubric they are not sent.
+            onChange={(event) => onChange({ rubricId: event.target.value })}
           >
             <option value="">No rubric</option>
             {/* A saved choice stays listed while the list loads or fails. */}

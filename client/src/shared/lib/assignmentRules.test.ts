@@ -12,8 +12,10 @@ describe("latePenaltyRule", () => {
   it("words the penalty per day and its cap", () => {
     expect(latePenaltyRule(late)).toBe("Late work loses 10% of its score for each day late, up to 50%.");
     expect(latePenaltyRule({ ...late, latePenaltyMaxPercent: 100 })).toBe("Late work loses 10% of its score for each day late.");
-    // A cap no higher than one day's penalty adds nothing to say.
-    expect(latePenaltyRule({ ...late, latePenaltyMaxPercent: 10 })).toBe("Late work loses 10% of its score for each day late.");
+    // A cap no higher than one day's penalty is all that is ever taken, so "for each day" is not said.
+    expect(latePenaltyRule({ ...late, latePenaltyMaxPercent: 10 })).toBe("Late work loses 10% of its score.");
+    expect(latePenaltyRule({ ...late, latePenaltyPercentPerDay: 20, latePenaltyMaxPercent: 10 })).toBe("Late work loses 10% of its score.");
+    expect(latePenaltyRule({ ...late, latePenaltyPercentPerDay: 100, latePenaltyMaxPercent: 100 })).toBe("Late work loses 100% of its score.");
   });
 
   it("says nothing without a penalty, a due date, or late work", () => {

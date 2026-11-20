@@ -195,5 +195,13 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       schoolDays: month.schoolDays,
       daysPresent: Object.fromEntries(month.entries.map((entry) => [entry.studentId, entry.daysPresent])),
     })),
+    activityExceptions: (overview.exceptions ?? []).map((item) => ({
+      activityId: String(item.courseworkId),
+      classroomId: item.classId,
+      studentId: item.studentId,
+      ...(item.dueAt ? { dueAt: item.dueAt } : {}),
+      ...(item.closeAt ? { closeAt: item.closeAt } : {}),
+      excused: item.excused,
+    })),
   };
 }

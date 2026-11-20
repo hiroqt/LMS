@@ -183,9 +183,28 @@ export async function getFile(path: string, options: Omit<GetJsonOptions, "ident
     throw new ApiError({ kind: "network", status: 0, url, cause });
   }
   if (!response.ok) throw new ApiError({ kind: kindForStatus(response.status), status: response.status, url, ...(await readProblem(response)) });
-  const disposition = response.headers.get("Content-Disposition") ?? "";
-  const fileName = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)?.[1];
-  return { blob: await response.blob(), fileName: fileName ? decodeURIComponent(fileName) : undefined };
+  return { blob: await response.blob(), fileName: fileNameFrom(response.headers.get("Content-Disposition")) };
+}
+
+/**
+ * The file name a `Content-Disposition` header gives. The encoded form (`filename*=UTF-8''…`)
+ * is preferred and is the only one that is URI-decoded; the plain `filename="…"` is taken as it
+ * is, since a name like "Lab 100% done" is not an encoding. A name that can't be read (a broken
+ * escape, or the MIME-encoded form servers use for non-ASCII) is no name: the caller has its own.
+ */
+export function fileNameFrom(disposition: string | null): string | undefined {
+  if (!disposition) return undefined;
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.trim());
+    } catch {
+      // Fall through to the plain name.
+    }
+  }
+  const plain = /filename\s*=\s*(?:"([^"]*)"|([^;]+))/i.exec(disposition);
+  const name = (plain?.[1] ?? plain?.[2])?.trim();
+  return name && !name.startsWith("=?") ? name : undefined;
 }
 
 /**
