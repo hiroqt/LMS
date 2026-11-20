@@ -15,6 +15,7 @@ import { studentPaths } from "../paths";
 function EntryStatus({ entry, completed, now }: { entry: CalendarEntry; completed: string[]; now: number }) {
   if (!entry.assessment) return <Badge>Scheduled</Badge>;
   if (completed.includes(entry.assessment.id)) return <Badge tone="success">Done</Badge>;
+  if (entry.assessment.excused) return <Badge>Excused</Badge>;
   return entry.date.getTime() < now ? <Badge tone="danger">Past due</Badge> : <Badge tone="brand">Upcoming</Badge>;
 }
 

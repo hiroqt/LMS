@@ -832,3 +832,30 @@ Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–�
   assignment with a rubric is worth the rubric's total, as an exam is worth its questions.
 - **The zip is built as it is sent** and capped at 250 MB, because the browser has to hold it in
   memory to save it (L-075).
+
+### D-065 · The student's assignment page shows their own due date, excused work, the late-penalty sum, and the rubric
+`2026-11-19` · hiro (assignments, PR 3C) · scope: student, shared, e2e · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§12. Builds on D-060, D-062.
+- **Own dates replace the class's for that student, everywhere.** `toStudentCatalog` sets
+  `Assessment.dueAt` to `turnIn.dueAt` when `turnIn.extended` (`studentDueAt`), keeps the class's
+  as `classDueAt`, and gives `handIn` the student's due date and last day (`ownHandIn`). Tasks,
+  Today and Calendar read `dueAt`, so they follow without changes. The rules say "Your due date:
+  … (your instructor gave you more time)" instead of "Due …" (`AssignmentBrief` `ownDueDate`),
+  and the details card's label becomes "Your due date".
+- **Excused is out of every to-do.** `needsWork` (selectors) is the one rule for "still to do":
+  not handed in and not excused. Due soon, Due this week, Missing, the Today panels and the
+  Calendar's "Past due" use it; excused rows show an **Excused** badge with text. The work card
+  says the server's sentence, has no editor and no Turn in, and keeps work already handed in
+  read-only.
+- **The late penalty is a sum in words and numbers** under **Your grade**: points given, the
+  percent and days late, the score after it, and one sentence ("… so 20% came off: 18 − 3.6 =
+  14.4."); "Late penalty waived" when waived. The turn-in dialog says what turning in now loses
+  ("Turning in now is 2 days late: 20% comes off the score."). Days are counted in the browser
+  exactly as contract §10 defines them (calendar days in Asia/Manila, at least 1; `daysLate` in
+  `api/work.ts`); the browser's clock can differ from the server's by minutes, so near midnight
+  in Manila the number shown before turning in can be one off from the one the grade uses.
+- **The rubric is read once per page** (`useAssignmentRubric`, TanStack Query, 404 is "none"):
+  read-only in the brief (`AssignmentBrief` optional `rubric`, so the instructor's preview can
+  show it too), and with the chosen levels on a visible grade, where the brief leaves it out so
+  it is not shown twice. A held grade shows neither the sum nor the levels (the server hides them).
+- Spec: `e2e/assignment-work-more.spec.ts`. No existing journey changed.

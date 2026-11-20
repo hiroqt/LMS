@@ -1,5 +1,6 @@
 import { isApiError } from "../../../shared/api/http";
 import { isHandedIn, type Submission, type SubmissionKind, type TurnIn } from "../../../shared/api/overview";
+import type { HandInSettings } from "../../../shared/lib/assignmentRules";
 
 /**
  * The student's work on one assignment, in words (contract §2, §6, §7). The server decides every
@@ -114,3 +115,76 @@ export const canRetry = (error: unknown) =>
 /** Whether an autosave should keep trying by itself: only the connection or a server error. */
 export const shouldRetrySave = (error: unknown) =>
   !isApiError(error) || error.kind === "network" || error.kind === "timeout" || error.status >= 500;
+
+// ------------------------------------------------------------------ Late penalties (contract §10)
+
+/** The school's time zone (`Lms:TimeZone` on the server): days late are counted in it. */
+export const SCHOOL_TIME_ZONE = "Asia/Manila";
+
+const schoolDay = new Intl.DateTimeFormat("en-CA", { timeZone: SCHOOL_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** The calendar date in the school's time zone as a day number, so two dates subtract to whole days. */
+function schoolDayNumber(at: number): number {
+  const parts = Object.fromEntries(schoolDay.formatToParts(new Date(at)).map((part) => [part.type, part.value]));
+  return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / 86_400_000;
+}
+
+/**
+ * Days late as the server counts them (contract §10): the school-time-zone date of the turn-in
+ * minus the date it was due, and at least 1 for any late work; 0 when on time.
+ */
+export function daysLate(dueAt: string, at: number): number {
+  const due = new Date(dueAt).getTime();
+  if (Number.isNaN(due) || at <= due) return 0;
+  return Math.max(1, schoolDayNumber(at) - schoolDayNumber(due));
+}
+
+/** The percent a late penalty takes off for `days` days late, up to the cap. */
+export const penaltyPercent = (settings: Pick<HandInSettings, "latePenaltyPercentPerDay" | "latePenaltyMaxPercent">, days: number) =>
+  Math.min(settings.latePenaltyMaxPercent, settings.latePenaltyPercentPerDay * days);
+
+const dayWords = (days: number) => `${days} ${days === 1 ? "day" : "days"}`;
+
+/**
+ * "Turning in now is 2 days late: 20% comes off the score." Null when turning in now is not late
+ * or the assignment has no penalty. `settings.dueAt` is the student's own due date.
+ */
+export function latePenaltyNow(settings: Pick<HandInSettings, "dueAt" | "allowLate" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent">, now: number): string | null {
+  if (!settings.dueAt || !settings.allowLate || settings.latePenaltyPercentPerDay <= 0) return null;
+  const days = daysLate(settings.dueAt, now);
+  if (days === 0) return null;
+  return `Turning in now is ${dayWords(days)} late: ${penaltyPercent(settings, days)}% comes off the score.`;
+}
+
+/** "14.4", "18": points as the server rounds them, to two decimals at most. */
+export const formatPoints = (points: number) => String(Math.round(points * 100) / 100);
+
+export interface GradeLine {
+  label: string;
+  value: string;
+}
+
+/**
+ * A visible grade on handed-in work, as a sum (contract §10): the points given, what the late
+ * penalty took off and why, and the score after it. Null while there is no grade to show (a held
+ * grade arrives as `submitted` without a score).
+ */
+export function gradeSum(row: Pick<Submission, "status" | "score" | "rawScore" | "maxPoints" | "daysLate" | "penaltyPercent" | "penaltyWaived">): { lines: GradeLine[]; note: string | null } | null {
+  if ((row.status !== "graded" && row.status !== "returned") || row.score === null) return null;
+  const outOf = (points: number) => `${formatPoints(points)} of ${formatPoints(row.maxPoints)} points`;
+  const score = { label: "Your score", value: outOf(row.score) };
+  if (row.penaltyPercent > 0) {
+    const given = row.rawScore ?? row.score;
+    return {
+      lines: [
+        { label: "Points given", value: outOf(given) },
+        { label: "Late penalty", value: `${row.penaltyPercent}% off, ${dayWords(row.daysLate)} late` },
+        score,
+      ],
+      note: `Your instructor gave ${outOf(given)}. The work was ${dayWords(row.daysLate)} late, so ${row.penaltyPercent}% came off: ${formatPoints(given)} − ${formatPoints(given - row.score)} = ${formatPoints(row.score)}.`,
+    };
+  }
+  if (row.penaltyWaived && row.daysLate > 0)
+    return { lines: [score], note: `Late penalty waived. The work was ${dayWords(row.daysLate)} late, and nothing came off.` };
+  return { lines: [score], note: null };
+}

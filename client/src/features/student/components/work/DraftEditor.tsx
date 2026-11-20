@@ -11,7 +11,7 @@ import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog
 import { Field, Input, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { studentKeys } from "../../api/student";
-import { canRetry, filesLeftLabel, hasWork, isWebAddress, shouldRetrySave, turnInContents, withRow } from "../../api/work";
+import { canRetry, filesLeftLabel, hasWork, isWebAddress, latePenaltyNow, shouldRetrySave, turnInContents, withRow } from "../../api/work";
 import { useAutosave } from "../../hooks/useAutosave";
 import { pendingCount } from "../../hooks/uploadQueue";
 import { useUploadQueue } from "../../hooks/useUploadQueue";
@@ -90,6 +90,8 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
   const [link, setLink] = useState(draft?.link ?? "");
   const [linkError, setLinkError] = useState("");
   const [confirming, setConfirming] = useState(false);
+  // What turning in now would lose to a late penalty, worked out when the dialog opens.
+  const [penaltyNote, setPenaltyNote] = useState<string | null>(null);
   const [turningIn, setTurningIn] = useState(false);
   const [removing, setRemoving] = useState<SubmittedFile | null>(null);
   const [removeBusy, setRemoveBusy] = useState(false);
@@ -170,6 +172,7 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
       toast.show({ title: "Your work is not saved yet", description: "Wait for “Saved”, then turn in.", tone: "danger" });
       return;
     }
+    setPenaltyNote(turnIn.late ? latePenaltyNow(settings, Date.now()) : null);
     setConfirming(true);
   };
 
@@ -284,6 +287,7 @@ export function DraftEditor({ classId, assessmentId, settings, turnIn, draft, ne
         onOpenChange={(open) => !turningIn && setConfirming(open)}
         items={turnInContents(draft, kinds)}
         late={turnIn.late}
+        latePenalty={penaltyNote}
         honorStatement={settings.honorStatement}
         newVersion={newVersion}
         busy={turningIn}

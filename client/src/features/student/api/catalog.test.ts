@@ -82,6 +82,29 @@ describe("toStudentCatalog", () => {
     expect(catalog.assessments.find((item) => item.id === "2")?.handIn).toBeUndefined();
   });
 
+  it("uses the student's own dates when the instructor gave them more time, everywhere (contract §11)", () => {
+    const own = { state: "assigned", canTurnIn: true, reason: null, late: false, canUnsubmit: false, dueAt: "2026-11-06T15:59:00Z", closeAt: "2026-11-09T15:59:00Z", extended: true } as const;
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      Object.assign(o.coursework[0]!.coursework, { allowLate: true, closeAt: "2026-11-02T15:59:00Z", turnIn: own });
+    }));
+    const assignment = catalog.assessments.find((item) => item.id === "1");
+    expect(assignment).toMatchObject({ dueAt: "2026-11-06T15:59:00Z", classDueAt: "2026-10-30T15:59:00Z" });
+    expect(assignment?.handIn).toMatchObject({ dueAt: "2026-11-06T15:59:00Z", closeAt: "2026-11-09T15:59:00Z" });
+
+    // Without an extension, the assignment's dates, and no class date beside them.
+    const plain = toStudentCatalog(overviewFixture()).assessments.find((item) => item.id === "1");
+    expect(plain?.dueAt).toBe("2026-10-30T15:59:00Z");
+    expect(plain?.classDueAt).toBeUndefined();
+  });
+
+  it("marks excused work and carries the rubric id of an assignment", () => {
+    const catalog = toStudentCatalog(overviewFixture((o) => {
+      Object.assign(o.coursework[0]!.coursework, { rubricId: 3, turnIn: { state: "excused", canTurnIn: false, reason: "excused", late: false, canUnsubmit: false, dueAt: null, closeAt: null, extended: false } });
+    }));
+    expect(catalog.assessments.find((item) => item.id === "1")).toMatchObject({ excused: true, rubricId: 3 });
+    expect(catalog.assessments.find((item) => item.id === "3")?.excused).toBeUndefined();
+  });
+
   it("shows a returned assignment's grade; a held one arrives as submitted with no score", () => {
     const returned = toStudentCatalog(overviewFixture((o) => {
       o.submissions[1]!.submission.status = "returned";

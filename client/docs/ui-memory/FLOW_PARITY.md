@@ -48,6 +48,10 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
 | Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
 | Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
+| Own due date | An extension shows "Your due date: … (your instructor gave you more time)" in the rules and details; Turn in after the class's date, not late; Tasks lists it under Due soon with the student's date, not Missing (D-065) | ✔ `assignment-work-more` | ✅ |
+| Excused | "Excused" badge and the sentence; no editor or Turn in; work already handed in stays read-only; not in Due soon, Due this week, or Missing (D-065) | ✔ `assignment-work-more`, `selectors.test.ts` | ✅ |
+| Late penalty | The rule before handing in; the dialog says what turning in now loses; the grade shows points given, percent and days late, and the score; "Late penalty waived"; nothing while held (D-065) | ✔ `assignment-work-more`, `work.test.ts` | ✅ |
+| Rubric | Read-only in the brief before handing in; the chosen level per criterion on the grade, once; not on a held grade (D-065) | ✔ `assignment-work-more` | ✅ |
 | Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
 | D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | ✅ |
 

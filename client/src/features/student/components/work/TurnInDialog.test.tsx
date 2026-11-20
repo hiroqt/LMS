@@ -29,6 +29,12 @@ describe("TurnInDialog", () => {
     const { dialog } = setup({ late: true, newVersion: true });
     expect(dialog).toHaveAccessibleName("Turn in this new version?");
     expect(dialog).toHaveTextContent("The due date has passed. This turn-in will be marked late.");
+    expect(dialog).not.toHaveTextContent("comes off");
+  });
+
+  it("says what a late penalty takes off when turning in now", () => {
+    const { dialog } = setup({ late: true, latePenalty: "Turning in now is 2 days late: 20% comes off the score." });
+    expect(dialog).toHaveTextContent("This turn-in will be marked late. Turning in now is 2 days late: 20% comes off the score.");
   });
 
   it("needs “This is my own work” ticked when the assignment asks, and asks again on each opening", async () => {

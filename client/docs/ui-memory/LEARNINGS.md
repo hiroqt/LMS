@@ -660,3 +660,18 @@ file still waiting its turn (there is no request to abort: take it off the list)
 can land after the server stored the file (read the draft again), and that text typed while a
 turn-in is on its way was dropped (the fields are read-only and the dialog stays until it
 answers). Tests: `DraftEditor.test.tsx`, `useUploadQueue.test.tsx`.
+
+### L-096 · A disabled TanStack query is `isPending` forever
+`2026-11-19` · hiro (assignments, PR 3C) · scope: student · confidence: high
+`useAssignmentRubric` is disabled when the assignment has no `rubricId`, and a disabled query with
+no data reports `isPending: true`. Rendering a skeleton on `isPending` alone would show "Loading
+the rubric" on every assignment without one. Check the reason to fetch first (`rubricId &&
+rubric.isPending`, `AssignmentWork`), and treat the endpoint's 404 as `null`, not an error.
+
+### L-097 · Seed Phase 3 dates whole days from the API's "now"
+`2026-11-19` · hiro (assignments, PR 3C) · scope: e2e · confidence: high
+Days late are calendar days in Manila (contract §10), and the browser and the API clocks differ by
+minutes (L-087). The suite's "now" is 09:00 in Manila, so a due date exactly two days before
+`serverNow` (rounded to the minute) is 2 days late by both clocks, and the dialog's "2 days late"
+matches the grade's `daysLate`. `e2e/assignment-work-more.spec.ts` builds every date that way
+(`daysFrom`) and formats expected dates in Asia/Manila like `formatDue`.
