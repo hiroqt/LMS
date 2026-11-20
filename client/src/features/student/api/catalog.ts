@@ -41,7 +41,25 @@ function handInSettings(work: Coursework): HandInSettings {
     closeAt: work.closeAt ?? null,
     allowResubmission: work.allowResubmission,
     gradeRelease: work.gradeRelease ?? "immediate",
+    latePenaltyPercentPerDay: work.latePenaltyPercentPerDay ?? 0,
+    latePenaltyMaxPercent: work.latePenaltyMaxPercent ?? 100,
   };
+}
+
+/**
+ * The due date the student works to (contract §11): their own when the instructor gave them more
+ * time (`turnIn.extended`), otherwise the assignment's. Every list (Tasks, Today, Calendar) reads
+ * `Assessment.dueAt`, so they all show the student's own date.
+ */
+export function studentDueAt(work: Pick<Coursework, "dueAt" | "turnIn">): string {
+  if (work.turnIn?.extended && work.turnIn.dueAt) return work.turnIn.dueAt;
+  return work.dueAt ?? "";
+}
+
+/** The hand-in settings with this student's own dates, so the rules never state the class's due date as theirs. */
+export function ownHandIn(settings: HandInSettings, turnIn: Coursework["turnIn"] | undefined): HandInSettings {
+  if (!turnIn?.extended) return settings;
+  return { ...settings, dueAt: turnIn.dueAt ?? settings.dueAt, closeAt: turnIn.closeAt };
 }
 
 const shortDate =(iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -122,14 +140,17 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       title: work.title,
       type: work.category ?? (work.type === "exam" ? "Exam" : "Assignment"),
       description: work.description ?? work.instructions ?? "",
-      dueAt: work.dueAt ?? "",
+      dueAt: studentDueAt(work),
+      ...(work.turnIn?.extended && work.dueAt ? { classDueAt: work.dueAt } : {}),
+      ...(work.turnIn?.state === "excused" ? { excused: true } : {}),
+      ...(work.type === "assignment" && work.rubricId ? { rubricId: work.rubricId } : {}),
       questionCount: work.questionCount,
       points: work.maxPoints,
       timeLimit: work.timeLimitMinutes ? `${work.timeLimitMinutes} minutes` : "No time limit",
       instructions: work.instructions ?? "",
       kind: work.type === "assignment" ? ("activity" as const) : undefined,
       ...(work.type === "assignment" && work.turnIn ? { turnIn: work.turnIn } : {}),
-      ...(work.type === "assignment" ? { handIn: handInSettings(work) } : {}),
+      ...(work.type === "assignment" ? { handIn: ownHandIn(handInSettings(work), work.turnIn) } : {}),
       maxAttempts: work.maxAttempts ?? 1,
       closed: work.status === "closed",
       ...examSettings(work),

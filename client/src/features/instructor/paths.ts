@@ -59,6 +59,10 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(classId)}/assignments/${id}/grading${query ? `?${query}` : ""}`;
   },
+  /** A class's grading rubrics (D-062): the list, and one rubric to write or change. */
+  rubrics: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics`,
+  rubricNew: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/new`,
+  rubric: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/${id}`,
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,
   /**

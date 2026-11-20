@@ -14,5 +14,7 @@ export function handInSettingsOf(activity: Activity): HandInSettings {
     closeAt: activity.closeAt ?? null,
     allowResubmission: Boolean(activity.allowResubmission),
     gradeRelease: activity.gradeRelease ?? "immediate",
+    latePenaltyPercentPerDay: activity.latePenaltyPercentPerDay ?? 0,
+    latePenaltyMaxPercent: activity.latePenaltyMaxPercent ?? 100,
   };
 }

@@ -310,6 +310,74 @@ public sealed class Coursework : Audited
     public int MaxFiles { get; set; } = 5;
     /// <summary>Assignments: the student confirms "This is my own work" to turn in.</summary>
     public bool HonorStatement { get; set; }
+    /// <summary>Assignments: percent taken off the earned score per calendar day late; 0 is no penalty (D-062).</summary>
+    public int LatePenaltyPercentPerDay { get; set; }
+    /// <summary>Assignments: the most a late penalty can take off, 1 to 100.</summary>
+    public int LatePenaltyMaxPercent { get; set; } = 100;
+    /// <summary>Assignments: the rubric it is graded with; it is then worth the rubric's total (D-062).</summary>
+    public long? RubricId { get; set; }
+}
+
+/// <summary>
+/// One student's own terms for one assignment (D-062): a later due date, their own last day for
+/// late work, or being excused. At most one row per student and assignment.
+/// </summary>
+public sealed class CourseworkException : Audited
+{
+    public long Id { get; set; }
+    public long CourseworkId { get; set; }
+    public string StudentId { get; set; } = "";
+    /// <summary>The student's own due date; null when only excused.</summary>
+    public DateTime? DueAt { get; set; }
+    /// <summary>The student's own last day for late work; null follows the assignment (see StudentDates).</summary>
+    public DateTime? CloseAt { get; set; }
+    /// <summary>Not counted for this assignment: nothing to hand in, and out of the average and the close rule.</summary>
+    public bool Excused { get; set; }
+}
+
+/// <summary>A grading rubric of one class: criteria, each with levels worth points (D-062).</summary>
+public sealed class Rubric : Audited
+{
+    public long Id { get; set; }
+    public string ClassId { get; set; } = "";
+    public string Title { get; set; } = "";
+}
+
+public sealed class RubricCriterion
+{
+    public long Id { get; set; }
+    public long RubricId { get; set; }
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public int SortOrder { get; set; }
+}
+
+public sealed class RubricLevel
+{
+    public long Id { get; set; }
+    public long CriterionId { get; set; }
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public decimal Points { get; set; }
+    public int SortOrder { get; set; }
+}
+
+/// <summary>The level an instructor chose for one criterion of one grade. Its existence locks the rubric.</summary>
+public sealed class GradeRubricScore
+{
+    public long GradeId { get; set; }
+    public long CriterionId { get; set; }
+    public long LevelId { get; set; }
+    /// <summary>The level's points when it was chosen.</summary>
+    public decimal Points { get; set; }
+}
+
+/// <summary>A feedback comment an instructor saved to reuse (D-062). Theirs alone, across classes.</summary>
+public sealed class SavedComment : Audited
+{
+    public long Id { get; set; }
+    public string OwnerInstructorId { get; set; } = "";
+    public string Text { get; set; } = "";
 }
 
 /// <summary>One attempt by one student.</summary>
@@ -393,6 +461,8 @@ public sealed class Grade : Audited
     public DateTime GradedAt { get; set; }
     /// <summary>When the instructor returned it, for assignments that hold grades until then (D-054).</summary>
     public DateTime? ReturnedAt { get; set; }
+    /// <summary>The instructor waived this student's late penalty (D-062). <see cref="Points"/> is always the raw score.</summary>
+    public bool PenaltyWaived { get; set; }
 }
 
 /// <summary>Today's two category weights. Phase 3 replaces this with flexible grade components.</summary>

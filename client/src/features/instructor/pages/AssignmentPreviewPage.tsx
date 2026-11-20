@@ -1,27 +1,52 @@
+import { useQuery } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import { AssignmentBrief } from "../../../shared/components/assignment/AssignmentBrief";
+import { describeApiError, isApiError, shouldRetryApiRead } from "../../../shared/api/http";
+import { fetchCourseworkRubric, rubricKeys, type Rubric } from "../../../shared/api/rubrics";
+import { AssignmentBrief, type BriefRubric } from "../../../shared/components/assignment/AssignmentBrief";
 import { BackLink } from "../../../shared/components/BackLink";
 import { PageHeader } from "../../../shared/layout/PageHeader";
 import { handInSettingsOf } from "../api/handIn";
 import { classContent, subjectOf } from "../api/selectors";
+import { useInstructorSession } from "../hooks/useInstructorSession";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { instructorPaths } from "../paths";
 
 /**
- * "Preview as student" for an assignment (D-058): the title, instructions, and rules exactly as
- * the student's page words them (`AssignmentBrief`). Reached from the assignment builder, which
+ * "Preview as student" for an assignment (D-058): the title, instructions, rules, and rubric
+ * exactly as the student's page shows them (`AssignmentBrief`). Reached from the assignment builder, which
  * saves first; nothing here is saved or handed in.
  */
 export default function AssignmentPreviewPage() {
   const { classId = "", assignmentId = "" } = useParams();
   const navigate = useNavigate();
   const { store, rooms } = useInstructorWorkspace();
+  const { instructorId } = useInstructorSession();
   const room = rooms.find((item) => item.id === classId);
+  const activity = room ? classContent(store, room.id).activities.find((item) => item.id === assignmentId) : undefined;
+  // What the work is graded on, as students see it (contract §12); a 404 means it has none any more.
+  const rubric = useQuery<Rubric | null>({
+    queryKey: rubricKeys.ofCoursework(instructorId, classId, assignmentId),
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchCourseworkRubric({ id: instructorId, role: "instructor" }, classId, assignmentId, signal);
+      } catch (failure) {
+        if (isApiError(failure) && failure.status === 404) return null;
+        throw failure;
+      }
+    },
+    retry: shouldRetryApiRead,
+    networkMode: "always",
+    enabled: Boolean(instructorId && activity?.rubricId),
+  });
   if (!room) return <Navigate to={instructorPaths.classes()} replace />;
-  const activity = classContent(store, room.id).activities.find((item) => item.id === assignmentId);
   if (!activity) return <Navigate to={instructorPaths.classPage(room.id, "Classwork")} replace />;
   const subject = subjectOf(store, room);
+  const briefRubric: BriefRubric | undefined = !activity.rubricId ? undefined
+    : rubric.data ? { rubric: rubric.data }
+    : rubric.isError ? { error: describeApiError(rubric.error).title, onRetry: () => void rubric.refetch() }
+    : rubric.data === null ? undefined
+    : { loading: true };
 
   return (
     <>
@@ -37,7 +62,7 @@ export default function AssignmentPreviewPage() {
           {activity.description && <p className="m-0 max-w-prose text-body-lg text-muted">{activity.description}</p>}
           <p className="m-0 text-body text-muted">{activity.maxScore} points</p>
         </header>
-        <AssignmentBrief instructions={activity.instructions ?? ""} settings={handInSettingsOf(activity)} />
+        <AssignmentBrief instructions={activity.instructions ?? ""} settings={handInSettingsOf(activity)} rubric={briefRubric} />
         <p className="m-0 max-w-prose text-body text-muted">Below this, each student has a “Your work” card to write, add files, and turn in.</p>
       </article>
     </>

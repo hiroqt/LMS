@@ -61,13 +61,25 @@ public static class GradebookEndpoints
     /// <param name="forStudent">The student's own view: a grade held until it is returned is not counted, so the average can't give it away (D-054).</param>
     private static async Task<List<GradebookRow>> RowsAsync(LmsDbContext db, string classId, GradebookSetting settings, List<IsmsClassStudent> students, bool forStudent, CancellationToken ct)
     {
-        var graded = await (
+        var rows = await (
             from s in db.Submissions
             join c in db.Coursework on s.CourseworkId equals c.Id
             join g in db.Grades on s.Id equals g.SubmissionId
             where c.ClassId == classId && c.Status != CourseworkStatus.Archived && (s.Status == SubmissionStatus.Graded || s.Status == SubmissionStatus.Returned)
                 && (!forStudent || c.Type != CourseworkType.Assignment || c.GradeRelease != GradeRelease.Returned || s.Status == SubmissionStatus.Returned)
-            select new { s.StudentId, s.CourseworkId, c.Type, c.MaxPoints, s.AttemptNumber, g.Points }).ToListAsync(ct);
+            select new { s.StudentId, s.CourseworkId, s.AttemptNumber, s.SubmittedAt, g.Points, g.PenaltyWaived }).ToListAsync(ct);
+        var courseworkIds = rows.Select(r => r.CourseworkId).Distinct().ToList();
+        var coursework = await db.Coursework.AsNoTracking().Where(c => courseworkIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, ct);
+        var exceptions = (await db.CourseworkExceptions.AsNoTracking().Where(e => courseworkIds.Contains(e.CourseworkId)).ToListAsync(ct))
+            .ToDictionary(e => (e.CourseworkId, e.StudentId));
+        // The score that counts is the one after any late penalty; excused work is left out altogether (D-062).
+        var graded = rows.Select(r =>
+        {
+            var c = coursework[r.CourseworkId];
+            var exception = exceptions.GetValueOrDefault((r.CourseworkId, r.StudentId));
+            var penalty = LatePenalty.Percent(c, LatePenalty.DaysLate(StudentDates.For(c, exception).DueAt, r.SubmittedAt), r.PenaltyWaived);
+            return new { r.StudentId, r.CourseworkId, c.Type, c.MaxPoints, r.AttemptNumber, Points = LatePenalty.Apply(r.Points, penalty), Excused = exception?.Excused == true };
+        }).Where(r => !r.Excused).ToList();
 
         return students.Select(student =>
         {

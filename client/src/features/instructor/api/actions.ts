@@ -79,7 +79,10 @@ export async function attempt(change: () => Promise<unknown>): Promise<ActionRes
   } catch (error) {
     const { title, detail } = describeApiError(error);
     // Validation problems are 400s today; the assessments contract answers 422.
-    return { ok: false, message: isApiError(error) && (error.status === 400 || error.status === 422) ? "Check the highlighted fields." : `${title}. ${detail}`, fieldErrors: isApiError(error) ? error.fieldErrors : undefined };
+    const invalid = isApiError(error) && (error.status === 400 || error.status === 422);
+    // A refusal is the server's own sentence, with nothing to add ("Request to … failed with status 409" explains nothing to an instructor).
+    const refusal = isApiError(error) && error.kind === "http" && error.title && !error.detail ? error.title : undefined;
+    return { ok: false, message: invalid ? "Check the highlighted fields." : (refusal ?? `${title}${/[.!?]$/.test(title) ? "" : "."} ${detail}`), fieldErrors: isApiError(error) ? error.fieldErrors : undefined };
   }
 }
 
@@ -185,12 +188,16 @@ export function useInstructorActions() {
         run(() => send("PUT", `${classPath(classroomId)}/coursework/${courseworkId}/students/${encodeURIComponent(studentId)}/grade`, { points })),
 
       /** "Give N to everyone who didn't hand in": never touches handed-in or started work. */
-      gradeEveryoneNotHandedIn: async (classroomId: string, courseworkId: string, points: number): Promise<ActionResult & { graded: number }> => {
+      gradeEveryoneNotHandedIn: async (classroomId: string, courseworkId: string, points: number): Promise<ActionResult & { graded: number; waiting: number }> => {
         let graded = 0;
+        // Students skipped because their own last day has not passed (contract §11).
+        let waiting = 0;
         const result = await run(async () => {
-          graded = (await send<{ graded: number }>("POST", `${classPath(classroomId)}/coursework/${courseworkId}/grade-missing`, { points })).graded;
+          const answer = await send<{ graded: number; waiting?: number }>("POST", `${classPath(classroomId)}/coursework/${courseworkId}/grade-missing`, { points });
+          graded = answer.graded;
+          waiting = answer.waiting ?? 0;
         });
-        return { ...result, graded };
+        return { ...result, graded, waiting };
       },
 
       /** Saved only as a whole; the server requires the two weights to add up to 100. */

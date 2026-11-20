@@ -5,10 +5,11 @@ import type { Viewer } from "../../../../shared/api/viewer";
 import { formatDue } from "../../../../shared/lib/format";
 import { cn } from "../../../../shared/lib/cn";
 import { Button } from "../../../../shared/ui/Button";
-import { safeLink, type StudentRow } from "../../api/assignmentGrading";
+import { daysLateLabel, safeLink, type StudentRow } from "../../api/assignmentGrading";
 import type { Activity } from "../../api/types";
 import { GradeForm, NoWorkGradeForm } from "./GradePanel";
-import { LateBadge, StatusBadge } from "./StatusBadge";
+import { ExcusedBadge, LateBadge, StatusBadge } from "./StatusBadge";
+import { StudentTerms } from "./StudentTerms";
 import { WorkFiles } from "./WorkFiles";
 
 const turnedIn = (item: Submission) => (item.submittedAt ? `Turned in ${formatDue(item.submittedAt)}` : "No time recorded");
@@ -85,7 +86,7 @@ export function StudentWork({ classId, activity, row, viewer, refusal, next, onN
     <section aria-labelledby="student-work-title" className="@container flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-2">
         <h2 id="student-work-title" ref={heading} tabIndex={-1} className="m-0 scroll-mt-20 outline-none font-sans text-section font-semibold break-words">{row.name}</h2>
-        <div className="flex flex-wrap items-center gap-2"><StatusBadge row={row} gradeRelease={activity.gradeRelease} /></div>
+        <div className="flex flex-wrap items-center gap-2"><StatusBadge row={row} gradeRelease={activity.gradeRelease} />{row.excused && row.latest?.score != null && <ExcusedBadge />}</div>
       </div>
 
       {shown ? (
@@ -93,7 +94,7 @@ export function StudentWork({ classId, activity, row, viewer, refusal, next, onN
           {!shown.notHandedIn && (
             <div className="flex flex-col gap-1">
               <h3 className="m-0 text-card-title font-semibold">Version {shown.attemptNumber}{shown.id === latest?.id ? "" : " (earlier version)"}</h3>
-              <p className="m-0 flex flex-wrap items-center gap-2 text-body text-muted">{turnedIn(shown)}{shown.late && <LateBadge />}</p>
+              <p className="m-0 flex flex-wrap items-center gap-2 text-body text-muted">{turnedIn(shown)}{shown.late && <LateBadge days={shown.daysLate} />}</p>
               {shown.id !== latest?.id && <p className="m-0 text-body">The grade goes on the latest version, Version {latest?.attemptNumber}.</p>}
             </div>
           )}
@@ -118,7 +119,7 @@ export function StudentWork({ classId, activity, row, viewer, refusal, next, onN
                     item.id === shown?.id ? "bg-primary-100 font-semibold" : "bg-surface hover:bg-primary-50",
                   )}
                 >
-                  Version {item.attemptNumber}{item.id === latest?.id ? " (latest)" : ""} · {turnedIn(item)}{item.late ? " · Late" : ""}
+                  Version {item.attemptNumber}{item.id === latest?.id ? " (latest)" : ""} · {turnedIn(item)}{item.late ? ` · Late (${daysLateLabel(item.daysLate)})` : ""}
                 </button>
               </li>
             ))}
@@ -126,9 +127,15 @@ export function StudentWork({ classId, activity, row, viewer, refusal, next, onN
         </div>
       )}
 
+      <StudentTerms classId={classId} activity={activity} row={row} />
+
       <div className="flex flex-col gap-3 border-t border-line pt-4">
         <h3 className="m-0 text-section font-semibold">Grade</h3>
-        {latest ? (
+        {row.excused ? (
+          <p className="m-0 rounded-control bg-canvas p-3 text-body">
+            {row.name} is excused from this assignment, so there is nothing to grade.{latest?.score != null ? ` The grade already given (${latest.score} / ${activity.maxScore}) is left out of their average.` : ""} Choose “No longer excused” to grade them.
+          </p>
+        ) : latest ? (
           <GradeForm key={`${latest.id}-${latest.gradedAt ?? ""}`} classId={classId} activity={activity} row={row} latest={latest} next={next} onNext={onNext} />
         ) : (
           <NoWorkGradeForm key={row.studentId} classId={classId} activity={activity} row={row} refusal={refusal} />

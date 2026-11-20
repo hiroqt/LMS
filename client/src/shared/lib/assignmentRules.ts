@@ -3,7 +3,16 @@ import type { Coursework } from "../api/overview";
 import { formatDue } from "./format";
 
 /** The settings that decide how an assignment is handed in and graded (contract §1, §5). */
-export type HandInSettings = Pick<Coursework, "submissionKinds" | "allowedFileTypes" | "maxFiles" | "honorStatement" | "dueAt" | "allowLate" | "closeAt" | "allowResubmission" | "gradeRelease">;
+export type HandInSettings = Pick<Coursework, "submissionKinds" | "allowedFileTypes" | "maxFiles" | "honorStatement" | "dueAt" | "allowLate" | "closeAt" | "allowResubmission" | "gradeRelease" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent">;
+
+/** "Late work loses 10% of its score for each day late, up to 50%." Null when the assignment has no penalty. */
+export function latePenaltyRule(settings: Pick<HandInSettings, "dueAt" | "allowLate" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent">): string | null {
+  if (!settings.dueAt || !settings.allowLate || settings.latePenaltyPercentPerDay <= 0) return null;
+  const { latePenaltyPercentPerDay: perDay, latePenaltyMaxPercent: cap } = settings;
+  // The cap is reached on the first day late, so "for each day" would promise more than is ever taken.
+  if (cap <= perDay) return `Late work loses ${cap}% of its score.`;
+  return `Late work loses ${perDay}% of its score for each day late${cap < 100 ? `, up to ${cap}%` : ""}.`;
+}
 
 /** "a written answer, a link, and up to 3 files" */
 function whatToHandIn(settings: HandInSettings): string {
@@ -31,6 +40,8 @@ export function handInRules(settings: HandInSettings): string[] {
     if (!settings.allowLate) rules.push("Late work is not accepted.");
     else if (settings.closeAt) rules.push(`Late work is accepted until ${formatDue(settings.closeAt)} and is marked late.`);
     else rules.push("Late work is accepted and is marked late.");
+    const penalty = latePenaltyRule(settings);
+    if (penalty) rules.push(penalty);
   }
   if (!settings.allowResubmission) rules.push("You can turn in once, so check your work first.");
   else if (settings.dueAt) rules.push("You can take your work back before the due date, and turn in a new version.");

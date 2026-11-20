@@ -9,13 +9,17 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
       dueAt: "2026-10-30T15:59:00Z", availableFrom: null, allowLate: false, allowResubmission: false, maxAttempts: null,
       timeLimitMinutes: null, questionnaireId: null, questionCount: 0, status: "published", closeAt: null, gradeRelease: "immediate",
       submissionKinds: ["text", "file"], allowedFileTypes: ["pdf", "word", "powerpoint", "excel", "image", "text"], maxFiles: 5, honorStatement: false,
-      turnIn: (over.type ?? "assignment") === "assignment" ? { state: "assigned", canTurnIn: true, reason: null, late: false, canUnsubmit: false } : null, ...over,
+      latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100, rubricId: null,
+      turnIn: (over.type ?? "assignment") === "assignment"
+        ? { state: "assigned", canTurnIn: true, reason: null, late: false, canUnsubmit: false, dueAt: over.dueAt === undefined ? "2026-10-30T15:59:00Z" : over.dueAt, closeAt: null, extended: false }
+        : null,
+      ...over,
     },
   });
   const sub = (id: number, courseworkId: number, over: Partial<Submission>): { courseworkId: number; classId: string; submission: Submission } => ({
     courseworkId, classId: "class-a",
     submission: {
-      link: null, files: [],
+      link: null, files: [], daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false,
       id, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "submitted" as Submission["status"], startedAt: null,
       submittedAt: "2026-10-20T01:00:00Z", late: false, text: "Mine", fileName: "work.pdf", score: null, maxPoints: 10, feedback: null, gradedAt: null, ...over,
     },
@@ -46,6 +50,7 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
       { classId: "class-a", month: { year: 2026, month: 10, schoolDays: 20, entries: [{ studentId: "STU-1", daysPresent: 18 }, { studentId: "STU-2", daysPresent: 15 }] } },
       { classId: "class-a", month: { year: 2026, month: 9, schoolDays: 22, entries: [{ studentId: "STU-2", daysPresent: 22 }] } },
     ],
+    exceptions: [],
   };
   change(overview);
   return overview;

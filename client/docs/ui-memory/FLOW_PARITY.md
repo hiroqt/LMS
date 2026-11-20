@@ -48,6 +48,10 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
 | Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
 | Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
+| Own due date | An extension shows "Your due date: … (your instructor gave you more time)" in the rules and details; Turn in after the class's date, not late; Tasks lists it under Due soon with the student's date, not Missing (D-065) | ✔ `assignment-work-more` | ✅ |
+| Excused | "Excused" badge and the sentence; no editor or Turn in; work already handed in stays read-only; not in Due soon, Due this week, or Missing (D-065) | ✔ `assignment-work-more`, `selectors.test.ts` | ✅ |
+| Late penalty | The rule before handing in; the dialog says what turning in now loses; the grade shows points given, percent and days late, and the score; "Late penalty waived"; nothing while held (D-065) | ✔ `assignment-work-more`, `work.test.ts` | ✅ |
+| Rubric | Read-only in the brief before handing in; the chosen level per criterion on the grade, once; not on a held grade (D-065) | ✔ `assignment-work-more` | ✅ |
 | Mobile | Today → class at phone width, no sideways scroll | ✔ `@mobile` | ✅ |
 | D-015 | Exam grade + feedback on the exam page (rebuilt only) | ✔ `student-new` | ✅ |
 
@@ -78,6 +82,8 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
 | E: assignment | Create → assignment builder → Publish → Classwork (D-059; was the inline form) | ✔ `instructor-flow` E → I → F → J, `student-new` | ✅ |
 | E: assignment builder | Details · Hand-in · Dates and grading tabs with URLs; presets and Copy a previous assignment; a problem on a hidden tab (or a server field error) opens it and focuses the field; the last day needs late work and a due date; Save draft → Draft in Classwork → Edit draft → Publish → students see it; Preview saves first; a published one is edited with Save changes and a note when work was handed in; a closed one is read-only; leave-without-saving; 320px and axe (D-059) | ✔ `assignment-builder` | ✅ |
+| E: penalty and rubric | Late penalty only with a due date and late work (the reason when not), its sentence in the Summary, saved values; turning late work off sends 0; a rubric makes Points its read-only total and is shown; the server's refusal for graded work lands on the picker (D-063) | ✔ `assignment-builder` | ✅ |
+| RUBRICS | Create content → Manage rubrics → empty list → New rubric with two criteria (add, remove a level, total) → saved; problems on their inputs with focus; edit title and order; leave-without-saving; Copy; Delete confirmed by name, focus to the heading; the in-use refusal in the dialog; a locked rubric read-only with title editable and Copy opening the copy; 320px and axe (D-063) | ✔ `rubrics` | ✅ |
 | E: assessment | Create → assessment builder → Publish → Classwork (D-040; was the one-MCQ form) | ✔ `instructor-more` | ✅ |
 | E: builder | Sections with every type; Save draft → Draft in Classwork → Edit draft; Publish refused while a question needs attention; dates can be cleared | ✔ `assessment-builder` | ✅ |
 | E: builder tabs | Details · Questions · Settings tabs with URLs; a problem on a hidden tab opens it and focuses the field; badges fit at 320px (D-056) | ✔ `assessment-builder` | ✅ |
@@ -89,6 +95,13 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | AGRADE | Classwork Grading → assignment grading page: filters with counts, `?filter=&student=` survive reload, versions, link, files in the viewer (PDF, photo, text), download, "Same file as another student" (D-061) | ✔ `assignment-grading` | ✅ |
 | AGRADE: save | Save and next in list order; out-of-range score on the field; grade without work after the last day, the server's sentence before it; Give 0 to everyone (D-061, D-036) | ✔ `assignment-grading` | ✅ |
 | RETURN | Held grades: student sees none until Return (one student, then Return all graded, each confirmed with the count) (D-061, D-054) | ✔ `assignment-grading` | ✅ |
+| RETURN (selected) | Checkboxes on graded rows → Return selected (N), confirmed; the others stay held (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: penalty | Late work: days late, the penalty sum on raw points, the score after it in the list; waive gives the raw score back (D-064, D-062) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: rubric | A level per criterion, refused until each has one; levels and total saved and shown again (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: own dates | Give more time (field error before the class's due date) → work no longer late, "Own due date"; remove them; Give 0 skips students whose own last day hasn't passed (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: excused | Excuse / No longer excused, confirmed; Excused filter; out of Needs grading, Missing and the gradebook; no grade form (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: comments | Saved comments: save from feedback, add to feedback, edit, delete, empty state (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: zip | Download all work (.zip); disabled with the reason when nobody handed in (D-064) | ✔ `assignment-grading-more` | ✅ |
 | REVIEW (files) | Submissions tab shows an assignment's files and link; Open the grading page (D-061) | ✔ `assignment-grading`, `instructor-new` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
 | MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |

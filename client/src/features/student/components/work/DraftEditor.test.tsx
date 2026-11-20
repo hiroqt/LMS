@@ -13,12 +13,13 @@ vi.mock("../../hooks/useStudentCatalog", () => ({ useStudentViewer: () => ({ id:
 
 const settings: HandInSettings = {
   submissionKinds: ["text", "file"], allowedFileTypes: ["pdf"], maxFiles: 3, honorStatement: false,
-  dueAt: null, allowLate: false, closeAt: null, allowResubmission: false, gradeRelease: "immediate",
+  dueAt: null, allowLate: false, closeAt: null, allowResubmission: false, gradeRelease: "immediate", latePenaltyPercentPerDay: 0, latePenaltyMaxPercent: 100,
 };
-const turnIn: TurnIn = { state: "assigned", canTurnIn: true, reason: null, late: false, canUnsubmit: false };
+const turnIn: TurnIn = { state: "assigned", canTurnIn: true, reason: null, late: false, canUnsubmit: false, dueAt: null, closeAt: null, extended: false };
 const row = (over: Partial<Submission> = {}): Submission => ({
   id: 9, studentId: "STU-1", studentName: null, attemptNumber: 1, status: "in_progress", startedAt: null, submittedAt: null, late: false,
-  text: null, fileName: null, link: null, files: [], score: null, maxPoints: 20, feedback: null, gradedAt: null, ...over,
+  text: null, fileName: null, link: null, files: [], score: null, maxPoints: 20, feedback: null, gradedAt: null,
+  daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, ...over,
 });
 
 /** A promise the test settles by hand. */

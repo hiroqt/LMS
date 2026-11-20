@@ -89,3 +89,53 @@ export async function seedTurnedInAssignment(page: Page, sandbox: string, option
   const submission = await turnInWork(page, sandbox, assignment.classId, assignment.courseworkId, options);
   return { ...assignment, submissionId: String(submission.id), submission };
 }
+
+// ------------------------------------------------------------------ Phase 3 (contract §10–§13)
+
+export interface SeededRubric {
+  id: number;
+  title: string;
+  totalPoints: number;
+  criteria: Array<{ id: number; title: string; levels: Array<{ id: number; title: string; points: number }> }>;
+}
+
+/** A rubric worth 15 points in the class: Analysis (10 / 5 / 0) and Presentation (5 / 2). */
+export async function seedRubric(page: Page, sandbox: string, classId = "biology", title = "Lab report"): Promise<SeededRubric> {
+  return callApi<SeededRubric>(page, sandbox, INSTRUCTOR, "POST", `/api/classes/${classId}/rubrics`, {
+    title,
+    criteria: [
+      { title: "Analysis", description: "How well the data is explained.", levels: [{ title: "Complete", points: 10 }, { title: "Partial", points: 5 }, { title: "Missing", points: 0 }] },
+      { title: "Presentation", levels: [{ title: "Clear", points: 5 }, { title: "Unclear", points: 2 }] },
+    ],
+  });
+}
+
+/** The `rubric` of a grade request: the named level of each criterion, e.g. `{ Analysis: "Partial", Presentation: "Clear" }`. */
+export function rubricChoice(rubric: SeededRubric, levels: Record<string, string>): Record<string, number> {
+  return Object.fromEntries(rubric.criteria.map((criterion) => {
+    const level = criterion.levels.find((item) => item.title === levels[criterion.title]);
+    if (!level) throw new Error(`No level "${levels[criterion.title]}" for ${criterion.title}`);
+    return [String(criterion.id), level.id];
+  }));
+}
+
+/** Grades a turned-in submission as the instructor: plain `points`, or `rubric` levels; `waivePenalty` for late work. */
+export const gradeWork = (page: Page, sandbox: string, classId: string, courseworkId: number | string, submissionId: number | string, grade: { points?: number; feedback?: string; rubric?: Record<string, number>; waivePenalty?: boolean }) =>
+  callApi<{ score: number; rawScore: number; penaltyPercent: number; daysLate: number }>(page, sandbox, INSTRUCTOR, "PUT", `/api/classes/${classId}/coursework/${courseworkId}/submissions/${submissionId}/grade`, grade);
+
+/** Gives one student their own due date (and last day) for an assignment. */
+export const extendFor = (page: Page, sandbox: string, classId: string, courseworkId: number | string, studentId: string, dates: { dueAt: string; closeAt?: string }) =>
+  callApi(page, sandbox, INSTRUCTOR, "PUT", `/api/classes/${classId}/coursework/${courseworkId}/students/${studentId}/extension`, dates);
+
+/** Excuses one student from an assignment. */
+export const excuse = (page: Page, sandbox: string, classId: string, courseworkId: number | string, studentId: string) =>
+  callApi(page, sandbox, INSTRUCTOR, "PUT", `/api/classes/${classId}/coursework/${courseworkId}/students/${studentId}/excuse`, {});
+
+/**
+ * The API's clock, which the browser's pinned clock can trail by minutes (L-087). Use it for
+ * dates that must be before or after "now" on the server: `new Date(now.getTime() + …)`.
+ */
+export async function serverNow(page: Page, sandbox: string): Promise<Date> {
+  const status = await callApi<{ checkedAt: string }>(page, sandbox, INSTRUCTOR, "GET", "/api/lms/status");
+  return new Date(status.checkedAt);
+}
