@@ -661,6 +661,23 @@ can land after the server stored the file (read the draft again), and that text 
 turn-in is on its way was dropped (the fields are read-only and the dialog stays until it
 answers). Tests: `DraftEditor.test.tsx`, `useUploadQueue.test.tsx`.
 
+### L-092 · A toast covers a sticky bottom bar on desktop
+`2026-11-19` · hiro (assignments) · scope: instructor, shared/ui · confidence: high
+The rubric editor first had its total and Save in a bar stuck to the bottom of the page. On
+desktop the toast viewport sits in the bottom-right corner, so the "Could not save" toast lay
+over Save and a second click waited until it left (a spec caught it). Put the actions in an
+aside stuck to the top beside the form at `@4xl`, as the builders' Summary is; on phones the
+toast sits 5rem above the bottom and clears a one-row bar.
+
+### L-093 · `onCloseAutoFocus` runs with the handler the closing content last rendered with
+`2026-11-19` · hiro (assignments) · scope: instructor · confidence: medium
+When a dialog's content is rendered only while open (`{item && <DialogContent …>}`), closing it
+after a success unmounts it in the same render that records the success. A flag kept in state is
+still false in the handler Radix calls, so focus would go back to a trigger that no longer exists.
+Keep "it worked, move focus elsewhere" in a ref (`DeleteRubricDialog`). This is reasoned from how
+Radix keeps the handler, not reproduced with the state version; the rubrics spec checks that focus
+lands on the page heading after a delete.
+
 ### L-096 · A disabled TanStack query is `isPending` forever
 `2026-11-19` · hiro (assignments, PR 3C) · scope: student · confidence: high
 `useAssignmentRubric` is disabled when the assignment has no `rubricId`, and a disabled query with

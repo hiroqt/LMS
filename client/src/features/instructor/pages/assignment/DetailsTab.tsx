@@ -1,8 +1,8 @@
 import { Field, Input, Select, Textarea } from "../../../../shared/ui/Field";
 import { Group, type TabPartProps } from "./parts";
 
-/** Module, title, short description, instructions, and points. */
-export function DetailsTab({ form, errors, onChange, modules }: TabPartProps & { modules: Array<{ id: string; label: string }> }) {
+/** Module, title, short description, instructions, and points (read-only with a rubric: its total). */
+export function DetailsTab({ form, errors, onChange, modules, rubricTitle, rubricPoints }: TabPartProps & { modules: Array<{ id: string; label: string }>; rubricTitle?: string; rubricPoints?: string }) {
   return (
     <section aria-labelledby="assignment-details" className="flex flex-col gap-4">
       <h2 id="assignment-details" className="sr-only">Details</h2>
@@ -17,9 +17,16 @@ export function DetailsTab({ form, errors, onChange, modules }: TabPartProps & {
               {modules.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </Select>
           </Field>
-          <Field label="Points" required hint="More than 0, at most 1,000." error={errors.points}>
-            <Input data-focus="assignment:points" type="number" inputMode="decimal" min={0} max={1000} step="any" value={form.points} onChange={(event) => onChange({ points: event.target.value })} />
-          </Field>
+          {/* With a rubric the assignment is worth the rubric's total (contract §12), so the number is shown, not typed. */}
+          {form.rubricId ? (
+            <Field label="Points" hint={rubricTitle ? `This assignment is worth its rubric's total (${rubricTitle}).` : "This assignment is worth its rubric's total."} error={errors.points}>
+              <Input data-focus="assignment:points" type="number" readOnly value={rubricPoints ?? form.points} />
+            </Field>
+          ) : (
+            <Field label="Points" required hint="More than 0, at most 1,000." error={errors.points}>
+              <Input data-focus="assignment:points" type="number" inputMode="decimal" min={0} max={1000} step="any" value={form.points} onChange={(event) => onChange({ points: event.target.value })} />
+            </Field>
+          )}
         </div>
         <Field label="Short description" hint="One or two sentences shown in lists. At most 1,000 characters." error={errors.description}>
           <Textarea data-focus="assignment:description" value={form.description} rows={2} maxLength={1000} onChange={(event) => onChange({ description: event.target.value })} />

@@ -172,6 +172,8 @@
 | `src/features/instructor/pages/grading/ExamSubmissionsView.tsx` | `ExamSubmissionsView` |
 | `src/features/instructor/pages/grading/ItemAnalysisView.tsx` | `ItemAnalysisView` |
 | `src/features/instructor/pages/grading/SpellingReviewView.tsx` | `SpellingReviewView` |
+| `src/features/instructor/pages/rubrics/CriterionEditor.tsx` | `CriterionEditor` |
+| `src/features/instructor/pages/rubrics/DeleteRubricDialog.tsx` | `DeleteRubricDialog` |
 | `src/features/isms-link/IsmsLinkPage.tsx` | `IsmsLinkPage` |
 | `src/features/isms-link/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/isms-link/components/ClassRoster.tsx` | `ClassRoster` |

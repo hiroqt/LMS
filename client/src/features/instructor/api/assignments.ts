@@ -35,8 +35,15 @@ export interface AssignmentForm {
   allowLate: boolean;
   /** "Accept until": only sent while late work is on and there is a due date. */
   closeAt: string;
+  /** "Take points off late work": only sent while late work is on and there is a due date (contract §10). */
+  latePenalty: boolean;
+  /** Whole percents as text; sent only while `latePenalty` applies. */
+  latePenaltyPercentPerDay: string;
+  latePenaltyMaxPercent: string;
   allowResubmission: boolean;
   gradeRelease: GradeRelease;
+  /** The rubric it is graded with, as an id; "" for none (contract §12). */
+  rubricId: string;
 }
 
 export type AssignmentField = keyof AssignmentForm;
@@ -69,9 +76,19 @@ export function defaultForm(moduleId: string): AssignmentForm {
     dueAt: "",
     allowLate: false,
     closeAt: "",
+    latePenalty: false,
+    latePenaltyPercentPerDay: "10",
+    latePenaltyMaxPercent: "100",
     allowResubmission: false,
     gradeRelease: "immediate",
+    rubricId: "",
   };
+}
+
+/** A stored penalty as the form shows it: 0 per day is off, with 10% ready for when it is turned on. */
+function penaltyFields(perDay: number | undefined, cap: number | undefined): Pick<AssignmentForm, "latePenalty" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent"> {
+  const on = (perDay ?? 0) > 0;
+  return { latePenalty: on, latePenaltyPercentPerDay: on ? String(perDay) : "10", latePenaltyMaxPercent: String(cap || 100) };
 }
 
 /** A saved assignment as the builder edits it. */
@@ -90,8 +107,10 @@ export function formFromDto(dto: Coursework): AssignmentForm {
     dueAt: toLocalInput(dto.dueAt),
     allowLate: Boolean(dto.allowLate),
     closeAt: toLocalInput(dto.closeAt),
+    ...penaltyFields(dto.latePenaltyPercentPerDay, dto.latePenaltyMaxPercent),
     allowResubmission: Boolean(dto.allowResubmission),
     gradeRelease: dto.gradeRelease === "returned" ? "returned" : "immediate",
+    rubricId: dto.rubricId ? String(dto.rubricId) : "",
   };
 }
 
@@ -101,8 +120,12 @@ export type PresetId = "homework" | "in-class" | "project";
 
 interface Preset {
   label: string;
-  /** Every setting the preset decides; the title, description, instructions and module are left alone. */
-  settings: Omit<AssignmentForm, "title" | "moduleId" | "description" | "instructions" | "availableFrom" | "dueAt" | "closeAt">;
+  /**
+   * Every setting the preset decides; the title, description, instructions and module are left
+   * alone, and so are the late penalty and the rubric (D-063): a preset is a starting point for
+   * how work is handed in, and a rubric belongs to the class.
+   */
+  settings: Omit<AssignmentForm, "title" | "moduleId" | "description" | "instructions" | "availableFrom" | "dueAt" | "closeAt" | "latePenalty" | "latePenaltyPercentPerDay" | "latePenaltyMaxPercent" | "rubricId">;
   /** Due this many days from today at 11:59 PM (0 is today). */
   dueInDays: number;
   /** The last day for late work, this many days after the due date; null for none. */
@@ -154,10 +177,15 @@ export function applyPreset(form: AssignmentForm, id: PresetId, now: Date = new 
   return { ...form, ...preset.settings, submissionKinds: [...preset.settings.submissionKinds], allowedFileTypes: [...preset.settings.allowedFileTypes], dueAt: form.dueAt || localInput(due), closeAt };
 }
 
-/** Copies another assignment's settings: never its title, text, module, or dates. */
+/**
+ * Copies another assignment's settings: never its title, text, module, or dates. Its late
+ * penalty and its rubric are grading settings of the same class, so they are copied (D-063).
+ */
 export function copySettings(form: AssignmentForm, source: Activity): AssignmentForm {
   return {
     ...form,
+    ...penaltyFields(source.latePenaltyPercentPerDay, source.latePenaltyMaxPercent),
+    rubricId: source.rubricId ? String(source.rubricId) : "",
     points: String(source.maxScore),
     submissionKinds: source.submissionKinds?.length ? [...source.submissionKinds] : form.submissionKinds,
     allowedFileTypes: source.allowedFileTypes?.length ? [...source.allowedFileTypes] : form.allowedFileTypes,
@@ -175,7 +203,13 @@ export function copySettings(form: AssignmentForm, source: Activity): Assignment
 
 /** "Accept until" only means something with late work and a due date (contract §1). */
 export const closeAtApplies = (form: Pick<AssignmentForm, "allowLate" | "dueAt">) => form.allowLate && Boolean(form.dueAt);
+/** A late penalty needs late work and a due date, as "accept until" does (contract §10). */
+export const penaltyApplies = closeAtApplies;
+/** The penalty that will be sent: on and applicable. */
+export const penaltyOn = (form: Pick<AssignmentForm, "allowLate" | "dueAt" | "latePenalty">) => penaltyApplies(form) && form.latePenalty;
 export const filesApply = (form: Pick<AssignmentForm, "submissionKinds">) => form.submissionKinds.includes("file");
+
+const isPercent = (value: string) => /^\d+$/.test(value.trim()) && Number(value) >= 1 && Number(value) <= 100;
 
 /** What the builder checks before sending anything; the server checks again. */
 export function validateAssignment(form: AssignmentForm): AssignmentErrors {
@@ -185,7 +219,8 @@ export function validateAssignment(form: AssignmentForm): AssignmentErrors {
   if (!form.moduleId) errors.moduleId = "Choose a module.";
   if (form.description.length > 1000) errors.description = "Use at most 1,000 characters.";
   const points = Number(form.points);
-  if (!form.points.trim() || !Number.isFinite(points) || points <= 0 || points > 1000) errors.points = "Enter points more than 0 and at most 1,000.";
+  // With a rubric the assignment is worth the rubric's total, so there are no points to check.
+  if (!form.rubricId && (!form.points.trim() || !Number.isFinite(points) || points <= 0 || points > 1000)) errors.points = "Enter points more than 0 and at most 1,000.";
   if (!form.submissionKinds.length) errors.submissionKinds = "Choose at least one way to hand in work.";
   if (filesApply(form)) {
     if (!form.allowedFileTypes.length) errors.allowedFileTypes = "Choose at least one file type.";
@@ -193,6 +228,10 @@ export function validateAssignment(form: AssignmentForm): AssignmentErrors {
   }
   if (form.dueAt && form.availableFrom && new Date(form.dueAt) <= new Date(form.availableFrom)) errors.dueAt = "The due date must be after the date it becomes available.";
   if (closeAtApplies(form) && form.closeAt && new Date(form.closeAt) <= new Date(form.dueAt)) errors.closeAt = "The last day for late work must be after the due date.";
+  if (penaltyOn(form)) {
+    if (!isPercent(form.latePenaltyPercentPerDay)) errors.latePenaltyPercentPerDay = "Enter a whole percent from 1 to 100.";
+    if (!isPercent(form.latePenaltyMaxPercent)) errors.latePenaltyMaxPercent = "Enter a whole percent from 1 to 100.";
+  }
   return errors;
 }
 
@@ -211,8 +250,12 @@ export const FIELD_TABS: Record<AssignmentField, AssignmentTab> = {
   dueAt: "dates",
   allowLate: "dates",
   closeAt: "dates",
+  latePenalty: "dates",
+  latePenaltyPercentPerDay: "dates",
+  latePenaltyMaxPercent: "dates",
   allowResubmission: "dates",
   gradeRelease: "dates",
+  rubricId: "dates",
 };
 
 export const FIELD_LABELS: Record<AssignmentField, string> = {
@@ -229,15 +272,19 @@ export const FIELD_LABELS: Record<AssignmentField, string> = {
   dueAt: "Due date",
   allowLate: "Late work",
   closeAt: "Accept late work until",
+  latePenalty: "Late penalty",
+  latePenaltyPercentPerDay: "Percent per day",
+  latePenaltyMaxPercent: "Up to",
   allowResubmission: "Resubmission",
   gradeRelease: "When grades show",
+  rubricId: "Rubric",
 };
 
 /** The fields with an error, in page order. */
 export const errorFields = (errors: AssignmentErrors): AssignmentField[] => (Object.keys(FIELD_TABS) as AssignmentField[]).filter((field) => errors[field]);
 export const errorCount = (errors: AssignmentErrors, tab: AssignmentTab) => errorFields(errors).filter((field) => FIELD_TABS[field] === tab).length;
 
-const SERVER_FIELDS: Record<string, AssignmentField> = { maxPoints: "points", clearDueAt: "dueAt", clearAvailableFrom: "availableFrom", clearCloseAt: "closeAt" };
+const SERVER_FIELDS: Record<string, AssignmentField> = { maxPoints: "points", clearDueAt: "dueAt", clearAvailableFrom: "availableFrom", clearCloseAt: "closeAt", clearRubric: "rubricId" };
 
 /** The server's 400 field errors on the builder's fields; anything else (status, type) is general. */
 export function mapServerErrors(fieldErrors: Record<string, string[]> | undefined): AssignmentErrors {
@@ -262,19 +309,26 @@ export function assignmentBody(form: AssignmentForm, options: { existing: boolea
   const dueAt = instant(form.dueAt);
   const availableFrom = instant(form.availableFrom);
   const closeAt = closeAtApplies(form) ? instant(form.closeAt) : undefined;
+  const penalty = penaltyOn(form) && dueAt !== undefined;
+  const rubricId = form.rubricId ? Number(form.rubricId) : undefined;
   return {
     ...(options.existing ? {} : { type: "assignment", category: "Assignment" }),
     moduleId: Number(form.moduleId),
     title: form.title.trim(),
     description: form.description.trim(),
     instructions: form.instructions,
-    maxPoints: Number(form.points),
+    // With a rubric the server sets the points to its total (and ignores any sent).
+    ...(rubricId === undefined ? { maxPoints: Number(form.points) } : { rubricId }),
+    ...(options.existing && rubricId === undefined ? { clearRubric: true } : {}),
     submissionKinds: form.submissionKinds,
     allowedFileTypes: form.allowedFileTypes,
     maxFiles: form.maxFiles,
     honorStatement: form.honorStatement,
     // Late work needs a due date; the box is off (and disabled) without one.
     allowLate: form.allowLate && dueAt !== undefined,
+    // No late work, no due date, or turned off: no penalty. The cap is left as it is unless one is set.
+    latePenaltyPercentPerDay: penalty ? Number(form.latePenaltyPercentPerDay) : 0,
+    ...(penalty ? { latePenaltyMaxPercent: Number(form.latePenaltyMaxPercent) } : {}),
     allowResubmission: form.allowResubmission,
     gradeRelease: form.gradeRelease,
     dueAt,
@@ -299,9 +353,9 @@ export function handInSettings(form: AssignmentForm): HandInSettings {
     closeAt: closeAtApplies(form) ? (instant(form.closeAt) ?? null) : null,
     allowResubmission: form.allowResubmission,
     gradeRelease: form.gradeRelease,
-    // The builder has no late-penalty fields yet (Phase 3).
-    latePenaltyPercentPerDay: 0,
-    latePenaltyMaxPercent: 100,
+    // A value still being typed reads as no penalty until it is a whole percent.
+    latePenaltyPercentPerDay: penaltyOn(form) && isPercent(form.latePenaltyPercentPerDay) ? Number(form.latePenaltyPercentPerDay) : 0,
+    latePenaltyMaxPercent: isPercent(form.latePenaltyMaxPercent) ? Number(form.latePenaltyMaxPercent) : 100,
   };
 }
 
