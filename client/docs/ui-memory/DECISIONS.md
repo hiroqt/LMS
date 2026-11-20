@@ -872,6 +872,38 @@ Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10, §
   `pages/RubricsPage.tsx`, `pages/RubricPage.tsx`, `pages/rubrics/`. Specs: `assignment-builder`
   (four tests added, no journey changed), `rubrics`.
 
+### D-064 · Phase 3 on the assignment grading page: penalties, rubrics, own dates, excused, saved comments, batch return, the zip
+`2026-11-20` · hiro (assignments, PR 3D) · scope: instructor, e2e · confidence: medium
+Builds on D-061 and D-062; shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§13.
+- **Late penalty:** the Score field edits the **raw** points (`rawScore`); the list, the status and
+  the toast show `score`, the score after the penalty. Late work says how many days late, and on an
+  assignment with a penalty the grade form shows the rule and the sum ("18 − 20% (2 days late) =
+  14.4 of 20"), worked out as the server does only to preview what is typed. "Waive the late
+  penalty for this student" sends `waivePenalty`, and only for late work with a penalty.
+- **Rubric:** with `rubricId` the Score field is replaced by `RubricView` in choosing mode, filled
+  from `rubricScores`. Save is refused on the page until every criterion has a level ("Choose a
+  level for …", focus on the first one left); the server's `rubric[<id>]` errors land on their
+  criterion. A "not handed in" grade still takes plain points. The class Submissions tab can't
+  grade by rubric, so it says so and links here.
+- **Own dates and excused:** on a student's work, "Give this student more time" (own due date,
+  and own last day only when the assignment has one), "Remove their own dates", and "Excuse from
+  this assignment" / "No longer excused", each confirmed; afterwards focus goes to the student's
+  name (L-015). The list shows "Own due date: …" and an **Excused** badge, and there is an
+  **Excused** filter. Excused students are never in Needs grading or Missing, are never "next to
+  grade", and have no grade form (the page says why). A "not handed in" grade waits for the
+  student's own last day; "Give 0 to everyone" says how many were skipped for it (`waiting`).
+- **Saved comments** (the instructor's, for every class) sit under the feedback: a dialog lists
+  them with Add to feedback (appended on its own line; focus returns to the feedback), Edit and
+  Delete (asked inside the dialog); "Save this feedback as a comment" saves what is written. The
+  500-character limit is checked first; the 200-comment refusal is the server's sentence.
+- **Return selected (N):** with `gradeRelease: "returned"`, graded rows not yet returned have a
+  checkbox; the button confirms with the count, beside the single Return and Return all graded.
+- **Download all work (.zip)** fetches with the instructor's headers (L-075) and saves the blob;
+  busy while it downloads, the server's 409 sentence over 250 MB, disabled with the reason when
+  nobody has handed in.
+- **A refusal shows the server's own sentence** (`writeResult`: a 403, 404 or 409 `title`; a lone
+  400 field error). Spec: `e2e/assignment-grading-more.spec.ts`.
+
 ### D-065 · The student's assignment page shows their own due date, excused work, the late-penalty sum, and the rubric
 `2026-11-19` · hiro (assignments, PR 3C) · scope: student, shared, e2e · confidence: medium
 Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§12. Builds on D-060, D-062.

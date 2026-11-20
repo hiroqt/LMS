@@ -95,6 +95,13 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | AGRADE | Classwork Grading → assignment grading page: filters with counts, `?filter=&student=` survive reload, versions, link, files in the viewer (PDF, photo, text), download, "Same file as another student" (D-061) | ✔ `assignment-grading` | ✅ |
 | AGRADE: save | Save and next in list order; out-of-range score on the field; grade without work after the last day, the server's sentence before it; Give 0 to everyone (D-061, D-036) | ✔ `assignment-grading` | ✅ |
 | RETURN | Held grades: student sees none until Return (one student, then Return all graded, each confirmed with the count) (D-061, D-054) | ✔ `assignment-grading` | ✅ |
+| RETURN (selected) | Checkboxes on graded rows → Return selected (N), confirmed; the others stay held (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: penalty | Late work: days late, the penalty sum on raw points, the score after it in the list; waive gives the raw score back (D-064, D-062) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: rubric | A level per criterion, refused until each has one; levels and total saved and shown again (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: own dates | Give more time (field error before the class's due date) → work no longer late, "Own due date"; remove them; Give 0 skips students whose own last day hasn't passed (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: excused | Excuse / No longer excused, confirmed; Excused filter; out of Needs grading, Missing and the gradebook; no grade form (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: comments | Saved comments: save from feedback, add to feedback, edit, delete, empty state (D-064) | ✔ `assignment-grading-more` | ✅ |
+| AGRADE: zip | Download all work (.zip); disabled with the reason when nobody handed in (D-064) | ✔ `assignment-grading-more` | ✅ |
 | REVIEW (files) | Submissions tab shows an assignment's files and link; Open the grading page (D-061) | ✔ `assignment-grading`, `instructor-new` | ✅ |
 | D | Classwork search and filter | ✔ `instructor-more` | ✅ |
 | MODULES | Add, rename, and reorder a submodule; create a material in it; move content into it (D-033) | ✔ `submodules` | ✅ |

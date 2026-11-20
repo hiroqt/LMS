@@ -151,12 +151,16 @@
 | `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
 | `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
 | `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
+| `src/features/instructor/pages/assignmentGrading/ConfirmDialog.tsx` | `ConfirmDialog` |
+| `src/features/instructor/pages/assignmentGrading/FeedbackField.tsx` | `FeedbackField` |
 | `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
 | `src/features/instructor/pages/assignmentGrading/GradeEveryoneMissing.tsx` | `GradeEveryoneMissing` |
 | `src/features/instructor/pages/assignmentGrading/GradePanel.tsx` | `GradeForm`, `NoWorkGradeForm` |
 | `src/features/instructor/pages/assignmentGrading/ReturnDialog.tsx` | `ReturnDialog` |
-| `src/features/instructor/pages/assignmentGrading/StatusBadge.tsx` | `StatusBadge`, `LateBadge` |
+| `src/features/instructor/pages/assignmentGrading/SavedCommentsDialog.tsx` | `SavedCommentsDialog` |
+| `src/features/instructor/pages/assignmentGrading/StatusBadge.tsx` | `StatusBadge`, `LateBadge`, `ExcusedBadge` |
 | `src/features/instructor/pages/assignmentGrading/StudentList.tsx` | `StudentList` |
+| `src/features/instructor/pages/assignmentGrading/StudentTerms.tsx` | `StudentTerms` |
 | `src/features/instructor/pages/assignmentGrading/StudentWork.tsx` | `StudentWork` |
 | `src/features/instructor/pages/assignmentGrading/WorkFiles.tsx` | `WorkFiles` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |

@@ -678,6 +678,14 @@ Keep "it worked, move focus elsewhere" in a ref (`DeleteRubricDialog`). This is 
 Radix keeps the handler, not reproduced with the state version; the rubrics spec checks that focus
 lands on the page heading after a delete.
 
+### L-094 · Passing an `id` to a control inside `Field` unlinks its label
+`2026-11-20` · hiro (assignments, PR 3D) · scope: instructor · confidence: high
+`useFieldProps` keeps a control's own `id` over the Field's, but the `<label htmlFor>` uses the
+Field's. Giving the feedback `Textarea` an id (to focus it after a dialog) left it with no
+accessible name: `getByRole("textbox", { name: /Feedback/ })` timed out and axe reported `label`.
+To reach a control inside a `Field`, keep a ref on a wrapper and `querySelector` it
+(`FeedbackField.tsx`).
+
 ### L-096 · A disabled TanStack query is `isPending` forever
 `2026-11-19` · hiro (assignments, PR 3C) · scope: student · confidence: high
 `useAssignmentRubric` is disabled when the assignment has no `rubricId`, and a disabled query with
