@@ -1,5 +1,5 @@
 import { expect, openRole, test } from "./fixtures";
-import { seedAssignment } from "./assignmentFixtures";
+import { seedAssignment, seedRubric } from "./assignmentFixtures";
 
 // "Preview as student" (D-058): the instructor reads the assignment as the student's page words it.
 test("an assignment's preview shows the instructions and the rules students will read", async ({ page, sandbox }) => {
@@ -22,6 +22,22 @@ test("an assignment's preview shows the instructions and the rules students will
   await page.getByRole("button", { name: "Back to the assignment" }).click();
   await expect(page).toHaveURL(new RegExp(`/assignments/${courseworkId}/edit`));
   await expect(page.getByRole("heading", { level: 1, name: "Preview as student" })).toHaveCount(0);
+});
+
+test("the preview shows the rubric and what late work loses, as students will see them", async ({ page, sandbox }) => {
+  const rubric = await seedRubric(page, sandbox);
+  const { courseworkId } = await seedAssignment(page, sandbox, {
+    title: "Graded by rubric",
+    settings: { rubricId: rubric.id, dueAt: "2026-11-20T07:59:00Z", allowLate: true, latePenaltyPercentPerDay: 10, latePenaltyMaxPercent: 50 },
+  });
+  await openRole(page, "instructor");
+  await page.goto(`/instructor/classes/biology/assignments/${courseworkId}/preview`);
+  await expect(page.getByRole("heading", { level: 1, name: "Preview as student" })).toBeVisible();
+  await expect(page.getByText("15 points", { exact: true })).toBeVisible();
+  await expect(page.getByText("Late work loses 10% of its score for each day late, up to 50%.")).toBeVisible();
+  await expect(page.getByRole("group", { name: /Analysis · up to 10 points/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: /Presentation · up to 5 points/ })).toBeVisible();
+  await expect(page.getByText("15 points in all")).toBeVisible();
 });
 
 test("the preview of an assignment that isn't in the class goes back to Classwork", async ({ page }) => {
