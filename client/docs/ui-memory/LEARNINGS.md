@@ -660,3 +660,11 @@ file still waiting its turn (there is no request to abort: take it off the list)
 can land after the server stored the file (read the draft again), and that text typed while a
 turn-in is on its way was dropped (the fields are read-only and the dialog stays until it
 answers). Tests: `DraftEditor.test.tsx`, `useUploadQueue.test.tsx`.
+
+### L-094 · Passing an `id` to a control inside `Field` unlinks its label
+`2026-11-20` · hiro (assignments, PR 3D) · scope: instructor · confidence: high
+`useFieldProps` keeps a control's own `id` over the Field's, but the `<label htmlFor>` uses the
+Field's. Giving the feedback `Textarea` an id (to focus it after a dialog) left it with no
+accessible name: `getByRole("textbox", { name: /Feedback/ })` timed out and axe reported `label`.
+To reach a control inside a `Field`, keep a ref on a wrapper and `querySelector` it
+(`FeedbackField.tsx`).
