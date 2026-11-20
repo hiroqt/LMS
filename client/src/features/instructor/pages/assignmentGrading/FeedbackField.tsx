@@ -1,5 +1,5 @@
 import { BookmarkPlus, MessageSquareText } from "lucide-react";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Button } from "../../../../shared/ui/Button";
 import { Field, Textarea } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
@@ -19,7 +19,7 @@ export interface FeedbackFieldProps {
  */
 export function FeedbackField({ value, onChange, hint, error }: FeedbackFieldProps) {
   const toast = useToast();
-  const id = useId();
+  const box = useRef<HTMLDivElement>(null);
   const comments = useCommentBankActions();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -43,9 +43,9 @@ export function FeedbackField({ value, onChange, hint, error }: FeedbackFieldPro
   };
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div ref={box} className="flex min-w-0 flex-col gap-2">
       <Field label="Feedback" hint={hint} error={error}>
-        <Textarea id={id} rows={4} value={value} onChange={(event) => onChange(event.target.value)} />
+        <Textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} />
       </Field>
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" icon={<MessageSquareText aria-hidden className="size-4" />} onClick={() => setOpen(true)}>Saved comments</Button>
@@ -66,7 +66,8 @@ export function FeedbackField({ value, onChange, hint, error }: FeedbackFieldPro
           if (!added.current) return;
           added.current = false;
           event.preventDefault();
-          const field = document.getElementById(id) as HTMLTextAreaElement | null;
+          // The Field gives the textarea its id (linked to the label), so it is found inside this box.
+          const field = box.current?.querySelector("textarea");
           field?.focus();
           field?.setSelectionRange(field.value.length, field.value.length);
         }}

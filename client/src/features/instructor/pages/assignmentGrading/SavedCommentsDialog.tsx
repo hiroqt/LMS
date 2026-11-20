@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { describeApiError } from "../../../../shared/api/http";
 import { Button } from "../../../../shared/ui/Button";
-import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
+import { Dialog, DialogContent } from "../../../../shared/ui/Dialog";
 import { Field, Textarea } from "../../../../shared/ui/Field";
 import { Skeleton, SkeletonGroup } from "../../../../shared/ui/Skeleton";
 import { useToast } from "../../../../shared/ui/toast/useToast";
@@ -125,7 +125,6 @@ export function SavedCommentsDialog({ open, onOpenChange, onChoose, onCloseAutoF
           title="Saved comments"
           description="Your comments for every class. Adding one puts it at the end of the feedback."
           onCloseAutoFocus={onCloseAutoFocus}
-          footer={<DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>}
         >
           {body}
         </DialogContent>
