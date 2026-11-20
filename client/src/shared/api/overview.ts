@@ -179,6 +179,8 @@ export interface Submission {
   rawScore: number | null;
   /** The level chosen for each criterion, when graded with a rubric (contract §12); empty otherwise. */
   rubricScores: RubricScore[];
+  /** The student is excused from this assignment (contract §11): the work needs no grade and doesn't count. */
+  excused: boolean;
   score: number | null;
   maxPoints: number;
   feedback: string | null;

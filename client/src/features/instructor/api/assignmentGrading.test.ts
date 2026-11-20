@@ -28,7 +28,7 @@ import {
 
 const version = (over: Partial<Submission>): Submission => ({
   id: 1, studentId: "s0", studentName: "Alex Rivera", attemptNumber: 1, status: "submitted", startedAt: null, submittedAt: "2026-10-23T01:00:00Z",
-  late: false, text: null, fileName: null, link: null, files: [], score: null, maxPoints: 20, feedback: null, gradedAt: null, daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], ...over,
+  late: false, text: null, fileName: null, link: null, files: [], score: null, maxPoints: 20, feedback: null, gradedAt: null, daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, ...over,
 });
 
 const list: AssignmentSubmissions = {

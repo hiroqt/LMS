@@ -183,7 +183,8 @@ export function reviewQueue(store: RoleStore, rooms: Classroom[]): ReviewItem[] 
   const studentOf = (id: string) => store.users.find((user) => user.id === id);
 
   const activities: ReviewItem[] = store.activitySubmissions
-    .filter((record) => record.status === "submitted" && record.grade === null && inRooms(record.classroomId))
+    // Work of a student who was excused afterwards needs no grade (D-062).
+    .filter((record) => record.status === "submitted" && record.grade === null && !record.excused && inRooms(record.classroomId))
     .flatMap((record) => {
       const activity = store.activities.find((item) => item.id === record.activityId);
       return activity

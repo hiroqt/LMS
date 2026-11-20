@@ -7,7 +7,7 @@ const file = (id: number, name: string) => ({ id, name, contentType: "applicatio
 const row = (attemptNumber: number, status: Submission["status"], extra: Partial<Submission> = {}): Submission => ({
   id: 100 + attemptNumber, studentId: "STU-1", studentName: null, attemptNumber, status, startedAt: null,
   submittedAt: status === "in_progress" ? null : "2026-10-23T01:00:00Z", late: false, text: null, fileName: null, link: null, files: [],
-  score: null, maxPoints: 20, feedback: null, gradedAt: null, daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], ...extra,
+  score: null, maxPoints: 20, feedback: null, gradedAt: null, daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, ...extra,
 });
 const verdict = (state: TurnIn["state"], extra: Partial<TurnIn> = {}): TurnIn => ({ state, canTurnIn: true, reason: null, late: false, canUnsubmit: false, dueAt: null, closeAt: null, extended: false, ...extra });
 

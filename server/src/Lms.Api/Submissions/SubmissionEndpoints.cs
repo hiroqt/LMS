@@ -603,14 +603,16 @@ public static class SubmissionEndpoints
             var held = forStudent && !AssignmentRules.GradeVisibleToStudent(cw, r);
             if (held) g = null;
             var status = held && r.Status == SubmissionStatus.Graded ? SubmissionStatus.Submitted : r.Status;
-            var due = StudentDates.For(cw, exceptions.GetValueOrDefault(r.StudentId)).DueAt;
+            var exception = exceptions.GetValueOrDefault(r.StudentId);
+            var due = StudentDates.For(cw, exception).DueAt;
             var daysLate = assignment ? LatePenalty.DaysLate(due, r.SubmittedAt) : 0;
             var penalty = g is null ? 0 : LatePenalty.Percent(cw, daysLate, g.PenaltyWaived);
             return new SubmissionDto(r.Id, r.StudentId, names.GetValueOrDefault(r.StudentId), r.AttemptNumber, status, r.StartedAt, r.SubmittedAt,
                 due is { } d && r.SubmittedAt > d, r.Text, r.FileName, g is null ? null : LatePenalty.Apply(g.Points, penalty), cw.MaxPoints, g?.Feedback, g?.GradedAt, GradingRules.IsNotHandedIn(r),
                 r.Link, files.GetValueOrDefault(r.Id) ?? [],
                 daysLate, penalty, g?.PenaltyWaived ?? false, g?.Points,
-                g is null || rubricScores is null ? [] : rubricScores[g.Id].OrderBy(s => s.CriterionId).Select(s => new RubricScoreDto(s.CriterionId, s.LevelId, s.Points)).ToList());
+                g is null || rubricScores is null ? [] : rubricScores[g.Id].OrderBy(s => s.CriterionId).Select(s => new RubricScoreDto(s.CriterionId, s.LevelId, s.Points)).ToList(),
+                exception?.Excused == true);
         }).ToList();
     }
 }

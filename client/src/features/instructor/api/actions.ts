@@ -79,7 +79,10 @@ export async function attempt(change: () => Promise<unknown>): Promise<ActionRes
   } catch (error) {
     const { title, detail } = describeApiError(error);
     // Validation problems are 400s today; the assessments contract answers 422.
-    return { ok: false, message: isApiError(error) && (error.status === 400 || error.status === 422) ? "Check the highlighted fields." : `${title}. ${detail}`, fieldErrors: isApiError(error) ? error.fieldErrors : undefined };
+    const invalid = isApiError(error) && (error.status === 400 || error.status === 422);
+    // A refusal is the server's own sentence, with nothing to add ("Request to … failed with status 409" explains nothing to an instructor).
+    const refusal = isApiError(error) && error.kind === "http" && error.title && !error.detail ? error.title : undefined;
+    return { ok: false, message: invalid ? "Check the highlighted fields." : (refusal ?? `${title}${/[.!?]$/.test(title) ? "" : "."} ${detail}`), fieldErrors: isApiError(error) ? error.fieldErrors : undefined };
   }
 }
 

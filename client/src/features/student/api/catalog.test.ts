@@ -37,7 +37,7 @@ describe("toStudentCatalog", () => {
     const catalog = toStudentCatalog(overviewFixture((o) => {
       o.coursework[0]!.coursework.status = "closed";
       o.submissions = o.submissions.filter((item) => item.courseworkId !== 1 && item.courseworkId !== 2);
-      const graded = { id: 30, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "graded" as const, startedAt: null, submittedAt: null, late: false, text: null, fileName: null, link: null, files: [], daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], score: 0, maxPoints: 20, feedback: null, gradedAt: "2026-10-30T00:00:00Z", notHandedIn: true };
+      const graded = { id: 30, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "graded" as const, startedAt: null, submittedAt: null, late: false, text: null, fileName: null, link: null, files: [], daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, score: 0, maxPoints: 20, feedback: null, gradedAt: "2026-10-30T00:00:00Z", notHandedIn: true };
       o.submissions.push({ courseworkId: 1, classId: "class-a", submission: { ...graded, maxPoints: 10 } }, { courseworkId: 2, classId: "class-a", submission: graded });
     }));
     expect(catalog.assessments.map((item) => item.closed)).toEqual([true, false, false]);

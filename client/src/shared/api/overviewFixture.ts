@@ -19,7 +19,7 @@ export function overviewFixture(change: (overview: Overview) => void = () => {})
   const sub = (id: number, courseworkId: number, over: Partial<Submission>): { courseworkId: number; classId: string; submission: Submission } => ({
     courseworkId, classId: "class-a",
     submission: {
-      link: null, files: [], daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [],
+      link: null, files: [], daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false,
       id, studentId: "STU-1", studentName: "Lia Abad", attemptNumber: 1, status: "submitted" as Submission["status"], startedAt: null,
       submittedAt: "2026-10-20T01:00:00Z", late: false, text: "Mine", fileName: "work.pdf", score: null, maxPoints: 10, feedback: null, gradedAt: null, ...over,
     },

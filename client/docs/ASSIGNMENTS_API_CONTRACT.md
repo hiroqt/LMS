@@ -230,6 +230,8 @@ list (404 otherwise).
   in ("Your instructor excused you from this assignment."). An excused student is not counted in
   the gradebook average for this assignment (graded or not), in `gradedCount` / `rosterCount`, or
   by the close rule; "not handed in" grades skip them (409 for the one-student route).
+- `SubmissionDto` gains `excused`: work an excused student had already handed in is still sent,
+  marked, so no list shows it as waiting for a grade.
 - `turnIn` gains `dueAt` and `closeAt` (the student's own, or the assignment's) and `extended`
   (true when they differ from the class's).
 - `GET …/coursework/{id}/submissions` gains `exceptions`: every `ExceptionDto` of the assignment.

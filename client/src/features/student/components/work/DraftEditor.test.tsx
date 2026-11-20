@@ -19,7 +19,7 @@ const turnIn: TurnIn = { state: "assigned", canTurnIn: true, reason: null, late:
 const row = (over: Partial<Submission> = {}): Submission => ({
   id: 9, studentId: "STU-1", studentName: null, attemptNumber: 1, status: "in_progress", startedAt: null, submittedAt: null, late: false,
   text: null, fileName: null, link: null, files: [], score: null, maxPoints: 20, feedback: null, gradedAt: null,
-  daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], ...over,
+  daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, ...over,
 });
 
 /** A promise the test settles by hand. */

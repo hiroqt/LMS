@@ -159,6 +159,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       penaltyWaived: Boolean(submission.penaltyWaived),
       rawScore: submission.rawScore ?? null,
       rubricScores: submission.rubricScores ?? [],
+      excused: Boolean(submission.excused),
       submittedAt: submission.submittedAt ?? undefined,
       gradedAt: submission.gradedAt ?? undefined,
       grade: isGraded(submission.status) ? submission.score : null,

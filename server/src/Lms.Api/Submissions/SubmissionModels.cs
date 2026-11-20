@@ -80,11 +80,13 @@ public sealed record TurnInReceipt(SubmissionDto Submission, Receipt Receipt);
 /// <param name="PenaltyWaived">The instructor waived this student's late penalty.</param>
 /// <param name="RawScore">The points the instructor gave, before the penalty.</param>
 /// <param name="RubricScores">The level chosen for each criterion, when graded with a rubric (contract §12).</param>
+/// <param name="Excused">The student is excused from this assignment (contract §11): the work is kept but needs no grade and doesn't count.</param>
 public sealed record SubmissionDto(long Id, string StudentId, string? StudentName, int AttemptNumber, string Status,
     DateTime? StartedAt, DateTime? SubmittedAt, bool Late, string? Text, string? FileName,
     decimal? Score, decimal MaxPoints, string? Feedback, DateTime? GradedAt, bool NotHandedIn = false,
     string? Link = null, IReadOnlyList<FileDto>? Files = null,
-    int DaysLate = 0, decimal PenaltyPercent = 0, bool PenaltyWaived = false, decimal? RawScore = null, IReadOnlyList<RubricScoreDto>? RubricScores = null);
+    int DaysLate = 0, decimal PenaltyPercent = 0, bool PenaltyWaived = false, decimal? RawScore = null, IReadOnlyList<RubricScoreDto>? RubricScores = null,
+    bool Excused = false);
 
 public sealed record RubricScoreDto(long CriterionId, long LevelId, decimal Points);
 

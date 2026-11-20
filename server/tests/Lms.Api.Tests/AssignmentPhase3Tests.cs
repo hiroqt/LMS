@@ -211,6 +211,11 @@ public sealed class AssignmentPhase3Tests : AssessmentTestBase
         var verdict = await VerdictAsync(StudentA, id);
         Assert.Equal(("excused", false, "excused"), (verdict.GetProperty("state").GetString(), verdict.GetProperty("canTurnIn").GetBoolean(), verdict.GetProperty("reason").GetString()));
 
+        // Her work says so wherever the instructor reads it, so nothing lists it as waiting for a grade.
+        var hers = (await Json(await Instructor.GetAsync("/api/me/overview"))).GetProperty("submissions").EnumerateArray().Single(s => s.GetProperty("courseworkId").GetInt64() == id).GetProperty("submission");
+        Assert.True(hers.GetProperty("excused").GetBoolean());
+        Assert.False((await Json(await Instructor.GetAsync($"{Base}/{other}/submissions"))).GetProperty("items")[0].GetProperty("excused").GetBoolean());
+
         // Max is excused too: nothing to hand in, nothing to grade, and the assignment can close with nobody graded.
         await Json(await Instructor.PutAsJsonAsync($"{Base}/{id}/students/{Max}/excuse", new { }));
         Assert.Contains("excused you", await Refused(await StudentB.PutAsJsonAsync($"{Base}/{id}/draft", new { text = "Mine" }), HttpStatusCode.Conflict));

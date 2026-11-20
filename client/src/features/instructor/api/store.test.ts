@@ -51,4 +51,17 @@ describe("toRoleStore", () => {
     s.activitySubmissions.push({ id: "13", activityId: "1", classroomId: "class-a", studentId: "STU-2", status: "submitted", grade: null });
     expect(reviewQueue(s, classroomsOf(s, "EMP-1")).map((item) => item.id)).toEqual(["13"]);
   });
+
+  it("leaves out work of a student who was excused after handing in (D-062)", () => {
+    const s = toRoleStore(overviewFixture((o) => {
+      o.submissions = o.submissions.filter((item) => item.courseworkId !== 1);
+      const row = overviewFixture().submissions[0]!;
+      o.submissions.push(
+        { ...row, submission: { ...row.submission, id: 31, studentId: "STU-1", status: "submitted", score: null, excused: true } },
+        { ...row, submission: { ...row.submission, id: 32, studentId: "STU-2", status: "submitted", score: null } },
+      );
+    }), people);
+    expect(s.activitySubmissions.map((item) => [item.id, item.excused])).toEqual([["31", true], ["32", false]]);
+    expect(reviewQueue(s, classroomsOf(s, "EMP-1")).map((item) => item.id)).toEqual(["32"]);
+  });
 });

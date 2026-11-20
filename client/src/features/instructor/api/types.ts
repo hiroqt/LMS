@@ -163,6 +163,8 @@ export interface ActivitySubmission {
   rawScore?: number | null;
   /** The level chosen for each criterion, when graded with a rubric (contract §12). */
   rubricScores?: RubricScore[];
+  /** The student is excused from this assignment (contract §11): nothing to grade. */
+  excused?: boolean;
   submittedAt?: string;
   gradedAt?: string;
   grade: number | null;
