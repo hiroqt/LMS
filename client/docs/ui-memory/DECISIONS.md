@@ -813,3 +813,120 @@ Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Instructor"; shapes: cont
   (`nextToGradeIn`). After Return, or after everyone missing is graded, focus goes to the
   student's work, because the button that opened the dialog is gone (L-015).
 
+### D-062 · Assignments Phase 3: penalties are worked out, not stored; exceptions are per student
+`2026-11-19` · hiro (assignments) · scope: server, instructor, student · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§13. Builds on D-058.
+- **A late penalty is computed whenever a grade is read,** from the assignment's settings, the
+  student's own due date, and when the work was turned in. The grade row keeps the instructor's
+  raw points and one flag, `penalty_waived`. Nothing has to be recomputed when a due date or the
+  penalty changes, and `late` and the penalty can never disagree. The cost: changing the settings
+  changes grades already returned, as changing the points always has.
+- **Days late are calendar days in the school's time zone** (`Lms:TimeZone`, Asia/Manila), at
+  least 1 for any late work, so "10% per day" means what a student expects.
+- **One `coursework_exceptions` row per student and assignment** holds their own due date, their
+  own last day, and "excused". `AssignmentRules.Evaluate` takes it, so the turn-in verdict, the
+  draft routes, taking work back, `late`, the penalty and "not handed in" grades all agree.
+- **Excused means out of the count:** not in the gradebook average, the graded progress, or the
+  close rule, whether or not work was graded.
+- **A rubric locks once a grade uses it,** like a question set (D-034): copy it to change it. An
+  assignment with a rubric is worth the rubric's total, as an exam is worth its questions.
+- **The zip is built as it is sent** and capped at 250 MB, because the browser has to hold it in
+  memory to save it (L-075).
+
+### D-063 · Late penalty and rubric in the assignment builder; a class's rubrics pages
+`2026-11-19` · hiro (assignments, PR 3B) · scope: instructor, e2e · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10, §12. Builds on D-059 and D-062.
+- **Late penalty** (Dates and grading, under late work): "Take points off late work", then
+  **Percent per day** (whole, 1–100) and **Up to** (whole, 1–100, default 100). It is available only
+  with a due date and "Accept late work"; otherwise the box is disabled and its hint says which is
+  missing. A stored 0 per day shows as off (10% is ready when it is turned on). When late work or
+  the due date is off, or the box is unchecked, the body sends `latePenaltyPercentPerDay: 0` and
+  leaves the cap alone. The Summary's "What students will read" gets the sentence from `handInRules`.
+- **Rubric** (Dates and grading, in the **Grading** group, renamed from "Grades"): "Grade with a
+  rubric" is a native select of the class's rubrics ("Lab report · 15 points") or "No rubric", with
+  the chosen one shown read-only by `RubricView` and a **Manage rubrics** button (through the
+  unsaved-changes guard). With a rubric, Details' Points is read-only, shows the rubric's total, and
+  says "This assignment is worth its rubric's total"; the body sends `rubricId` and no `maxPoints`.
+  An update without one sends `clearRubric: true`. The server's refusal once work is graded (400 on
+  `rubricId`) lands on the select, whose tab opens and which takes focus. The client does not
+  pre-disable the select for graded work: the server's sentence is the one place that rule lives.
+- **Presets leave the penalty and the rubric alone**: a preset is about how work is handed in, and
+  a rubric belongs to a class. **Copy a previous assignment copies both** (same class, so the
+  rubric is valid; they are grading settings, like late work and grade release).
+- **Rubrics page** `…/rubrics`: cards with the title, "15 points · 2 criteria · used by 1
+  assignment", a warning **Locked** badge with a sentence, and Open, Copy, Delete. Delete confirms in
+  a dialog that names the rubric; the server's 409 sentence shows in the dialog (and a toast) and
+  the dialog stays. After a delete, focus goes to the page heading. Reached from Create content
+  ("Manage rubrics") and from the builder.
+- **Rubric editor** `…/rubrics/new`, `…/rubrics/:id`: title; 1–12 criteria (move up/down and remove
+  with buttons; focus follows the moved card), each with a title, optional description and 2–6
+  levels (title, points, optional description). A new rubric starts with one criterion of
+  Complete 10 / Partial 5 / Missing 0. The running total and Save sit in an aside (sticky beside
+  the form at `@4xl`, a bottom bar on phones) so a toast never covers Save (L-092). Errors use the
+  server's paths (`criteria[1].levels[0].points`) on the client too, so local and server errors
+  land on the same inputs (`data-focus="rubric:<path>"`) and the first takes focus. A **locked**
+  rubric shows its criteria with `RubricView` and "This rubric has been used to grade. Copy it to
+  change its criteria.", lets the title change (only the title is sent), and offers **Copy
+  rubric**, which opens the copy. Leaving with unsaved changes asks first.
+- Code: `api/rubrics.ts` (calls, keys, form model, checks, error mapping, totals; tested),
+  `pages/RubricsPage.tsx`, `pages/RubricPage.tsx`, `pages/rubrics/`. Specs: `assignment-builder`
+  (four tests added, no journey changed), `rubrics`.
+
+### D-064 · Phase 3 on the assignment grading page: penalties, rubrics, own dates, excused, saved comments, batch return, the zip
+`2026-11-20` · hiro (assignments, PR 3D) · scope: instructor, e2e · confidence: medium
+Builds on D-061 and D-062; shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§13.
+- **Late penalty:** the Score field edits the **raw** points (`rawScore`); the list, the status and
+  the toast show `score`, the score after the penalty. Late work says how many days late, and on an
+  assignment with a penalty the grade form shows the rule and the sum ("18 − 20% (2 days late) =
+  14.4 of 20"), worked out as the server does only to preview what is typed. "Waive the late
+  penalty for this student" sends `waivePenalty`, and only for late work with a penalty.
+- **Rubric:** with `rubricId` the Score field is replaced by `RubricView` in choosing mode, filled
+  from `rubricScores`. Save is refused on the page until every criterion has a level ("Choose a
+  level for …", focus on the first one left); the server's `rubric[<id>]` errors land on their
+  criterion. A "not handed in" grade still takes plain points. The class Submissions tab can't
+  grade by rubric, so it says so and links here.
+- **Own dates and excused:** on a student's work, "Give this student more time" (own due date,
+  and own last day only when the assignment has one), "Remove their own dates", and "Excuse from
+  this assignment" / "No longer excused", each confirmed; afterwards focus goes to the student's
+  name (L-015). The list shows "Own due date: …" and an **Excused** badge, and there is an
+  **Excused** filter. Excused students are never in Needs grading or Missing, are never "next to
+  grade", and have no grade form (the page says why). A "not handed in" grade waits for the
+  student's own last day; "Give 0 to everyone" says how many were skipped for it (`waiting`).
+- **Saved comments** (the instructor's, for every class) sit under the feedback: a dialog lists
+  them with Add to feedback (appended on its own line; focus returns to the feedback), Edit and
+  Delete (asked inside the dialog); "Save this feedback as a comment" saves what is written. The
+  500-character limit is checked first; the 200-comment refusal is the server's sentence.
+- **Return selected (N):** with `gradeRelease: "returned"`, graded rows not yet returned have a
+  checkbox; the button confirms with the count, beside the single Return and Return all graded.
+- **Download all work (.zip)** fetches with the instructor's headers (L-075) and saves the blob;
+  busy while it downloads, the server's 409 sentence over 250 MB, disabled with the reason when
+  nobody has handed in.
+- **A refusal shows the server's own sentence** (`writeResult`: a 403, 404 or 409 `title`; a lone
+  400 field error). Spec: `e2e/assignment-grading-more.spec.ts`.
+
+### D-065 · The student's assignment page shows their own due date, excused work, the late-penalty sum, and the rubric
+`2026-11-19` · hiro (assignments, PR 3C) · scope: student, shared, e2e · confidence: medium
+Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–§12. Builds on D-060, D-062.
+- **Own dates replace the class's for that student, everywhere.** `toStudentCatalog` sets
+  `Assessment.dueAt` to `turnIn.dueAt` when `turnIn.extended` (`studentDueAt`), keeps the class's
+  as `classDueAt`, and gives `handIn` the student's due date and last day (`ownHandIn`). Tasks,
+  Today and Calendar read `dueAt`, so they follow without changes. The rules say "Your due date:
+  … (your instructor gave you more time)" instead of "Due …" (`AssignmentBrief` `ownDueDate`),
+  and the details card's label becomes "Your due date".
+- **Excused is out of every to-do.** `needsWork` (selectors) is the one rule for "still to do":
+  not handed in and not excused. Due soon, Due this week, Missing, the Today panels and the
+  Calendar's "Past due" use it; excused rows show an **Excused** badge with text. The work card
+  says the server's sentence, has no editor and no Turn in, and keeps work already handed in
+  read-only.
+- **The late penalty is a sum in words and numbers** under **Your grade**: points given, the
+  percent and days late, the score after it, and one sentence ("… so 20% came off: 18 − 3.6 =
+  14.4."); "Late penalty waived" when waived. The turn-in dialog says what turning in now loses
+  ("Turning in now is 2 days late: 20% comes off the score."). Days are counted in the browser
+  exactly as contract §10 defines them (calendar days in Asia/Manila, at least 1; `daysLate` in
+  `api/work.ts`); the browser's clock can differ from the server's by minutes, so near midnight
+  in Manila the number shown before turning in can be one off from the one the grade uses.
+- **The rubric is read once per page** (`useAssignmentRubric`, TanStack Query, 404 is "none"):
+  read-only in the brief (`AssignmentBrief` optional `rubric`, so the instructor's preview can
+  show it too), and with the chosen levels on a visible grade, where the brief leaves it out so
+  it is not shown twice. A held grade shows neither the sum nor the levels (the server hides them).
+- Spec: `e2e/assignment-work-more.spec.ts`. No existing journey changed.

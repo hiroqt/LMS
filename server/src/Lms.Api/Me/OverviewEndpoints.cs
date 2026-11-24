@@ -23,12 +23,15 @@ public sealed record SubmissionItem(long CourseworkId, string ClassId, Submissio
 public sealed record ClassStudent(string ClassId, string StudentId, string FirstName, string LastName);
 public sealed record GradebookItem(string ClassId, int ActivityWeight, int ExamWeight, int PassingScore);
 public sealed record AttendanceItem(string ClassId, AttendanceMonthDto Month);
+/// <summary>One student's own dates or excuse for an assignment (contract §11), for the instructor's lists.</summary>
+public sealed record ExceptionItem(long CourseworkId, string ClassId, string StudentId, DateTime? DueAt, DateTime? CloseAt, bool Excused);
 
 /// <summary>Everything a workspace shows, in one call. Students get only what they may see.</summary>
 public sealed record Overview(Person Me, IReadOnlyList<ClassSummary> Classes, IReadOnlyList<ModuleItem> Modules,
     IReadOnlyList<MaterialItem> Materials, IReadOnlyList<AnnouncementItem> Announcements, IReadOnlyList<CourseworkItem> Coursework,
     IReadOnlyList<SubmissionItem> Submissions, IReadOnlyList<ClassStudent> Students, IReadOnlyList<GradebookItem> Gradebooks,
-    IReadOnlyList<AttendanceItem> Attendance);
+    IReadOnlyList<AttendanceItem> Attendance,
+    IReadOnlyList<ExceptionItem>? Exceptions = null);
 
 public sealed record PersonRef(string Id, string Name);
 public sealed record People(IReadOnlyList<PersonRef> Instructors, IReadOnlyList<PersonRef> Students);
@@ -93,6 +96,14 @@ public static class OverviewEndpoints
                 submissions.AddRange((await SubmissionEndpoints.ToDtoAsync(db, cw, rows, ct, forStudent: !user.IsInstructor)).Select(d => new SubmissionItem(cw.Id, cw.ClassId, d)));
             }
 
+            // Instructors: every student's own dates and excuses, so no list shows an excused student as still to hand in.
+            // Students get none here: their own are already in each assignment's turnIn.
+            var classOf = coursework.ToDictionary(c => c.Id, c => c.ClassId);
+            var exceptions = user.IsInstructor
+                ? (await db.CourseworkExceptions.AsNoTracking().Where(e => courseworkIds.Contains(e.CourseworkId)).OrderBy(e => e.CourseworkId).ThenBy(e => e.StudentId).ToListAsync(ct))
+                    .Select(e => new ExceptionItem(e.CourseworkId, classOf[e.CourseworkId], e.StudentId, e.DueAt, e.CloseAt, e.Excused)).ToList()
+                : [];
+
             // Instructors: every entry of their classes. Students: their own days only.
             var attendance = await AttendanceEndpoints.LoadAsync(db, ids, ct);
             var gradebooks = await db.GradebookSettings.AsNoTracking().Where(g => ids.Contains(g.ClassId)).ToListAsync(ct);
@@ -115,7 +126,8 @@ public static class OverviewEndpoints
                 classes.Select(c => gradebooks.FirstOrDefault(g => g.ClassId == c.Id) is { } g
                     ? new GradebookItem(c.Id, g.ActivityWeight, g.ExamWeight, g.PassingScore)
                     : new GradebookItem(c.Id, 40, 60, 60)).ToList(),
-                attendance.Select(m => new AttendanceItem(m.ClassId, AttendanceEndpoints.ToDto(m, user))).ToList()));
+                attendance.Select(m => new AttendanceItem(m.ClassId, AttendanceEndpoints.ToDto(m, user))).ToList(),
+                exceptions));
         }).WithName("GetOverview");
 
         return app;

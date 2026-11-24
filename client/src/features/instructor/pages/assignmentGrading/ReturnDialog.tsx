@@ -5,15 +5,15 @@ import { useToast } from "../../../../shared/ui/toast/useToast";
 import { focusStudentWork, studentsLabel, useReturnGrades } from "../../api/assignmentGrading";
 
 export interface ReturnRequest {
-  /** One student's name, or null for "Return all graded". */
+  /** One student's name, or null for "Return selected" and "Return all graded". */
   name: string | null;
-  /** Students to return to; undefined returns every graded student. */
+  /** Students to return to (one, or those selected); undefined returns every graded student. */
   studentIds?: string[];
   count: number;
 }
 
 /** Confirms a Return, saying how many students will see their grade, then reports how many did. */
-export function ReturnDialog({ classId, assignmentId, title, request, onClose }: { classId: string; assignmentId: string; title: string; request: ReturnRequest | null; onClose: () => void }) {
+export function ReturnDialog({ classId, assignmentId, title, request, onClose, onReturned }: { classId: string; assignmentId: string; title: string; request: ReturnRequest | null; onClose: () => void; onReturned?: () => void }) {
   const toast = useToast();
   const giveBack = useReturnGrades(classId, assignmentId);
   const [saving, setSaving] = useState(false);
@@ -30,6 +30,7 @@ export function ReturnDialog({ classId, assignmentId, title, request, onClose }:
       return;
     }
     returned.current = true;
+    onReturned?.();
     onClose();
     toast.show({ title: `Returned to ${studentsLabel(result.returned)}`, description: result.returned ? "They can now see their grade and feedback." : "Nothing was graded and waiting to be returned.", tone: "success" });
   };
@@ -38,7 +39,7 @@ export function ReturnDialog({ classId, assignmentId, title, request, onClose }:
     <Dialog open={request !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
       {request && (
         <DialogContent
-          title={request.name ? `Return ${request.name}'s work?` : "Return all graded work?"}
+          title={request.name ? `Return ${request.name}'s work?` : request.studentIds ? "Return the selected work?" : "Return all graded work?"}
           description={`${studentsLabel(request.count)} will see their grade and feedback for “${title}”.`}
           onCloseAutoFocus={(event) => {
             if (!returned.current) return;

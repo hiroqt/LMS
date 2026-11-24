@@ -35,6 +35,7 @@ import {
   type AssignmentForm,
   type PresetId,
 } from "../api/assignments";
+import { useRubrics } from "../api/rubrics";
 import { classContent, subjectOf } from "../api/selectors";
 import type { Activity, Classroom } from "../api/types";
 import { focusTarget } from "../components/questionEditor/focus";
@@ -44,7 +45,7 @@ import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { ASSIGNMENT_TABS, instructorPaths, isAssignmentTab, type AssignmentTab } from "../paths";
 import { AssignmentSummary, type AssignmentAction, type BuilderMode } from "./assignment/AssignmentSummary";
-import { DatesTab } from "./assignment/DatesTab";
+import { DatesTab, type RubricChoices } from "./assignment/DatesTab";
 import { DetailsTab } from "./assignment/DetailsTab";
 import { HandInTab } from "./assignment/HandInTab";
 import { PresetsRow } from "./assignment/PresetsRow";
@@ -122,9 +123,11 @@ function EditLoader({ room, id }: { room: Classroom; id: number }) {
 
 function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderStart; onCreated?: (id: string) => void }) {
   const navigate = useNavigate();
+  const guardedNavigate = useGuardedNavigate();
   const toast = useToast();
   const { store } = useInstructorWorkspace();
   const saveAssignment = useSaveAssignment();
+  const rubricList = useRubrics(room.id);
   const content = classContent(store, room.id);
   const modules = moduleChoices(content.modules);
 
@@ -267,6 +270,16 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
   const handedIn = id === null ? 0 : handedInCount(store.activitySubmissions, String(id));
   const previous = content.activities.filter((item) => item.id !== String(id));
   const title = id === null ? "New assignment" : readOnly ? form.title : "Edit assignment";
+  const rubric = form.rubricId ? rubricList.data?.find((item) => String(item.id) === form.rubricId) : undefined;
+  // With a rubric the assignment is worth its total, as the server will store it.
+  const points = rubric ? String(rubric.totalPoints) : form.points;
+  const rubrics: RubricChoices = {
+    status: rubricList.status,
+    list: rubricList.data ?? [],
+    error: rubricList.isError ? describeApiError(rubricList.error).title : undefined,
+    onRetry: () => void rubricList.refetch(),
+    onManage: () => guardedNavigate(instructorPaths.rubrics(room.id)),
+  };
 
   return (
     <Frame room={room} title={title}>
@@ -295,19 +308,19 @@ function Builder({ room, start, onCreated }: { room: Classroom; start?: BuilderS
               })}
             </TabsList>
             <Panel tab="details" current={tab} readOnly={locked} onNext={() => openTab("hand-in")}>
-              <DetailsTab form={form} errors={errors} onChange={change} modules={modules} />
+              <DetailsTab form={form} errors={errors} onChange={change} modules={modules} rubricTitle={rubric?.title} rubricPoints={rubric ? points : undefined} />
             </Panel>
             <Panel tab="hand-in" current={tab} readOnly={locked} onNext={() => openTab("dates")}>
               <HandInTab form={form} errors={errors} onChange={change} />
             </Panel>
             <Panel tab="dates" current={tab} readOnly={locked}>
-              <DatesTab form={form} errors={errors} onChange={change} />
+              <DatesTab form={form} errors={errors} onChange={change} rubrics={rubrics} />
             </Panel>
           </Tabs>
         </div>
         <AssignmentSummary
           mode={mode}
-          points={form.points}
+          points={points}
           rules={handInRules(handInSettings(form))}
           problems={problems}
           general={errors.general}

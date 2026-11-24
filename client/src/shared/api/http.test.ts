@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiUrl, describeApiError, getJson, shouldRetryApiRead } from "./http";
+import { ApiError, apiUrl, describeApiError, fileNameFrom, getJson, shouldRetryApiRead } from "./http";
 
 const json = (body: unknown, status = 200, contentType = "application/json") =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": contentType } });
@@ -123,5 +123,25 @@ describe("describeApiError when the browser is offline", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     const error = new ApiError({ kind: "network", status: 0, url: "http://localhost:5200/api/classes" });
     expect(describeApiError(error).title).toBe("You’re offline");
+  });
+});
+
+describe("fileNameFrom", () => {
+  it("prefers the encoded name and decodes only that", () => {
+    expect(fileNameFrom(`attachment; filename="=?utf-8?B?UGFnYmFzYSDDsS13b3JrLnppcA==?="; filename*=UTF-8''Pagbasa%20%C3%B1-work.zip`)).toBe("Pagbasa ñ-work.zip");
+    expect(fileNameFrom(`attachment; filename*=UTF-8''Lab%20100%25%20done-work.zip`)).toBe("Lab 100% done-work.zip");
+  });
+
+  it("takes a plain name as it is, so a percent sign is not read as an escape", () => {
+    expect(fileNameFrom('attachment; filename="Lab 100% done-work.zip"')).toBe("Lab 100% done-work.zip");
+    expect(fileNameFrom("attachment; filename=exam-import-template.docx")).toBe("exam-import-template.docx");
+  });
+
+  it("gives no name when there is none it can read, so the caller uses its own", () => {
+    expect(fileNameFrom(null)).toBeUndefined();
+    expect(fileNameFrom("attachment")).toBeUndefined();
+    expect(fileNameFrom('attachment; filename="=?utf-8?B?UGFnYmFzYQ==?="')).toBeUndefined();
+    // A broken escape in the encoded name falls back to the plain one.
+    expect(fileNameFrom(`attachment; filename="work.zip"; filename*=UTF-8''100%-work.zip`)).toBe("work.zip");
   });
 });

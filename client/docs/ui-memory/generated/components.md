@@ -56,6 +56,7 @@
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
+| `src/shared/components/assignment/RubricView.tsx` | `RubricView` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
@@ -138,6 +139,8 @@
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
 | `src/features/instructor/pages/QuestionSetsPage.tsx` | `QuestionSetsPage` |
+| `src/features/instructor/pages/RubricPage.tsx` | `RubricPage` |
+| `src/features/instructor/pages/RubricsPage.tsx` | `RubricsPage` |
 | `src/features/instructor/pages/assessment/DetailsSection.tsx` | `DetailsSection` |
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
@@ -148,12 +151,16 @@
 | `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
 | `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
 | `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
+| `src/features/instructor/pages/assignmentGrading/ConfirmDialog.tsx` | `ConfirmDialog` |
+| `src/features/instructor/pages/assignmentGrading/FeedbackField.tsx` | `FeedbackField` |
 | `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
 | `src/features/instructor/pages/assignmentGrading/GradeEveryoneMissing.tsx` | `GradeEveryoneMissing` |
 | `src/features/instructor/pages/assignmentGrading/GradePanel.tsx` | `GradeForm`, `NoWorkGradeForm` |
 | `src/features/instructor/pages/assignmentGrading/ReturnDialog.tsx` | `ReturnDialog` |
-| `src/features/instructor/pages/assignmentGrading/StatusBadge.tsx` | `StatusBadge`, `LateBadge` |
+| `src/features/instructor/pages/assignmentGrading/SavedCommentsDialog.tsx` | `SavedCommentsDialog` |
+| `src/features/instructor/pages/assignmentGrading/StatusBadge.tsx` | `StatusBadge`, `LateBadge`, `ExcusedBadge` |
 | `src/features/instructor/pages/assignmentGrading/StudentList.tsx` | `StudentList` |
+| `src/features/instructor/pages/assignmentGrading/StudentTerms.tsx` | `StudentTerms` |
 | `src/features/instructor/pages/assignmentGrading/StudentWork.tsx` | `StudentWork` |
 | `src/features/instructor/pages/assignmentGrading/WorkFiles.tsx` | `WorkFiles` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
@@ -169,6 +176,8 @@
 | `src/features/instructor/pages/grading/ExamSubmissionsView.tsx` | `ExamSubmissionsView` |
 | `src/features/instructor/pages/grading/ItemAnalysisView.tsx` | `ItemAnalysisView` |
 | `src/features/instructor/pages/grading/SpellingReviewView.tsx` | `SpellingReviewView` |
+| `src/features/instructor/pages/rubrics/CriterionEditor.tsx` | `CriterionEditor` |
+| `src/features/instructor/pages/rubrics/DeleteRubricDialog.tsx` | `DeleteRubricDialog` |
 | `src/features/isms-link/IsmsLinkPage.tsx` | `IsmsLinkPage` |
 | `src/features/isms-link/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/isms-link/components/ClassRoster.tsx` | `ClassRoster` |
@@ -182,7 +191,9 @@
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
 | `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
+| `src/features/student/components/work/AssignmentWork.tsx` | `AssignmentWork` |
 | `src/features/student/components/work/DraftEditor.tsx` | `DraftEditor` |
+| `src/features/student/components/work/GradeSummary.tsx` | `GradeSummary` |
 | `src/features/student/components/work/TurnInDialog.tsx` | `TurnInDialog` |
 | `src/features/student/components/work/UploadRow.tsx` | `UploadRow` |
 | `src/features/student/components/work/WorkContents.tsx` | `WorkContents` |

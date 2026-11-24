@@ -660,3 +660,56 @@ file still waiting its turn (there is no request to abort: take it off the list)
 can land after the server stored the file (read the draft again), and that text typed while a
 turn-in is on its way was dropped (the fields are read-only and the dialog stays until it
 answers). Tests: `DraftEditor.test.tsx`, `useUploadQueue.test.tsx`.
+
+### L-092 · A toast covers a sticky bottom bar on desktop
+`2026-11-19` · hiro (assignments) · scope: instructor, shared/ui · confidence: high
+The rubric editor first had its total and Save in a bar stuck to the bottom of the page. On
+desktop the toast viewport sits in the bottom-right corner, so the "Could not save" toast lay
+over Save and a second click waited until it left (a spec caught it). Put the actions in an
+aside stuck to the top beside the form at `@4xl`, as the builders' Summary is; on phones the
+toast sits 5rem above the bottom and clears a one-row bar.
+
+### L-093 · `onCloseAutoFocus` runs with the handler the closing content last rendered with
+`2026-11-19` · hiro (assignments) · scope: instructor · confidence: medium
+When a dialog's content is rendered only while open (`{item && <DialogContent …>}`), closing it
+after a success unmounts it in the same render that records the success. A flag kept in state is
+still false in the handler Radix calls, so focus would go back to a trigger that no longer exists.
+Keep "it worked, move focus elsewhere" in a ref (`DeleteRubricDialog`). This is reasoned from how
+Radix keeps the handler, not reproduced with the state version; the rubrics spec checks that focus
+lands on the page heading after a delete.
+
+### L-094 · Passing an `id` to a control inside `Field` unlinks its label
+`2026-11-20` · hiro (assignments, PR 3D) · scope: instructor · confidence: high
+`useFieldProps` keeps a control's own `id` over the Field's, but the `<label htmlFor>` uses the
+Field's. Giving the feedback `Textarea` an id (to focus it after a dialog) left it with no
+accessible name: `getByRole("textbox", { name: /Feedback/ })` timed out and axe reported `label`.
+To reach a control inside a `Field`, keep a ref on a wrapper and `querySelector` it
+(`FeedbackField.tsx`).
+
+### L-096 · A disabled TanStack query is `isPending` forever
+`2026-11-19` · hiro (assignments, PR 3C) · scope: student · confidence: high
+`useAssignmentRubric` is disabled when the assignment has no `rubricId`, and a disabled query with
+no data reports `isPending: true`. Rendering a skeleton on `isPending` alone would show "Loading
+the rubric" on every assignment without one. Check the reason to fetch first (`rubricId &&
+rubric.isPending`, `AssignmentWork`), and treat the endpoint's 404 as `null`, not an error.
+
+### L-097 · Seed Phase 3 dates whole days from the API's "now"
+`2026-11-19` · hiro (assignments, PR 3C) · scope: e2e · confidence: high
+Days late are calendar days in Manila (contract §10), and the browser and the API clocks differ by
+minutes (L-087). The suite's "now" is 09:00 in Manila, so a due date exactly two days before
+`serverNow` (rounded to the minute) is 2 days late by both clocks, and the dialog's "2 days late"
+matches the grade's `daysLate`. `e2e/assignment-work-more.spec.ts` builds every date that way
+(`daysFrom`) and formats expected dates in Asia/Manila like `formatDue`.
+
+### L-098 · Never preview money-like arithmetic in floating point; and a second way to grade must say the same thing
+`2026-11-20` · hiro (assignments) · scope: instructor, shared · confidence: high
+An independent review of the Phase 3 screens found the late-penalty preview a cent off the server
+for thousands of inputs (7.5 less 37% is 4.725: floats give 4.72, the server's decimals 4.73).
+`afterPenalty` now works in whole ten-thousandths, and `rubricTotal` rounds its sum to cents. It
+also found that the class Submissions tab, a second place to grade, took one score and said
+"18 / 20" for late work that scored 14.4: it now sends rubric and penalized-late work to the
+assignment's grading page, and the overview carries `exceptions` so excused students are not
+listed there as having handed in nothing. When a rule gets a second screen, check the first one.
+Also from that review: `fileNameFrom` (`http.ts`) reads `filename*=` first and never URI-decodes a
+plain `filename`, since "Lab 100% done" is not an encoding; and `latePenaltyRule` says "loses N%"
+when the cap is reached on the first day.

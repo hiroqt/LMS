@@ -1,7 +1,8 @@
-import { FilePlus2, History, Lock, Undo2 } from "lucide-react";
+import { CircleMinus, FilePlus2, History, Lock, Undo2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { draftFailureMessage, startDraft, unsubmit } from "../../../../shared/api/assignments";
 import type { Submission, TurnIn } from "../../../../shared/api/overview";
+import type { Rubric } from "../../../../shared/api/rubrics";
 import type { HandInSettings } from "../../../../shared/lib/assignmentRules";
 import { formatDue } from "../../../../shared/lib/format";
 import { useNetworkStatus } from "../../../../shared/hooks/useNetworkStatus";
@@ -15,14 +16,18 @@ import { afterUnsubmit, REFUSALS, splitWork, withRow, workBadges } from "../../a
 import { useMyWork } from "../../hooks/useMyWork";
 import { useRefreshStudent, useStudentViewer } from "../../hooks/useStudentCatalog";
 import { DraftEditor } from "./DraftEditor";
+import { GradeSummary } from "./GradeSummary";
 import { WorkContents } from "./WorkContents";
 
 export interface YourWorkProps {
   classId: string;
   assessmentId: string;
+  /** With the student's own dates (`ownHandIn`). */
   settings: HandInSettings;
   /** The server's verdict (contract §2); the card shows it and never works the rules out. */
   turnIn: TurnIn;
+  /** The assignment's rubric once loaded, so a grade can show the level chosen for each criterion. */
+  rubric?: Pick<Rubric, "criteria" | "totalPoints"> | null;
 }
 
 const RECEIPT_HEADING = "your-work-receipt";
@@ -40,7 +45,7 @@ function versionLine(row: Submission): string {
  * The student's work on an assignment: its state, the draft (text, link, files), Turn in with a
  * receipt, Take back, a new version, and earlier versions. Every rule comes from `turnIn`.
  */
-export function YourWork({ classId, assessmentId, settings, turnIn }: YourWorkProps) {
+export function YourWork({ classId, assessmentId, settings, turnIn, rubric }: YourWorkProps) {
   const viewer = useStudentViewer();
   const toast = useToast();
   const refresh = useRefreshStudent();
@@ -102,7 +107,7 @@ export function YourWork({ classId, assessmentId, settings, turnIn }: YourWorkPr
 
         {!turnIn.canTurnIn && reason && (
           <p className="m-0 flex items-start gap-2 rounded-control bg-canvas p-3 text-body text-ink">
-            <Lock aria-hidden className="mt-0.5 size-4 shrink-0 text-muted" />{reason}
+            {turnIn.reason === "excused" ? <CircleMinus aria-hidden className="mt-0.5 size-4 shrink-0 text-muted" /> : <Lock aria-hidden className="mt-0.5 size-4 shrink-0 text-muted" />}{reason}
           </p>
         )}
 
@@ -139,6 +144,8 @@ export function YourWork({ classId, assessmentId, settings, turnIn }: YourWorkPr
                 )}
               </section>
             )}
+
+            {current && <GradeSummary work={current} rubric={rubric} />}
 
             {editing && (
               <div id={`${CARD_HEADING}-editor`} tabIndex={-1} className="outline-none">

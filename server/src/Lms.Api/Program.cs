@@ -9,6 +9,7 @@ using Lms.Api.Files;
 using Lms.Api.Import;
 using Lms.Api.Isms;
 using Lms.Api.Me;
+using Lms.Api.Rubrics;
 using Lms.Api.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -70,6 +71,9 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
         .WithExposedHeaders("Content-Disposition"));
 });
 
+// Calendar days late are counted in the school's time zone (D-062).
+if (builder.Configuration["Lms:TimeZone"] is { Length: > 0 } zone) LatePenalty.Zone = TimeZoneInfo.FindSystemTimeZoneById(zone);
+
 var app = builder.Build();
 
 if (demo.Enabled)
@@ -100,6 +104,10 @@ app.MapCourseworkEndpoints();
 app.MapSubmissionEndpoints();
 app.MapDraftEndpoints();
 app.MapFileEndpoints();
+app.MapExceptionEndpoints();
+app.MapRubricEndpoints();
+app.MapCommentBankEndpoints();
+app.MapDownloadEndpoints();
 app.MapAccuracyEndpoints();
 app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();

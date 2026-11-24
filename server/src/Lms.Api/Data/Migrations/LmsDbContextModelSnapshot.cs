@@ -323,6 +323,16 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("instructions");
 
+                    b.Property<int>("LatePenaltyMaxPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(100)
+                        .HasColumnName("late_penalty_max_percent");
+
+                    b.Property<int>("LatePenaltyPercentPerDay")
+                        .HasColumnType("int")
+                        .HasColumnName("late_penalty_percent_per_day");
+
                     b.Property<int?>("MaxAttempts")
                         .HasColumnType("int")
                         .HasColumnName("max_attempts");
@@ -345,6 +355,10 @@ namespace Lms.Api.Data.Migrations
                     b.Property<long?>("QuestionnaireId")
                         .HasColumnType("bigint")
                         .HasColumnName("questionnaire_id");
+
+                    b.Property<long?>("RubricId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rubric_id");
 
                     b.Property<bool>("ShuffleChoices")
                         .HasColumnType("tinyint(1)")
@@ -410,7 +424,67 @@ namespace Lms.Api.Data.Migrations
 
                     b.HasIndex("QuestionnaireId");
 
+                    b.HasIndex("RubricId");
+
                     b.ToTable("coursework", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.CourseworkException", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CloseAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("close_at");
+
+                    b.Property<long>("CourseworkId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("coursework_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DueAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("due_at");
+
+                    b.Property<bool>("Excused")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("excused");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_coursework_exceptions");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("CourseworkId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("coursework_exceptions", (string)null);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Grade", b =>
@@ -443,6 +517,10 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(64)")
                         .HasColumnName("graded_by");
 
+                    b.Property<bool>("PenaltyWaived")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("penalty_waived");
+
                     b.Property<decimal>("Points")
                         .HasPrecision(8, 2)
                         .HasColumnType("decimal(8,2)")
@@ -472,6 +550,35 @@ namespace Lms.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("grades", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.GradeRubricScore", b =>
+                {
+                    b.Property<long>("GradeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("grade_id");
+
+                    b.Property<long>("CriterionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("criterion_id");
+
+                    b.Property<long>("LevelId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("level_id");
+
+                    b.Property<decimal>("Points")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("points");
+
+                    b.HasKey("GradeId", "CriterionId")
+                        .HasName("PK_grade_rubric_scores");
+
+                    b.HasIndex("CriterionId");
+
+                    b.HasIndex("LevelId");
+
+                    b.ToTable("grade_rubric_scores", (string)null);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.GradebookSetting", b =>
@@ -1082,6 +1189,169 @@ namespace Lms.Api.Data.Migrations
                     b.ToTable("questionnaires", (string)null);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.Rubric", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClassId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("class_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_rubrics");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("rubrics", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.RubricCriterion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<long>("RubricId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rubric_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("PK_rubric_criteria");
+
+                    b.HasIndex("RubricId");
+
+                    b.ToTable("rubric_criteria", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.RubricLevel", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<long>("CriterionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("criterion_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<decimal>("Points")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("points");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("PK_rubric_levels");
+
+                    b.HasIndex("CriterionId");
+
+                    b.ToTable("rubric_levels", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.SavedComment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("OwnerInstructorId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("owner_instructor_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_saved_comments");
+
+                    b.HasIndex("OwnerInstructorId");
+
+                    b.ToTable("saved_comments", (string)null);
+                });
+
             modelBuilder.Entity("Lms.Api.Data.StoredFile", b =>
                 {
                     b.Property<long>("Id")
@@ -1402,6 +1672,20 @@ namespace Lms.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("QuestionnaireId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Lms.Api.Data.Rubric", null)
+                        .WithMany()
+                        .HasForeignKey("RubricId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.CourseworkException", b =>
+                {
+                    b.HasOne("Lms.Api.Data.Coursework", null)
+                        .WithMany()
+                        .HasForeignKey("CourseworkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Grade", b =>
@@ -1410,6 +1694,27 @@ namespace Lms.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.GradeRubricScore", b =>
+                {
+                    b.HasOne("Lms.Api.Data.RubricCriterion", null)
+                        .WithMany()
+                        .HasForeignKey("CriterionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lms.Api.Data.Grade", null)
+                        .WithMany()
+                        .HasForeignKey("GradeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Lms.Api.Data.RubricLevel", null)
+                        .WithMany()
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -1497,6 +1802,33 @@ namespace Lms.Api.Data.Migrations
                     b.HasOne("Lms.Api.Data.Questionnaire", null)
                         .WithMany()
                         .HasForeignKey("QuestionnaireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.Rubric", b =>
+                {
+                    b.HasOne("Lms.Api.Data.IsmsClass", null)
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.RubricCriterion", b =>
+                {
+                    b.HasOne("Lms.Api.Data.Rubric", null)
+                        .WithMany()
+                        .HasForeignKey("RubricId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.RubricLevel", b =>
+                {
+                    b.HasOne("Lms.Api.Data.RubricCriterion", null)
+                        .WithMany()
+                        .HasForeignKey("CriterionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

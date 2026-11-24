@@ -35,6 +35,12 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<SubmissionFile> SubmissionFiles => Set<SubmissionFile>();
     public DbSet<Grade> Grades => Set<Grade>();
+    public DbSet<CourseworkException> CourseworkExceptions => Set<CourseworkException>();
+    public DbSet<Rubric> Rubrics => Set<Rubric>();
+    public DbSet<RubricCriterion> RubricCriteria => Set<RubricCriterion>();
+    public DbSet<RubricLevel> RubricLevels => Set<RubricLevel>();
+    public DbSet<GradeRubricScore> GradeRubricScores => Set<GradeRubricScore>();
+    public DbSet<SavedComment> SavedComments => Set<SavedComment>();
     public DbSet<GradebookSetting> GradebookSettings => Set<GradebookSetting>();
     public DbSet<AttendanceMonth> AttendanceMonths => Set<AttendanceMonth>();
     public DbSet<AttendanceEntry> AttendanceEntries => Set<AttendanceEntry>();
@@ -172,6 +178,8 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.SubmissionKinds).HasMaxLength(40).IsRequired().HasDefaultValue(SubmissionKind.Default);
             e.Property(x => x.AllowedFileTypes).HasMaxLength(80);
             e.Property(x => x.MaxFiles).HasDefaultValue(5);
+            e.Property(x => x.LatePenaltyMaxPercent).HasDefaultValue(100);
+            e.HasOne<Rubric>().WithMany().HasForeignKey(x => x.RubricId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Questionnaire>().WithMany().HasForeignKey(x => x.QuestionnaireId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -238,6 +246,62 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.GradedBy).HasMaxLength(IdLength).IsRequired();
             e.HasOne<Submission>().WithMany().HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.SubmissionId).IsUnique();
+        });
+
+        b.Entity<CourseworkException>(e =>
+        {
+            e.ToTable("coursework_exceptions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.StudentId).HasMaxLength(IdLength).IsRequired();
+            e.HasOne<Coursework>().WithMany().HasForeignKey(x => x.CourseworkId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.CourseworkId, x.StudentId }).IsUnique();
+            e.HasIndex(x => x.StudentId);
+        });
+
+        b.Entity<Rubric>(e =>
+        {
+            e.ToTable("rubrics");
+            ClassOwned(e, x => x.ClassId);
+            e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+        });
+
+        b.Entity<RubricCriterion>(e =>
+        {
+            e.ToTable("rubric_criteria");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.HasOne<Rubric>().WithMany().HasForeignKey(x => x.RubricId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RubricLevel>(e =>
+        {
+            e.ToTable("rubric_levels");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(60).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.Points).HasPrecision(8, 2);
+            e.HasOne<RubricCriterion>().WithMany().HasForeignKey(x => x.CriterionId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<GradeRubricScore>(e =>
+        {
+            e.ToTable("grade_rubric_scores");
+            e.HasKey(x => new { x.GradeId, x.CriterionId });
+            e.Property(x => x.Points).HasPrecision(8, 2);
+            e.HasOne<Grade>().WithMany().HasForeignKey(x => x.GradeId).OnDelete(DeleteBehavior.Cascade);
+            // A criterion or level that a grade used can't be deleted: that is what locks the rubric.
+            e.HasOne<RubricCriterion>().WithMany().HasForeignKey(x => x.CriterionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<RubricLevel>().WithMany().HasForeignKey(x => x.LevelId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<SavedComment>(e =>
+        {
+            e.ToTable("saved_comments");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.OwnerInstructorId).HasMaxLength(IdLength).IsRequired();
+            e.Property(x => x.Text).HasMaxLength(500).IsRequired();
+            e.HasIndex(x => x.OwnerInstructorId);
         });
 
         b.Entity<GradebookSetting>(e =>

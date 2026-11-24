@@ -74,7 +74,7 @@ without a migration.
 | Group | Tables |
 |---|---|
 | ISMS reference (written only by the sync) | `isms_classes`, `isms_class_students` |
-| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `stored_files`, `submission_files`, `grades`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
+| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `stored_files`, `submission_files`, `grades`, `grade_rubric_scores`, `coursework_exceptions`, `rubrics`, `rubric_criteria`, `rubric_levels`, `saved_comments`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
 
 Every LMS-owned row records `created_at`, `created_by`, `updated_at` and `updated_by`. ISMS people
 are stored by their ISMS reference ids, never as LMS accounts.
@@ -386,4 +386,45 @@ dotnet user-secrets set Lms:Files:Scanner clamav
 ```
 
 When clamd can't be reached the upload fails with 503 and nothing is kept; the student tries again.
+
+## Late penalties, a student's own dates, rubrics (D-062)
+
+The shapes are in [`client/docs/ASSIGNMENTS_API_CONTRACT.md`](../client/docs/ASSIGNMENTS_API_CONTRACT.md) §10–§13.
+
+**Late penalty.** `latePenaltyPercentPerDay` (0 is none) and `latePenaltyMaxPercent` on an
+assignment. Days late are calendar days in `Lms:TimeZone` (default `Asia/Manila`), at least 1 for
+any late work. The grade row keeps the instructor's raw points and one flag, `penalty_waived`
+(`waivePenalty` on the grade route); the penalty is worked out whenever the grade is read, so
+`score` (after the penalty), `rawScore`, `penaltyPercent` and `daysLate` always agree with the
+assignment's settings. The gradebook uses `score`.
+
+**A student's own dates, and excused work** (the class's instructor, assignments only):
+
+| Method | Route (under `/api/classes/{classId}/coursework/{id}/students/{studentId}`) | Notes |
+|---|---|---|
+| PUT | `…/extension` | `{ dueAt, closeAt? }`: the student's own due date and last day for late work |
+| DELETE | `…/extension` | Back to the class's dates |
+| PUT | `…/excuse` | Excused: nothing to hand in, and out of the average, the graded count and the close rule |
+| DELETE | `…/excuse` | |
+
+One row in `coursework_exceptions` per student and assignment holds both. `AssignmentRules`
+reads it, so the turn-in verdict, drafts, taking work back, `late`, the penalty and "not handed
+in" grades all use the student's own dates. Students receive theirs as `turnIn.dueAt`,
+`turnIn.closeAt` and `turnIn.extended`.
+
+**Rubrics** belong to a class: `GET/POST /api/classes/{classId}/rubrics`,
+`GET/PUT/DELETE …/rubrics/{id}`, `POST …/rubrics/{id}/copy`, and
+`GET …/coursework/{id}/rubric` for an assignment's own (students too). An assignment with a
+`rubricId` is worth the rubric's total and is graded with `rubric: { criterionId: levelId }`. A
+rubric locks once a grade has used it; copy it to change it.
+
+**Comment bank:** `GET/POST /api/comment-bank`, `PUT/DELETE …/{id}`: the instructor's own saved
+feedback comments, at most 200.
+
+**All the work at once:** `GET …/coursework/{id}/submissions.zip` streams every student's latest
+handed-in version, a folder per student, up to 250 MB of files.
+
+| Setting | Default | Notes |
+|---|---|---|
+| `Lms:TimeZone` | `Asia/Manila` | The zone calendar days late are counted in |
 

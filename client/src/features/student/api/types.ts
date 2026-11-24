@@ -36,7 +36,14 @@ export interface Assessment {
   /** "Quiz" | "Long Quiz" | "Exam" | "Assignment" */
   type: string;
   description: string;
+  /** The student's own due date when they have one (contract §11), otherwise the assignment's; "" for none. */
   dueAt: string;
+  /** The class's due date, present only when the student has a later one of their own. */
+  classDueAt?: string;
+  /** Assignments: the instructor excused this student; nothing to hand in, and it does not count (D-062). */
+  excused?: boolean;
+  /** Assignments: the rubric it is graded with (contract §12). */
+  rubricId?: number;
   questionCount?: number;
   points: number;
   timeLimit: string;
@@ -45,7 +52,7 @@ export interface Assessment {
   kind?: "activity";
   /** Assignments: the server's turn-in verdict (D-054). */
   turnIn?: TurnIn;
-  /** Assignments: how work is handed in (contract §1, §5), for the brief and the work card. */
+  /** Assignments: how work is handed in (contract §1, §5), for the brief and the work card, with the student's own dates. */
   handIn?: HandInSettings;
   /** Exams: how many attempts are allowed (1 when not set). */
   maxAttempts?: number;

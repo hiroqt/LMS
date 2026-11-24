@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, monthGrid, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
+import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, monthGrid, needsWork, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
 import type { Assessment } from "./types";
 
 const NOW = new Date("2026-10-23T09:00:00").getTime(); // Friday
@@ -31,6 +31,17 @@ describe("student selectors", () => {
   it("groups tasks exactly like the classic Tasks page", () => {
     const groups = Object.fromEntries(taskGroups(all, ["mon"], NOW).map((g) => [g.status, g.items.map((a) => a.id)]));
     expect(groups).toEqual({ "Due soon": ["sat", "nov"], "Due this week": ["sat"], Missing: ["past"], Done: ["mon"] });
+  });
+
+  it("never lists excused work as due, due this week, or missing; work handed in before stays done (D-062)", () => {
+    const excused = [...all.map((a) => (a.id === "past" || a.id === "sat" ? { ...a, excused: true } : a)), { ...item("done", "2026-10-22T16:00:00"), excused: true }];
+    const groups = Object.fromEntries(taskGroups(excused, ["done"], NOW).map((g) => [g.status, g.items.map((a) => a.id)]));
+    expect(groups).toEqual({ "Due soon": ["mon", "nov"], "Due this week": [], Missing: [], Done: ["done"] });
+    expect(dueSoon(excused, [], NOW).map((a) => a.id)).toEqual(["mon", "nov"]);
+    expect(dueThisWeek(excused, [], NOW)).toEqual([]);
+    expect(needsWork({ id: "x", excused: true }, [])).toBe(false);
+    expect(needsWork({ id: "x" }, [])).toBe(true);
+    expect(needsWork({ id: "x" }, ["x"])).toBe(false);
   });
 
   it("searches classes, assessments by title or type, and materials, capped at six", () => {

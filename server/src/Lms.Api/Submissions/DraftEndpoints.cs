@@ -253,7 +253,8 @@ public static class DraftEndpoints
         if (cw is null || cw.Type != CourseworkType.Assignment) return (null, ContentEndpoints.NotFound("Assignment"));
         var now = time.GetUtcNow().UtcDateTime;
         var mine = await db.Submissions.Where(s => s.CourseworkId == cw.Id && s.StudentId == user.Id).ToListAsync(ct);
-        return (new Scope(user, cw, mine, now, AssignmentRules.Evaluate(cw, mine, now)), null);
+        var exception = await AssignmentRules.ExceptionAsync(db, cw.Id, user.Id, ct);
+        return (new Scope(user, cw, mine, now, AssignmentRules.Evaluate(cw, mine, now, exception)), null);
     }
 
     /// <summary>

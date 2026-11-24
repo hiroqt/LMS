@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../../shared/api/http";
 import type { Submission, TurnIn } from "../../../shared/api/overview";
-import { afterUnsubmit, canRetry, filesLeftLabel, hasWork, isWebAddress, REFUSALS, shouldRetrySave, splitWork, turnInContents, withRow, workBadges } from "./work";
+import { afterUnsubmit, canRetry, daysLate, filesLeftLabel, formatPoints, gradeSum, hasWork, isWebAddress, latePenaltyNow, REFUSALS, shouldRetrySave, splitWork, turnInContents, withRow, workBadges } from "./work";
 
 const file = (id: number, name: string) => ({ id, name, contentType: "application/pdf", size: 1000, code: `CODE-${id}`, sameAsAnotherStudent: null });
 const row = (attemptNumber: number, status: Submission["status"], extra: Partial<Submission> = {}): Submission => ({
   id: 100 + attemptNumber, studentId: "STU-1", studentName: null, attemptNumber, status, startedAt: null,
   submittedAt: status === "in_progress" ? null : "2026-10-23T01:00:00Z", late: false, text: null, fileName: null, link: null, files: [],
-  score: null, maxPoints: 20, feedback: null, gradedAt: null, ...extra,
+  score: null, maxPoints: 20, feedback: null, gradedAt: null, daysLate: 0, penaltyPercent: 0, penaltyWaived: false, rawScore: null, rubricScores: [], excused: false, ...extra,
 });
-const verdict = (state: TurnIn["state"], extra: Partial<TurnIn> = {}): TurnIn => ({ state, canTurnIn: true, reason: null, late: false, canUnsubmit: false, ...extra });
+const verdict = (state: TurnIn["state"], extra: Partial<TurnIn> = {}): TurnIn => ({ state, canTurnIn: true, reason: null, late: false, canUnsubmit: false, dueAt: null, closeAt: null, extended: false, ...extra });
 
 describe("work state in words", () => {
   it("names every state, and adds Late only when the work turned in was late", () => {
@@ -94,5 +94,54 @@ describe("files, links, and retries", () => {
     expect(shouldRetrySave(failure(0, "network"))).toBe(true);
     expect(shouldRetrySave(failure(400))).toBe(false);
     expect(shouldRetrySave(failure(409))).toBe(false);
+  });
+});
+
+describe("late penalties (contract §10)", () => {
+  // Due Nov 20, 4:00 PM in Manila (UTC+8).
+  const due = "2026-11-20T08:00:00Z";
+  const at = (iso: string) => new Date(iso).getTime();
+
+  it("counts calendar days late in Manila, at least 1 for any late work", () => {
+    expect(daysLate(due, at("2026-11-20T08:00:00Z"))).toBe(0);
+    expect(daysLate(due, at("2026-11-20T07:59:00Z"))).toBe(0);
+    // Nov 20, 6:00 PM and any time on Nov 21 are 1 day; Nov 22 is 2 days.
+    expect(daysLate(due, at("2026-11-20T10:00:00Z"))).toBe(1);
+    expect(daysLate(due, at("2026-11-20T16:30:00Z"))).toBe(1); // Nov 21, 12:30 AM in Manila
+    expect(daysLate(due, at("2026-11-21T15:59:00Z"))).toBe(1); // Nov 21, 11:59 PM
+    expect(daysLate(due, at("2026-11-21T16:00:00Z"))).toBe(2); // Nov 22, midnight
+    // The date in Manila, not in UTC: Nov 21, 1:00 AM in Manila is still Nov 20 in UTC.
+    expect(daysLate("2026-11-20T15:00:00Z", at("2026-11-20T17:00:00Z"))).toBe(1);
+    expect(daysLate("2026-11-20T15:00:00Z", at("2026-11-22T17:00:00Z"))).toBe(3);
+  });
+
+  it("says what turning in now would lose, up to the cap, and nothing without a penalty", () => {
+    const settings = { dueAt: due, allowLate: true, latePenaltyPercentPerDay: 10, latePenaltyMaxPercent: 100 };
+    expect(latePenaltyNow(settings, at("2026-11-22T02:00:00Z"))).toBe("Turning in now is 2 days late: 20% comes off the score.");
+    expect(latePenaltyNow(settings, at("2026-11-20T09:00:00Z"))).toBe("Turning in now is 1 day late: 10% comes off the score.");
+    expect(latePenaltyNow({ ...settings, latePenaltyMaxPercent: 25 }, at("2026-11-25T02:00:00Z"))).toBe("Turning in now is 5 days late: 25% comes off the score.");
+    expect(latePenaltyNow(settings, at("2026-11-19T02:00:00Z"))).toBeNull();
+    expect(latePenaltyNow({ ...settings, latePenaltyPercentPerDay: 0 }, at("2026-11-22T02:00:00Z"))).toBeNull();
+    expect(latePenaltyNow({ ...settings, dueAt: null }, at("2026-11-22T02:00:00Z"))).toBeNull();
+  });
+
+  it("shows a grade as a sum: points given, the penalty and days late, the score after it", () => {
+    const late = row(1, "graded", { score: 14.4, rawScore: 18, daysLate: 2, penaltyPercent: 20, late: true });
+    expect(gradeSum(late)).toEqual({
+      lines: [
+        { label: "Points given", value: "18 of 20 points" },
+        { label: "Late penalty", value: "20% off, 2 days late" },
+        { label: "Your score", value: "14.4 of 20 points" },
+      ],
+      note: "Your instructor gave 18 of 20 points. The work was 2 days late, so 20% came off: 18 − 3.6 = 14.4.",
+    });
+    expect(gradeSum({ ...late, penaltyPercent: 0, penaltyWaived: true, score: 18 })).toEqual({
+      lines: [{ label: "Your score", value: "18 of 20 points" }],
+      note: "Late penalty waived. The work was 2 days late, and nothing came off.",
+    });
+    expect(gradeSum(row(1, "returned", { score: 18, rawScore: 18 }))).toEqual({ lines: [{ label: "Your score", value: "18 of 20 points" }], note: null });
+    // A held grade arrives as submitted, without a score.
+    expect(gradeSum(row(1, "submitted", { daysLate: 2 }))).toBeNull();
+    expect(formatPoints(14.399999)).toBe("14.4");
   });
 });

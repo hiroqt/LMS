@@ -28,14 +28,20 @@ export function weekBounds(now: number): { start: Date; end: Date } {
 const due = (item: Assessment) => (item.dueAt ? new Date(item.dueAt).getTime() : Number.POSITIVE_INFINITY);
 const byDue = (a: Assessment, b: Assessment) => due(a) - due(b);
 
+/**
+ * Still to do: not handed in and not excused. Excused work (D-062) is never due, missing, or
+ * late in the student's lists; work handed in before the excuse stays done.
+ */
+export const needsWork = (item: Pick<Assessment, "id" | "excused">, completed: string[]) => !completed.includes(item.id) && !item.excused;
+
 /** Up to three unfinished items with a future due date, soonest first. */
 export function dueSoon(assessments: Assessment[], completed: string[], now: number, limit = 3): Assessment[] {
-  return assessments.filter((item) => !completed.includes(item.id) && due(item) >= now).sort(byDue).slice(0, limit);
+  return assessments.filter((item) => needsWork(item, completed) && due(item) >= now).sort(byDue).slice(0, limit);
 }
 
 export function dueThisWeek(assessments: Assessment[], completed: string[], now: number): Assessment[] {
   const { end } = weekBounds(now);
-  return assessments.filter((item) => !completed.includes(item.id) && due(item) >= now && due(item) < end.getTime());
+  return assessments.filter((item) => needsWork(item, completed) && due(item) >= now && due(item) < end.getTime());
 }
 
 export const TASK_STATUSES = ["Due soon", "Due this week", "Missing", "Done"] as const;
@@ -48,7 +54,7 @@ export interface TaskGroup {
 }
 
 export function taskGroups(assessments: Assessment[], completed: string[], now: number): TaskGroup[] {
-  const open = (item: Assessment) => !completed.includes(item.id);
+  const open = (item: Assessment) => needsWork(item, completed);
   return [
     { status: "Due soon", description: "Work with a future due date", items: assessments.filter((item) => open(item) && due(item) >= now) },
     { status: "Due this week", description: "Unfinished work due before the week ends", items: dueThisWeek(assessments, completed, now) },

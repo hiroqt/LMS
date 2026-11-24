@@ -6,11 +6,10 @@ import { Badge } from "../../../shared/ui/Badge";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
-import { AssignmentBrief } from "../../../shared/components/assignment/AssignmentBrief";
 import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
-import { YourWork } from "../components/work/YourWork";
+import { AssignmentWork } from "../components/work/AssignmentWork";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -25,12 +24,14 @@ function ExamGradeNote({ grade, points }: { grade: ExamGrade; points: number }) 
   );
 }
 
-function ActivityStatus({ submission, points }: { submission: ActivitySubmission; points: number }) {
+function ActivityStatus({ submission, points, excused }: { submission: ActivitySubmission; points: number; excused: boolean }) {
+  // Excused work is not graded for the student's average, so it is not "waiting for review" (D-062).
+  const result = submission.grade !== null ? `${submission.grade} / ${points} points` : excused ? "Excused" : "Waiting for instructor review";
   return (
     <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
       <Check aria-hidden className="size-4 text-success" />
       <span>
-        {submission.notHandedIn ? "Not handed in" : "Submitted"} · {submission.grade === null ? "Waiting for instructor review" : `${submission.grade} / ${points} points`}
+        {submission.notHandedIn ? "Not handed in" : "Submitted"} · {result}
         {submission.feedback && <> · {submission.feedback}</>}
       </span>
     </p>
@@ -62,12 +63,22 @@ export default function AssessmentPage() {
   const canStart = !isClosed && !notHandedIn && (Boolean(attempts?.openId) || attemptsLeft > 0);
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
+  const excused = Boolean(assessment.excused);
+  // The student's own due date when the instructor gave them more time (contract §11).
+  const ownDueDate = Boolean(assessment.turnIn?.extended);
   const facts: Array<[string, string, typeof ListChecks]> = [
     [isActivity ? "Hand in" : "Questions", isActivity ? handInWords(assessment) : String(assessment.questionCount ?? 0), ListChecks],
     ["Time limit", isActivity ? "—" : assessment.timeLimit, Clock3],
     ["Points", `${assessment.points} pts`, ClipboardCheck],
-    ["Due date", formatDue(assessment.dueAt), CalendarDays],
+    [ownDueDate ? "Your due date" : "Due date", formatDue(assessment.dueAt), CalendarDays],
   ];
+  const status = isClosed ? "Closed" : notHandedIn ? "Not handed in" : excused ? "Excused" : isCompleted ? "Submitted" : "Open";
+
+  const closedNote = isClosed && (
+    <p role="status" className="m-0 flex items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
+      <Lock aria-hidden className="size-4 text-muted" />Closed. Your instructor is no longer accepting work for this {isActivity ? "assignment" : "assessment"}.
+    </p>
+  );
 
   return (
     <>
@@ -87,7 +98,7 @@ export default function AssessmentPage() {
           </header>
 
           {grade && !isActivity && <ExamGradeNote grade={grade} points={assessment.points} />}
-          {submission && <ActivityStatus submission={submission} points={assessment.points} />}
+          {submission && <ActivityStatus submission={submission} points={assessment.points} excused={excused} />}
           {isCompleted && !isActivity && !grade && (
             <p className="m-0 flex items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
               <Check aria-hidden className="size-4 text-success" />You have submitted this assessment. You can view your result or practice again.
@@ -95,8 +106,11 @@ export default function AssessmentPage() {
           )}
 
           {isActivity && assessment.handIn ? (
-            <AssignmentBrief instructions={assessment.instructions} settings={assessment.handIn} />
+            <AssignmentWork classId={assessment.courseId} assessmentId={assessment.id} instructions={assessment.instructions} settings={assessment.handIn} turnIn={assessment.turnIn} rubricId={assessment.rubricId}>
+              {closedNote}
+            </AssignmentWork>
           ) : (
+            <>
             <Card className="flex flex-col gap-2 p-5">
               <h2 className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
               <p className="m-0 text-body whitespace-pre-line">{assessment.instructions}</p>
@@ -108,22 +122,14 @@ export default function AssessmentPage() {
                 <p className="m-0 flex items-center gap-2 text-body text-ink"><Eye aria-hidden className="size-4 shrink-0 text-muted" />{ANSWER_REVIEW_NOTES[assessment.answerReview]}</p>
               )}
             </Card>
-          )}
-
-          {!isActivity && (
-            <p className="m-0 flex items-start gap-3 rounded-card bg-accent-100 p-4 text-body text-ink">
-              <AlarmClock aria-hidden className="mt-0.5 size-5 shrink-0 text-accent-700" />
-              <span><strong className="font-semibold">Each question has its own timer,</strong> one minute unless your instructor set another. Time pauses while you review other questions.</span>
-            </p>
-          )}
-
-          {isClosed && (
-            <p role="status" className="m-0 flex items-center gap-2 rounded-card border border-line bg-canvas p-3 text-body">
-              <Lock aria-hidden className="size-4 text-muted" />Closed. Your instructor is no longer accepting work for this {isActivity ? "assignment" : "assessment"}.
-            </p>
-          )}
-          {isActivity && assessment.turnIn && assessment.handIn && (
-            <YourWork classId={assessment.courseId} assessmentId={assessment.id} settings={assessment.handIn} turnIn={assessment.turnIn} />
+            {!isActivity && (
+              <p className="m-0 flex items-start gap-3 rounded-card bg-accent-100 p-4 text-body text-ink">
+                <AlarmClock aria-hidden className="mt-0.5 size-5 shrink-0 text-accent-700" />
+                <span><strong className="font-semibold">Each question has its own timer,</strong> one minute unless your instructor set another. Time pauses while you review other questions.</span>
+              </p>
+            )}
+            {closedNote}
+            </>
           )}
         </article>
 
@@ -131,7 +137,7 @@ export default function AssessmentPage() {
           <Card className="flex flex-col gap-4 p-5">
             <div className="flex items-center justify-between">
               <h2 id="assessment-details" className="m-0 font-sans text-card-title font-semibold text-ink">Assessment details</h2>
-              <Badge tone={isClosed ? "neutral" : isCompleted && !notHandedIn ? "success" : "brand"}>{isClosed ? "Closed" : notHandedIn ? "Not handed in" : isCompleted ? "Submitted" : "Open"}</Badge>
+              <Badge tone={isClosed || excused ? "neutral" : isCompleted && !notHandedIn ? "success" : "brand"}>{status}</Badge>
             </div>
             <dl className="m-0 grid grid-cols-2 gap-3">
               {facts.map(([label, value, Icon]) => (
@@ -142,7 +148,7 @@ export default function AssessmentPage() {
               ))}
             </dl>
             <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-body"><span className="text-muted">Your progress</span><strong className="font-semibold">{notHandedIn ? "Not handed in" : isCompleted ? "Submitted" : "Not started"}</strong></div>
+              <div className="flex justify-between text-body"><span className="text-muted">Your progress</span><strong className="font-semibold">{notHandedIn ? "Not handed in" : excused ? "Excused" : isCompleted ? "Submitted" : "Not started"}</strong></div>
               <div className="h-2 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-primary-600" style={{ width: isCompleted && !notHandedIn ? "100%" : "0%" }} /></div>
             </div>
             {!isActivity && (

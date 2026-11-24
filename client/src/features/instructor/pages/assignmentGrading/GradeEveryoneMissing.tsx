@@ -3,19 +3,17 @@ import { Button } from "../../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../../shared/ui/Dialog";
 import { Field, Input } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
-import { useInstructorActions } from "../../api/actions";
-import { focusStudentWork, studentsLabel, useRefreshAssignmentGrading } from "../../api/assignmentGrading";
+import { focusStudentWork, gradedMissingSentence, studentsLabel, useGradeEveryoneMissing } from "../../api/assignmentGrading";
 import type { Activity } from "../../api/types";
 
 /**
  * "Give N to everyone who didn't hand in" (D-036) for this assignment: a confirmation with the
- * points, using the class Submissions tab's action. Before the last day the server's sentence is
- * shown instead.
+ * points. Before the last day the server's sentence is shown instead. Excused students are not
+ * counted; a student whose own last day has not passed is skipped, and the toast says how many.
  */
 export function GradeEveryoneMissing({ classId, activity, missing, refusal }: { classId: string; activity: Activity; missing: number; refusal: string | null }) {
   const toast = useToast();
-  const actions = useInstructorActions();
-  const refresh = useRefreshAssignmentGrading();
+  const gradeMissing = useGradeEveryoneMissing(classId, activity.id);
   const [open, setOpen] = useState(false);
   const [points, setPoints] = useState("0");
   const [error, setError] = useState<string | undefined>();
@@ -29,8 +27,7 @@ export function GradeEveryoneMissing({ classId, activity, missing, refusal }: { 
       return;
     }
     setSaving(true);
-    const result = await actions.gradeEveryoneNotHandedIn(classId, activity.id, value);
-    await refresh();
+    const result = await gradeMissing(value);
     setSaving(false);
     if (!result.ok) {
       setError(result.fieldErrors?.points?.[0]);
@@ -38,9 +35,9 @@ export function GradeEveryoneMissing({ classId, activity, missing, refusal }: { 
       return;
     }
     setOpen(false);
-    // Nobody is missing any more, so this section and its button are gone; focus goes to the work shown (L-015).
+    // Usually nobody is missing any more, so this section and its button are gone; focus goes to the work shown (L-015).
     requestAnimationFrame(focusStudentWork);
-    toast.show({ title: "Grades saved", description: `${value} / ${activity.maxScore} for ${studentsLabel(result.graded)} who didn't hand in`, tone: "success" });
+    toast.show({ title: result.graded ? "Grades saved" : "No grades given", description: gradedMissingSentence(result.graded, result.waiting, `${value} / ${activity.maxScore}`), tone: "success" });
   };
 
   return (

@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, FileUp, GraduationCap, Pencil, Plus, X } from "lucide-react";
+import { BookOpen, ClipboardList, FileUp, GraduationCap, ListChecks, Pencil, Plus, X } from "lucide-react";
 import { Navigate, useNavigate } from "react-router";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
@@ -156,6 +156,13 @@ export function CreateContentTab({ room, content, goTab, open }: ClassTabProps &
         <Category title="Materials" note="Readings, guides, lecture slides, and files" icon={<BookOpen />} type="material" items={content.materials.map((item) => ({ key: item.id, label: `${item.title} · ${item.kind ?? "Material"}` }))} onCreate={create} />
         <Category title="Assignments" note="Collect student work and provide feedback" icon={<ClipboardList />} type="activity" items={content.activities.map((item) => listed(item, (id) => instructorPaths.assignmentEdit(room.id, id)))} onCreate={create} />
         <Category title="Assessments" note="Build and publish a quiz or exam" icon={<GraduationCap />} type="exam" items={content.exams.map((item) => listed(item, (id) => instructorPaths.assessmentEdit(room.id, id)))} onCreate={create} />
+      </div>
+      {/* Rubrics belong to the class and are chosen on an assignment (D-063). */}
+      <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface p-4">
+        <p className="m-0 min-w-0 flex-1 basis-60 text-body text-ink">Rubrics list the criteria an assignment is graded on, with points for each level.</p>
+        <Button variant="secondary" className="max-w-full shrink whitespace-normal" icon={<ListChecks aria-hidden className="size-4" />} onClick={() => navigate(instructorPaths.rubrics(room.id))}>
+          Manage rubrics
+        </Button>
       </div>
       {open === "material" && <MaterialForm key={open} room={room} content={content} onDone={(saved) => goTab(saved ? "Materials" : "Create content")} />}
     </div>
