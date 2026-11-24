@@ -39,7 +39,7 @@ export function ListRow({ lead, title, meta, trail, below, onOpen, chevron = Boo
         <button
           type="button"
           onClick={onOpen}
-          className={cn(base, "rounded-control border-0 bg-transparent transition-colors duration-150 hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none")}
+          className={cn(base, "rounded-control border-0 bg-transparent hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus")}
         >
           {body}
         </button>
