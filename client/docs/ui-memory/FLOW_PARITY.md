@@ -12,7 +12,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
-| B | Today dashboard loads | ✔ `student-flow` Today | ✅ |
+| B | Today dashboard loads (D-066 layout) | ✔ `student-flow` Today | ✅ |
 | N | Dashboard → News & Announcements page (D-023; was a dashboard toggle) | ✔ `student-flow` B → N | ✅ |
 | N1 | Read teacher announcements | ✔ (renders without error) | ✅ |
 | N2, N3 | School announcements, featured carousel | ✖ | ✅ |
@@ -61,7 +61,7 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
-| HOME, OVERVIEW | Teaching day; Overview ↔ News | ✔ `instructor-flow` | ✅ |
+| HOME, OVERVIEW | Overview (greeting h1, D-066); Overview ↔ News | ✔ `instructor-flow` | ✅ |
 | CHOOSE | Switch demo instructor | ✔ `instructor-flow` CHOOSE | ✅ |
 | EMPTY | No classrooms → message + Admin link | ✖ | ✅ |
 | NEWS → B1 | Select a teacher announcement → class Announcements | ✔ `instructor-more` | ✅ |
@@ -125,7 +125,7 @@ Specs written against the classic Admin first, then run unchanged against the re
 
 | Node | Journey | Spec | Status |
 | --- | --- | --- | --- |
-| OVERVIEW | Totals open the matching directory with its filter | ✔ `admin-flow` OVERVIEW | ✅ |
+| OVERVIEW | Totals open the matching directory with its filter (D-066 summary strip) | ✔ `admin-flow` OVERVIEW | ✅ |
 | USERS, USER_VALIDATE, USER_SAVE | Duplicate email refused; add, find, deactivate | ✔ `admin-flow` USERS | ✅ |
 | SUBJECTS, COURSE_VALIDATE | Duplicate code refused; delete an unused subject | ✔ `admin-flow` SUBJECTS | ✅ |
 | CLASSROOMS, ENROLL | Add a classroom; enroll once, duplicate refused; remove | ✔ `admin-flow` CLASSROOMS and ENROLLMENTS | ✅ |

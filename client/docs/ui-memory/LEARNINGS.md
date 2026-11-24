@@ -713,3 +713,21 @@ listed there as having handed in nothing. When a rule gets a second screen, chec
 Also from that review: `fileNameFrom` (`http.ts`) reads `filename*=` first and never URI-decodes a
 plain `filename`, since "Lab 100% done" is not an encoding; and `latePenaltyRule` says "loses N%"
 when the cap is reached on the first day.
+
+### L-099 · The page's focus ring vanishes on the green tile
+`2026-11-24` · hiro (D-066) · scope: shared, a11y · confidence: high
+The global ring is `--color-focus` (#1f6e58), which is nearly the same as the `primary-700` fill of the
+dashboard's `FocusTile` (under 1.2:1), so a keyboard user could not see focus on "Review student work"
+(this was already true of the old green hero). Controls on the fill add `onFillFocus`
+(`lib/tones`, a white ring); `tokens.test.ts` asserts the white ring passes 3:1 and the page ring
+does not. Any new filled surface needs the same check.
+
+### L-100 · Keep a section heading on one line with `flex-auto`, not a min() of max-content
+`2026-11-24` · hiro (D-066) · scope: shared, layout · confidence: high
+`SectionHeading` gave its title column `basis-40`, so a panel link squeezed "Academic calendar"
+onto two lines (against C-015). `min-w-[min(100%,max-content)]` looks right but is invalid CSS
+(`min()` takes lengths only), so Tailwind's rule is dropped silently and the computed value stays
+`auto`. `flex-auto` works: in a wrapping row the column's basis is its content width, so the action
+wraps under the heading when both do not fit. Check computed styles, not class names, when a layout
+fix "does nothing".
+
