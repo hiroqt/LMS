@@ -88,7 +88,7 @@ function Overview({ onNews }: { onNews: () => void }) {
         label="Summary"
         items={[
           { icon: <School />, tone: classTones[0], value: rooms.length, label: "Assigned classrooms", note: term },
-          { icon: <Inbox />, tone: classTones[1], value: queue.length, label: "Awaiting review", note: queue.length ? "Handed-in work without a grade" : "Nothing to grade", onOpen: queue.length ? () => openReview() : undefined },
+          { icon: <Inbox />, tone: classTones[1], value: queue.length, label: "Awaiting review", note: queue.length ? "Submitted work without a grade" : "Nothing to grade", onOpen: queue.length ? () => openReview() : undefined },
           { icon: <ClipboardCheck />, tone: classTones[2], value: activeAssessments, label: "Active assessments", note: `Across ${rooms.length} ${rooms.length === 1 ? "classroom" : "classrooms"}` },
           { icon: <UsersRound />, tone: classTones[3], value: reached, label: "Students reached", note: "Active enrollments" },
         ]}

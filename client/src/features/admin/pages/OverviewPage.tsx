@@ -94,7 +94,7 @@ export default function OverviewPage() {
     <>
       <DashboardHeader
         meta={`${formatFullDate(now)} · ${scope === "all" ? "All academic terms" : scope}`}
-        title={`${greeting(now)}, ${ADMIN_ACTOR.actorName.split(" ")[0]}`}
+        title={`${greeting(now)}, ${ADMIN_ACTOR.actorName.split(" ")[0] ?? ADMIN_ACTOR.actorName}`}
         controls={
           <div role="group" aria-label="Activity scope filters" className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @3xl:w-[28rem]">
             <Field label="Academic term">
