@@ -930,3 +930,31 @@ Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–�
   show it too), and with the chosen levels on a visible grade, where the brief leaves it out so
   it is not shown twice. A held grade shows neither the sum nor the levels (the server hides them).
 - Spec: `e2e/assignment-work-more.spec.ts`. No existing journey changed.
+
+### D-066 · One dashboard layout for every role
+`2026-11-24` · hiro (user request, approved draft) · scope: student, instructor, admin, shared · confidence: high
+Amends D-023, D-026, D-027, and D-038. Asked for "a modern, clean dashboard for each user, with
+unified components and typography, keeping the theme and palette". The three dashboards had three
+heading patterns, two metric-card components, three panel-link styles, three date treatments, and
+hand-built list rows. Every dashboard is now the same three layers, built from shared pieces:
+- **Heading (`DashboardHeader`):** the date and term line, then the h1, a greeting on every role
+  ("Good morning, Alex / Angela / Taylor"), with page-level controls on the right (the demo person
+  picker; the Instructor's Overview/News switch; Admin's term and date-range filters, which moved up
+  from the analytics section). No fill, no border. The Instructor's 40px "Your teaching day" plus a
+  second greeting, and Admin's "Academic overview", are gone.
+- **Focus row:** the one filled tile (`FocusTile`, D-027) holds the next thing to do: Student
+  **Next due** (the assessment with an Open button; the Tasks panel then lists what comes after it,
+  so each assessment has one control, C-015), Instructor **Review queue** (count, next submission,
+  "Review student work"), Admin **Quick actions** (the four create actions as tiles). Beside it,
+  `SummaryStrip` replaces `StatCard` and Admin's `MetricCard`: one bordered strip, cells split by 1px
+  rules, icon · number · label · one fact; three in a row, four as 2×2. Cells that open something keep
+  their old accessible names ("5 Due this week", "Total students: 12. View students").
+- **Panels:** `Panel` with one `PanelLink` ("View all →") each; lists use `ListRow` (lead · title +
+  meta · trail) with `IconTile`, `InitialsAvatar`, or `DateTile` (the one date treatment). Switches
+  between views use `SegmentedControl` (`shared/ui`; `ViewToggle` is now a wrapper). Admin's recent
+  activity became `ListRow`s in a panel (a dashboard summary; Audit logs keeps the table).
+- **Removed:** the Student's one-time "Welcome to the new design" message (cutover was 2026-11-17).
+- **Specs changed** for the headings only: "Your teaching day" → `/Good morning, Angela/`, Admin's
+  "Academic overview" → `/Good morning, Taylor/`, and the welcome-message test was deleted. No journey
+  changed. Draft and before/after images were approved before the build.
+

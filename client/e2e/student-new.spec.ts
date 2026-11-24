@@ -169,13 +169,4 @@ test.describe("Rebuilt Student behavior", () => {
     await expect(page.getByRole("heading", { level: 1, name: QUIZ })).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
-
-  test("the welcome message can be dismissed and stays dismissed", async ({ page }) => {
-    await useNewStudentUi(page);
-    await page.getByRole("button", { name: "Dismiss welcome message" }).click();
-    await expect(page.getByRole("heading", { name: "Welcome to the new design" })).toHaveCount(0);
-    await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Alex/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Welcome to the new design" })).toHaveCount(0);
-  });
 });

@@ -111,10 +111,7 @@ export function scoreAttempt(questions: Array<{ correct: number }>, answers: Rec
   return questions.reduce((total, question, index) => total + (answers[index] === question.correct ? 1 : 0), 0);
 }
 
-export function greeting(now: number): string {
-  const hour = new Date(now).getHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}
+export { greeting } from "../../../shared/lib/greeting";
 
 export interface ModuleEntry {
   kind: "material" | "assessment";

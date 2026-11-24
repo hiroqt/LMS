@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { axeViolations } from "../../test/axe";
 import {
   Badge, Button, Dialog, DialogContent, DialogTrigger, EmptyState, Field, FilterChip, FilterChipGroup, IconButton, Input,
-  Menu, MenuContent, MenuItem, MenuTrigger, Select, SkeletonGroup, Skeleton, Tabs, TabsContent,
+  Menu, MenuContent, MenuItem, MenuTrigger, SegmentedControl, Select, SkeletonGroup, Skeleton, Tabs, TabsContent,
   TabsList, TabsTrigger, Textarea, Toaster, useToast,
 } from "./index";
 
@@ -197,6 +197,27 @@ describe("FilterChip", () => {
     expect(screen.getByRole("button", { name: "Missing 3" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute("type", "button");
+    expect(await axeViolations()).toEqual([]);
+  });
+});
+
+describe("SegmentedControl", () => {
+  it("is a named group of toggle buttons with one pressed", async () => {
+    const changes: string[] = [];
+    render(
+      <SegmentedControl
+        label="Dashboard content"
+        value="overview"
+        onChange={(value) => changes.push(value)}
+        options={[{ value: "overview", label: "Overview" }, { value: "news", label: "News & announcements" }]}
+      />,
+    );
+    const group = screen.getByRole("group", { name: "Dashboard content" });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "News & announcements" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(screen.getByRole("button", { name: "News & announcements" }));
+    expect(changes).toEqual(["news"]);
     expect(await axeViolations()).toEqual([]);
   });
 });

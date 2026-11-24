@@ -7,3 +7,6 @@ export const classTones = [
 ] as const;
 
 export const toneFor = (index: number) => classTones[Math.max(index, 0) % classTones.length];
+
+/** A focus ring that shows on the green `FocusTile` fill, where the page's dark green ring would vanish (L-099). */
+export const onFillFocus = "focus-visible:outline-white";

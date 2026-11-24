@@ -15,7 +15,7 @@ flowchart TD
 
     ASSIGNED -->|No| EMPTY[Show no-classrooms message and Open Admin link]
     EMPTY -->|My classes dropdown is still available| NEWCLASS
-    ASSIGNED -->|Yes| HOME[Overview: Your teaching day]
+    ASSIGNED -->|Yes| HOME[Overview: greeting, review queue, classes]
     HOME --> OVERVIEW{Choose dashboard view}
     OVERVIEW -->|Overview| DASH[Review counts, assigned class cards, review previews, and current-month calendar]
     OVERVIEW -->|News & announcements| NEWS[Featured upcoming school notice, class notices, and school event list]

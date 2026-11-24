@@ -2,21 +2,29 @@ import { ArrowRight, BookOpen, CalendarDays, ClipboardCheck, Inbox, Layers, Mega
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { academicEvents, featuredAnnouncements } from "../../../data.js";
+import { DateTile } from "../../../shared/components/DateTile";
 import { FeaturedNewsCarousel } from "../../../shared/components/FeaturedNewsCarousel";
+import { FocusTile } from "../../../shared/components/FocusTile";
+import { InitialsAvatar, ListRow, RowList } from "../../../shared/components/ListRow";
 import { MonthGrid } from "../../../shared/components/MonthGrid";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { Panel } from "../../../shared/components/Panel";
-import { StatCard } from "../../../shared/components/StatCard";
+import { PanelLink } from "../../../shared/components/PanelLink";
+import { SummaryStrip } from "../../../shared/components/SummaryStrip";
 import { ViewToggle } from "../../../shared/components/ViewToggle";
 import { useClassView } from "../../../shared/hooks/useClassView";
+import { DashboardHeader } from "../../../shared/layout/DashboardHeader";
 import { inMonth, type CalendarMark } from "../../../shared/lib/calendar";
 import { cn } from "../../../shared/lib/cn";
-import { formatDay, formatDue, formatFullDate, formatMonth } from "../../../shared/lib/format";
+import { formatDue, formatFullDate, formatMonth } from "../../../shared/lib/format";
+import { greeting } from "../../../shared/lib/greeting";
 import { featuredSlides, upcomingSchoolEvents, type SchoolEvent } from "../../../shared/lib/schoolNews";
 import { termStatus } from "../../../shared/lib/term";
+import { classTones, onFillFocus } from "../../../shared/lib/tones";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { EmptyState } from "../../../shared/ui/EmptyState";
+import { SegmentedControl } from "../../../shared/ui/SegmentedControl";
 import { subjectOf, yearLevels, yearOf } from "../api/selectors";
 import type { RoleStore } from "../api/types";
 import { InstructorClassList } from "../components/InstructorClassList";
@@ -26,11 +34,6 @@ import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { instructorPaths } from "../paths";
 
 const events = academicEvents as SchoolEvent[];
-
-function greetingFor(now: number) {
-  const hour = new Date(now).getHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}
 
 /** School dates plus this instructor's deadlines for the month review. */
 function monthMarks(store: RoleStore, roomIds: Set<string>): CalendarMark[] {
@@ -44,7 +47,7 @@ function monthMarks(store: RoleStore, roomIds: Set<string>): CalendarMark[] {
 
 function Overview({ onNews }: { onNews: () => void }) {
   const navigate = useNavigate();
-  const { store, instructor, rooms, queue } = useInstructorWorkspace();
+  const { store, rooms, queue, term } = useInstructorWorkspace();
   const [year, setYear] = useState<number | "all">("all");
   const [classView, setClassView] = useClassView();
   const [now] = useState(Date.now);
@@ -58,98 +61,96 @@ function Overview({ onNews }: { onNews: () => void }) {
     if (room) navigate(instructorPaths.classPage(room, "Submissions", { review: item?.id }));
   };
 
-  return (
-    // A bento grid: tiles share one gutter and stretch to their row (D-026).
-    <div className="flex flex-col gap-3 sm:gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
-        <section aria-labelledby="teaching-greeting" className="@container rounded-card bg-primary-700 p-5 font-sans text-white @4xl:col-span-5 @7xl:col-span-4 sm:p-6">
-          <div className="flex h-full flex-col justify-between gap-3 @lg:flex-row @lg:items-center">
-            <div className="flex flex-col gap-1">
-              <h2 id="teaching-greeting" className="m-0 text-page-mobile font-semibold tracking-tight">{greetingFor(now)}, {instructor.firstName}</h2>
-              <p className="m-0 text-body text-primary-100">
-                {queue.length
-                  ? `${queue.length} ${queue.length === 1 ? "submission is" : "submissions are"} waiting for a grade.`
-                  : "Your review queue is clear."}
-              </p>
-            </div>
-            <Button variant="secondary" className="shrink-0 self-start @lg:self-center" onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
-          </div>
-        </section>
-        <div className="grid grid-cols-2 gap-3 @4xl:col-span-7 @7xl:col-span-8 @7xl:grid-cols-4 sm:gap-4">
-          <StatCard icon={<School />} tone="bg-primary-100 text-primary-700" value={rooms.length} label="Assigned classrooms" />
-          <StatCard icon={<Inbox />} tone="bg-accent-100 text-accent-700" value={queue.length} label="Awaiting review" onOpen={queue.length ? () => openReview() : undefined} />
-          <StatCard icon={<ClipboardCheck />} tone="bg-info-soft text-info" value={activeAssessments} label="Active assessments" />
-          <StatCard icon={<UsersRound />} tone="bg-success-soft text-success" value={reached} label="Students reached" />
-        </div>
-      </div>
+  const next = queue[0];
+  const upcoming = marks.filter((item) => item.date.getTime() >= now - 24 * 60 * 60 * 1000).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 4);
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @7xl:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-3 sm:gap-4 @7xl:col-span-2 @7xl:grid @7xl:grid-cols-2">
-          <Panel
-            id="classes-in-progress"
-            icon={<Layers />}
-            title="Classes in progress"
-            action={
-              <div className="flex flex-wrap items-center gap-2">
-                <ViewToggle view={classView} onChange={setClassView} />
-                <Button variant="ghost" onClick={() => navigate(instructorPaths.classes(year))}>All classrooms<ArrowRight aria-hidden className="size-4" /></Button>
-              </div>
-            }
-          >
-            <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
-            <InstructorClassList tile store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
-          </Panel>
-          <Panel
-            id="needs-review"
-            className="flex-1"
-            icon={<Inbox />}
-            title="Needs your review"
-            count={queue.length}
-            action={<Button variant="ghost" onClick={() => openReview()}>Open review queue<ArrowRight aria-hidden className="size-4" /></Button>}
-          >
-            {queue.length ? (
-              <ul className="m-0 flex flex-1 list-none flex-col divide-y divide-line p-0">
-                {queue.slice(0, 3).map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => openReview(item.id)}
-                      className="flex min-h-touch w-full items-center gap-3 rounded-control border-0 bg-transparent px-1 py-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus"
-                    >
-                      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-100 text-body font-semibold text-primary-700">
-                        {(item.student?.firstName?.[0] ?? "A") + (item.student?.lastName?.[0] ?? "R")}
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <strong className="text-card-title font-semibold">{item.student?.firstName ?? "Alex"} {item.student?.lastName ?? "Rivera"}</strong>
-                        <span className="truncate text-body text-muted">{item.title} · {item.kind === "activity" ? "Assignment" : "Assessment"}</span>
-                      </span>
-                      <span className="text-body font-medium text-primary-700">Review</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState className="flex-1 justify-center" icon={<ClipboardCheck />} title="Your review queue is clear" description="New work will appear here after students submit." />
-            )}
-          </Panel>
+  return (
+    // A bento grid: tiles share one gutter and stretch to their row (D-026, D-066).
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
+      <FocusTile id="review-queue" icon={<Inbox />} title="Review queue" className="@4xl:col-span-5">
+        <div className="flex flex-col gap-1">
+          {queue.length ? (
+            <>
+              <p className="m-0 flex flex-wrap items-baseline gap-x-2">
+                <strong className="text-display font-semibold tabular-nums">{queue.length}</strong>
+                <span className="text-card-title font-semibold">{queue.length === 1 ? "submission is waiting for a grade" : "submissions are waiting for a grade"}</span>
+              </p>
+              {next && <p className="m-0 text-body text-primary-100">Next: {next.student?.firstName ?? "Student"} {next.student?.lastName ?? ""} · {next.title}</p>}
+            </>
+          ) : (
+            <p className="m-0 text-card-title font-semibold">Your review queue is clear.</p>
+          )}
         </div>
-        <Panel id="month-review" icon={<CalendarDays />} title="Academic calendar">
-          <p className="m-0 text-body text-muted">{formatMonth(new Date(now))} · {marks.filter((item) => item.kind === "event").length} academic dates · {marks.filter((item) => item.kind === "deadline").length} class deadlines</p>
-          <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
-          <ul className="m-0 flex flex-1 list-none flex-col gap-2 p-0">
-            {marks.filter((item) => item.date.getTime() >= now - 24 * 60 * 60 * 1000).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 4).map((item) => (
-              <li key={item.id} className="flex items-center gap-3 rounded-control bg-canvas p-3">
-                <time dateTime={item.date.toISOString()} className="w-16 shrink-0 text-body font-semibold text-primary-700">{formatDay(item.date)}</time>
-                <span className="flex min-w-0 flex-col">
-                  <strong className="text-body font-semibold">{item.title}</strong>
-                  <span className="text-body text-muted">{item.kind === "deadline" ? "Class deadline" : "Academic date"}</span>
-                </span>
-              </li>
+        <Button variant="secondary" className={cn("mt-auto self-start", onFillFocus)} onClick={() => openReview()}>Review student work<ArrowRight aria-hidden className="size-4" /></Button>
+      </FocusTile>
+      <SummaryStrip
+        className="@4xl:col-span-7"
+        label="Summary"
+        items={[
+          { icon: <School />, tone: classTones[0], value: rooms.length, label: "Assigned classrooms", note: term },
+          { icon: <Inbox />, tone: classTones[1], value: queue.length, label: "Awaiting review", note: queue.length ? "Submitted work without a grade" : "Nothing to grade", onOpen: queue.length ? () => openReview() : undefined },
+          { icon: <ClipboardCheck />, tone: classTones[2], value: activeAssessments, label: "Active assessments", note: `Across ${rooms.length} ${rooms.length === 1 ? "classroom" : "classrooms"}` },
+          { icon: <UsersRound />, tone: classTones[3], value: reached, label: "Students reached", note: "Active enrollments" },
+        ]}
+      />
+
+      {/* 12 columns: classes 7 | calendar 5 (two rows), then review 7. */}
+      <Panel
+        id="classes-in-progress"
+        className="@4xl:col-span-7"
+        icon={<Layers />}
+        title="Classes in progress"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ViewToggle view={classView} onChange={setClassView} />
+            <PanelLink onClick={() => navigate(instructorPaths.classes(year))}>All classrooms</PanelLink>
+          </div>
+        }
+      >
+        <YearFilter levels={yearLevels(rooms)} selected={year} onSelect={setYear} />
+        <InstructorClassList tile store={store} rooms={visible} view={classView} onOpen={(room) => navigate(instructorPaths.classPage(room.id))} />
+      </Panel>
+      <Panel
+        id="month-review"
+        className="@4xl:col-span-5 @4xl:row-span-2"
+        icon={<CalendarDays />}
+        title="Academic calendar"
+        description={`${formatMonth(new Date(now))} · ${marks.filter((item) => item.kind === "event").length} academic dates · ${marks.filter((item) => item.kind === "deadline").length} class deadlines`}
+        action={<PanelLink onClick={onNews}>Announcements</PanelLink>}
+      >
+        <MonthGrid month={new Date(now)} entries={marks} now={now} label={`${formatMonth(new Date(now))} academic calendar`} />
+        {/* Read-only: deadlines open from their class (C-015). */}
+        <RowList>
+          {upcoming.map((item) => (
+            <ListRow key={item.id} lead={<DateTile date={item.date} />} title={item.title} meta={item.kind === "deadline" ? "Class deadline" : "Academic date"} />
+          ))}
+        </RowList>
+      </Panel>
+      <Panel
+        id="needs-review"
+        className="@4xl:col-span-7"
+        icon={<Inbox />}
+        title="Needs your review"
+        count={queue.length}
+      >
+        {queue.length ? (
+          <RowList className="flex-1">
+            {queue.slice(0, 3).map((item) => (
+              <ListRow
+                key={item.id}
+                onOpen={() => openReview(item.id)}
+                chevron={false}
+                lead={<InitialsAvatar firstName={item.student?.firstName} lastName={item.student?.lastName} />}
+                title={`${item.student?.firstName ?? "Student"} ${item.student?.lastName ?? ""}`.trim()}
+                meta={`${item.title} · ${item.kind === "activity" ? "Assignment" : "Assessment"}`}
+                trail={<span className="shrink-0 text-body font-semibold text-primary-700">Review</span>}
+              />
             ))}
-          </ul>
-          <Button variant="secondary" className="mt-auto" onClick={onNews}><Megaphone aria-hidden className="size-4" />View announcements</Button>
-        </Panel>
-      </div>
+          </RowList>
+        ) : (
+          <EmptyState className="flex-1 justify-center" icon={<ClipboardCheck />} title="Your review queue is clear" description="New work will appear here after students submit." />
+        )}
+      </Panel>
     </div>
   );
 }
@@ -194,18 +195,12 @@ function News({ onCalendar }: { onCalendar: () => void }) {
         </section>
         <section aria-labelledby="school-news" className="flex flex-col gap-3">
           <SectionHeading id="school-news" icon={<School />} title="School announcements" count={upcoming.length} />
-          <Card className="p-2">
-            <ul className="m-0 flex list-none flex-col p-0">
+          <Card className="px-4 sm:px-5">
+            <RowList>
               {upcoming.map((item) => (
-                <li key={item.id} className="flex items-center gap-4 rounded-control p-3">
-                  <time dateTime={item.date} className="w-14 shrink-0 rounded-control bg-primary-100 py-1.5 text-center text-body font-semibold text-primary-700">{formatDay(`${item.date}T00:00:00`)}</time>
-                  <span className="flex flex-col">
-                    <strong className="text-body font-semibold">{item.title}</strong>
-                    <span className="text-body text-muted">{item.category} · Academic calendar</span>
-                  </span>
-                </li>
+                <ListRow key={item.id} lead={<DateTile date={new Date(`${item.date}T00:00:00`)} />} title={item.title} meta={`${item.category} · Academic calendar`} />
               ))}
-            </ul>
+            </RowList>
           </Card>
         </section>
       </div>
@@ -219,19 +214,14 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
   const { instructors, instructor, rooms } = useInstructorWorkspace();
   const { setInstructorId } = useInstructorSession();
   const [view, setView] = useState<"overview" | "news">("overview");
-  const toggle = "inline-flex min-h-touch items-center gap-2 rounded-control border-0 px-4 font-sans text-body font-medium focus-visible:outline-3 focus-visible:outline-focus";
 
   return (
     <>
-      <header className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="relative flex max-w-2xl flex-col gap-1.5">
-          <p className="m-0 text-body text-muted">
-            {formatFullDate(now)}
-            {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
-          </p>
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold tracking-tight text-ink outline-none sm:text-display sm:leading-tight">Your teaching day</h1>
-        </div>
-        <div className="relative"><div className="flex flex-wrap items-end gap-3">
+      <DashboardHeader
+        meta={<>{formatFullDate(now)}{term?.phase === "in" && <> · {term.name}, Week {term.week}</>}</>}
+        title={`${greeting(now)}, ${instructor.firstName}`}
+        controls={
+          <>
             {instructors.length > 1 && (
               <label className="flex flex-col gap-1 font-sans text-body text-muted">
                 Viewing instructor
@@ -245,12 +235,18 @@ export default function OverviewPage({ onNavigateRole }: { onNavigateRole: (role
                 </select>
               </label>
             )}
-            <div role="group" aria-label="Dashboard content" className="inline-flex rounded-card border border-line bg-surface p-1">
-              <button type="button" aria-pressed={view === "overview"} onClick={() => setView("overview")} className={cn(toggle, view === "overview" ? "bg-primary-600 text-white" : "bg-transparent text-ink hover:bg-primary-50")}>Overview</button>
-              <button type="button" aria-pressed={view === "news"} onClick={() => setView("news")} className={cn(toggle, view === "news" ? "bg-primary-600 text-white" : "bg-transparent text-ink hover:bg-primary-50")}><Megaphone aria-hidden className="size-4" />News &amp; announcements</button>
-            </div>
-          </div></div>
-      </header>
+            <SegmentedControl
+              label="Dashboard content"
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "overview", label: "Overview" },
+                { value: "news", label: "News & announcements", icon: <Megaphone aria-hidden /> },
+              ]}
+            />
+          </>
+        }
+      />
       {!rooms.length ? (
         <EmptyState
           icon={<BookOpen />}

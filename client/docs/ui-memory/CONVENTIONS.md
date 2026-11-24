@@ -114,7 +114,8 @@ add `!important` by hand.
 
 ### C-015 · Dashboard and course patterns (D-023)
 - Dashboard panels: an `h2` with a leading icon (`SectionHeading` `icon`) and one
-  "View all" link to the full page; the heading stays on one line.
+  "View all" link to the full page (`PanelLink`); the heading stays on one line, and the
+  link wraps under it when both do not fit.
 - One control per action on a page; secondary views of the same item are read-only (L-037).
 - Courses are named by title first, with the course code (`CourseCode` or "IT101 · …")
   as metadata; course pages open with `CourseHeader` (code · section · term, title, facts).
@@ -161,3 +162,15 @@ add `!important` by hand.
 - Status is an icon with text or a tinted `Badge`, never a dot or a stripe alone.
 - Text over an image sits on a solid panel. Skeletons are static and appear after 300 ms.
 - Motion is limited to 150 ms color and opacity transitions and the button spinner.
+
+### C-020 · One dashboard layout (D-066)
+- Every role's dashboard is `DashboardHeader` (date line, greeting h1, page controls), then a
+  focus row (`FocusTile` + `SummaryStrip`), then `Panel`s. Do not hand-build a hero, a stat card,
+  or a metric card.
+- One `FocusTile` per dashboard. Controls on it add `onFillFocus` (L-099); text on it is white or
+  `primary-100`.
+- Dashboard lists are `RowList` + `ListRow`. The lead is `IconTile`, `InitialsAvatar`, or
+  `DateTile`; dates beside items always use `DateTile`. A row with `onOpen` is one button;
+  otherwise it is read-only (C-015).
+- A switch between views of the same page is `SegmentedControl` (filters stay `FilterChip`).
+

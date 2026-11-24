@@ -34,7 +34,8 @@ for at least one pair.
 
 ## Instructor
 
-- [ ] Overview: the main heading is "Your teaching day"; "Review student work" is reachable.
+- [ ] Overview: the main heading is the greeting ("Good morning, Angela"); the "Review queue"
+      region and "Review student work" are reachable, and its focus ring is visible on the green tile.
 - [ ] Phone: "Open menu" opens the drawer; choosing a class closes it and announces the
       class name as the new heading.
 - [ ] Class tabs announce as tabs with counts ("Submissions, 1, tab, 6 of 7").

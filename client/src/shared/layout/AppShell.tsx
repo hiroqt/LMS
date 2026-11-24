@@ -112,7 +112,7 @@ function Brand({ full = false, sealOnly = false }: { full?: boolean; sealOnly?: 
       </span>
       <span className={sealOnly ? "sr-only" : "flex flex-col leading-tight"}>
         {/* Collapses to the seal on very narrow phones so the top bar fits 320px. */}
-        <span className="text-section font-semibold tracking-tight max-[379px]:sr-only">TMCC LMS</span>
+        <span className="text-section font-semibold tracking-tight whitespace-nowrap max-[379px]:sr-only">TMCC LMS</span>
         {full && <span className="text-body text-muted">Trece Martires City College</span>}
       </span>
     </span>

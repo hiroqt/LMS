@@ -1,10 +1,17 @@
-import { Bell, BookOpen, Inbox, Plus, Trash2 } from "lucide-react";
+import { AlarmClock, ArrowRight, Bell, BookOpen, ClipboardCheck, Inbox, ListChecks, Plus, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { DateTile } from "../../shared/components/DateTile";
+import { FocusTile } from "../../shared/components/FocusTile";
+import { IconTile, InitialsAvatar, ListRow, RowList } from "../../shared/components/ListRow";
+import { Panel } from "../../shared/components/Panel";
+import { PanelLink } from "../../shared/components/PanelLink";
+import { SummaryStrip } from "../../shared/components/SummaryStrip";
+import { classTones, onFillFocus } from "../../shared/lib/tones";
 import { SkipLink } from "../../shared/layout/SkipLink";
 import {
   Badge, Button, Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle, Dialog, DialogClose,
   DialogContent, DialogTrigger, EmptyState, Field, IconButton, Input, Menu, MenuContent, MenuItem, MenuLabel,
-  MenuSeparator, MenuTrigger, Select, Skeleton, SkeletonGroup, Tabs, TabsContent, TabsList, TabsTrigger,
+  MenuSeparator, MenuTrigger, SegmentedControl, Select, Skeleton, SkeletonGroup, Tabs, TabsContent, TabsList, TabsTrigger,
   Textarea, Toaster, useToast,
 } from "../../shared/ui";
 
@@ -36,6 +43,7 @@ function ToastDemo() {
 export default function DesignSystemPage() {
   const [section, setSection] = useState("");
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<"overview" | "news">("overview");
 
   return (
     <Toaster>
@@ -141,6 +149,35 @@ export default function DesignSystemPage() {
                   <MenuItem disabled>Archive (admin only)</MenuItem>
                 </MenuContent>
               </Menu>
+            </div>
+          </Section>
+
+          <Section id="segmented" title="Segmented control">
+            <SegmentedControl label="Dashboard content" value={view} onChange={setView} options={[{ value: "overview", label: "Overview" }, { value: "news", label: "News & announcements" }]} />
+          </Section>
+
+          {/* The pieces every role's dashboard is built from (D-066). */}
+          <Section id="dashboard" title="Dashboard blocks">
+            <div className="grid grid-cols-1 gap-4 @container">
+              <FocusTile id="kit-next-due" icon={<AlarmClock />} title="Next due">
+                <p className="m-0 text-card-title font-semibold">Quiz 02: Relational Data and Keys</p>
+                <Button variant="secondary" className={`self-start ${onFillFocus}`}>Open quiz<ArrowRight aria-hidden className="size-4" /></Button>
+              </FocusTile>
+              <SummaryStrip
+                label="Summary"
+                items={[
+                  { icon: <BookOpen />, tone: classTones[0], value: 4, label: "Active classes", shortLabel: "Classes", note: "Fall 2026" },
+                  { icon: <AlarmClock />, tone: classTones[1], value: 5, label: "Due this week", shortLabel: "Due soon", note: "2 in the next 3 days", onOpen: () => {} },
+                  { icon: <ClipboardCheck />, tone: classTones[3], value: 2, label: "Assessments done", shortLabel: "Done", note: "of 12 assessments", onOpen: () => {} },
+                ]}
+              />
+              <Panel id="kit-panel" icon={<ListChecks />} title="Tasks & Assessments" action={<PanelLink onClick={() => {}}>View all</PanelLink>}>
+                <RowList>
+                  <ListRow onOpen={() => {}} lead={<IconTile tone={classTones[1]}><ListChecks /></IconTile>} title="Long Quiz 01: SQL Queries and Joins" meta="Database Management Systems · Long Quiz" trail={<Badge tone="warning">Due Oct 27</Badge>} />
+                  <ListRow lead={<InitialsAvatar firstName="Jamie" lastName="Lee" />} title="Jamie Lee" meta="Quiz 03: Variables and Data Types · Assessment" />
+                  <ListRow lead={<DateTile date={new Date(2026, 10, 2, 12)} />} title="Midterm exam week begins" meta="Exam period · School calendar" />
+                </RowList>
+              </Panel>
             </div>
           </Section>
 

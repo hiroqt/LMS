@@ -1,4 +1,5 @@
 import { BookOpen, ClipboardCheck, FileText, GraduationCap, Megaphone, School, UserPlus, UsersRound } from "lucide-react";
+import { IconTile, ListRow, RowList } from "../../../shared/components/ListRow";
 
 export interface DashboardEvent {
   type: string;
@@ -20,23 +21,27 @@ const icons: Record<string, typeof BookOpen> = {
   grade: GraduationCap,
 };
 
-export function EventList({ label, events }: { label: string; events: DashboardEvent[] }) {
+/** Dated workspace records as read-only `ListRow`s (D-066). */
+export function EventList({ label, events, withYear = false }: { label: string; events: DashboardEvent[]; withYear?: boolean }) {
   if (!events.length) return null;
   return (
-    <ul aria-label={label} className="m-0 flex list-none flex-col gap-1 p-0">
+    <RowList label={label}>
       {events.map((event, index) => {
         const Icon = icons[event.type] ?? FileText;
         return (
-          <li key={`${event.type}-${event.date}-${index}`} className="flex items-start gap-3 py-1.5 font-sans text-body">
-            <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-control bg-canvas text-primary-700"><Icon className="size-4" /></span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-medium text-ink">{event.title}</span>
-              <span className="truncate text-muted">{event.detail}</span>
-            </span>
-            <time dateTime={event.date} className="shrink-0 text-muted">{new Date(event.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</time>
-          </li>
+          <ListRow
+            key={`${event.type}-${event.date}-${index}`}
+            lead={<IconTile><Icon /></IconTile>}
+            title={event.title}
+            meta={event.detail}
+            trail={
+              <time dateTime={event.date} className="shrink-0 text-body whitespace-nowrap text-muted">
+                {new Date(event.date).toLocaleDateString(undefined, withYear ? { month: "short", day: "numeric", year: "numeric" } : { month: "short", day: "numeric" })}
+              </time>
+            }
+          />
         );
       })}
-    </ul>
+    </RowList>
   );
 }

@@ -102,12 +102,12 @@ test.describe("New Instructor shell", () => {
     await expect(nav.getByRole("button", { name: "Gradebook" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
     await page.getByRole("banner").getByRole("button", { name: "Workspace" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeFocused();
   });
 
   test("zero axe violations and readable text sizes @all", async ({ page }) => {
     await page.goto("/instructor");
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeVisible();
     await expectNoAxeViolations(page);
     await expectReadableText(page);
   });

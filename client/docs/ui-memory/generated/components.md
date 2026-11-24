@@ -18,6 +18,7 @@
 | `src/shared/ui/IconButton.tsx` | `IconButton` |
 | `src/shared/ui/Menu.tsx` | `MenuContent`, `MenuItem`, `MenuLabel`, `MenuSeparator`, `Menu`, `MenuTrigger`, `MenuGroup` |
 | `src/shared/ui/Popover.tsx` | `PopoverContent`, `Popover`, `PopoverTrigger`, `PopoverClose` |
+| `src/shared/ui/SegmentedControl.tsx` | `SegmentedControl` |
 | `src/shared/ui/Skeleton.tsx` | `Skeleton`, `SkeletonGroup` |
 | `src/shared/ui/Tabs.tsx` | `TabsList`, `TabsTrigger`, `TabsContent`, `Tabs` |
 | `src/shared/ui/toast/Toaster.tsx` | `Toaster` |
@@ -29,6 +30,7 @@
 | File | Exports |
 | --- | --- |
 | `src/shared/layout/AppShell.tsx` | `AppShell` |
+| `src/shared/layout/DashboardHeader.tsx` | `DashboardHeader` |
 | `src/shared/layout/NetworkBanner.tsx` | `NetworkBanner` |
 | `src/shared/layout/PageHeader.tsx` | `PageHeader` |
 | `src/shared/layout/SidebarGroup.tsx` | `SidebarGroup` |
@@ -44,15 +46,19 @@
 | `src/shared/components/ClassTable.tsx` | `ClassTable` |
 | `src/shared/components/CourseCode.tsx` | `CourseCode` |
 | `src/shared/components/CourseHeader.tsx` | `CourseHeader` |
+| `src/shared/components/DateTile.tsx` | `DateTile` |
 | `src/shared/components/FeaturedNewsCarousel.tsx` | `FeaturedNewsCarousel` |
+| `src/shared/components/FocusTile.tsx` | `FocusTile` |
 | `src/shared/components/HelpSupport.tsx` | `HelpSupport` |
+| `src/shared/components/ListRow.tsx` | `ListRow`, `RowList`, `IconTile`, `InitialsAvatar` |
 | `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/Panel.tsx` | `Panel` |
+| `src/shared/components/PanelLink.tsx` | `PanelLink` |
 | `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
 | `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
-| `src/shared/components/StatCard.tsx` | `StatCard` |
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
+| `src/shared/components/SummaryStrip.tsx` | `SummaryStrip` |
 | `src/shared/components/TopbarSearch.tsx` | `TopbarSearch` |
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
@@ -80,7 +86,6 @@
 | `src/features/admin/components/DataTable.tsx` | `DataTable`, `EmptyRow` |
 | `src/features/admin/components/EventList.tsx` | `EventList` |
 | `src/features/admin/components/FormDialog.tsx` | `FormDialog` |
-| `src/features/admin/components/MetricCard.tsx` | `MetricCard` |
 | `src/features/admin/components/Pagination.tsx` | `Pagination` |
 | `src/features/admin/components/StatusBadge.tsx` | `StatusBadge` |
 | `src/features/admin/components/Toolbar.tsx` | `Toolbar` |

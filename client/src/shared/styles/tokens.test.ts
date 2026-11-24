@@ -52,6 +52,19 @@ describe("design token contrast (WCAG 2.2 AA)", () => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(TEXT);
   });
 
+  // The dashboard's filled tile (FocusTile, D-066): its secondary text, the due chip,
+  // and a white focus ring, because the page's dark green ring vanishes on the fill (L-099).
+  it("primary-100 text on the primary-700 tile ≥ 4.5:1", () => {
+    expect(contrast(token("primary-100"), token("primary-700"))).toBeGreaterThanOrEqual(TEXT);
+  });
+  it("white text on the primary-800 due chip ≥ 4.5:1", () => {
+    expect(contrast("#ffffff", token("primary-800"))).toBeGreaterThanOrEqual(TEXT);
+  });
+  it("the focus ring on the primary-700 tile is white: the page ring would be invisible there", () => {
+    expect(contrast("#ffffff", token("primary-700"))).toBeGreaterThanOrEqual(NON_TEXT);
+    expect(contrast(token("focus"), token("primary-700"))).toBeLessThan(NON_TEXT);
+  });
+
   it.each(["surface", "canvas"])("focus ring on %s ≥ 3:1", (bg) => {
     expect(contrast(token("focus"), token(bg))).toBeGreaterThanOrEqual(NON_TEXT);
   });

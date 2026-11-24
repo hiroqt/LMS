@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 export function SectionHeading({ id, title, count, description, icon, action }: { id?: string; title: string; count?: number; description?: ReactNode; icon?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-      <div className="flex flex-1 basis-40 flex-col gap-0.5">
+      {/* The heading keeps its full width when the row has room for it (C-015): the
+          action wraps under it instead of squeezing the title onto two lines. */}
+      <div className="flex flex-auto flex-col gap-0.5">
         <h2 id={id} className="m-0 flex items-center gap-2.5 font-sans text-section font-semibold text-ink">
           {icon && <span aria-hidden className="inline-flex text-primary-700 [&>svg]:size-6">{icon}</span>}
           {title}
