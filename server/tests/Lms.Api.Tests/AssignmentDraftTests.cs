@@ -377,7 +377,7 @@ public sealed class AssignmentDraftTests : AssessmentTestBase
         var id = await AssignmentAsync(new { submissionKinds = new[] { "link" } });
         var refused = await Refused(await StudentA.PostAsJsonAsync($"{Base}/{id}/submissions", new { text = "Answer", fileName = "er.pdf" }), HttpStatusCode.BadRequest);
         Assert.Contains("doesn't take a written answer", refused);
-        Assert.Contains("doesn't take files", refused);
+        Assert.Contains("A file name is no longer accepted", refused);
     }
 
     // ------------------------------------------------------------------------- §7 resubmitting and taking work back

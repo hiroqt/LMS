@@ -12,6 +12,10 @@ import { useNavigate } from "react-router";
 import { describeApiError } from "../../../../shared/api/http";
 import { Skeleton, SkeletonGroup } from "../../../../shared/ui/Skeleton";
 import { useInstructorActions } from "../../api/actions";
+import { safeLink } from "../../api/assignmentGrading";
+import type { Viewer } from "../../../../shared/api/viewer";
+import { AttachedFile } from "../../../../shared/components/files/AttachedFile";
+import { useInstructorSession } from "../../hooks/useInstructorSession";
 import { isTypedAnswer, typeLabel, useRefreshGrading, useSubmissionDetail } from "../../api/grading";
 import { AnswerBesideKey, QuestionPrompt } from "../../components/AnswerBesideKey";
 import { MatchNoteLabel } from "../../components/MatchNoteLabel";
@@ -26,6 +30,8 @@ export interface GradeFormProps {
   initialFeedback?: string;
   /** Exams: opens the exam's grading page (spelling review, item analysis, fixing the key). */
   onOpenExamGrading?: () => void;
+  /** Assignments: opens the assignment's grading page (file viewer, versions, Return). */
+  onOpenAssignmentGrading?: () => void;
 }
 
 const toPoints = (value: string) => (value.trim() === "" ? Number.NaN : Number(value));
@@ -36,8 +42,11 @@ const unscored = (points: number | null | undefined): points is null | undefined
  * essays need points, and typed answers (identification, enumeration, modified true or false)
  * can be overridden; both go through the grade endpoint's `answerPoints`.
  */
-export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGrading }: GradeFormProps) {
+export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGrading, onOpenAssignmentGrading }: GradeFormProps) {
   const toast = useToast();
+  const { instructorId } = useInstructorSession();
+  const viewer: Viewer = { id: instructorId, role: "instructor" };
+  const link = safeLink(item.submission?.link);
   const actions = useInstructorActions();
   const refreshGrading = useRefreshGrading();
   const attempt = useSubmissionDetail(item.classroomId, item.courseworkId, item.id, item.kind === "exam");
@@ -111,10 +120,33 @@ export function GradeForm({ item, onDone, initialFeedback = "", onOpenExamGradin
       </div>
       {item.kind === "activity" ? (
         <>
-          <dl className="m-0 flex flex-col gap-3 rounded-control bg-canvas p-3">
-            <div className="flex flex-col"><dt className="flex items-center gap-1.5 text-body text-muted"><Paperclip aria-hidden className="size-4" />Attachment</dt><dd className="m-0 text-body font-medium">{item.submission?.fileAttachmentUrl || "No file name"}</dd></div>
-            <div className="flex flex-col"><dt className="text-body text-muted">Student note</dt><dd className="m-0 text-body">{item.submission?.submissionText || "No note"}</dd></div>
+          <dl className="m-0 flex min-w-0 flex-col gap-3 rounded-control bg-canvas p-3">
+            {item.submission?.fileAttachmentUrl && (
+              <div className="flex flex-col"><dt className="flex items-center gap-1.5 text-body text-muted"><Paperclip aria-hidden className="size-4" />File name typed before uploads</dt><dd className="m-0 text-body font-medium break-words">{item.submission.fileAttachmentUrl}</dd></div>
+            )}
+            <div className="flex min-w-0 flex-col gap-2">
+              <dt className="flex items-center gap-1.5 text-body text-muted"><Paperclip aria-hidden className="size-4" />Files</dt>
+              <dd className="m-0 flex min-w-0 flex-col gap-2">
+                {item.submission?.files?.length
+                  ? item.submission.files.map((file) => <AttachedFile key={file.id} file={file} viewer={viewer} note={file.sameAsAnotherStudent ? <span>Same file as another student</span> : undefined} />)
+                  : <span className="text-body">No files</span>}
+              </dd>
+            </div>
+            {item.submission?.link && (
+              <div className="flex min-w-0 flex-col">
+                <dt className="text-body text-muted">Link</dt>
+                <dd className="m-0 text-body break-all">
+                  {link ? <a href={link} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-700 underline">{link}<span className="sr-only"> (opens in a new tab)</span></a> : item.submission.link}
+                </dd>
+              </div>
+            )}
+            <div className="flex flex-col"><dt className="text-body text-muted">Student note</dt><dd className="m-0 text-body break-words whitespace-pre-wrap">{item.submission?.submissionText || "No note"}</dd></div>
           </dl>
+          {onOpenAssignmentGrading && (
+            <Button variant="secondary" className="max-w-full shrink self-start whitespace-normal" icon={<ListChecks aria-hidden className="size-4" />} onClick={onOpenAssignmentGrading}>
+              Open the grading page
+            </Button>
+          )}
           <Field label={`Score (0–${item.maxScore})`} required error={error || undefined}>
             <Input type="number" inputMode="numeric" min={0} max={item.maxScore} value={score} onChange={(event) => setScore(event.target.value)} />
           </Field>
@@ -360,6 +392,7 @@ export function SubmissionsTab({ items, selectedId, onSelect, store, work, stude
               item={selected}
               onDone={() => onSelect(undefined)}
               onOpenExamGrading={selected.kind === "exam" ? () => navigate(instructorPaths.examGrading(selected.classroomId, selected.courseworkId)) : undefined}
+              onOpenAssignmentGrading={selected.kind === "activity" ? () => navigate(instructorPaths.assignmentGrading(selected.classroomId, selected.courseworkId, { student: selected.student?.id })) : undefined}
             />
           ) : (
             <p className="m-0 self-start rounded-card border border-dashed border-line-strong p-4 text-body text-muted">Choose a submission to review it and save a grade.</p>

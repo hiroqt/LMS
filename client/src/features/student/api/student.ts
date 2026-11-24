@@ -9,6 +9,8 @@ export const studentKeys = {
   overview: (studentId: string) => ["student", "overview", studentId] as const,
   attempt: (studentId: string, assessmentId: string) => ["student", "attempt", studentId, assessmentId] as const,
   result: (studentId: string, attemptId: number) => ["student", "result", studentId, attemptId] as const,
+  /** The student's rows for one assignment: the draft, versions, and any taken back (contract §7). */
+  work: (studentId: string, assessmentId: string) => ["student", "work", studentId, assessmentId] as const,
 };
 
 export const studentQueryOptions = { retry: shouldRetryApiRead, networkMode: "always" } as const;
@@ -54,9 +56,6 @@ export const saveAnswers = (viewer: Viewer, classId: string, assessmentId: strin
 
 export const submitAttempt = (viewer: Viewer, classId: string, assessmentId: string, attemptId: number, answers: ChosenAnswers) =>
   sendJson<Attempt>("POST", `${workPath(classId, assessmentId)}/attempts/${attemptId}/submit`, { answers }, { viewer });
-
-export const submitAssignment = (viewer: Viewer, classId: string, assessmentId: string, work: { fileName: string; comment: string }) =>
-  sendJson("POST", `${workPath(classId, assessmentId)}/submissions`, { fileName: work.fileName.trim(), text: work.comment.trim() || undefined }, { viewer });
 
 /** A plain-language reason for a failed change: the server's own words when it gave some. */
 export function failureMessage(error: unknown): string {

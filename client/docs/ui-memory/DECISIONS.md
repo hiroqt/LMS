@@ -725,3 +725,91 @@ The owner accepted these on 2026-11-19. Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNM
 - **Phase 3:** a late penalty is a percent of the *earned* score per calendar day late
   (Asia/Manila), up to a cap; excused work leaves the student's average; the comment bank belongs
   to the instructor, not the class.
+
+### D-059 · Assignments are created in the assignment builder; drafts and edits after publishing
+`2026-11-19` · hiro (assignments) · scope: instructor, e2e · confidence: medium
+Built in PR 2B of [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) on D-058's tabs; shapes: contract §1, §5.
+- **Journey change (D-013):** "Create assignment" opens `…/assignments/new` instead of the inline
+  form, which now holds materials only (the old `?create=activity` link redirects). The journey is the
+  same: title, instructions, Publish, and the assignment is in Classwork. `instructor-flow` E and
+  `student-new` press **Publish** instead of "Save and publish"; `assignment-builder` covers the rest.
+- **Tabs:** Details (module, title, short description, instructions, points) · Hand-in (written
+  answer, files, link; file types and 1–5 files only when Files is chosen; the own-work statement) ·
+  Dates and grading (available from, due date, late work and "accept until", resubmission, when grades
+  show). A choice that makes a field meaningless hides it or disables it with the reason: late work
+  needs a due date, and "accept until" shows only with both (a hidden one is sent as `clearCloseAt`).
+- **Summary:** the points, the rules as students read them (`handInRules`, the student page's own
+  sentences), each field to fix as a link that opens its tab and focuses it, and Preview as student,
+  Save draft, Publish. Preview saves first. Server field errors are mapped onto the fields the same way.
+- **Presets** only fill the form and never touch the title, text, or module. A due date already
+  chosen is kept; otherwise the preset's is set (11:59 PM), and the last day follows it.
+  - Homework: 20 points; written answer and files; PDF, Word, photos; up to 3 files; own-work
+    statement; due in 7 days; late work until 2 days after; resubmission; grades at once.
+  - In-class activity: 10 points; written answer and files; PDF and photos (a photo of paper work);
+    up to 2 files; no statement; due today; no late work; no resubmission; grades at once.
+  - Project: 100 points; files and a link; every file type; up to 5 files; own-work statement; due
+    in 14 days; late work until 3 days after; resubmission; grades when returned.
+  - Copy a previous assignment: one of this class's assignments; its points, hand-in, late work,
+    resubmission, and grade release. Not its title, text, module, or dates (nor its last day).
+- **Editing after publishing** is allowed, unlike exams: the same builder with one **Save changes**
+  (the status is not sent, so it stays published), and "N students have handed in; work already
+  handed in is not checked again" when some have. A closed assignment is shown read-only with
+  "Reopen it to change it". Classwork rows of assignments have **Edit**.
+- **Drafts elsewhere** behave like draft assessments: "Draft" on Classwork, Create content (Edit
+  draft), Modules ("Assignment · Draft") and the Stream cards; left out of the Stream's Upcoming, the
+  Overview calendar, and Submissions' "Didn't hand in" (`publishedWork`).
+
+### D-060 · Students hand in assignments with real files on a "Your work" card
+`2026-11-19` · hiro (assignments, PR 2C) · scope: student, e2e · confidence: medium
+Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Students"; shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §2, §5–§8.
+- **The journey "hand in an assignment" changed:** the student no longer types a file name and a
+  comment and presses Submit work. The assignment page shows the instructions and the rules
+  (`shared/components/assignment/AssignmentBrief`, the same sentences as the builder) and a
+  **Your work** card: a written answer and a link that save themselves (the quiz autosave, D-043),
+  files chosen or photographed and uploaded one at a time with progress, Cancel, Retry and Remove,
+  then **Turn in**, confirmed in a dialog that lists exactly what is handed in (and asks "This is my
+  own work" when the assignment does). A receipt (time, version, each file's code) stays on the page.
+- **Take back** and **Turn in a new version** appear only when the server's `turnIn` allows them;
+  earlier versions are listed. When `turnIn.canTurnIn` is false the card shows the reason and
+  nothing editable. Opening the page creates nothing: the first save or upload starts the draft.
+- **Uploading and turning in need a connection** (C-014): offline, the card says so and disables
+  them; typing stays on screen and saves on reconnect.
+- The client no longer sends `fileName`; `submitAssignment` is gone. Specs changed with it:
+  `instructor-flow` step I and `student-new` "reaches the classic instructor queue" now upload a
+  file and turn in; `e2e/assignment-work.spec.ts` covers the card.
+
+### D-061 · An assignment's grading page; the Submissions tab shows files and links to it
+`2026-11-19` · hiro (assignments, PR 2D) · scope: instructor, e2e · confidence: medium
+Plan: [`ASSIGNMENTS_PLAN.md`](../ASSIGNMENTS_PLAN.md) "Instructor"; shapes: contract §3, §4, §6, §8.
+- **The page:** `/instructor/classes/:classId/assignments/:id/grading`, opened from Classwork's
+  **Grading** (like the exam's, D-043). One row per student on the class list, from
+  `GET …/submissions` (`items` plus `missing`), showing their **latest** version. Filter chips
+  with counts: All, Needs grading, Late, Missing, Graded, Returned. They overlap on purpose: late
+  work can also need grading, and a "not handed in" grade is both Missing and Graded. Rows are
+  ordered by last name. `?filter=&student=` hold the view, with an optimistic value (L-028).
+- **One student's work:** the version and when it was turned in (a "Late" badge with text), the
+  written answer, the link (opened only when `http(s)`, `noopener noreferrer`, the URL shown), and
+  the files (`AttachedFile`, "Same file as another student" in its note). Earlier versions are
+  listed and open read-only; the grade always goes on the latest.
+- **File viewer:** photos, PDF and `.txt` are shown from a blob fetched with the instructor's
+  headers (L-075, L-088); the first one that can be shown opens at once. Word, PowerPoint and
+  Excel say "Download only".
+- **Grading:** Save, and **Save and next** (the next student needing a grade after this one in
+  list order, wrapping to the top; focus moves to their name). Server field errors land on their
+  field. Students with nothing handed in: "Give a grade without work" and "Give 0 to everyone who
+  didn't hand in" (the D-036 actions); before the last day the server's sentence shows instead.
+- **Return** (only with `gradeRelease: "returned"`): the page says students don't see grades until
+  returned; **Return to <name>** and **Return all graded** confirm in a dialog with the count, then
+  toast how many the server returned. Held grades read "Graded, not returned" (lock icon) and
+  returned ones "Returned" (send icon).
+- **The class Submissions tab** keeps its queue and form; an assignment's review now shows its
+  files (`AttachedFile`) and link, the typed file name only for work from before uploads, and
+  **Open the grading page** (`?student=` set).
+- **Journey change:** `seedHandedInAssignment` and the `close-activities` setup hand in a real
+  file through the draft API, since a typed `fileName` is refused once 2C lands. Spec:
+  `e2e/assignment-grading.spec.ts`.
+- **Save and next stays in the chosen filter** (added after review): the next student needing a
+  grade among those the filter shows, and only when none is left there, the next in the class
+  (`nextToGradeIn`). After Return, or after everyone missing is graded, focus goes to the
+  student's work, because the button that opened the dialog is gone (L-015).
+

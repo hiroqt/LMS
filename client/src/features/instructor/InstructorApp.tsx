@@ -31,6 +31,9 @@ const QuestionSetPage = lazy(() => import("./pages/QuestionSetPage"));
 const ExamGradingPage = lazy(() => import("./pages/ExamGradingPage"));
 const AssessmentPreviewPage = lazy(() => import("./pages/AssessmentPreviewPage"));
 const AssessmentBuilderPage = lazy(() => import("./pages/AssessmentBuilderPage"));
+const AssignmentBuilderPage = lazy(() => import("./pages/AssignmentBuilderPage"));
+const AssignmentGradingPage = lazy(() => import("./pages/AssignmentGradingPage"));
+const AssignmentPreviewPage = lazy(() => import("./pages/AssignmentPreviewPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
@@ -211,6 +214,10 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
           {/* Both render the same page, so the first save (new → edit) keeps its state. */}
           <Route path="instructor/classes/:classId/assessments/new" element={<AssessmentBuilderPage />} />
           <Route path="instructor/classes/:classId/assessments/:assessmentId/edit" element={<AssessmentBuilderPage />} />
+          <Route path="instructor/classes/:classId/assignments/new" element={<AssignmentBuilderPage />} />
+          <Route path="instructor/classes/:classId/assignments/:assignmentId/edit" element={<AssignmentBuilderPage />} />
+          <Route path="instructor/classes/:classId/assignments/:assignmentId/preview" element={<AssignmentPreviewPage />} />
+          <Route path="instructor/classes/:classId/assignments/:assignmentId/grading" element={<AssignmentGradingPage />} />
           {/* /instructor, ?role=instructor, #/instructor, /instructor.html … land on Overview. */}
           <Route path="*" element={<OverviewPage onNavigateRole={onNavigateRole} />} />
         </Routes>

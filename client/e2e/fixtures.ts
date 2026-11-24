@@ -91,8 +91,21 @@ export async function seedHandedInAssignment(page: Page, sandbox: string, title 
   const work = await callApi<{ id: number }>(page, sandbox, INSTRUCTOR, "POST", "/api/classes/biology/coursework", {
     type: "assignment", moduleId: module!.id, title, maxPoints: 10, status: "published", instructions: "Trace each loop.",
   });
-  const submission = await callApi<{ id: number }>(page, sandbox, STUDENT, "POST", `/api/classes/biology/coursework/${work.id}/submissions`, {
-    fileName: "loops.pdf", text: "Done on paper, scanned.",
+  // Real work through the draft API (D-061): a note and an uploaded PDF, then turn in.
+  const base = `/api/classes/biology/coursework/${work.id}`;
+  await callApi(page, sandbox, STUDENT, "PUT", `${base}/draft`, { text: "Done on paper, scanned.", link: null });
+  await uploadAsStudent(page, sandbox, `${base}/draft/files`, {
+    name: "loops.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n1 0 obj\n<< /Title (Loops) >>\nendobj\ntrailer\n<< >>\n%%EOF\n", "latin1"),
   });
+  const { submission } = await callApi<{ submission: { id: number } }>(page, sandbox, STUDENT, "POST", `${base}/draft/turn-in`, { honorStatement: true });
   return { courseworkId: String(work.id), submissionId: String(submission.id), title };
+}
+
+/** Adds one file to a student's draft (multipart), as the student page does. */
+export async function uploadAsStudent(page: Page, sandbox: string, path: string, file: { name: string; mimeType: string; buffer: Buffer }, viewer: DemoViewer = STUDENT) {
+  const response = await page.request.post(`${API}${path}`, {
+    headers: { "X-Demo-Sandbox": sandbox, "X-Demo-User-Id": viewer.id, "X-Demo-Role": viewer.role },
+    multipart: { file },
+  });
+  expect(response.ok(), `upload ${file.name}: ${response.status()} ${await response.text()}`).toBe(true);
 }

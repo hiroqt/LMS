@@ -1,3 +1,5 @@
+import type { FileTypeKey, SubmissionKind, SubmittedFile } from "../../../shared/api/overview";
+
 /** The shared role store (tmcc-lms-roles-v1) as the Instructor UI uses it. */
 
 export interface User {
@@ -74,11 +76,26 @@ export interface Activity {
   id: string;
   moduleId: string;
   title: string;
+  /** One or two sentences for cards and lists. */
+  description?: string;
   instructions?: string;
   dueAt?: string;
+  /** When students first see it; absent means at once. */
+  availableFrom?: string;
   maxScore: number;
   allowLate?: boolean;
+  /** The last moment late work is accepted (D-054). */
+  closeAt?: string;
   allowResubmission?: boolean;
+  /** When students see a grade (D-054). */
+  gradeRelease?: "immediate" | "returned";
+  /** What students hand in, which files and how many, and the "my own work" statement (D-058, contract §5). */
+  submissionKinds?: SubmissionKind[];
+  allowedFileTypes?: FileTypeKey[];
+  maxFiles?: number;
+  honorStatement?: boolean;
+  /** Saved from the assignment builder without publishing; students cannot see it (D-058). */
+  draft?: boolean;
   status?: string;
   /** Closed with the close action once every student was graded (D-036). */
   closed?: boolean;
@@ -121,10 +138,21 @@ export interface ActivitySubmission {
   activityId: string;
   classroomId: string;
   studentId: string;
+  /** 1 for the first version; a student who resubmits has several (the latest counts). */
+  attemptNumber?: number;
   submissionText?: string;
+  /** A file name typed before files were uploaded (D-055); empty for newer work. */
   fileAttachmentUrl?: string;
+  /** A link the student handed in. */
+  link?: string;
+  /** The uploaded files of this version (D-055). */
+  files?: SubmittedFile[];
+  /** `submitted`, `graded`, or `returned` (D-054). Instructors never receive drafts or versions taken back. */
   status: string;
+  /** Handed in after the due date. */
+  late?: boolean;
   submittedAt?: string;
+  gradedAt?: string;
   grade: number | null;
   feedback?: string;
   /** A grade given to a student who handed in nothing (D-036). */

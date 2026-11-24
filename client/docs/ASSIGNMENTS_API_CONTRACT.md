@@ -106,8 +106,9 @@ and HEIC are refused (D-058). Invisible format characters are dropped from file 
   with the same SHA-256 for this assignment.
 
 `fileName` (a typed file name, no file) is still returned for work handed in before Phase 2.
-`POST …/submissions` still works with `text`. It accepts `fileName` only until the student page
-uploads real files (PR 2C); from then on `fileName` is a 400.
+`POST …/submissions` still works with `text` (it turns in the student's draft when there is one,
+after the same checks as `…/draft/turn-in`). Sending `fileName` is a 400: the file itself is
+added to the draft.
 
 `turnIn` (§2) gains `canUnsubmit`: whether `POST …/unsubmit` would be accepted now.
 
