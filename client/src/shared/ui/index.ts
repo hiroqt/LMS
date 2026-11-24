@@ -9,6 +9,7 @@ export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Field, Input, Select, Textarea, type FieldProps } from "./Field";
 export { FilterChip, FilterChipGroup, type FilterChipProps } from "./FilterChip";
 export { IconButton, type IconButtonProps } from "./IconButton";
+export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from "./SegmentedControl";
 export { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./Popover";
 export { Menu, MenuContent, MenuGroup, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "./Menu";
 export { Skeleton, SkeletonGroup } from "./Skeleton";
