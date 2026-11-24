@@ -4,7 +4,7 @@ import { expect, test } from "./fixtures";
 // 404 fallback, and shared links depend on every one of these forms.
 
 const STUDENT = /Good morning, Alex/;
-const INSTRUCTOR = "Your teaching day";
+const INSTRUCTOR = /Good morning, Angela/;
 
 const cases: Array<[path: string, expected: "student" | "instructor" | "admin"]> = [
   ["/", "student"],

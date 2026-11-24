@@ -18,7 +18,7 @@ function classTab(page: Page, name: RegExp) {
 test.describe("Instructor · Overview", () => {
   test("HOME → OVERVIEW: teaching day dashboard and News & announcements", async ({ page }) => {
     await openRole(page, "instructor");
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Classes in progress" })).toBeVisible();
 
     const views = page.getByRole("group", { name: "Dashboard content" });

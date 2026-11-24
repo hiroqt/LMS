@@ -10,7 +10,7 @@ const TABS = ["", "?tab=Classwork", "?tab=Announcements", "?tab=Materials", "?ta
 
 async function useNewInstructorUi(page: Page) {
   await page.goto("/instructor");
-  await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeVisible();
 }
 
 async function check(page: Page) {

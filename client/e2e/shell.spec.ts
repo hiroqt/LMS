@@ -65,7 +65,7 @@ test.describe("Student · shell", () => {
     await page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ }).click();
     await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
     await expect(page).toHaveURL(/\/instructor$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeVisible();
   });
 });
 
@@ -88,9 +88,9 @@ test.describe("Instructor · shell", () => {
   test("TOOLS: the breadcrumb returns to Overview", async ({ page }) => {
     await openRole(page, "instructor");
     await page.getByRole("navigation", { name: "instructor navigation" }).getByRole("button", { name: "Gradebook" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toHaveCount(0);
     await page.getByRole("banner").getByRole("button", { name: "Workspace" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Good morning, Angela/ })).toBeVisible();
   });
 
   test("PICK: the year filter on Overview narrows the class list", async ({ page }) => {
