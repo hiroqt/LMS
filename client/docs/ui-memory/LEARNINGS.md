@@ -731,3 +731,12 @@ onto two lines (against C-015). `min-w-[min(100%,max-content)]` looks right but 
 wraps under the heading when both do not fit. Check computed styles, not class names, when a layout
 fix "does nothing".
 
+### L-101 · A color transition on a toggle fails axe right after the click
+`2026-11-24` · hiro (D-066) · scope: shared, a11y, e2e · confidence: high
+The new `SegmentedControl` first had `transition-colors duration-150`. A spec that clicks "News &
+announcements" and then runs axe measured the white label on a fill still fading from white to
+green and reported `color-contrast (serious)` (Pixel project). The old toggles had no transition.
+Pressed, selected, and current states now change at once; transitions stay on hover-only surfaces.
+The same fade also fooled a manual probe into reading a half-blended focus ring (L-099): wait for
+transitions before measuring computed colors.
+
