@@ -19,7 +19,7 @@ async function openPage(page: Page, item: RegExp, category?: string) {
 
 async function openAdmin(page: Page) {
   await page.goto("/admin");
-  await expect(page.getByRole("heading", { name: "Academic overview" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Good morning, Taylor/ })).toBeVisible();
 }
 
 test.describe("Admin", () => {
