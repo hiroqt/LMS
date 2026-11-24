@@ -1,5 +1,6 @@
 using Lms.Api.Content;
 using Lms.Api.Data;
+using Lms.Api.Files;
 using Lms.Api.Identity;
 using Lms.Api.Submissions;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,15 @@ namespace Lms.Api.Coursework;
 /// <param name="CloseAt">Assignments: the last moment late work is accepted (D-054).</param>
 /// <param name="GradeRelease">Assignments: when students see a grade (see <see cref="Data.GradeRelease"/>).</param>
 /// <param name="TurnIn">Students, assignments only: whether they can turn work in now, and why not (contract §2).</param>
+/// <param name="SubmissionKinds">Assignments: what a student may hand in (see <see cref="SubmissionKind"/>; contract §5).</param>
+/// <param name="AllowedFileTypes">Assignments: the file types accepted (see <see cref="FileTypes"/>).</param>
+/// <param name="MaxFiles">Assignments: files per turn-in.</param>
+/// <param name="HonorStatement">Assignments: the student confirms "This is my own work" to turn in.</param>
 public sealed record CourseworkDto(long Id, long ModuleId, string Type, string Title, string? Description, string? Category, string? Instructions, decimal MaxPoints,
     DateTime? DueAt, DateTime? AvailableFrom, bool AllowLate, bool AllowResubmission, int? MaxAttempts, int? TimeLimitMinutes,
     long? QuestionnaireId, int QuestionCount, string Status, string AnswerReview, string SpellingMode, bool ShuffleQuestions, bool ShuffleChoices,
-    int? GradedCount = null, int? RosterCount = null, DateTime? CloseAt = null, string GradeRelease = Data.GradeRelease.Immediate, TurnInStatus? TurnIn = null);
+    int? GradedCount = null, int? RosterCount = null, DateTime? CloseAt = null, string GradeRelease = Data.GradeRelease.Immediate, TurnInStatus? TurnIn = null,
+    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int MaxFiles = FileLimits.MaxFilesPerTurnIn, bool HonorStatement = false);
 
 /// <summary>Create: every field. Update: only the fields sent change (type cannot change).</summary>
 public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title, string? Description, string? Category, string? Instructions, decimal? MaxPoints,
@@ -26,7 +32,8 @@ public sealed record CourseworkInput(string? Type, long? ModuleId, string? Title
     int? TimeLimitMinutes, long? QuestionnaireId, string? Status,
     string? AnswerReview = null, string? SpellingMode = null, bool? ShuffleQuestions = null, bool? ShuffleChoices = null,
     bool? ClearDueAt = null, bool? ClearAvailableFrom = null,
-    DateTimeOffset? CloseAt = null, bool? ClearCloseAt = null, string? GradeRelease = null);
+    DateTimeOffset? CloseAt = null, bool? ClearCloseAt = null, string? GradeRelease = null,
+    IReadOnlyList<string>? SubmissionKinds = null, IReadOnlyList<string>? AllowedFileTypes = null, int? MaxFiles = null, bool? HonorStatement = null);
 
 /// <summary>
 /// Assignments and exams given to one class. Instructors create drafts and publish them; students
@@ -218,6 +225,19 @@ public static class CourseworkEndpoints
                 else if (!row.AllowLate) errors.Add("closeAt", "Accept late work to set a last day for it.");
                 else if (last <= dueAt) errors.Add("closeAt", "The last day for late work must be after the due date.");
             }
+            // How students hand in (contract §5). Each is checked at upload, on save and at turn-in.
+            if (input.SubmissionKinds is { } kinds)
+            {
+                if (kinds.Count == 0 || kinds.Any(k => !SubmissionKind.All.Contains(k))) errors.Add("submissionKinds", $"Choose at least one of: {string.Join(", ", SubmissionKind.All)}.");
+                else row.SubmissionKinds = SubmissionKind.Store(kinds);
+            }
+            if (input.AllowedFileTypes is { } types)
+            {
+                if (types.Count == 0 || types.Any(t => !FileTypes.All.Contains(t))) errors.Add("allowedFileTypes", $"Choose at least one of: {string.Join(", ", FileTypes.All)}.");
+                else row.AllowedFileTypes = FileTypes.Store(types);
+            }
+            if (input.MaxFiles is { } maxFiles) { if (maxFiles is < 1 or > FileLimits.MaxFilesPerTurnIn) errors.Add("maxFiles", $"Allow 1 to {FileLimits.MaxFilesPerTurnIn} files."); else row.MaxFiles = maxFiles; }
+            if (input.HonorStatement is { } honor) row.HonorStatement = honor;
             if (input.QuestionnaireId is not null) errors.Add("questionnaireId", "Assignments have no questions; use an exam.");
             if (input.MaxPoints is { } points) { if (points is <= 0 or > 1000) errors.Add("maxPoints", "Points must be more than 0 and at most 1000."); else row.MaxPoints = points; }
             else if (row.Id == 0) errors.Add("maxPoints", "Enter the points this assignment is worth.");
@@ -226,6 +246,11 @@ public static class CourseworkEndpoints
         {
             if (input.CloseAt is not null || input.ClearCloseAt == true) errors.Add("closeAt", "Only assignments have a last day for late work.");
             if (input.GradeRelease is not null) errors.Add("gradeRelease", "Exams show results by their answer review setting.");
+            const string assignmentsOnly = "Only assignments have hand-in settings.";
+            if (input.SubmissionKinds is not null) errors.Add("submissionKinds", assignmentsOnly);
+            if (input.AllowedFileTypes is not null) errors.Add("allowedFileTypes", assignmentsOnly);
+            if (input.MaxFiles is not null) errors.Add("maxFiles", assignmentsOnly);
+            if (input.HonorStatement is not null) errors.Add("honorStatement", assignmentsOnly);
             if (input.QuestionnaireId is { } qid)
             {
                 // Only the caller's own set, and only one for this class's subject (or one with no subject).
@@ -268,6 +293,7 @@ public static class CourseworkEndpoints
         return new(c.Id, c.ModuleId, c.Type, c.Title, c.Description, c.Category, c.Instructions, c.MaxPoints, c.DueAt, c.AvailableFrom, c.AllowLate, c.AllowResubmission,
             c.MaxAttempts, c.TimeLimitMinutes, user.IsInstructor ? c.QuestionnaireId : null,
             c.QuestionnaireId is { } q && counts.TryGetValue(q, out var n) ? n : 0, c.Status, c.AnswerReview, c.SpellingMode, c.ShuffleQuestions, c.ShuffleChoices, p?.Graded, p?.Roster,
-            c.CloseAt, c.GradeRelease, user.IsInstructor ? null : turnIn?.GetValueOrDefault(c.Id));
+            c.CloseAt, c.GradeRelease, user.IsInstructor ? null : turnIn?.GetValueOrDefault(c.Id),
+            SubmissionKind.Parse(c.SubmissionKinds), FileTypes.Parse(c.AllowedFileTypes), c.MaxFiles, c.HonorStatement);
     }
 }

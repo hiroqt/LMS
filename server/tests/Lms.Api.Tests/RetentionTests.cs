@@ -40,7 +40,7 @@ public sealed class RetentionTests : IDisposable
         db.Coursework.AddRange(exam, task);
         await db.SaveChangesAsync();
         var attempt = new Submission { CourseworkId = exam.Id, StudentId = "STU-1", Status = SubmissionStatus.Graded, SubmittedAt = DateTime.UtcNow };
-        var essay = new Submission { CourseworkId = task.Id, StudentId = "STU-1", Status = SubmissionStatus.Graded, SubmittedAt = DateTime.UtcNow, Text = "My essay about Lia." };
+        var essay = new Submission { CourseworkId = task.Id, StudentId = "STU-1", Status = SubmissionStatus.Graded, SubmittedAt = DateTime.UtcNow, Text = "My essay about Lia.", FileName = "lia-abad-essay.pdf" };
         db.Submissions.AddRange(attempt, essay);
         await db.SaveChangesAsync();
         db.SubmissionAnswers.Add(new SubmissionAnswer { SubmissionId = attempt.Id, QuestionId = question.Id, AnswerText = "Babbage", PointsAwarded = 2, MatchNote = MatchNote.Exact });
@@ -69,7 +69,8 @@ public sealed class RetentionTests : IDisposable
             var answer = await db.SubmissionAnswers.SingleAsync(a => a.SubmissionId == old);
             Assert.Null(answer.AnswerText);
             Assert.Equal(2m, answer.PointsAwarded);
-            Assert.Null((await db.Submissions.SingleAsync(s => s.Id == oldEssay)).Text);
+            var essay = await db.Submissions.SingleAsync(s => s.Id == oldEssay);
+            Assert.Equal((null, null), (essay.Text, essay.FileName));
             Assert.Equal(18m, (await db.Grades.SingleAsync(g => g.SubmissionId == oldEssay)).Points);
             Assert.NotNull((await db.Submissions.SingleAsync(s => s.Id == old)).AnonymizedAt);
             Assert.Null((await db.Submissions.SingleAsync(s => s.Id == recent)).AnonymizedAt);

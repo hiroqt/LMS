@@ -1,0 +1,28 @@
+# ClamAV for local development ONLY: the virus scanner the LMS API sends student uploads to
+# when Lms:Files:Scanner is "clamav" (D-055). Not needed for Development's default ("none"),
+# Demo mode, or the tests.
+#
+#   docker compose -f docker-compose.clamav.yml up -d     # first start downloads the virus database (a few minutes)
+#   docker compose -f docker-compose.clamav.yml down -v   # stop and delete the database
+#
+# Bound to 127.0.0.1 so it is not reachable from the LAN. clamd needs about 2 GB of memory.
+# The image is built for Intel/AMD; on an Apple Silicon Mac it runs under emulation (slower to
+# start). `brew install clamav` and running clamd with `TCPSocket 3310` is the native alternative.
+name: lms-clamav-dev
+
+services:
+  clamav:
+    image: clamav/clamav:stable
+    platform: linux/amd64
+    container_name: lms-clamav-dev
+    restart: unless-stopped
+    environment:
+      # The API accepts files up to 25 MB; clamd must accept at least that much on a stream.
+      CLAMD_CONF_StreamMaxLength: 26M
+    ports:
+      - "127.0.0.1:3310:3310"
+    volumes:
+      - clamav-db:/var/lib/clamav
+
+volumes:
+  clamav-db:

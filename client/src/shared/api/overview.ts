@@ -77,6 +77,14 @@ export interface Coursework {
   gradeRelease: "immediate" | "returned";
   /** Students, assignments only: the server's turn-in verdict; null for instructors and exams. */
   turnIn: TurnIn | null;
+  /** Assignments: what a student may hand in (contract §5). Exams carry the defaults. */
+  submissionKinds: SubmissionKind[];
+  /** Assignments: the file types accepted; every type when the instructor chose none in particular. */
+  allowedFileTypes: FileTypeKey[];
+  /** Assignments: files per turn-in, 1 to 5. */
+  maxFiles: number;
+  /** Assignments: the student confirms "This is my own work" to turn in. */
+  honorStatement: boolean;
   maxAttempts: number | null;
   timeLimitMinutes: number | null;
   questionnaireId: number | null;
@@ -88,6 +96,9 @@ export interface Coursework {
   rosterCount?: number | null;
 }
 
+export type SubmissionKind = "text" | "file" | "link";
+export type FileTypeKey = "pdf" | "word" | "powerpoint" | "excel" | "image" | "text";
+
 /** Whether a student can turn an assignment in now, and why not (D-054, contract §2). */
 export interface TurnIn {
   state: "assigned" | "missing" | "draft" | "turned_in" | "graded" | "returned" | "not_handed_in";
@@ -96,22 +107,49 @@ export interface TurnIn {
   reason: "closed" | "not_handed_in" | "already_turned_in" | "past_close" | "past_due" | null;
   /** Turning in now would be late. */
   late: boolean;
+  /** The latest turned-in work can be taken back now (D-058, contract §7). */
+  canUnsubmit: boolean;
 }
 
 /** Graded, whether or not it has been returned to the student yet (D-054). */
 export const isGraded = (status: Submission["status"]) => status === "graded" || status === "returned";
+
+/**
+ * Handed in: neither a draft nor a version the student took back (D-058). Only a student ever
+ * receives `withdrawn` rows; instructors never do.
+ */
+export const isHandedIn = (status: Submission["status"]) => status !== "in_progress" && status !== "withdrawn";
+
+/** An uploaded file on a draft or a version (contract §6). */
+export interface SubmittedFile {
+  id: number;
+  name: string;
+  /** Decided by the server from the file's bytes. */
+  contentType: string;
+  size: number;
+  /** The first 8 characters of the file's SHA-256, as printed on the receipt: "9F2C-41AB". */
+  code: string;
+  /** Instructors only: another student handed in the same file for this assignment. */
+  sameAsAnotherStudent: boolean | null;
+}
 
 export interface Submission {
   id: number;
   studentId: string;
   studentName: string | null;
   attemptNumber: number;
-  status: "in_progress" | "submitted" | "graded" | "returned";
+  /** `withdrawn`: turned-in work the student took back; it is kept, and only the student receives it. */
+  status: "in_progress" | "submitted" | "graded" | "returned" | "withdrawn";
   startedAt: string | null;
   submittedAt: string | null;
   late: boolean;
   text: string | null;
+  /** A file name typed before files were uploaded (D-055); null for newer work. */
   fileName: string | null;
+  /** Assignments: a link the student handed in. */
+  link: string | null;
+  /** Assignments: the uploaded files of this draft or version; empty for exams. */
+  files: SubmittedFile[];
   score: number | null;
   maxPoints: number;
   feedback: string | null;
