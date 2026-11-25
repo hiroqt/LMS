@@ -92,7 +92,7 @@ Module 2: Control flow                                                  4
 | PDF | Yes | The browser's own PDF viewer where it has one (computers, iPhones). Where it doesn't (most Android phones), a PDF viewer loads the first time (decision 2) |
 | JPG, PNG | Yes | Shown fitted to the width; tap for full screen |
 | TXT | Yes | Shown as text; the first 200 KB, with "Download for the rest" past that |
-| Word, PowerPoint, Excel | Yes (decision 1) | The server turns the file into a PDF once, after the upload, and the preview shows that PDF in the same viewer. Download still gives the original file. Until it is ready the page says "Preparing the preview…" |
+| Word, PowerPoint, Excel | Yes (decision 1) | The server turns the file into a PDF once, during the upload, and the preview shows that PDF in the same viewer. Download still gives the original file |
 | Office file whose preview could not be made | No | A file card with type, size, and Download, and "A preview isn't available for this file". Instructors are told to replace it or upload a PDF |
 | Old material with a name only | No | Students see "No file attached". Instructors see "Upload the file" |
 
@@ -117,14 +117,17 @@ Previews of files over 5 MB, or with the phone's data saver on, wait for "Load p
   (`nosniff`, `sandbox`). The page fetches the bytes with the viewer's headers (L-075) and shows
   them itself: an image tag, text, or a PDF viewer. The response carries the file's hash as an
   `ETag`, so opening a material again costs a quick check, not the whole file.
-- **Office files get a PDF copy for the preview** (decision 1). A background worker on the server
-  runs LibreOffice (`soffice --headless --convert-to pdf`) on each new Word, PowerPoint, or Excel
-  material, one file at a time. Each run gets its own throwaway profile and folder, has 60 seconds,
-  and is stopped after that. The result must pass the same PDF byte check before it is kept as the
-  material's preview file. A material is saved and downloadable straight away; its preview is
-  `pending`, then `ready` or `failed`. Pending work survives a restart. Macros and remote templates
-  are already refused at upload. Where LibreOffice isn't installed (`Lms:Files:Converter = none`),
-  Office files show the download card and the server logs that previews are off.
+- **Office files get a PDF copy for the preview** (decision 1). During the upload, after the virus
+  scan, the server runs LibreOffice (`soffice --headless --convert-to pdf`) on the Word, PowerPoint,
+  or Excel file. Each run gets its own throwaway profile and folder, has 45 seconds, and is stopped
+  after that; at most two run at once. The result must pass the same PDF byte check before it is
+  kept as the material's preview file. If no preview can be made, the material is still saved and
+  downloadable, with `PreviewStatus` `failed` (`ready` when it worked). The instructor sees
+  "Preparing the preview…" once the bytes are sent. It runs inside the upload rather than in a
+  background worker because Demo mode picks each sandbox's database and files from the request.
+  Macros and remote templates are already refused at upload. Where LibreOffice isn't installed
+  (`Lms:Files:Converter = none`), the status is `off`, Office files show the download card, and the
+  server logs at start-up that previews are off.
 - **Retention leaves materials alone.** The turn-in retention job (contract §7) only ever touches
   files that belong to coursework.
 - **Demo mode** seeds a few small original files (a PDF study guide, a PNG diagram, a TXT reference
@@ -159,8 +162,9 @@ to come back to, not a task to finish.
 
 - **Server (xUnit):** who can download (instructor, enrolled student, archived material, another
   class, not enrolled); type, size, and scan refusals; a failed upload saves nothing; replace and
-  delete remove the old bytes; `ETag` gives 304; retention skips material files; the worker marks
-  previews ready or failed and picks pending ones up after a restart (with a stand-in converter).
+  delete remove the old bytes; `ETag` gives 304; retention skips material files; an Office upload
+  ends `ready`, `failed`, or `off`, and a failed or slow conversion still saves the material (with a
+  stand-in converter).
   A real LibreOffice test turns one Word, PowerPoint, and Excel file into PDFs; API CI installs
   LibreOffice for it. Each test is checked once against a broken version.
 - **Vitest:** the viewer chooses the right preview per type; the 5 MB and data-saver gate; blob

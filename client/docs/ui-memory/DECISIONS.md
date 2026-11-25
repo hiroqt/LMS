@@ -974,7 +974,9 @@ Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MA
 - **Previews:** a PDF opens in the browser's own viewer where `navigator.pdfViewerEnabled`, and
   otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
   cache. Images and text are drawn by the page. Word, PowerPoint, and Excel files are turned into a
-  PDF once by LibreOffice in a server worker (`pending`, `ready`, `failed`). A file without a preview
+  PDF once by LibreOffice during the upload, after the scan (`ready`, `failed`, or `off` without
+  LibreOffice). It doesn't run in a background worker because Demo mode picks each sandbox's
+  database and files from the request. A file without a preview
   shows a download card. A preview loads by itself up to 5 MB; bigger files, or data saver on, wait
   for a tap that shows the size.
 - **Student view:** the Materials tab is grouped by module, then submodule, with type, file type,
