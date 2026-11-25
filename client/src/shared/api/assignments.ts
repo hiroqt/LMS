@@ -1,6 +1,7 @@
-import { ApiError, apiUrl, describeApiError, getFile, getJson, isApiError, kindForStatus, sendJson } from "./http";
+import { describeApiError, getFile, getJson, isApiError, sendJson } from "./http";
 import type { FileTypeKey, Submission, SubmittedFile } from "./overview";
-import { identityHeaders, type Viewer } from "./viewer";
+import { sendForm, type UploadOptions } from "./upload";
+import type { Viewer } from "./viewer";
 
 /**
  * Assignment drafts, files, turning in, and taking work back (D-055, D-058;
@@ -111,70 +112,13 @@ export const turnInDraft = (viewer: Viewer, classId: string, courseworkId: strin
 export const unsubmit = (viewer: Viewer, classId: string, courseworkId: string | number) =>
   sendJson<Submission>("POST", `${workPath(classId, courseworkId)}/unsubmit`, undefined, { viewer });
 
-export interface UploadOptions {
-  /** 0 to 1, as the bytes leave the browser. */
-  onProgress?: (fraction: number) => void;
-  /** Cancels the upload. */
-  signal?: AbortSignal;
-}
+export type { UploadOptions } from "./upload";
 
-/**
- * Adds one file to the draft. `fetch` cannot report upload progress, so this uses
- * XMLHttpRequest; it rejects with the same `ApiError` as the JSON calls. There is no timeout:
- * a large file on a slow connection is allowed to take its time, and the student can cancel.
- */
+/** Adds one file to the draft, reporting progress as the bytes go (see `sendForm`). */
 export function uploadDraftFile(viewer: Viewer, classId: string, courseworkId: string | number, file: File, options: UploadOptions = {}): Promise<Submission> {
-  const url = apiUrl(`${workPath(classId, courseworkId)}/draft/files`);
-  return new Promise<Submission>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url);
-    xhr.responseType = "text";
-    xhr.setRequestHeader("Accept", "application/json");
-    for (const [name, value] of Object.entries(identityHeaders(viewer))) xhr.setRequestHeader(name, value);
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && event.total > 0) options.onProgress?.(Math.min(1, event.loaded / event.total));
-    };
-    const cancel = () => xhr.abort();
-    const done = () => options.signal?.removeEventListener("abort", cancel);
-    xhr.onload = () => {
-      done();
-      let body: unknown;
-      try {
-        body = xhr.responseText ? JSON.parse(xhr.responseText) : undefined;
-      } catch {
-        body = undefined;
-      }
-      if (xhr.status >= 200 && xhr.status < 300 && body && typeof body === "object") {
-        options.onProgress?.(1);
-        resolve(body as Submission);
-        return;
-      }
-      const problem = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
-      reject(new ApiError({
-        kind: xhr.status >= 200 && xhr.status < 300 ? "invalid-response" : kindForStatus(xhr.status), status: xhr.status, url,
-        title: typeof problem.title === "string" && problem.title ? problem.title : undefined,
-        detail: typeof problem.detail === "string" && problem.detail ? problem.detail : undefined,
-        fieldErrors: problem.errors && typeof problem.errors === "object" ? (problem.errors as Record<string, string[]>) : undefined,
-        problem,
-      }));
-    };
-    xhr.onerror = () => {
-      done();
-      reject(new ApiError({ kind: "network", status: 0, url }));
-    };
-    xhr.onabort = () => {
-      done();
-      reject(new DOMException("The upload was cancelled.", "AbortError"));
-    };
-    if (options.signal?.aborted) {
-      reject(new DOMException("The upload was cancelled.", "AbortError"));
-      return;
-    }
-    options.signal?.addEventListener("abort", cancel, { once: true });
-    const form = new FormData();
-    form.append("file", file, file.name);
-    xhr.send(form);
-  });
+  const form = new FormData();
+  form.append("file", file, file.name);
+  return sendForm<Submission>("POST", `${workPath(classId, courseworkId)}/draft/files`, form, viewer, options);
 }
 
 /**
