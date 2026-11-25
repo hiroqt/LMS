@@ -958,3 +958,26 @@ hand-built list rows. Every dashboard is now the same three layers, built from s
   "Academic overview" → `/Good morning, Taylor/`, and the welcome-message test was deleted. No journey
   changed. Draft and before/after images were approved before the build.
 
+### D-067 · Class materials carry a real file that students and instructors preview in the LMS
+`2026-11-25` · hiro (user request, approved plan) · scope: student, instructor, shared, server · confidence: high
+Asked for "a preview of the uploaded materials" and a more detailed, better organized student view.
+Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MATERIALS_PLAN.md`.
+- **A material is a learning guide**, a file students come back to (like a Google Classroom
+  material), not a task. On the user's call there is no read time and no "Mark as reviewed". The
+  `student-flow` journey "open a material from Stream, mark it reviewed, go back" becomes "open a
+  material from Stream, see its file, go back" (Phase 3).
+- **Files** are stored like turn-ins (D-055): type from the bytes, virus scan, 25 MB, cleaned
+  names. One file per material, in PDF, DOCX, PPTX, XLSX, JPG, PNG, or TXT. A material and its file
+  are saved in one request. Only the material's own routes serve the file: to its instructor always,
+  and to an enrolled student while the material is active. Files are served as downloads (`nosniff`,
+  `sandbox`). The page fetches the bytes with the viewer's headers (L-075) and draws them itself.
+- **Previews:** a PDF opens in the browser's own viewer where `navigator.pdfViewerEnabled`, and
+  otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
+  cache. Images and text are drawn by the page. Word, PowerPoint, and Excel files are turned into a
+  PDF once by LibreOffice in a server worker (`pending`, `ready`, `failed`). A file without a preview
+  shows a download card. A preview loads by itself up to 5 MB; bigger files, or data saver on, wait
+  for a tap that shows the size.
+- **Student view:** the Materials tab is grouped by module, then submodule, with type, file type,
+  size, and date, plus search, a type filter, and a sort. The material page shows the preview,
+  details, Download, and previous and next materials. The repeated "Learning goal" and the always
+  empty "Key ideas" are gone.
