@@ -1,3 +1,4 @@
+import type { MaterialFile } from "./materials";
 import { getJson } from "./http";
 import type { Viewer } from "./viewer";
 
@@ -40,11 +41,13 @@ export interface OverviewMaterial {
   title: string;
   kind: string;
   description: string | null;
+  /** Text only for materials made before uploads; `file` is the real file (D-067). */
   fileName: string | null;
   fileType: string | null;
   fileSize: string | null;
   status: "active" | "archived";
   createdAt: string;
+  file?: MaterialFile | null;
 }
 
 export interface OverviewAnnouncement {
