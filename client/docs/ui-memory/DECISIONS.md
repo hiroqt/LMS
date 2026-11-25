@@ -971,8 +971,8 @@ Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MA
   are saved in one request. Only the material's own routes serve the file: to its instructor always,
   and to an enrolled student while the material is active. Files are served as downloads (`nosniff`,
   `sandbox`). The page fetches the bytes with the viewer's headers (L-075) and draws them itself.
-- **Previews:** a PDF opens in the browser's own viewer where `navigator.pdfViewerEnabled`, and
-  otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
+- **Previews:** a PDF opens in the browser's own viewer on a computer (`navigator.pdfViewerEnabled`
+  and a fine pointer, L-102), and otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
   cache. Images and text are drawn by the page. Word, PowerPoint, and Excel files are turned into a
   PDF once by LibreOffice during the upload, after the scan (`ready`, `failed`, or `off` without
   LibreOffice). It doesn't run in a background worker because Demo mode picks each sandbox's

@@ -740,3 +740,27 @@ Pressed, selected, and current states now change at once; transitions stay on ho
 The same fade also fooled a manual probe into reading a half-blended focus ring (L-099): wait for
 transitions before measuring computed colors.
 
+### L-102 · Draw PDFs with pdf.js on phones; a frame shows them well only on computers
+`2026-11-25` · hiro (D-067) · scope: shared, materials · confidence: medium
+`navigator.pdfViewerEnabled` says a browser has a PDF viewer, not that it works in a frame: an
+iPhone shows a framed PDF as a picture of one page, and Android Chrome has no viewer at all. The
+material preview uses the browser's own viewer only where it also has a fine pointer
+(`(hover: hover) and (pointer: fine)`), and otherwise draws the pages with pdf.js, loaded on
+demand (`PdfPages`, about 500 KB once, outside the install cache). Headless Chromium reports no
+viewer, so every e2e project exercises the pdf.js path; the framed path is checked by hand.
+
+### L-103 · pdf.js text over a page needs its scale variables on the page element
+`2026-11-25` · hiro (D-067) · scope: shared, materials, e2e · confidence: high
+`TextLayer` sizes runs with `--total-scale-factor`, `--scale-round-x`, and `--scale-round-y`, which
+pdf.js's own viewer sets on each page; without them the text lands at the wrong size and can't be
+selected. `PdfPages` sets them inline, and `tailwind.css` carries the few `.pdf-text-layer` rules the
+text needs (the only stylesheet, D-039). The runs are transparent and tiny at phone scale, so the
+e2e readable-text check now skips transparent text: it is read aloud, not seen.
+
+### L-104 · Demo mode binds the database and files to the request; do server work inside it
+`2026-11-25` · hiro (D-067) · scope: server, demo · confidence: high
+Each Demo sandbox's SQLite database and file store are chosen from the request's
+`X-Demo-Sandbox` header (`DemoDatabases.SandboxOf`). A background worker has no request, so it
+cannot reach them; that is why Office previews are made during the upload, with a time limit,
+rather than queued. Work that must happen later needs its own way to name the sandbox.
+

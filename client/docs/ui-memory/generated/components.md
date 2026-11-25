@@ -64,6 +64,11 @@
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
 | `src/shared/components/assignment/RubricView.tsx` | `RubricView` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
+| `src/shared/components/files/FileTypeIcon.tsx` | `FileTypeIcon` |
+| `src/shared/components/files/UploadProgress.tsx` | `UploadProgress` |
+| `src/shared/components/materials/MaterialLayout.tsx` | `MaterialLayout` |
+| `src/shared/components/materials/MaterialPreview.tsx` | `MaterialPreview`, `PreviewNotice` |
+| `src/shared/components/materials/PdfPages.tsx` | `PdfPages` |
 | `src/shared/components/quiz/AnswerLabel.tsx` | `AnswerLabel` |
 | `src/shared/components/quiz/ChoiceAnswer.tsx` | `ChoiceAnswer` |
 | `src/shared/components/quiz/EnumerationAnswer.tsx` | `EnumerationAnswer` |
@@ -141,6 +146,7 @@
 | `src/features/instructor/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/instructor/pages/ExamGradingPage.tsx` | `ExamGradingPage` |
 | `src/features/instructor/pages/GradebookPage.tsx` | `GradebookPage` |
+| `src/features/instructor/pages/MaterialPage.tsx` | `MaterialPage` |
 | `src/features/instructor/pages/OverviewPage.tsx` | `OverviewPage` |
 | `src/features/instructor/pages/QuestionSetPage.tsx` | `QuestionSetPage` |
 | `src/features/instructor/pages/QuestionSetsPage.tsx` | `QuestionSetsPage` |
