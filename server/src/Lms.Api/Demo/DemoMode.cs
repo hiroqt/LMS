@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Lms.Api.Data;
+using Lms.Api.Files;
 using Lms.Api.Isms;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,7 +40,8 @@ public sealed record DemoSeed(DemoTerm Term, List<DemoPerson> Instructors, List<
 public sealed record DemoTerm(string SchoolYear, string Semester);
 public sealed record DemoPerson(string Id, string FirstName, string LastName, string? Honorific, string? Email);
 public sealed record DemoClass(string Id, int SubjectId, string Code, string Name, string Section, string InstructorId);
-public sealed record DemoMaterial(string ClassId, string Title, string Kind, string? Description);
+/// <summary><c>File</c> and <c>Preview</c> name files in Demo/files (D-067); an Office file's preview is its PDF copy.</summary>
+public sealed record DemoMaterial(string ClassId, string Title, string Kind, string? Description, string? File = null, string? Preview = null);
 public sealed record DemoQuestion(string Prompt, List<string> Options, int Correct, decimal Points, int? TimeLimitSeconds);
 public sealed record DemoCoursework(string ClassId, string Title, string Category, string? Description, string? Instructions,
     string? DueAt, int? TimeLimitMinutes, List<DemoQuestion> Questions);
@@ -82,7 +84,7 @@ public sealed class DemoDatabases(DemoOptions options, DemoSeed seed, ILogger<De
     {
         await using var db = new LmsDbContext(new DbContextOptionsBuilder<LmsDbContext>().UseSqlite(ConnectionString(sandbox)).Options);
         await db.Database.EnsureCreatedAsync();
-        await DemoSeeder.SeedAsync(db, seed, options);
+        await DemoSeeder.SeedAsync(db, seed, options, new DiskFileStore(FilesDirectory(options, sandbox)));
         logger.LogInformation("Demo sandbox {Sandbox} seeded", sandbox);
     }
 }
@@ -90,7 +92,26 @@ public sealed class DemoDatabases(DemoOptions options, DemoSeed seed, ILogger<De
 /// <summary>Seeds one demo database: the fake ISMS classes and class lists, then the LMS content.</summary>
 public static class DemoSeeder
 {
-    public static async Task SeedAsync(LmsDbContext db, DemoSeed seed, DemoOptions options)
+    /// <summary>Copies one of Demo/files into the sandbox's file store, as an upload would be kept.</summary>
+    private static async Task<(StoredFile File, FileKind Kind)> StoreAsync(LmsDbContext db, IFileStore files, string source, string name, string classId, string owner)
+    {
+        await using var bytes = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Demo", "files", source));
+        await using var pending = await files.ReceiveAsync(bytes, long.MaxValue, CancellationToken.None);
+        FileKind kind;
+        await using (var content = pending.OpenRead())
+            kind = FileSniffer.Detect(content, name, CancellationToken.None).Kind ?? throw new InvalidOperationException($"Demo/files/{source} is not a file type materials accept.");
+        var file = new StoredFile
+        {
+            ClassId = classId, OwnerId = owner, StorageKey = await pending.KeepAsync(CancellationToken.None), Name = name, ContentType = kind.ContentType,
+            Size = pending.Size, ContentHash = pending.Sha256, ScanStatus = ScanStatus.NotScanned, CreatedBy = owner,
+        };
+        db.StoredFiles.Add(file);
+        await db.SaveChangesAsync();
+        return (file, kind);
+    }
+
+    /// <param name="files">The sandbox's file store, for the materials' demo files; null seeds materials without files.</param>
+    public static async Task SeedAsync(LmsDbContext db, DemoSeed seed, DemoOptions options, IFileStore? files = null)
     {
         var zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone);
         var term = $"{seed.Term.SchoolYear} · {seed.Term.Semester}";
@@ -117,7 +138,24 @@ public static class DemoSeeder
         await db.SaveChangesAsync();
 
         foreach (var m in seed.Materials)
-            db.Materials.Add(new Material { ClassId = m.ClassId, ModuleId = modules[m.ClassId].Id, Title = m.Title, Kind = m.Kind, Description = m.Description, CreatedBy = seed.Classes.Single(c => c.Id == m.ClassId).InstructorId });
+        {
+            var owner = seed.Classes.Single(c => c.Id == m.ClassId).InstructorId;
+            var row = new Material { ClassId = m.ClassId, ModuleId = modules[m.ClassId].Id, Title = m.Title, Kind = m.Kind, Description = m.Description, CreatedBy = owner };
+            if (files is not null && m.File is { } name)
+            {
+                var (file, kind) = await StoreAsync(db, files, name, name, m.ClassId, owner);
+                row.FileId = file.Id;
+                row.FileName = file.Name;
+                row.FileType = Path.GetExtension(name).TrimStart('.');
+                row.FileSize = Content.MaterialFileEndpoints.SizeText(file.Size);
+                if (kind.Type is FileTypes.Word or FileTypes.PowerPoint or FileTypes.Excel)
+                {
+                    row.PreviewFileId = m.Preview is { } preview ? (await StoreAsync(db, files, preview, Path.ChangeExtension(name, ".pdf"), m.ClassId, owner)).File.Id : null;
+                    row.PreviewStatus = row.PreviewFileId is null ? PreviewStatus.Off : PreviewStatus.Ready;
+                }
+            }
+            db.Materials.Add(row);
+        }
         await db.SaveChangesAsync();
 
         foreach (var w in seed.Coursework)
