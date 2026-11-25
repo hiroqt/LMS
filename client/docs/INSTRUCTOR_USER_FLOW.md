@@ -86,6 +86,7 @@ flowchart TD
     C2 --> C3
     C3 --> MATERIALS[Browse class materials]
     MATERIALS -->|Add material| E4((E))
+    MATERIALS -->|Open a material| MATPAGE[Material page: the students' preview, Download, Replace or Remove the file, Archive, Delete]
     MATERIALS -->|Student-facing result| STUDENTMAT[Material is shared through the connected Student workspace]
 
     E1 --> E2
@@ -93,7 +94,7 @@ flowchart TD
     E4 --> E2
     E2 --> E5((E))
     E5 --> CONTENT{Choose a content category}
-    CONTENT -->|Material| MATFORM[Choose module; enter title, resource type, optional description]
+    CONTENT -->|Material| MATFORM[Choose module; enter title, resource type, optional description; attach a file, uploaded with progress]
     MATFORM -->|Save and share| MATSAVED[Add material to this class]
     MATSAVED --> C4((C))
     CONTENT -->|Assignment| ACTFORM[Assignment builder: optional preset; Details tab: module, title, short description, instructions, points]

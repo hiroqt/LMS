@@ -45,7 +45,7 @@ flowchart TD
     CL2 -->|Stream| STREAM[Read class updates and open linked work or material]
     CL2 -->|Classwork| CW[Browse or filter Quiz, Long Quiz, and Exam]
     CL2 -->|Modules| MODS[Modules with their submodules; open a material or assessment from them]
-    CL2 -->|Materials| MAT[Browse learning materials]
+    CL2 -->|Materials| MAT[Materials by module and submodule, or newest first; filter by type; search]
     CL2 -->|People| PEOPLE[Search the student roster]
     CL2 -->|Attendance| CLAT[Read own attendance % per month]
     STREAM -->|Open assessment| AD
@@ -76,7 +76,7 @@ flowchart TD
     R -->|Back to classwork| CW
     R -->|Practice again| Q
 
-    MD[Material detail] -->|Read and optionally mark reviewed| MD1[Review status for this session]
+    MD[Material detail] -->|Preview the file, download it, read the description| MD1[Previous or next material in module order]
     MD1 -->|Back to class| MAT
 
     P -->|Reset immediately| B

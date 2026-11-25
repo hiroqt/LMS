@@ -200,6 +200,8 @@
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |
 | `src/features/student/components/ClassCard.tsx` | `ClassCard` |
 | `src/features/student/components/ClassList.tsx` | `ClassList` |
+| `src/features/student/components/ListSearch.tsx` | `ListSearch` |
+| `src/features/student/components/MaterialList.tsx` | `MaterialRows`, `ClassMaterials` |
 | `src/features/student/components/SaveStatusNote.tsx` | `SaveStatusNote` |
 | `src/features/student/components/visuals.tsx` | `AssessmentTypeIcon` |
 | `src/features/student/components/work/AssignmentWork.tsx` | `AssignmentWork` |
