@@ -764,3 +764,11 @@ Each Demo sandbox's SQLite database and file store are chosen from the request's
 cannot reach them; that is why Office previews are made during the upload, with a time limit,
 rather than queued. Work that must happen later needs its own way to name the sandbox.
 
+### L-105 · jsdom checks Label in Name only when a canvas package is installed
+`2026-11-25` · hiro (D-067, D-069) · scope: shared, a11y, tests · confidence: high
+jsdom 31 lists `@napi-rs/canvas` as an optional peer. Without it, `getContext("2d")` is null and
+axe's `label-content-name-mismatch` can't run, so Vitest + axe passed names that don't contain the
+visible text. pdfjs-dist installs `@napi-rs/canvas`, and two real problems appeared at once
+(D-069). Unit-level axe results depend on what is installed: a passing axe test without a canvas
+proves less than it seems, and the browser specs remain the reference.
+

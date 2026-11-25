@@ -28,15 +28,15 @@ describe("dashboard building blocks (D-066)", () => {
         label="Summary"
         items={[
           { icon: <BookOpen />, tone: "bg-primary-100 text-primary-700", value: 4, label: "Active classes", note: "Fall 2026" },
-          { icon: <BookOpen />, tone: "bg-accent-100 text-accent-700", value: 5, label: "Due this week", shortLabel: "Due soon", note: "2 in the next 3 days", onOpen: open },
-          { icon: <BookOpen />, tone: "bg-info-soft text-info", value: 12, label: "Total students", name: "Total students: 12. View students", onOpen: open },
+          { icon: <BookOpen />, tone: "bg-accent-100 text-accent-700", value: 5, label: "Due this week", shortLabel: "Due", note: "2 in the next 3 days", onOpen: open },
+          { icon: <BookOpen />, tone: "bg-info-soft text-info", value: 12, label: "Total students", name: "12 Total students. View students", onOpen: open },
         ]}
       />,
     );
     expect(screen.getByRole("list", { name: "Summary" })).toBeInTheDocument();
     // The short label is for sighted phone users only; it never doubles the accessible name.
     expect(screen.getByRole("button", { name: /^5 Due this week/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Total students: 12. View students" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "12 Total students. View students" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Active classes/ })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: /^5 Due this week/ }));
     expect(open).toHaveBeenCalledOnce();

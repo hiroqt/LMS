@@ -983,3 +983,13 @@ Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MA
   size, and date, plus search, a type filter, and a sort. The material page shows the preview,
   details, Download, and previous and next materials. The repeated "Learning goal" and the always
   empty "Key ideas" are gone.
+
+### D-069 · A summary cell's accessible name starts with the words it shows
+`2026-11-25` · hiro (found while adding D-067) · scope: shared, admin, student · confidence: high
+Amends D-066, which kept the Admin totals' old names ("Total students: 12. View students"). The
+cell shows "12 Total students", so speech-control users who say what they see did not match the
+name (WCAG 2.5.3, Label in Name). The names are now "12 Total students. View students" and the same
+for faculty, courses, and users. The Student "Due this week" cell's phone label is "Due" instead of
+"Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
+no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
+

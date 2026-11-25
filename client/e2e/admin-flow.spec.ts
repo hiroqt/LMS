@@ -25,7 +25,8 @@ async function openAdmin(page: Page) {
 test.describe("Admin", () => {
   test("OVERVIEW: totals open the matching directory with its filter", async ({ page }) => {
     await openAdmin(page);
-    await page.getByRole("button", { name: /^Total Students: \d+/i }).click();
+    // D-069: the name starts with what the cell shows ("12 Total students. View students").
+    await page.getByRole("button", { name: /^\d+ Total Students\b/i }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^user management$/i })).toBeVisible();
     await expect(page.getByRole("combobox", { name: /^role\b/i })).toHaveValue("student");
     await expect(page.getByRole("row", { name: /taylor morgan/i })).toHaveCount(0);

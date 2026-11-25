@@ -204,7 +204,7 @@ export default function TodayPage() {
           label="Summary"
           items={[
             { icon: <BookOpen />, tone: classTones[0], value: courses.length, label: "Active classes", shortLabel: "Classes", note: term?.name ?? "This term" },
-            { icon: <AlarmClock />, tone: classTones[1], value: thisWeek.length, label: "Due this week", shortLabel: "Due soon", note: `${withinThreeDays} in the next 3 days`, onOpen: () => navigate(studentPaths.tasks("Due this week")) },
+            { icon: <AlarmClock />, tone: classTones[1], value: thisWeek.length, label: "Due this week", shortLabel: "Due", note: `${withinThreeDays} in the next 3 days`, onOpen: () => navigate(studentPaths.tasks("Due this week")) },
             { icon: <ClipboardCheck />, tone: classTones[3], value: completed.length, label: "Assessments done", shortLabel: "Done", note: `of ${assessments.length} assessments`, onOpen: () => navigate(studentPaths.tasks("Done")) },
           ]}
         />
