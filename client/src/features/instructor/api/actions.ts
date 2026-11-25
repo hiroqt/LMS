@@ -1,5 +1,8 @@
 import { useMemo } from "react";
+import { isCancelled } from "../../../shared/api/assignments";
 import { describeApiError, isApiError, sendJson } from "../../../shared/api/http";
+import { removeMaterialFile, replaceMaterialFile, uploadMaterial, type MaterialFields } from "../../../shared/api/materials";
+import type { UploadOptions } from "../../../shared/api/upload";
 import type { Viewer } from "../../../shared/api/viewer";
 import { useInstructorSession } from "../hooks/useInstructorSession";
 import type { ReviewItem } from "./selectors";
@@ -18,19 +21,13 @@ export interface ActionResult {
   message?: string;
   /** The server's field errors, e.g. { title: ["Enter a title."] }. */
   fieldErrors?: Record<string, string[]>;
+  /** The person cancelled it (an upload); nothing to report. */
+  cancelled?: boolean;
 }
 
 export type ContentKind = "material" | "activity" | "exam";
 
-export interface MaterialInput {
-  moduleId: string;
-  title: string;
-  kind: string;
-  description: string;
-  fileName?: string;
-  fileType?: string;
-  fileSize?: string;
-}
+export type MaterialInput = MaterialFields;
 
 export interface ActivityInput {
   moduleId: string;
@@ -77,6 +74,9 @@ export async function attempt(change: () => Promise<unknown>): Promise<ActionRes
     await change();
     return { ok: true };
   } catch (error) {
+    if (isCancelled(error)) return { ok: false, cancelled: true };
+    // An upload refused for its file (422 on "file") says why in its own words.
+    if (isApiError(error) && error.status === 422 && error.fieldErrors.file?.[0]) return { ok: false, message: error.fieldErrors.file[0], fieldErrors: error.fieldErrors };
     const { title, detail } = describeApiError(error);
     // Validation problems are 400s today; the assessments contract answers 422.
     const invalid = isApiError(error) && (error.status === 400 || error.status === 422);
@@ -100,19 +100,24 @@ export function useInstructorActions() {
     };
 
     return {
-      createMaterial: (classroomId: string, input: MaterialInput) =>
-        run(() => {
-          const type = input.fileType || "pdf";
-          return send("POST", `${classPath(classroomId)}/materials`, {
-            moduleId: Number(input.moduleId),
-            title: input.title,
-            kind: input.kind || "Study guide",
-            description: input.description,
-            fileName: input.fileName || `${input.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_")}.${type}`,
-            fileType: type,
-            fileSize: input.fileSize,
-          });
-        }),
+      /** A material, with its file when one is chosen: then both are saved together, or neither (D-067). */
+      createMaterial: (classroomId: string, input: MaterialInput, file?: File, options?: UploadOptions) =>
+        run(() =>
+          file
+            ? uploadMaterial(viewer, classroomId, { ...input, kind: input.kind || "Study guide" }, file, options)
+            : send("POST", `${classPath(classroomId)}/materials`, {
+                moduleId: Number(input.moduleId),
+                title: input.title,
+                kind: input.kind || "Study guide",
+                description: input.description,
+              }),
+        ),
+
+      /** Adds a file to a material, or replaces its file; the old bytes go once the new file is saved. */
+      replaceMaterialFile: (classroomId: string, materialId: string, file: File, options?: UploadOptions) =>
+        run(() => replaceMaterialFile(viewer, classroomId, materialId, file, options)),
+
+      removeMaterialFile: (classroomId: string, materialId: string) => run(() => removeMaterialFile(viewer, classroomId, materialId)),
 
       createActivity: (classroomId: string, input: ActivityInput) =>
         run(() =>

@@ -100,6 +100,7 @@ export function toRoleStore(overview: Overview, people: People): RoleStore {
       fileName: item.fileName ?? undefined,
       fileType: item.fileType ?? undefined,
       fileSize: item.fileSize ?? undefined,
+      file: item.file ?? null,
       uploadedAt: item.createdAt,
       createdAt: item.createdAt,
       status: item.status,

@@ -36,6 +36,7 @@ const AssignmentGradingPage = lazy(() => import("./pages/AssignmentGradingPage")
 const AssignmentPreviewPage = lazy(() => import("./pages/AssignmentPreviewPage"));
 const RubricsPage = lazy(() => import("./pages/RubricsPage"));
 const RubricPage = lazy(() => import("./pages/RubricPage"));
+const MaterialPage = lazy(() => import("./pages/MaterialPage"));
 
 export interface RoleAppProps {
   onNavigateRole: (role: string) => void;
@@ -220,6 +221,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
           <Route path="instructor/classes/:classId/assignments/:assignmentId/edit" element={<AssignmentBuilderPage />} />
           <Route path="instructor/classes/:classId/assignments/:assignmentId/preview" element={<AssignmentPreviewPage />} />
           <Route path="instructor/classes/:classId/assignments/:assignmentId/grading" element={<AssignmentGradingPage />} />
+          <Route path="instructor/classes/:classId/materials/:materialId" element={<MaterialPage />} />
           <Route path="instructor/classes/:classId/rubrics" element={<RubricsPage />} />
           <Route path="instructor/classes/:classId/rubrics/new" element={<RubricPage />} />
           <Route path="instructor/classes/:classId/rubrics/:rubricId" element={<RubricPage />} />

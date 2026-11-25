@@ -1,6 +1,9 @@
 import { BookOpen, ClipboardList, FileUp, GraduationCap, ListChecks, Pencil, Plus, X } from "lucide-react";
 import { Navigate, useNavigate } from "react-router";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { formatBytes } from "../../../../shared/api/assignments";
+import { MATERIAL_ACCEPT, materialFileRefusal } from "../../../../shared/api/materials";
+import { UploadProgress } from "../../../../shared/components/files/UploadProgress";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { moduleChoices } from "../../../../shared/lib/moduleTree";
 import { Button } from "../../../../shared/ui/Button";
@@ -19,13 +22,29 @@ function MaterialForm({ room, content, onDone }: Pick<ClassTabProps, "room" | "c
   const toast = useToast();
   const choices = moduleChoices(content.modules);
   const [values, setValues] = useState<Record<string, string>>({ moduleId: choices[0]?.id ?? "", kind: "Study guide" });
-  const [file, setFile] = useState<{ name: string; type: string; size: string } | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const set = (key: string) => (event: { target: { value: string } }) => setValues((current) => ({ ...current, [key]: event.target.value }));
   const v = (key: string) => values[key] ?? "";
 
   const actions = useInstructorActions();
   const [saving, setSaving] = useState(false);
+  // While a file uploads: how far it is (0 to 1), and how to stop it.
+  const [progress, setProgress] = useState<number | null>(null);
+  const upload = useRef<AbortController | null>(null);
+
+  const pick = (picked: File | undefined, input: HTMLInputElement) => {
+    if (!picked) return;
+    const refusal = materialFileRefusal(picked);
+    setErrors((current) => ({ ...current, file: refusal ?? undefined }));
+    if (refusal) {
+      input.value = "";
+      return;
+    }
+    setFile(picked);
+    if (!v("title")) setValues((current) => ({ ...current, title: picked.name.replace(/\.[^/.]+$/, "") }));
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving) return;
@@ -33,8 +52,16 @@ function MaterialForm({ room, content, onDone }: Pick<ClassTabProps, "room" | "c
     setErrors(next);
     if (Object.values(next).some(Boolean)) return;
     setSaving(true);
-    const result = await actions.createMaterial(room.id, { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description"), fileName: file?.name, fileType: file?.type, fileSize: file?.size });
+    if (file) {
+      upload.current = new AbortController();
+      setProgress(0);
+    }
+    const fields = { moduleId: v("moduleId"), title: v("title"), kind: v("kind"), description: v("description") };
+    const result = await actions.createMaterial(room.id, fields, file ?? undefined, file ? { onProgress: setProgress, signal: upload.current?.signal } : undefined);
     setSaving(false);
+    setProgress(null);
+    upload.current = null;
+    if (result.cancelled) return;
     if (!result.ok) {
       // Show the server's messages on the matching fields.
       setErrors(Object.fromEntries(Object.entries(result.fieldErrors ?? {}).map(([field, messages]) => [field, messages[0]])));
@@ -45,6 +72,7 @@ function MaterialForm({ room, content, onDone }: Pick<ClassTabProps, "room" | "c
     onDone(true);
   };
 
+  const office = file ? /\.(docx|pptx|xlsx)$/i.test(file.name) : false;
   return (
     <form onSubmit={submit} noValidate aria-labelledby="content-form-title" className="flex flex-col gap-4 rounded-card border border-primary-200 bg-surface p-5">
       <div className="flex flex-col gap-1">
@@ -67,30 +95,28 @@ function MaterialForm({ room, content, onDone }: Pick<ClassTabProps, "room" | "c
       <Field label="Description & Learning Objectives">
         <Textarea value={v("description")} onChange={set("description")} rows={3} />
       </Field>
-      <Field label="Attach file / document" hint="PDF, DOCX, PPTX, TXT, or ZIP. The demo keeps the file name and size only.">
+      <Field label="Attach file / document" hint="PDF, Word, PowerPoint, Excel, JPEG, PNG, or text, up to 25 MB. Students can preview it in the LMS." error={errors.file}>
         <Input
           type="file"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
+          accept={MATERIAL_ACCEPT}
+          disabled={saving}
           className="py-2.5 file:mr-3 file:rounded-control file:border-0 file:bg-primary-100 file:px-3 file:py-1.5 file:font-sans file:text-body file:font-semibold file:text-primary-700"
-          onChange={(event) => {
-            const picked = event.target.files?.[0];
-            if (!picked) return;
-            const size = (picked.size / (1024 * 1024)).toFixed(1);
-            setFile({ name: picked.name, type: picked.name.split(".").pop()?.toLowerCase() || "pdf", size: `${Number(size) > 0 ? size : "0.5"} MB` });
-            if (!v("title")) setValues((current) => ({ ...current, title: picked.name.replace(/\.[^/.]+$/, "") }));
-          }}
+          onChange={(event) => pick(event.target.files?.[0], event.target)}
         />
       </Field>
-      {file && (
+      {file && progress === null && (
         <p className="m-0 flex items-center gap-2 rounded-control bg-canvas p-2 text-body">
-          <FileUp aria-hidden className="size-4 text-primary-700" />
-          <span className="flex-1">{file.name} ({file.size})</span>
-          <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFile(null)} className="grid size-touch place-items-center rounded-control border-0 bg-transparent text-muted hover:text-ink focus-visible:outline-3 focus-visible:outline-focus"><X aria-hidden className="size-4" /></button>
+          <FileUp aria-hidden className="size-4 shrink-0 text-primary-700" />
+          <span className="min-w-0 flex-1 break-words">{file.name} ({formatBytes(file.size)})</span>
+          <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFile(null)} className="grid size-touch shrink-0 place-items-center rounded-control border-0 bg-transparent text-muted hover:text-ink focus-visible:outline-3 focus-visible:outline-focus"><X aria-hidden className="size-4" /></button>
         </p>
       )}
+      {file && progress !== null && (
+        <UploadProgress name={file.name} fraction={progress} finishing={office ? "Checking the file and making its preview" : "Checking the file"} onCancel={() => upload.current?.abort()} />
+      )}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="secondary" onClick={() => onDone(false)}>Cancel</Button>
-        <Button type="submit">Save and publish</Button>
+        <Button variant="secondary" disabled={saving} onClick={() => onDone(false)}>Cancel</Button>
+        <Button type="submit" loading={saving}>Save and publish</Button>
       </div>
     </form>
   );
