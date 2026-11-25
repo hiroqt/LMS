@@ -71,7 +71,7 @@ public static class MaterialFileEndpoints
                     Audit(db, user, "created", row.Id);
                     await db.SaveChangesAsync(ct);
                     await transaction.CommitAsync(ct);
-                    return TypedResults.Created($"/api/classes/{classId}/materials/{row.Id}", row.ToDto(file));
+                    return TypedResults.Created($"/api/classes/{classId}/materials/{row.Id}", row.ToDto(file, preview));
                 }
                 catch
                 {
@@ -101,6 +101,7 @@ public static class MaterialFileEndpoints
                 var kept = await intake.KeepAsync(store, ct);
                 List<string> unused;
                 StoredFile file;
+                StoredFile? copy;
                 try
                 {
                     await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -114,7 +115,7 @@ public static class MaterialFileEndpoints
                     await db.SaveChangesAsync(ct);
                     unused = await ReleaseAsync(db, row, time, ct);
                     intake.Attach(row, added, preview);
-                    file = added;
+                    (file, copy) = (added, preview);
                     await db.SaveChangesAsync(ct);
                     Audit(db, user, "file replaced", row.Id);
                     await db.SaveChangesAsync(ct);
@@ -126,7 +127,7 @@ public static class MaterialFileEndpoints
                     throw;
                 }
                 foreach (var key in unused) store.Delete(key);
-                return TypedResults.Ok(row.ToDto(file));
+                return TypedResults.Ok(row.ToDto(file, copy));
             }
         }).WithName("ReplaceMaterialFile").RequireRateLimiting(FileOptions.UploadPolicy);
 
@@ -162,10 +163,10 @@ public static class MaterialFileEndpoints
         return app;
     }
 
-    /// <summary>The stored files of these materials, by id, for their DTOs.</summary>
+    /// <summary>The stored files of these materials and their PDF copies, by id, for their DTOs.</summary>
     public static async Task<Dictionary<long, StoredFile>> FilesOfAsync(LmsDbContext db, IEnumerable<Material> materials, CancellationToken ct)
     {
-        var ids = materials.Where(m => m.FileId is not null).Select(m => m.FileId!.Value).Distinct().ToList();
+        var ids = materials.SelectMany(m => new[] { m.FileId, m.PreviewFileId }).OfType<long>().Distinct().ToList();
         if (ids.Count == 0) return [];
         return await db.StoredFiles.AsNoTracking().Where(f => ids.Contains(f.Id) && f.DeletedAt == null).ToDictionaryAsync(f => f.Id, ct);
     }
@@ -213,7 +214,7 @@ public static class MaterialFileEndpoints
     /// Takes the material's row for this change, and checks its file is still the one this request
     /// read: another replace or remove that got there first makes this one stop. Call inside a transaction.
     /// </summary>
-    private static async Task<bool> LockAsync(LmsDbContext db, Material row, TimeProvider time, CancellationToken ct)
+    internal static async Task<bool> LockAsync(LmsDbContext db, Material row, TimeProvider time, CancellationToken ct)
     {
         var fileId = row.FileId;
         var now = time.GetUtcNow().UtcDateTime;
@@ -254,8 +255,17 @@ public static class MaterialFileEndpoints
 
             var intake = new Intake(pending, kind, name, scanner.PassedStatus);
             handedOver = true;
-            if (kind.Type is FileTypes.Word or FileTypes.PowerPoint or FileTypes.Excel)
-                await intake.MakePreviewAsync(store, converter, ct);
+            try
+            {
+                if (kind.Type is FileTypes.Word or FileTypes.PowerPoint or FileTypes.Excel)
+                    await intake.MakePreviewAsync(store, converter, ct);
+            }
+            catch
+            {
+                // Cancelled mid-conversion: nothing is kept, so the received file goes too.
+                await intake.DisposeAsync();
+                throw;
+            }
             return (intake, null);
         }
         finally
@@ -322,13 +332,13 @@ public static class MaterialFileEndpoints
         return Encoding.UTF8.GetString(buffer, 0, total);
     }
 
-    private static void Audit(LmsDbContext db, CurrentUser user, string action, long materialId) =>
+    internal static void Audit(LmsDbContext db, CurrentUser user, string action, long materialId) =>
         db.AuditLog.Add(new AuditLogEntry { ActorId = user.Id, ActorRole = user.Role, Category = "content", Action = action, Target = "Material", TargetId = materialId.ToString(CultureInfo.InvariantCulture), Summary = $"Material {action}" });
 
     private static IResult FileRefused(string message) =>
         Results.ValidationProblem(new Dictionary<string, string[]> { [FileField] = [message] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
-    private static IResult Conflict() => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: Busy);
+    internal static IResult Conflict() => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: Busy);
 
     /// <summary>Storage keys kept for one upload, deleted again if saving the rows fails.</summary>
     private sealed record Kept(string File, string? Preview)
@@ -364,7 +374,7 @@ public static class MaterialFileEndpoints
                         await using var pdf = converted.OpenRead();
                         _preview = await store.ReceiveAsync(pdf, MaxPreviewBytes, ct);
                     }
-                    catch (FileTooLargeException) { }
+                    catch (Exception e) when (e is FileTooLargeException or IOException) { }
                 }
             }
             if (_preview is not null)

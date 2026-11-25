@@ -175,7 +175,7 @@ comes from.
 | GET | `/api/classes/{classId}/materials/{id}/file` | The file, as a download. Instructor of the class, or a student on its class list while the material is active; anyone else 404 |
 | GET | `/api/classes/{classId}/materials/{id}/preview` | The PDF copy of a Word, PowerPoint or Excel file, when `file.preview` is `ready`; 404 otherwise |
 | PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status?, moduleId? }`, where status is `active` or `archived`; `moduleId` moves it to another module or submodule of the same class |
-| DELETE | `/api/classes/{classId}/materials/{id}` | 204. Its file and preview are deleted too |
+| DELETE | `/api/classes/{classId}/materials/{id}` | 204. Its file and preview are deleted too. 409 when a change to its file got there first |
 | GET | `/api/classes/{classId}/announcements?page=&pageSize=` | Newest first, paged; `postedBy` is the instructor's ISMS id |
 | POST | `/api/classes/{classId}/announcements` | `{ title (≤120), message (≤1,200) }` |
 | PATCH | `/api/classes/{classId}/announcements/{id}` | `{ status }`: archive or restore |
@@ -407,7 +407,9 @@ PDF copy during the upload, after the scan: LibreOffice runs headless with its o
 profile and folder, at most `MaxConcurrent` at once, and is stopped after `TimeoutSeconds`. The
 copy must pass the PDF check before it is kept in `materials.preview_file_id`. `preview_status`
 says how it went: `ready`, `failed` (the material is still saved and downloadable), or `off` (no
-converter). The API logs at start-up which converter it uses. To try previews locally:
+converter). A material's `file` carries `preview` (that status, null for a PDF, image or text file)
+and `previewSize`, the copy's bytes, which is what the preview downloads. The API logs at start-up
+which converter it uses. To try previews locally:
 
 ```bash
 brew install --cask libreoffice     # macOS; on Ubuntu: apt-get install libreoffice-writer libreoffice-impress libreoffice-calc

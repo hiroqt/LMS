@@ -76,6 +76,8 @@ public sealed class FakeConverter : IDocumentConverter
     public Func<byte[], byte[]?> Convert { get; set; } = _ => TestFiles.Pdf("Preview copy");
     /// <summary>The extension of each file it was asked to convert.</summary>
     public List<string> Calls { get; } = [];
+    /// <summary>The copy it hands back can't be read (a disk error).</summary>
+    public bool CopyUnreadable { get; set; }
 
     public async Task<IConvertedFile?> ToPdfAsync(Stream content, string extension, CancellationToken ct)
     {
@@ -83,13 +85,20 @@ public sealed class FakeConverter : IDocumentConverter
         using var buffer = new MemoryStream();
         content.Position = 0;
         await content.CopyToAsync(buffer, ct);
-        return Convert(buffer.ToArray()) is { } pdf ? new Converted(pdf) : null;
+        return Convert(buffer.ToArray()) is { } pdf ? new Converted(pdf, CopyUnreadable) : null;
     }
 
-    private sealed class Converted(byte[] pdf) : IConvertedFile
+    private sealed class Converted(byte[] pdf, bool unreadable) : IConvertedFile
     {
-        public Stream OpenRead() => new MemoryStream(pdf, writable: false);
+        public Stream OpenRead() => unreadable ? new Unreadable() : new MemoryStream(pdf, writable: false);
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class Unreadable : MemoryStream
+    {
+        public override int Read(byte[] buffer, int offset, int count) => throw new IOException("Disk error");
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) => throw new IOException("Disk error");
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => throw new IOException("Disk error");
     }
 }
 

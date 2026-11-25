@@ -11,7 +11,8 @@ public sealed record ModuleDto(long Id, long? ParentModuleId, string Title, int 
 /// <c>Preview</c> is null when the file is shown as it is (PDF, image, text); for an Office file it is
 /// ready (a PDF copy is at <c>…/preview</c>), failed, or off (the server had no converter).
 /// </summary>
-public sealed record MaterialFileDto(long Id, string Name, string ContentType, string? Type, long Size, string? Preview);
+/// <param name="PreviewSize">The bytes of an Office file's PDF copy, which the preview loads instead; null without one.</param>
+public sealed record MaterialFileDto(long Id, string Name, string ContentType, string? Type, long Size, string? Preview, long? PreviewSize = null);
 
 /// <summary><c>FileName</c>, <c>FileType</c> and <c>FileSize</c> are text kept for materials made before uploads; <c>File</c> is the real file.</summary>
 public sealed record MaterialDto(long Id, long ModuleId, string Title, string Kind, string? Description,
@@ -48,13 +49,21 @@ public static class ContentRules
     public const int MaxPageSize = 200;
 
     public static ModuleDto ToDto(this Module m) => new(m.Id, m.ParentModuleId, m.Title, m.SortOrder);
-    public static MaterialDto ToDto(this Material m, StoredFile? file = null) => new(m.Id, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt, m.FileDto(file));
+    public static MaterialDto ToDto(this Material m, StoredFile? file = null, StoredFile? preview = null) => new(m.Id, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt, m.FileDto(file, preview));
+
+    /// <summary>With its file and PDF copy looked up in <paramref name="files"/> (from <c>FilesOfAsync</c>).</summary>
+    public static MaterialDto ToDto(this Material m, IReadOnlyDictionary<long, StoredFile> files) => m.ToDto(Of(files, m.FileId), Of(files, m.PreviewFileId));
 
     /// <summary>Null unless <paramref name="file"/> is the material's own, still-stored file.</summary>
-    public static MaterialFileDto? FileDto(this Material m, StoredFile? file) =>
+    public static MaterialFileDto? FileDto(this Material m, StoredFile? file, StoredFile? preview = null) =>
         file is not null && file.Id == m.FileId && file.DeletedAt is null
-            ? new(file.Id, file.Name, file.ContentType, Files.FileKind.TypeOf(file.ContentType), file.Size, m.PreviewStatus)
+            ? new(file.Id, file.Name, file.ContentType, Files.FileKind.TypeOf(file.ContentType), file.Size, m.PreviewStatus,
+                preview is not null && preview.Id == m.PreviewFileId && preview.DeletedAt is null ? preview.Size : null)
             : null;
+
+    public static MaterialFileDto? FileDto(this Material m, IReadOnlyDictionary<long, StoredFile> files) => m.FileDto(Of(files, m.FileId), Of(files, m.PreviewFileId));
+
+    private static StoredFile? Of(IReadOnlyDictionary<long, StoredFile> files, long? id) => id is { } key ? files.GetValueOrDefault(key) : null;
 
     public static AnnouncementDto ToDto(this Announcement a) => new(a.Id, a.Title, a.Message, a.Status, a.PublishedAt, a.CreatedBy);
 }

@@ -120,7 +120,7 @@ public static class OverviewEndpoints
                     roster.Count(s => s.ClassId == c.Id), JsonSerializer.Deserialize<List<ClassMeeting>>(c.MeetingsJson, JsonSerializerOptions.Web) ?? [])).ToList(),
                 modules.Select(m => new ModuleItem(m.Id, m.ClassId, m.ParentModuleId, m.Title, m.SortOrder)).ToList(),
                 materials.Select(m => new MaterialItem(m.Id, m.ClassId, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt,
-                    m.FileDto(m.FileId is { } f ? materialFiles.GetValueOrDefault(f) : null))).ToList(),
+                    m.FileDto(materialFiles))).ToList(),
                 announcements.Select(a => new AnnouncementItem(a.Id, a.ClassId, a.Title, a.Message, a.Status, a.PublishedAt, a.CreatedBy, a.CreatedBy is { } by ? names.GetValueOrDefault(by) : null)).ToList(),
                 coursework.Select(c => new CourseworkItem(c.ClassId, CourseworkEndpoints.ToDto(c, user, counts, progress, turnIn))).ToList(),
                 submissions,

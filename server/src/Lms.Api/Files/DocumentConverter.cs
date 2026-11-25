@@ -79,10 +79,12 @@ public sealed class LibreOfficeConverter(string program, LibreOfficeOptions opti
             return null;
         }
 
-        var work = Directory.CreateTempSubdirectory("lms-convert-");
+        DirectoryInfo? work = null;
         var kept = false;
         try
         {
+            // Inside the try, so the slot is given back even when the folder can't be made.
+            work = Directory.CreateTempSubdirectory("lms-convert-");
             // The input's name is fixed: the uploaded name never reaches the command line.
             var input = System.IO.Path.Combine(work.FullName, "input" + extension);
             content.Position = 0;
@@ -110,9 +112,7 @@ public sealed class LibreOfficeConverter(string program, LibreOfficeOptions opti
             catch (OperationCanceledException)
             {
                 try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-                if (ct.IsCancellationRequested) throw;
-                logger.LogWarning("No preview: LibreOffice did not finish a {Extension} file within {Seconds} s", extension, options.TimeoutSeconds);
-                return null;
+                throw;
             }
 
             var pdf = System.IO.Path.Combine(output, "input.pdf");
@@ -125,7 +125,13 @@ public sealed class LibreOfficeConverter(string program, LibreOfficeOptions opti
             kept = true;
             return new Converted(work, pdf);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception && !ct.IsCancellationRequested)
+        // The time ran out: while copying the file in, or while LibreOffice ran (the wait for a slot counts too).
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning("No preview: LibreOffice did not finish a {Extension} file within {Seconds} s", extension, options.TimeoutSeconds);
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception && !ct.IsCancellationRequested)
         {
             logger.LogError(e, "No preview: LibreOffice could not be run for a {Extension} file", extension);
             return null;
@@ -133,7 +139,7 @@ public sealed class LibreOfficeConverter(string program, LibreOfficeOptions opti
         finally
         {
             _slots.Release();
-            if (!kept) Delete(work);
+            if (!kept && work is not null) Delete(work);
         }
     }
 
