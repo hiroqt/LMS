@@ -67,9 +67,17 @@ export default defineConfig({
         // App code, styles, fonts, and icons are precached; large banner photos
         // are cached the first time they are shown.
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
+        // The PDF viewer (pdf.js, about 500 KB) is for phones that open a PDF material; it is cached
+        // the first time it is used instead of being downloaded by everyone at install (D-067).
+        globIgnores: ["**/PdfPages-*.js", "**/pdf.worker*"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => /\/assets\/(PdfPages-|pdf\.worker)/.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: "pdf-viewer", expiration: { maxEntries: 4, maxAgeSeconds: 90 * 24 * 60 * 60 } },
+          },
           {
             urlPattern: ({ request }) => request.destination === "image",
             handler: "CacheFirst",

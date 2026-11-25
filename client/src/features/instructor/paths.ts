@@ -59,6 +59,8 @@ export const instructorPaths = {
     const query = params.toString();
     return `/instructor/classes/${encodeURIComponent(classId)}/assignments/${id}/grading${query ? `?${query}` : ""}`;
   },
+  /** One class material: its preview, file, and the instructor's changes to it (D-067). */
+  material: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/materials/${encodeURIComponent(String(id))}`,
   /** A class's grading rubrics (D-062): the list, and one rubric to write or change. */
   rubrics: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics`,
   rubricNew: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/new`,

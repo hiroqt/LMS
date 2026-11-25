@@ -971,8 +971,8 @@ Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MA
   are saved in one request. Only the material's own routes serve the file: to its instructor always,
   and to an enrolled student while the material is active. Files are served as downloads (`nosniff`,
   `sandbox`). The page fetches the bytes with the viewer's headers (L-075) and draws them itself.
-- **Previews:** a PDF opens in the browser's own viewer where `navigator.pdfViewerEnabled`, and
-  otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
+- **Previews:** a PDF opens in the browser's own viewer on a computer (`navigator.pdfViewerEnabled`
+  and a fine pointer, L-102), and otherwise in pdf.js, loaded only then. That is a recorded budget exception, kept out of the install
   cache. Images and text are drawn by the page. Word, PowerPoint, and Excel files are turned into a
   PDF once by LibreOffice during the upload, after the scan (`ready`, `failed`, or `off` without
   LibreOffice). It doesn't run in a background worker because Demo mode picks each sandbox's
@@ -983,3 +983,13 @@ Materials kept only a file's name and size; nothing was uploaded. Plan: `docs/MA
   size, and date, plus search, a type filter, and a sort. The material page shows the preview,
   details, Download, and previous and next materials. The repeated "Learning goal" and the always
   empty "Key ideas" are gone.
+
+### D-069 · A summary cell's accessible name starts with the words it shows
+`2026-11-25` · hiro (found while adding D-067) · scope: shared, admin, student · confidence: high
+Amends D-066, which kept the Admin totals' old names ("Total students: 12. View students"). The
+cell shows "12 Total students", so speech-control users who say what they see did not match the
+name (WCAG 2.5.3, Label in Name). The names are now "12 Total students. View students" and the same
+for faculty, courses, and users. The Student "Due this week" cell's phone label is "Due" instead of
+"Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
+no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
+

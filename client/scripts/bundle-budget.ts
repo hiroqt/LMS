@@ -16,17 +16,24 @@ const BUDGET = {
   chunkJs: 40 * KB,
   /** Any stylesheet. */
   css: 26 * KB,
+  /**
+   * The PDF viewer (pdf.js), loaded only when a phone opens a PDF material and kept out of the
+   * install cache (D-067). Its worker is a separate .mjs file, checked below.
+   */
+  pdfViewer: 140 * KB,
+  pdfWorker: 380 * KB,
 };
+const isPdfViewer = (name: string) => name.startsWith("PdfPages-");
 
 const dir = join(process.cwd(), "dist", "assets");
-const files = readdirSync(dir).filter((name) => name.endsWith(".js") || name.endsWith(".css"));
+const files = readdirSync(dir).filter((name) => name.endsWith(".js") || name.endsWith(".mjs") || name.endsWith(".css"));
 const html = readFileSync(join(process.cwd(), "dist", "index.html"), "utf8");
 const entry = html.match(/assets\/(index-[^"]+\.js)/)?.[1];
 
 const failures: string[] = [];
 const rows = files.map((name) => {
   const size = gzipSync(readFileSync(join(dir, name))).length;
-  const limit = name.endsWith(".css") ? BUDGET.css : name === entry ? BUDGET.entryJs : BUDGET.chunkJs;
+  const limit = name.endsWith(".css") ? BUDGET.css : name === entry ? BUDGET.entryJs : isPdfViewer(name) ? BUDGET.pdfViewer : name.startsWith("pdf.worker") ? BUDGET.pdfWorker : BUDGET.chunkJs;
   if (size > limit) failures.push(`${name}: ${(size / KB).toFixed(1)} KB gz > ${(limit / KB).toFixed(0)} KB`);
   return { name, size, limit };
 });

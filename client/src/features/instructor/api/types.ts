@@ -1,3 +1,4 @@
+import type { MaterialFile } from "../../../shared/api/materials";
 import type { FileTypeKey, RubricScore, SubmissionKind, SubmittedFile } from "../../../shared/api/overview";
 
 /** The shared role store (tmcc-lms-roles-v1) as the Instructor UI uses it. */
@@ -62,12 +63,13 @@ export interface Material {
   title: string;
   kind?: string;
   description?: string;
+  /** Text only, for materials made before uploads; `file` is the real file (D-067). */
   fileName?: string;
   fileType?: string;
   fileSize?: string;
-  uploadedBy?: string;
+  /** The uploaded file, with its preview state. */
+  file?: MaterialFile | null;
   uploadedAt?: string;
-  downloads?: number;
   status?: string;
   createdAt?: string;
 }

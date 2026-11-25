@@ -1,6 +1,10 @@
 import { Archive, ArchiveRestore, Download, FileText, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { draftFailureMessage, fileKindLabel, formatBytes, saveBlob } from "../../../../shared/api/assignments";
+import { fetchMaterialFile } from "../../../../shared/api/materials";
 import { folderFiles } from "../../../../shared/assets/illustrations";
+import { FileTypeIcon } from "../../../../shared/components/files/FileTypeIcon";
 import { SectionHeading } from "../../../../shared/components/SectionHeading";
 import { moduleChoices, modulePath } from "../../../../shared/lib/moduleTree";
 import { Badge } from "../../../../shared/ui/Badge";
@@ -11,37 +15,19 @@ import { Field, Select } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { useInstructorActions } from "../../api/actions";
 import type { Material } from "../../api/types";
+import { useInstructorSession } from "../../hooks/useInstructorSession";
+import { instructorPaths } from "../../paths";
 import { RESOURCE_TYPES } from "./classUtils";
 import { ListSearch, type ClassTabProps } from "./shared";
 
-/** Demo download: a text summary named like the file (no file contents are stored). */
-function download(material: Material, context: { section: string; subject: string; module: string }) {
-  const fileName = material.fileName || `${material.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}.${material.fileType || "pdf"}`;
-  const body = [
-    "TMCC LEARNING MATERIAL",
-    "=====================================",
-    `Classroom: ${context.section}`,
-    `Subject: ${context.subject}`,
-    `Unit: ${context.module}`,
-    `Title: ${material.title}`,
-    `Type: ${material.kind ?? "Class material"}`,
-    "",
-    material.description || "Classroom learning reference and study material.",
-  ].join("\n");
-  const url = URL.createObjectURL(new Blob([body], { type: "text/plain;charset=utf-8" }));
-  const link = Object.assign(document.createElement("a"), { href: url, download: fileName });
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-export function MaterialsTab({ room, subject, instructor, content, goTab }: ClassTabProps) {
+export function MaterialsTab({ room, content, goTab }: ClassTabProps) {
   const toast = useToast();
+  const navigate = useNavigate();
+  const { instructorId } = useInstructorSession();
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [moduleId, setModuleId] = useState("all");
   const [kind, setKind] = useState("all");
-  const [inspect, setInspect] = useState<Material | null>(null);
   const [removing, setRemoving] = useState<Material | null>(null);
   const q = query.trim().toLowerCase();
   const parentOf = new Map(content.modules.map((item) => [item.id, item.parentId]));
@@ -56,6 +42,19 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
   const filtered = Boolean(q) || moduleId !== "all" || kind !== "all";
 
   const actions = useInstructorActions();
+  const download = async (item: Material) => {
+    if (!item.file) return;
+    setDownloading(item.id);
+    try {
+      const { blob } = await fetchMaterialFile({ id: instructorId, role: "instructor" }, room.id, item.id, "file");
+      saveBlob(blob, item.file.name);
+    } catch (failure) {
+      toast.show({ title: "Could not download the file", description: draftFailureMessage(failure), tone: "danger" });
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const archive = async (item: Material) => {
     const archived = item.status !== "archived";
     const result = await actions.setMaterialArchived(room.id, item.id, archived);
@@ -91,19 +90,21 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
             return (
               <li key={item.id} className="flex flex-col gap-2 rounded-card border border-line bg-surface p-4 font-sans">
                 <div className="flex items-start justify-between gap-2">
-                  <span aria-hidden className="grid size-10 place-items-center rounded-control bg-info-soft text-info"><FileText className="size-5" /></span>
+                  <span aria-hidden className="grid size-10 place-items-center rounded-control bg-info-soft text-info"><FileTypeIcon type={item.file?.type ?? "text"} className="size-5" /></span>
                   <span className="flex flex-wrap justify-end gap-1">
-                    <Badge>{(item.fileType ?? "pdf").toUpperCase()}</Badge>
+                    <Badge>{item.file ? fileKindLabel(item.file) : "No file"}</Badge>
                     {archived && <Badge tone="warning">Archived</Badge>}
                   </span>
                 </div>
-                <button type="button" onClick={() => setInspect(item)} className="self-start rounded-control border-0 bg-transparent p-0 text-left text-card-title font-semibold text-ink underline-offset-4 hover:underline focus-visible:outline-3 focus-visible:outline-focus">
+                <button type="button" onClick={() => navigate(instructorPaths.material(room.id, item.id))} className="self-start rounded-control border-0 bg-transparent p-0 text-left text-card-title font-semibold text-ink underline-offset-4 hover:underline focus-visible:outline-3 focus-visible:outline-focus">
                   {item.title}
                 </button>
-                <p className="m-0 line-clamp-2 text-body text-muted">{item.description || "Classroom learning reference and study material."}</p>
-                <p className="m-0 text-body text-muted">{item.kind ?? "Class material"} · {item.fileSize ?? "1.8 MB"} · {item.downloads ?? 0} downloads · {moduleTitle(item.moduleId)}</p>
+                {item.description && <p className="m-0 line-clamp-2 text-body text-muted">{item.description}</p>}
+                <p className="m-0 text-body text-muted">{[item.kind ?? "Class material", item.file ? formatBytes(item.file.size) : "No file attached", moduleTitle(item.moduleId)].join(" · ")}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                  <Button variant="secondary" icon={<Download aria-hidden className="size-4" />} aria-label={`Download ${item.title}`} onClick={() => download(item, { section: room.section, subject: subject?.title ?? "", module: moduleTitle(item.moduleId) })}>Download</Button>
+                  {item.file && (
+                    <Button variant="secondary" icon={<Download aria-hidden className="size-4" />} aria-label={`Download ${item.title}`} loading={downloading === item.id} onClick={() => void download(item)}>Download</Button>
+                  )}
                   <Button variant="ghost" icon={archived ? <ArchiveRestore aria-hidden className="size-4" /> : <Archive aria-hidden className="size-4" />} aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => archive(item)}>
                     {archived ? "Restore" : "Archive"}
                   </Button>
@@ -120,26 +121,6 @@ export function MaterialsTab({ room, subject, instructor, content, goTab }: Clas
           action={<Button variant="secondary" onClick={() => goTab("Create content", { create: "material" })}>Add material</Button>}
         />
       )}
-
-      <Dialog open={Boolean(inspect)} onOpenChange={(open) => !open && setInspect(null)}>
-        {inspect && (
-          <DialogContent title={inspect.title} description={inspect.kind ?? "Class material"}>
-            <dl className="m-0 grid grid-cols-2 gap-3">
-              {[
-                ["Curriculum module", moduleTitle(inspect.moduleId)],
-                ["File name", inspect.fileName ?? "—"],
-                ["File size", inspect.fileSize ?? "1.8 MB"],
-                ["Uploaded by", inspect.uploadedBy ?? `${instructor.firstName} ${instructor.lastName}`],
-                ["Downloads", String(inspect.downloads ?? 0)],
-                ["Status", inspect.status === "archived" ? "Archived" : "Active"],
-              ].map(([label, value]) => (
-                <div key={label} className="flex flex-col"><dt className="text-body text-muted">{label}</dt><dd className="m-0 text-body font-medium">{value}</dd></div>
-              ))}
-            </dl>
-            <p className="m-0 mt-3 text-body">{inspect.description || "Classroom learning reference and study material."}</p>
-          </DialogContent>
-        )}
-      </Dialog>
 
       <Dialog open={Boolean(removing)} onOpenChange={(open) => !open && setRemoving(null)}>
         {removing && (

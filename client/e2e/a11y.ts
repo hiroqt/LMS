@@ -20,6 +20,8 @@ export async function expectReadableText(page: Page) {
       if (!text || !el || el.closest("[aria-hidden=true], .sr-only")) continue;
       const style = getComputedStyle(el);
       if (style.display === "none" || style.visibility === "hidden" || el.getClientRects().length === 0) continue;
+      // Transparent text is not seen, e.g. the text pdf.js lays over a drawn page so it can be read aloud (D-067).
+      if (style.color === "transparent" || /^rgba\(.*,\s*0\)$/.test(style.color)) continue;
       const size = Number.parseFloat(style.fontSize);
       const eyebrow = style.textTransform === "uppercase" && size >= 12;
       if (size < 14 && !eyebrow) offenders.push(`${size}px "${text.slice(0, 30)}"`);
