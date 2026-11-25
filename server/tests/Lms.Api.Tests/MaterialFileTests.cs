@@ -214,8 +214,13 @@ public sealed class MaterialFileTests : IDisposable
         Assert.Equal("ready", ready.GetProperty("file").GetProperty("preview").GetString());
         Assert.Equal("word", ready.GetProperty("file").GetProperty("type").GetString());
         Assert.Equal([".docx"], _factory.Converter.Calls);
+        // The preview loads the copy, so its size is what the page warns about.
+        var copySize = TestFiles.Pdf("Preview copy").Length;
+        Assert.Equal(copySize, ready.GetProperty("file").GetProperty("previewSize").GetInt64());
 
         var id = ready.GetProperty("id").GetInt64();
+        var listed = (await Json(await Student.GetAsync(Base))).GetProperty("items").EnumerateArray().Single(m => m.GetProperty("id").GetInt64() == id);
+        Assert.Equal(copySize, listed.GetProperty("file").GetProperty("previewSize").GetInt64());
         var preview = await Student.GetAsync($"{Base}/{id}/preview");
         await Expect(preview, HttpStatusCode.OK);
         Assert.Equal(TestFiles.Pdf("Preview copy"), await preview.Content.ReadAsByteArrayAsync());
@@ -227,6 +232,7 @@ public sealed class MaterialFileTests : IDisposable
         _factory.Converter.Convert = _ => null;
         var failed = await UploadAsync(module, TestFiles.Xlsx(), "grades.xlsx", "Grade sheet");
         Assert.Equal("failed", failed.GetProperty("file").GetProperty("preview").GetString());
+        Assert.Equal(JsonValueKind.Null, failed.GetProperty("file").GetProperty("previewSize").ValueKind);
         await Expect(await Student.GetAsync($"{Base}/{failed.GetProperty("id").GetInt64()}/preview"), HttpStatusCode.NotFound);
         await Expect(await Student.GetAsync($"{Base}/{failed.GetProperty("id").GetInt64()}/file"), HttpStatusCode.OK);
 
@@ -273,6 +279,29 @@ public sealed class MaterialFileTests : IDisposable
         await Expect(await Student.GetAsync($"{Base}/{legacy}/file"), HttpStatusCode.NotFound);
         await Expect(await ReplaceAsync(Instructor, legacy, TestFiles.Pdf("Old slides"), "old.pdf"), HttpStatusCode.OK);
         await Expect(await Student.GetAsync($"{Base}/{legacy}/file"), HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task A_pdf_copy_that_cannot_be_read_saves_the_file_without_a_preview()
+    {
+        var module = await SeedAsync();
+        _factory.Converter.CopyUnreadable = true;
+        var saved = await UploadAsync(module, TestFiles.Docx(), "lab-manual.docx");
+        Assert.Equal("failed", saved.GetProperty("file").GetProperty("preview").GetString());
+        Assert.Equal((1, 0), (StoredFileCount(), PendingFileCount()));
+    }
+
+    [Fact]
+    public async Task An_upload_cancelled_while_its_preview_is_made_leaves_nothing_behind()
+    {
+        var module = await SeedAsync();
+        // What the converter does when the instructor's request is cancelled mid-conversion.
+        _factory.Converter.Convert = _ => throw new OperationCanceledException();
+        using var form = Form(module, TestFiles.Pptx(), "deck.pptx", "Deck");
+        try { await Instructor.PostAsync($"{Base}/upload", form); }
+        catch (OperationCanceledException) { }
+        Assert.Equal((0, 0), (StoredFileCount(), PendingFileCount()));
+        Assert.Equal(0, await _factory.WithDbAsync(db => db.Materials.CountAsync()));
     }
 
     [Fact]

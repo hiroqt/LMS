@@ -91,7 +91,7 @@ public static class ContentEndpoints
             if (moduleId is { } mid) query = query.Where(m => m.ModuleId == mid);
             var listed = await PageAsync(query.OrderBy(m => m.Id), page, pageSize, m => m, ct);
             var files = await MaterialFileEndpoints.FilesOfAsync(db, listed.Items, ct);
-            return TypedResults.Ok(new PagedList<MaterialDto>(listed.Items.Select(m => m.ToDto(m.FileId is { } f ? files.GetValueOrDefault(f) : null)).ToList(), listed.Page, listed.PageSize, listed.Total));
+            return TypedResults.Ok(new PagedList<MaterialDto>(listed.Items.Select(m => m.ToDto(files)).ToList(), listed.Page, listed.PageSize, listed.Total));
         }).WithName("ListMaterials");
 
         cls.MapPost("/materials", async Task<IResult> (string classId, MaterialCreate input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -136,8 +136,7 @@ public static class ContentEndpoints
             if (errors.Any) return errors.Result();
             var action = input.Status == ContentStatus.Archived ? "archived" : input.Status == ContentStatus.Active ? "restored" : "updated";
             await SaveWithAuditAsync(db, user, row, action, "Material", () => row.Id, ct);
-            var file = (await MaterialFileEndpoints.FilesOfAsync(db, [row], ct)).Values.FirstOrDefault();
-            return TypedResults.Ok(row.ToDto(file));
+            return TypedResults.Ok(row.ToDto(await MaterialFileEndpoints.FilesOfAsync(db, [row], ct)));
         }).WithName("UpdateMaterial");
 
         cls.MapDelete("/materials/{id:long}", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db,
@@ -149,9 +148,18 @@ public static class ContentEndpoints
             var row = await db.Materials.SingleOrDefaultAsync(m => m.Id == id && m.ClassId == classId, ct);
             if (row is null) return NotFound("Material");
             // Its file and preview go with it; the bytes only once the database says so (D-067).
-            var unused = await MaterialFileEndpoints.ReleaseAsync(db, row, time, ct);
-            db.Materials.Remove(row);
-            await SaveWithAuditAsync(db, user, null, "deleted", "Material", () => id, ct);
+            // Locked like a file change, so a replacement that lands first isn't left with nothing pointing at it.
+            List<string> unused;
+            await using (var transaction = await db.Database.BeginTransactionAsync(ct))
+            {
+                if (!await MaterialFileEndpoints.LockAsync(db, row, time, ct)) return MaterialFileEndpoints.Conflict();
+                unused = await MaterialFileEndpoints.ReleaseAsync(db, row, time, ct);
+                db.Materials.Remove(row);
+                await db.SaveChangesAsync(ct);
+                MaterialFileEndpoints.Audit(db, user, "deleted", id);
+                await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
             foreach (var key in unused) store.Delete(key);
             return TypedResults.NoContent();
         }).WithName("DeleteMaterial");
