@@ -101,7 +101,10 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.FileType).HasMaxLength(20);
             e.Property(x => x.FileSize).HasMaxLength(20);
             e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PreviewStatus).HasMaxLength(20);
             e.HasOne<Module>().WithMany().HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<StoredFile>().WithMany().HasForeignKey(x => x.FileId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<StoredFile>().WithMany().HasForeignKey(x => x.PreviewFileId).OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<Announcement>(e =>

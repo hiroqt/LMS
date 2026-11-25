@@ -97,6 +97,8 @@ app.UseRateLimiter();
 
 app.MapLmsEndpoints();
 app.MapContentEndpoints();
+// Class material files and their previews (D-067).
+app.MapMaterialFileEndpoints();
 app.MapQuestionnaireEndpoints();
 app.MapImportEndpoints();
 app.MapAnswerKeyEndpoints();

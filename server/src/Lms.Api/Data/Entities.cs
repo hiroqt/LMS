@@ -188,11 +188,30 @@ public sealed class Material : Audited
     public string Title { get; set; } = "";
     public string Kind { get; set; } = "";
     public string? Description { get; set; }
-    /// <summary>Filename only: files are not uploaded yet.</summary>
+    /// <summary>
+    /// The file's name, type and size as text. Materials made before files were uploaded have only
+    /// these (a name with no bytes); an uploaded file fills them in too (D-067).
+    /// </summary>
     public string? FileName { get; set; }
     public string? FileType { get; set; }
     public string? FileSize { get; set; }
     public string Status { get; set; } = ContentStatus.Active;
+    /// <summary>The uploaded file (D-067). Null when the material has no file, or only a name.</summary>
+    public long? FileId { get; set; }
+    /// <summary>A PDF copy made from an Office file, shown as its preview.</summary>
+    public long? PreviewFileId { get; set; }
+    /// <summary>Office files only: see <see cref="Data.PreviewStatus"/>. Null for files that are their own preview.</summary>
+    public string? PreviewStatus { get; set; }
+}
+
+/// <summary>How an Office file's preview turned out (D-067).</summary>
+public static class PreviewStatus
+{
+    public const string Ready = "ready";
+    /// <summary>LibreOffice could not turn it into a PDF in time.</summary>
+    public const string Failed = "failed";
+    /// <summary>The server had no converter when the file was uploaded.</summary>
+    public const string Off = "off";
 }
 
 public sealed class Announcement : Audited
@@ -404,19 +423,22 @@ public sealed class Submission : Audited
 }
 
 /// <summary>
-/// A file a student uploaded (D-055). The bytes live in the file store under <see cref="StorageKey"/>;
-/// this row is what the LMS knows about them. It belongs to submissions through <see cref="SubmissionFile"/>.
+/// A file someone uploaded: a student's work (D-055), or a class material and its preview copy
+/// (D-067). The bytes live in the file store under <see cref="StorageKey"/>; this row is what the LMS
+/// knows about them. Work belongs to submissions through <see cref="SubmissionFile"/>; a material
+/// points at its files itself.
 /// </summary>
 public sealed class StoredFile : Audited
 {
     public long Id { get; set; }
     public string ClassId { get; set; } = "";
-    public long CourseworkId { get; set; }
-    /// <summary>The student who uploaded it.</summary>
+    /// <summary>The assignment a student's file was handed in for. Null for a material's files.</summary>
+    public long? CourseworkId { get; set; }
+    /// <summary>Who uploaded it: the student, or the instructor for a material.</summary>
     public string OwnerId { get; set; } = "";
     /// <summary>Random; never derived from the name.</summary>
     public string StorageKey { get; set; } = "";
-    /// <summary>The name the student gave it, cleaned. Shown and used for the download only.</summary>
+    /// <summary>The name it was uploaded with, cleaned. Shown and used for the download only.</summary>
     public string Name { get; set; } = "";
     /// <summary>Decided from the bytes, never from the upload's header.</summary>
     public string ContentType { get; set; } = "";

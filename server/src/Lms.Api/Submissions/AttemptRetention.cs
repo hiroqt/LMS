@@ -63,10 +63,12 @@ public sealed class AttemptRetention(LmsDbContext db, IOptions<RetentionOptions>
         // Marked so no re-score ever reads the cleared answers as wrong ones.
         var now = time.GetUtcNow().UtcDateTime;
         await submissions.Where(s => s.AnonymizedAt == null).ExecuteUpdateAsync(s => s.SetProperty(x => x.AnonymizedAt, now), ct);
-        // Uploaded files go too: the row stays as a record that a file existed, without its name.
-        var keys = await db.StoredFiles.Where(f => f.DeletedAt == null && classIds.Contains(f.ClassId)).Select(f => f.StorageKey).ToListAsync(ct);
+        // Uploaded work goes too: the row stays as a record that a file existed, without its name.
+        // Class materials are the instructor's, not student work, so they stay (D-067).
+        var studentFiles = db.StoredFiles.Where(f => f.DeletedAt == null && f.CourseworkId != null && classIds.Contains(f.ClassId));
+        var keys = await studentFiles.Select(f => f.StorageKey).ToListAsync(ct);
         if (keys.Count > 0)
-            await db.StoredFiles.Where(f => f.DeletedAt == null && classIds.Contains(f.ClassId))
+            await studentFiles
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.DeletedAt, now).SetProperty(x => x.Name, ""), ct);
         if (texts + answers + keys.Count > 0)
         {

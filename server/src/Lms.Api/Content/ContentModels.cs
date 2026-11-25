@@ -6,8 +6,16 @@ namespace Lms.Api.Content;
 
 public sealed record ModuleDto(long Id, long? ParentModuleId, string Title, int SortOrder);
 
+/// <summary>
+/// A material's uploaded file (D-067). <c>Type</c> is pdf, word, powerpoint, excel, image or text.
+/// <c>Preview</c> is null when the file is shown as it is (PDF, image, text); for an Office file it is
+/// ready (a PDF copy is at <c>…/preview</c>), failed, or off (the server had no converter).
+/// </summary>
+public sealed record MaterialFileDto(long Id, string Name, string ContentType, string? Type, long Size, string? Preview);
+
+/// <summary><c>FileName</c>, <c>FileType</c> and <c>FileSize</c> are text kept for materials made before uploads; <c>File</c> is the real file.</summary>
 public sealed record MaterialDto(long Id, long ModuleId, string Title, string Kind, string? Description,
-    string? FileName, string? FileType, string? FileSize, string Status, DateTime CreatedAt);
+    string? FileName, string? FileType, string? FileSize, string Status, DateTime CreatedAt, MaterialFileDto? File = null);
 
 public sealed record AnnouncementDto(long Id, string Title, string Message, string Status, DateTime PublishedAt, string? PostedBy);
 
@@ -40,7 +48,14 @@ public static class ContentRules
     public const int MaxPageSize = 200;
 
     public static ModuleDto ToDto(this Module m) => new(m.Id, m.ParentModuleId, m.Title, m.SortOrder);
-    public static MaterialDto ToDto(this Material m) => new(m.Id, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt);
+    public static MaterialDto ToDto(this Material m, StoredFile? file = null) => new(m.Id, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt, m.FileDto(file));
+
+    /// <summary>Null unless <paramref name="file"/> is the material's own, still-stored file.</summary>
+    public static MaterialFileDto? FileDto(this Material m, StoredFile? file) =>
+        file is not null && file.Id == m.FileId && file.DeletedAt is null
+            ? new(file.Id, file.Name, file.ContentType, Files.FileKind.TypeOf(file.ContentType), file.Size, m.PreviewStatus)
+            : null;
+
     public static AnnouncementDto ToDto(this Announcement a) => new(a.Id, a.Title, a.Message, a.Status, a.PublishedAt, a.CreatedBy);
 }
 

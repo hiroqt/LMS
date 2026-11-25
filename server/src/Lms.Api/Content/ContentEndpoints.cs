@@ -1,4 +1,5 @@
 using Lms.Api.Data;
+using Lms.Api.Files;
 using Lms.Api.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,7 +89,9 @@ public static class ContentEndpoints
             var query = db.Materials.AsNoTracking().Where(m => m.ClassId == classId);
             if (user.IsStudent) query = query.Where(m => m.Status == ContentStatus.Active);
             if (moduleId is { } mid) query = query.Where(m => m.ModuleId == mid);
-            return TypedResults.Ok(await PageAsync(query.OrderBy(m => m.Id), page, pageSize, m => m.ToDto(), ct));
+            var listed = await PageAsync(query.OrderBy(m => m.Id), page, pageSize, m => m, ct);
+            var files = await MaterialFileEndpoints.FilesOfAsync(db, listed.Items, ct);
+            return TypedResults.Ok(new PagedList<MaterialDto>(listed.Items.Select(m => m.ToDto(m.FileId is { } f ? files.GetValueOrDefault(f) : null)).ToList(), listed.Page, listed.PageSize, listed.Total));
         }).WithName("ListMaterials");
 
         cls.MapPost("/materials", async Task<IResult> (string classId, MaterialCreate input, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -133,18 +136,23 @@ public static class ContentEndpoints
             if (errors.Any) return errors.Result();
             var action = input.Status == ContentStatus.Archived ? "archived" : input.Status == ContentStatus.Active ? "restored" : "updated";
             await SaveWithAuditAsync(db, user, row, action, "Material", () => row.Id, ct);
-            return TypedResults.Ok(row.ToDto());
+            var file = (await MaterialFileEndpoints.FilesOfAsync(db, [row], ct)).Values.FirstOrDefault();
+            return TypedResults.Ok(row.ToDto(file));
         }).WithName("UpdateMaterial");
 
-        cls.MapDelete("/materials/{id:long}", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
+        cls.MapDelete("/materials/{id:long}", async Task<IResult> (string classId, long id, HttpContext http, ClassAccess access, LmsDbContext db,
+            IFileStore store, TimeProvider time, CancellationToken ct) =>
         {
             var user = http.CurrentUser();
             var (_, denied) = await access.ForWriteAsync(classId, user, ct);
             if (denied is not null) return denied;
             var row = await db.Materials.SingleOrDefaultAsync(m => m.Id == id && m.ClassId == classId, ct);
             if (row is null) return NotFound("Material");
+            // Its file and preview go with it; the bytes only once the database says so (D-067).
+            var unused = await MaterialFileEndpoints.ReleaseAsync(db, row, time, ct);
             db.Materials.Remove(row);
             await SaveWithAuditAsync(db, user, null, "deleted", "Material", () => id, ct);
+            foreach (var key in unused) store.Delete(key);
             return TypedResults.NoContent();
         }).WithName("DeleteMaterial");
 
@@ -196,7 +204,7 @@ public static class ContentEndpoints
         c.InstructorId, c.InstructorName, c.SchoolYearId, c.SemesterId, c.TermName,
         System.Text.Json.JsonSerializer.Deserialize<List<Classes.ClassMeeting>>(c.MeetingsJson, System.Text.Json.JsonSerializerOptions.Web) ?? []);
 
-    private static string? KindOf(Errors errors, string? kind)
+    internal static string? KindOf(Errors errors, string? kind)
     {
         var match = ContentRules.MaterialKinds.FirstOrDefault(k => string.Equals(k, kind?.Trim(), StringComparison.OrdinalIgnoreCase));
         if (match is null) errors.Add("kind", $"Choose one of: {string.Join(", ", ContentRules.MaterialKinds)}.");

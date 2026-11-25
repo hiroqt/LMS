@@ -787,6 +787,10 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("description");
 
+                    b.Property<long?>("FileId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_id");
+
                     b.Property<string>("FileName")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)")
@@ -811,6 +815,15 @@ namespace Lms.Api.Data.Migrations
                     b.Property<long>("ModuleId")
                         .HasColumnType("bigint")
                         .HasColumnName("module_id");
+
+                    b.Property<long?>("PreviewFileId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("preview_file_id");
+
+                    b.Property<string>("PreviewStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("preview_status");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -838,7 +851,11 @@ namespace Lms.Api.Data.Migrations
 
                     b.HasIndex("ClassId");
 
+                    b.HasIndex("FileId");
+
                     b.HasIndex("ModuleId");
+
+                    b.HasIndex("PreviewFileId");
 
                     b.ToTable("materials", (string)null);
                 });
@@ -1377,7 +1394,7 @@ namespace Lms.Api.Data.Migrations
                         .HasColumnType("varchar(120)")
                         .HasColumnName("content_type");
 
-                    b.Property<long>("CourseworkId")
+                    b.Property<long?>("CourseworkId")
                         .HasColumnType("bigint")
                         .HasColumnName("coursework_id");
 
@@ -1744,11 +1761,21 @@ namespace Lms.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Lms.Api.Data.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Lms.Api.Data.Module", null)
                         .WithMany()
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Lms.Api.Data.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("PreviewFileId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Module", b =>
@@ -1844,8 +1871,7 @@ namespace Lms.Api.Data.Migrations
                     b.HasOne("Lms.Api.Data.Coursework", null)
                         .WithMany()
                         .HasForeignKey("CourseworkId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Submission", b =>
