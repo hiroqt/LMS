@@ -116,13 +116,14 @@ test.describe("Student · Class workspace", () => {
     }
   });
 
-  test("STREAM → MD → MAT: open a material from Stream, mark it reviewed, go back", async ({ page }) => {
+  // D-067: a material is a guide to come back to, so "mark it reviewed" became "see its file".
+  test("STREAM → MD → MAT: open a material from Stream, see its file, go back", async ({ page }) => {
     await openRole(page, "student");
     await page.getByRole("navigation", { name: "My classes" }).getByRole("button", { name: /Introduction to Programming/ }).click();
     await page.getByRole("button", { name: "Open material" }).first().click();
 
-    await page.getByRole("button", { name: /Mark as reviewed/ }).click();
-    await expect(page.getByRole("button", { name: /Reviewed/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Download .+\.pdf$/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: /^Preview of / })).toBeVisible();
     await page.getByRole("button", { name: /Back/ }).first().click();
     await expect(page.getByRole("tablist")).toBeVisible();
   });
