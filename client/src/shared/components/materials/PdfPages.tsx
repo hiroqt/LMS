@@ -1,6 +1,7 @@
 import { getDocument, GlobalWorkerOptions, TextLayer, type PDFDocumentProxy, type RenderTask } from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useContentWidth } from "../../hooks/useContentWidth";
 import { Skeleton, SkeletonGroup } from "../../ui/Skeleton";
 
 /*
@@ -88,6 +89,7 @@ function PdfPage({ doc, number, count, width }: { doc: PDFDocumentProxy; number:
   useEffect(() => {
     let cancelled = false;
     let task: RenderTask | undefined;
+    let layer: TextLayer | undefined;
     void (async () => {
       const page = await doc.getPage(number);
       const scale = width / page.getViewport({ scale: 1 }).width;
@@ -103,11 +105,14 @@ function PdfPage({ doc, number, count, width }: { doc: PDFDocumentProxy; number:
       await task.promise;
       if (cancelled) return;
       text.current.replaceChildren();
-      await new TextLayer({ textContentSource: page.streamTextContent(), container: text.current, viewport }).render();
+      layer = new TextLayer({ textContentSource: page.streamTextContent(), container: text.current, viewport });
+      await layer.render();
     })().catch(() => undefined);
     return () => {
       cancelled = true;
       task?.cancel();
+      // A text layer still adding spans would leave a second copy for screen readers after a resize.
+      layer?.cancel();
     };
   }, [doc, number, width, near]);
 
@@ -119,24 +124,4 @@ function PdfPage({ doc, number, count, width }: { doc: PDFDocumentProxy; number:
       <div ref={text} className="pdf-text-layer" />
     </div>
   );
-}
-
-/** The inner width of the scrolling frame, kept up to date as it resizes. */
-function useContentWidth(frame: RefObject<HTMLDivElement | null>): number {
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const element = frame.current;
-    if (!element) return;
-    const measure = () => {
-      const style = getComputedStyle(element);
-      // Whole pixels, so a scrollbar appearing doesn't redraw every page by a fraction.
-      setWidth(Math.floor(element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 2));
-    };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [frame]);
-  return width;
 }

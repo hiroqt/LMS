@@ -21,7 +21,8 @@ export default function MaterialPage() {
   const navigate = useNavigate();
   const catalog = useStudentCatalog();
   const viewer = useStudentViewer();
-  const [pages, setPages] = useState<number>();
+  // Kept with the file it was counted from: Previous and Next reuse this page for another material.
+  const [pages, setPages] = useState<{ file: number; count: number }>();
   const material = catalog.materials.find((item) => item.id === materialId);
   if (!material) return <Navigate to={studentPaths.classes} replace />;
 
@@ -43,7 +44,7 @@ export default function MaterialPage() {
         preview={
           file ? (
             // Keyed by the file, so a replaced file starts its preview afresh.
-            <MaterialPreview key={file.id} viewer={viewer} classId={material.courseId} materialId={material.id} title={material.title} file={file} onPageCount={setPages} />
+            <MaterialPreview key={file.id} viewer={viewer} classId={material.courseId} materialId={material.id} title={material.title} file={file} onPageCount={(count) => setPages({ file: file.id, count })} />
           ) : (
             <PreviewNotice icon={<FileX2 />} title="No file is attached to this material." detail="Your instructor hasn’t added a file to it." />
           )
@@ -54,7 +55,7 @@ export default function MaterialPage() {
               file={file}
               viewer={viewer}
               fetchFile={() => fetchMaterialFile(viewer, material.courseId, material.id, "file")}
-              detail={pages ? pageCountLabel(pages, file.type) : undefined}
+              detail={pages?.file === file.id ? pageCountLabel(pages.count, file.type) : undefined}
             />
           ) : (
             <p className="m-0 text-body text-muted">No file attached.</p>

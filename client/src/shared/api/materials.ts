@@ -21,6 +21,8 @@ export interface MaterialFile {
   size: number;
   /** Null when the file is its own preview (PDF, image, text). */
   preview: PreviewStatus | null;
+  /** The bytes of an Office file's PDF copy, which its preview downloads instead. Null without one. */
+  previewSize?: number | null;
 }
 
 /** The material as the server sends it after an upload, a replacement, or a removal. */
@@ -65,13 +67,18 @@ export function previewPlan(file: Pick<MaterialFile, "type" | "preview">): Previ
   }
 }
 
+/** What the preview downloads: an Office file's PDF copy (which can be the bigger one), else the file itself. */
+export function previewBytes(file: Pick<MaterialFile, "size" | "previewSize">, plan: PreviewPlan): number {
+  return plan.kind !== "none" && plan.source === "preview" ? (file.previewSize ?? file.size) : file.size;
+}
+
 /**
- * Whether a preview waits for a tap: a big file, or the phone's data saver on. Text loads only
- * its first part, so its size never makes it wait.
+ * Whether a preview waits for a tap: what it would download is over 5 MB, or the phone's data
+ * saver is on. Text too: the whole file downloads even though only its start is shown.
  */
-export function previewWaits(file: Pick<MaterialFile, "size">, plan: PreviewPlan, saveData: boolean): boolean {
-  if (plan.kind === "none" || plan.kind === "text") return false;
-  return saveData || file.size > PREVIEW_AUTO_BYTES;
+export function previewWaits(file: Pick<MaterialFile, "size" | "previewSize">, plan: PreviewPlan, saveData: boolean): boolean {
+  if (plan.kind === "none") return false;
+  return saveData || previewBytes(file, plan) > PREVIEW_AUTO_BYTES;
 }
 
 /** The phone's data saver ("Lite mode"), where the browser tells us. */

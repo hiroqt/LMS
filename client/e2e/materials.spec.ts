@@ -142,6 +142,14 @@ test.describe("Student · class materials", () => {
 
     await page.getByRole("navigation", { name: "Other materials in this class" }).getByRole("button", { name: /^Previous/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Variables and Data Types" })).toBeVisible();
+
+    // A page count stays with its own file: back to a PDF, then on to the image again.
+    await page.getByRole("navigation", { name: "Other materials in this class" }).getByRole("button", { name: /^Previous/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Programming Logic and Pseudocode" })).toBeVisible();
+    await expect(page.getByText("PDF · 5 KB · 2 pages")).toBeVisible();
+    await page.getByRole("navigation", { name: "Other materials in this class" }).getByRole("button", { name: /^Next/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Variables and Data Types" })).toBeVisible();
+    await expect(page.getByText("PNG · 71 KB", { exact: true })).toBeVisible();
   });
 
   test("an Office file shows the PDF copy the server made", async ({ page }) => {

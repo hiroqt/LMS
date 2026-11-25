@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { materialFileRefusal, PREVIEW_AUTO_BYTES, previewPlan, previewWaits } from "./materials";
+import { materialFileRefusal, PREVIEW_AUTO_BYTES, previewBytes, previewPlan, previewWaits } from "./materials";
 
 describe("previewPlan", () => {
   it("shows PDFs, images and text as they are", () => {
@@ -25,9 +25,22 @@ describe("previewWaits", () => {
     expect(previewWaits({ size: 1000 }, pdf, true)).toBe(true);
   });
 
-  it("never waits for text, which loads only its start, or for a file with no preview", () => {
-    expect(previewWaits({ size: 20 * 1024 * 1024 }, previewPlan({ type: "text", preview: null }), true)).toBe(false);
+  it("waits for big text too, which downloads whole, but never for a file with no preview", () => {
+    const text = previewPlan({ type: "text", preview: null });
+    expect(previewWaits({ size: 1000 }, text, false)).toBe(false);
+    expect(previewWaits({ size: 20 * 1024 * 1024 }, text, false)).toBe(true);
+    expect(previewWaits({ size: 1000 }, text, true)).toBe(true);
     expect(previewWaits({ size: 20 * 1024 * 1024 }, previewPlan({ type: "word", preview: "off" }), true)).toBe(false);
+  });
+
+  it("goes by the PDF copy's size for an Office file, which can be bigger than the file", () => {
+    const deck = previewPlan({ type: "powerpoint", preview: "ready" });
+    expect(previewBytes({ size: 3 * 1024 * 1024, previewSize: 40 * 1024 * 1024 }, deck)).toBe(40 * 1024 * 1024);
+    expect(previewWaits({ size: 3 * 1024 * 1024, previewSize: 40 * 1024 * 1024 }, deck, false)).toBe(true);
+    expect(previewWaits({ size: 8 * 1024 * 1024, previewSize: 1024 * 1024 }, deck, false)).toBe(false);
+    // Not sent (an older server): the file's own size stands in.
+    expect(previewBytes({ size: 2048 }, deck)).toBe(2048);
+    expect(previewBytes({ size: 2048, previewSize: 99 }, pdf)).toBe(2048);
   });
 });
 

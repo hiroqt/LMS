@@ -76,6 +76,13 @@ describe("MaterialPreview", () => {
     expect((vi.mocked(fetch).mock.calls[0] as unknown as [string])[0]).toBe("http://localhost:5200/api/classes/biology/materials/3/preview");
     unmount();
 
+    // A small deck whose PDF copy is big: the tap says the copy's size.
+    const big = renderPreview(file({ name: "deck.pptx", type: "powerpoint", preview: "ready", size: 3 * 1024 * 1024, previewSize: 40 * 1024 * 1024 }));
+    expect(screen.getByText("The preview of this file is 40 MB.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Load preview (40 MB)" })).toBeVisible();
+    expect(fetch).toHaveBeenCalledOnce();
+    big.unmount();
+
     renderPreview(file({ name: "deck.pptx", type: "powerpoint", preview: "off" }));
     expect(screen.getByText("Previews of Word, PowerPoint, and Excel files are turned off on this server.")).toBeVisible();
     expect(screen.getByText("Download the file to open it.")).toBeVisible();

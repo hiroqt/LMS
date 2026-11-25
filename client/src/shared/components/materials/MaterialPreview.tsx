@@ -2,7 +2,7 @@ import { CloudOff, FileX2, Maximize2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { formatBytes } from "../../api/assignments";
 import { describeApiError, isApiError } from "../../api/http";
-import { dataSaverOn, previewPlan, previewWaits, TEXT_PREVIEW_BYTES, type MaterialFile } from "../../api/materials";
+import { dataSaverOn, previewBytes, previewPlan, previewWaits, TEXT_PREVIEW_BYTES, type MaterialFile } from "../../api/materials";
 import type { Viewer } from "../../api/viewer";
 import { useMaterialFile } from "../../hooks/useMaterialFile";
 import { useObjectUrl } from "../../hooks/useObjectUrl";
@@ -50,12 +50,14 @@ export function MaterialPreview({ viewer, classId, materialId, title, file, onPa
   }
 
   if (waits) {
+    // What tapping costs: an Office file's preview is its PDF copy, not the file.
+    const size = formatBytes(previewBytes(file, plan));
     return (
       <PreviewNotice
         icon={<CloudOff />}
-        title={`This file is ${formatBytes(file.size)}.`}
+        title={plan.source === "preview" ? `The preview of this file is ${size}.` : `This file is ${size}.`}
         detail={saveData ? "Data saver is on, so the preview waits until you ask for it." : "Large files wait until you ask, so they don’t use your data by surprise."}
-        action={<Button variant="secondary" onClick={() => setRequested(true)}>Load preview ({formatBytes(file.size)})</Button>}
+        action={<Button variant="secondary" onClick={() => setRequested(true)}>Load preview ({size})</Button>}
       />
     );
   }

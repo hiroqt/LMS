@@ -114,6 +114,36 @@ public sealed class DocumentConverterTests : IDisposable
         Assert.Equal(before, WorkFolders());
     }
 
+    [PosixFact]
+    public async Task Time_that_runs_out_while_the_file_is_copied_in_gives_no_pdf_and_frees_the_slot()
+    {
+        var program = Program("""
+            out=""; prev=""; for a in "$@"; do [ "$prev" = "--outdir" ] && out="$a"; prev="$a"; done
+            printf '%%PDF-1.7' > "$out/input.pdf"
+            """);
+        // One slot: the second run only starts if the first gave it back.
+        var converter = new LibreOfficeConverter(program, new LibreOfficeOptions { TimeoutSeconds = 1, MaxConcurrent = 1 }, NullLogger<LibreOfficeConverter>.Instance);
+        var before = WorkFolders();
+        await using (var stuck = new StuckStream())
+            Assert.Null(await converter.ToPdfAsync(stuck, ".docx", CancellationToken.None));
+        await using (var source = new MemoryStream([1, 2, 3]))
+        await using (var pdf = await converter.ToPdfAsync(source, ".docx", CancellationToken.None))
+            Assert.NotNull(pdf);
+        Assert.Equal(before, WorkFolders());
+    }
+
+    /// <summary>A source whose bytes never arrive.</summary>
+    private sealed class StuckStream : MemoryStream
+    {
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => ReadAsync(buffer.AsMemory(offset, count), ct).AsTask();
+    }
+
     [Fact]
     public void A_configured_program_must_exist()
     {
