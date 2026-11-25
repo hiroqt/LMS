@@ -68,6 +68,31 @@ public sealed class FakeScanner : IFileScanner
     }
 }
 
+/// <summary>Stands in for LibreOffice (D-067): returns the PDF the test sets, or none, and records each call.</summary>
+public sealed class FakeConverter : IDocumentConverter
+{
+    public bool Enabled { get; set; } = true;
+    /// <summary>Gets the uploaded bytes; returns the "PDF" to keep, or null for a conversion that failed.</summary>
+    public Func<byte[], byte[]?> Convert { get; set; } = _ => TestFiles.Pdf("Preview copy");
+    /// <summary>The extension of each file it was asked to convert.</summary>
+    public List<string> Calls { get; } = [];
+
+    public async Task<IConvertedFile?> ToPdfAsync(Stream content, string extension, CancellationToken ct)
+    {
+        lock (Calls) Calls.Add(extension);
+        using var buffer = new MemoryStream();
+        content.Position = 0;
+        await content.CopyToAsync(buffer, ct);
+        return Convert(buffer.ToArray()) is { } pdf ? new Converted(pdf) : null;
+    }
+
+    private sealed class Converted(byte[] pdf) : IConvertedFile
+    {
+        public Stream OpenRead() => new MemoryStream(pdf, writable: false);
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+}
+
 public sealed class LmsApiFactory : WebApplicationFactory<Program>
 {
     public const string ClientId = "lms-test-client";
@@ -77,6 +102,7 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
     public StubIsmsHandler Isms { get; } = new();
     public ManualTimeProvider Time { get; } = new();
     public FakeScanner Scanner { get; } = new();
+    public FakeConverter Converter { get; } = new();
     /// <summary>Where this factory's uploaded files are kept; deleted with it.</summary>
     public string FilesRoot { get; } = Path.Combine(Path.GetTempPath(), $"lms-files-test-{Guid.NewGuid():N}");
 
@@ -140,6 +166,8 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
             services.AddDbContext<LmsDbContext>(o => o.UseSqlite($"Data Source={_dbFile};Pooling=False"));
             services.RemoveAll<IFileScanner>();
             services.AddSingleton<IFileScanner>(Scanner);
+            services.RemoveAll<IDocumentConverter>();
+            services.AddSingleton<IDocumentConverter>(Converter);
         });
     }
 
