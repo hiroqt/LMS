@@ -87,6 +87,9 @@ export function dataSaverOn(): boolean {
   return connection?.saveData === true;
 }
 
+/** "1 page", "12 slides": the length of a drawn PDF, or of a PowerPoint's PDF copy. */
+export const pageCountLabel = (count: number, type: MaterialFile["type"]) => `${count} ${type === "powerpoint" ? "slide" : "page"}${count === 1 ? "" : "s"}`;
+
 /** Why a chosen file would be refused before it is sent. Null when it is worth sending. */
 export function materialFileRefusal(file: { name: string; size: number }): string | null {
   if (file.size === 0) return "This file is empty.";

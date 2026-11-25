@@ -1,7 +1,7 @@
 import { Archive, ArchiveRestore, FileUp, FileX2, RefreshCw, Trash2, Unlink } from "lucide-react";
 import { useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import { fetchMaterialFile, MATERIAL_ACCEPT, materialFileRefusal } from "../../../shared/api/materials";
+import { fetchMaterialFile, MATERIAL_ACCEPT, materialFileRefusal, pageCountLabel } from "../../../shared/api/materials";
 import type { Viewer } from "../../../shared/api/viewer";
 import { BackLink } from "../../../shared/components/BackLink";
 import { AttachedFile } from "../../../shared/components/files/AttachedFile";
@@ -93,7 +93,7 @@ export default function MaterialPage() {
           file={file}
           viewer={viewer}
           fetchFile={() => fetchMaterialFile(viewer, room.id, material.id, "file")}
-          detail={pages?.file === file.id ? pageCount(pages.count, file.type === "powerpoint" ? "slide" : "page") : undefined}
+          detail={pages?.file === file.id ? pageCountLabel(pages.count, file.type) : undefined}
         />
       ) : (
         <p className="m-0 text-body text-muted">No file attached.</p>
@@ -188,6 +188,3 @@ export default function MaterialPage() {
     </>
   );
 }
-
-/** "1 page", "12 slides" */
-const pageCount = (count: number, noun: "page" | "slide") => `${count} ${noun}${count === 1 ? "" : "s"}`;

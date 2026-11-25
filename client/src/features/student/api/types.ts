@@ -1,3 +1,4 @@
+import type { MaterialFile } from "../../../shared/api/materials";
 import type { TurnIn } from "../../../shared/api/overview";
 import type { HandInSettings } from "../../../shared/lib/assignmentRules";
 import type { AnswerReview, SpellingMode } from "../../../shared/components/quiz/types";
@@ -63,18 +64,25 @@ export interface Assessment {
   spellingMode?: SpellingMode;
 }
 
+/** A learning guide the instructor shares: a file students come back to, not a task (D-067). */
 export interface Material {
   id: string;
   courseId: string;
   /** The module or submodule it is placed in. */
   moduleId?: string;
   title: string;
+  /** The resource type: "Study guide", "Lecture Slides", … */
   kind: string;
-  readTime: string;
+  /** The instructor's description; empty when there is none. */
   summary: string;
+  /** "Nov 12" */
   added: string;
-  goal: string;
-  points: string[];
+  /** When it was added (ISO), for "Newest first". */
+  createdAt: string;
+  /** The uploaded file; null when there is none. */
+  file: MaterialFile | null;
+  /** A file name saved before uploads, with no file behind it. */
+  fileName?: string;
 }
 
 export interface Question {

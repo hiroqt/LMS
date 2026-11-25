@@ -18,11 +18,6 @@ const demoExtras = new Map<string, DemoCourse>(demoCourses.map((course) => [cour
 /** A draft is not handed in, and neither is a version the student took back (D-058). */
 const handedIn = (submission: Submission) => isHandedIn(submission.status);
 
-function readTime(text: string | null): string {
-  const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min`;
-}
-
 /** The exam settings of D-040, when the API sends them (contract §3). */
 function examSettings(work: Coursework & Partial<Pick<Assessment, "answerReview" | "spellingMode">>) {
   if (work.type !== "exam") return {};
@@ -161,11 +156,11 @@ export function toStudentCatalog(overview: Overview): StudentCatalog {
       moduleId: String(material.moduleId),
       title: material.title,
       kind: material.kind,
-      readTime: readTime(material.description),
       summary: material.description ?? "",
       added: shortDate(material.createdAt),
-      goal: material.description ?? "",
-      points: [],
+      createdAt: material.createdAt,
+      file: material.file ?? null,
+      ...(material.fileName && !material.file ? { fileName: material.fileName } : {}),
     })),
     questions: {},
     academicEvents: academicEvents as StudentCatalog["academicEvents"],

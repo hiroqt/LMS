@@ -1,39 +1,23 @@
-import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, FolderTree, GraduationCap, MapPin, Search, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, ExternalLink, FileText, FolderTree, GraduationCap, MapPin, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
-import { reading } from "../../../shared/assets/illustrations";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
 import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
 import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
-import { EmptyState } from "../../../shared/ui/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { courseModules, dueSoon, type ModuleEntry } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
+import { ListSearch } from "../components/ListSearch";
+import { ClassMaterials, MaterialRows } from "../components/MaterialList";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { CourseHeader } from "../../../shared/components/CourseHeader";
 import { termStatus } from "../../../shared/lib/term";
 import { courseCode } from "../api/catalog";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { CLASS_TABS, isClassTab, studentPaths, type ClassTab } from "../paths";
-
-function ListSearch({ label, placeholder, value, onChange }: { label: string; placeholder: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <div className="relative w-full sm:w-72">
-      <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
-      <input
-        type="search"
-        aria-label={label}
-        placeholder={placeholder}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-touch w-full rounded-control border border-line-strong bg-surface pr-3 pl-9 font-sans text-body-lg text-ink placeholder:text-muted focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-focus"
-      />
-    </div>
-  );
-}
 
 function Stream({ course, catalog, completed, now, onTab }: { course: Course; catalog: StudentCatalog; completed: string[]; now: number; onTab: (tab: ClassTab) => void }) {
   const navigate = useNavigate();
@@ -119,7 +103,7 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
   const q = query.toLowerCase();
   const work = catalog.assessments.filter((item) => item.courseId === course.id);
   const shownWork = work.filter((item) => (filter === "All work" || item.type === filter) && `${item.title} ${item.description}`.toLowerCase().includes(q));
-  const shownMaterials = catalog.materials.filter((item) => item.courseId === course.id && `${item.title} ${item.kind}`.toLowerCase().includes(q));
+  const shownMaterials = catalog.materials.filter((item) => item.courseId === course.id && `${item.title} ${item.kind} ${item.file?.name ?? ""}`.toLowerCase().includes(q));
   const count = (type: WorkFilter) => work.filter((item) => item.type === type).length;
 
   return (
@@ -152,32 +136,14 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
       {(filter === "All work" || filter === "Materials") && (
         <section aria-labelledby="material-list" className="flex flex-col gap-3">
           <h3 id="material-list" className="m-0 font-sans text-card-title font-semibold">Learning materials <span className="font-normal text-muted">· {shownMaterials.length}</span></h3>
-          <MaterialGrid materials={shownMaterials} />
+          {shownMaterials.length ? (
+            <div className="rounded-card border border-line bg-surface px-3"><MaterialRows materials={shownMaterials} label="Learning materials" /></div>
+          ) : (
+            <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">No materials found.</p>
+          )}
         </section>
       )}
     </div>
-  );
-}
-
-function MaterialGrid({ materials }: { materials: StudentCatalog["materials"] }) {
-  const navigate = useNavigate();
-  if (!materials.length) return <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">No materials found.</p>;
-  return (
-    <ul className="m-0 grid list-none gap-3 p-0 @xl:grid-cols-2 @4xl:grid-cols-3 @7xl:grid-cols-4">
-      {materials.map((item) => (
-        <li key={item.id}>
-          <button
-            type="button"
-            onClick={() => navigate(studentPaths.material(item.id))}
-            className="flex h-full w-full flex-col items-start gap-2 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
-          >
-            <strong className="text-card-title font-semibold">{item.title}</strong>
-            <span className="line-clamp-3 text-body text-muted">{item.summary}</span>
-            <span className="mt-auto text-body text-muted">{item.kind} · {item.readTime} read · {item.added}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -241,22 +207,6 @@ function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog 
       ) : (
         <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">This class has no modules yet.</p>
       )}
-    </div>
-  );
-}
-
-function Materials({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
-  const [query, setQuery] = useState("");
-  const all = catalog.materials.filter((item) => item.courseId === course.id);
-  const shown = all.filter((item) => `${item.title} ${item.kind}`.toLowerCase().includes(query.toLowerCase()));
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading title="Class materials" />
-        <ListSearch label="Search materials" placeholder="Search materials" value={query} onChange={setQuery} />
-      </div>
-      {/* The class has none yet (D-057); a search that finds nothing keeps the plain line. */}
-      {all.length ? <MaterialGrid materials={shown} /> : <EmptyState illustration={reading} title="No materials found." />}
     </div>
   );
 }
@@ -386,7 +336,7 @@ export default function ClassPage() {
         <TabsContent value="Stream"><Stream course={course} catalog={catalog} completed={completed} now={now} onTab={setTab} /></TabsContent>
         <TabsContent value="Classwork"><Classwork course={course} catalog={catalog} completed={completed} courseIndex={index} /></TabsContent>
         <TabsContent value="Modules"><Modules course={course} catalog={catalog} /></TabsContent>
-        <TabsContent value="Materials"><Materials course={course} catalog={catalog} /></TabsContent>
+        <TabsContent value="Materials"><ClassMaterials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>
       </Tabs>

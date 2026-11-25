@@ -214,7 +214,6 @@ function Gate({ query, label }: { query: { isError: boolean; error: unknown; ref
 export default function StudentApp(props: RoleAppProps) {
   const people = useStudentPeople();
   const [chosen, setChosen] = useState(remembered);
-  const [reviewed, setReviewed] = useState<ReadonlySet<string>>(() => new Set());
   const students = people.data?.students ?? [];
   const studentId = students.some((item) => item.id === chosen) ? chosen : students[0]?.id ?? "";
   const overview = useStudentOverview(studentId);
@@ -224,17 +223,14 @@ export default function StudentApp(props: RoleAppProps) {
       studentId,
       setStudentId: (id) => {
         setChosen(id);
-        setReviewed(new Set());
         try {
           sessionStorage.setItem(VIEWING_KEY, id);
         } catch {
           // Remembering the choice is a convenience only.
         }
       },
-      reviewed,
-      toggleReviewed: (id) => setReviewed((current) => new Set(current.has(id) ? [...current].filter((item) => item !== id) : [...current, id])),
     }),
-    [studentId, reviewed],
+    [studentId],
   );
 
   if (!people.data) return <Gate query={people} label="Loading the student workspace" />;

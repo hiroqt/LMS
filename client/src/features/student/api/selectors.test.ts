@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, monthGrid, needsWork, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
-import type { Assessment } from "./types";
+import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, materialSequence, materialsByModule, monthGrid, needsWork, newestFirst, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
+import type { Assessment, Material } from "./types";
 
 const NOW = new Date("2026-10-23T09:00:00").getTime(); // Friday
+const material = (id: string, moduleId: string | undefined, title: string, createdAt = "2026-10-01T00:00:00Z"): Material => ({
+  id, courseId: "c", ...(moduleId ? { moduleId } : {}), title, kind: "Study guide", summary: "", added: "", createdAt, file: null,
+});
 const item = (id: string, dueAt: string, type = "Quiz"): Assessment => ({
   id, courseId: "c", title: `Item ${id}`, type, description: "", dueAt, points: 10, timeLimit: "5 minutes", instructions: "",
 });
@@ -72,10 +75,7 @@ describe("courseModules", () => {
       { id: "1", courseId: "c", title: "Unit 1", order: 1 },
       { id: "9", courseId: "other", title: "Elsewhere", order: 1 },
     ],
-    materials: [
-      { id: "m1", courseId: "c", moduleId: "2", title: "Join notes", kind: "Reading", readTime: "1 min", summary: "", added: "", goal: "", points: [] },
-      { id: "m2", courseId: "c", moduleId: "1", title: "Intro", kind: "Study guide", readTime: "1 min", summary: "", added: "", goal: "", points: [] },
-    ],
+    materials: [material("m1", "2", "Join notes"), material("m2", "1", "Intro")],
     assessments: [{ ...item("q1", ""), moduleId: "2" }],
   };
 
@@ -89,3 +89,38 @@ describe("courseModules", () => {
     ]);
   });
 });
+
+describe("materials by module (D-067)", () => {
+  const catalog = {
+    modules: [
+      { id: "3", courseId: "c", title: "Unit 2", order: 2 },
+      { id: "2", courseId: "c", parentId: "1", title: "1.1 Joins", order: 1 },
+      { id: "1", courseId: "c", title: "Unit 1", order: 1 },
+      { id: "4", courseId: "c", title: "Unit 3 (empty)", order: 3 },
+      { id: "9", courseId: "other", title: "Elsewhere", order: 1 },
+    ],
+    materials: [
+      material("m1", "2", "Join notes", "2026-10-05T00:00:00Z"),
+      material("m2", "3", "Indexes", "2026-10-09T00:00:00Z"),
+      material("m3", "1", "Intro", "2026-10-02T00:00:00Z"),
+      material("m4", "1", "Keys", "2026-10-03T00:00:00Z"),
+      material("m5", "missing", "Loose sheet", "2026-10-07T00:00:00Z"),
+      { ...material("x", "9", "Other class"), courseId: "other" },
+    ],
+  };
+
+  it("groups by module, then submodule, in the instructor's order, leaving out empty modules", () => {
+    const groups = materialsByModule(catalog, "c");
+    expect(groups.map((group) => [group.title, group.materials.map((item) => item.title), group.submodules.map((sub) => [sub.title, sub.materials.map((item) => item.title)])])).toEqual([
+      ["Unit 1", ["Intro", "Keys"], [["1.1 Joins", ["Join notes"]]]],
+      ["Unit 2", ["Indexes"], []],
+      ["Other materials", ["Loose sheet"], []],
+    ]);
+  });
+
+  it("reads module by module for previous and next, and sorts newest first", () => {
+    expect(materialSequence(catalog, "c").map((item) => item.id)).toEqual(["m3", "m4", "m1", "m2", "m5"]);
+    expect(newestFirst(catalog.materials.filter((item) => item.courseId === "c")).map((item) => item.id)).toEqual(["m2", "m5", "m1", "m4", "m3"]);
+  });
+});
+

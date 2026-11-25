@@ -30,7 +30,8 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | TW | "Due this week" summary → Tasks | ✔ `shell` TW | ✅ |
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
-| MAT, PEOPLE | Materials list; roster search | ✖ (tabs reachable only) | ✅ |
+| MAT | Materials grouped by module and submodule; type filter; By module / Newest first; search; a material page with preview, file details, Download, Previous and Next (D-067) | ✔ `materials` | ✅ |
+| PEOPLE | Roster search | ✖ (tab reachable only) | ✅ |
 | CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
 | CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
 | MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
@@ -45,7 +46,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | R → Q | Practice again | ✖ | ✅ |
 | Q (types) | Every question type answered; section directions; spelling notice; typed answers autosave and survive reload; unanswered list on submit (D-040, D-043) | ✔ `quiz-types` | ✅ |
 | R (review modes) | Score only / which were right / correct answers after submit or due; Waiting for grading; keys only once no attempt is left (D-040, D-042) | ✔ `quiz-types` | ✅ |
-| MD1 | Mark material reviewed; back | ✔ `student-flow` | ✅ |
+| MD1 | Open a material: its file's preview and Download; back (D-067; was "mark reviewed") | ✔ `student-flow` | ✅ |
 | Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
 | Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
 | Own due date | An extension shows "Your due date: … (your instructor gave you more time)" in the rules and details; Turn in after the class's date, not late; Tasks lists it under Due soon with the student's date, not Missing (D-065) | ✔ `assignment-work-more` | ✅ |
