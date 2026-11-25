@@ -1,0 +1,61 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 1543 >>
+stream
+0.086 0.396 0.204 rg BT /F2 20 Tf 72 770 Td (IPv4 Addressing Practice) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 738 Td (IT230 Computer Networking - Practice set) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 708 Td (Reminder) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 682 Td (An IPv4 address has 32 bits, written as four numbers from 0 to 255. The prefix length \(/24,) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 666 Td (/26\) says how many of the first bits name the network; the rest name a host on it.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 636 Td (Exercises) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 610 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 610 Td (192.168.10.37/24 - write the network address and the broadcast address.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 592 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 592 Td (10.4.0.129/25 - how many usable host addresses does this network have?) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 574 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 574 Td (172.16.5.200/26 - which addresses are the first and last usable hosts?) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 556 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 556 Td (Split 192.168.50.0/24 into four equal subnets and list each network address.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 530 Td (Show your work) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 504 Td (Write each address in binary before you answer, and mark where the network part ends.) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (IPv4 Addressing Practice - page 1 of 1) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Title (IPv4 Addressing Practice) /Producer (TMCC LMS demo files) >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000320 00000 n 
+0000000415 00000 n 
+0000002010 00000 n 
+0000002156 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R /Info 8 0 R >>
+startxref
+2243
+%%EOF

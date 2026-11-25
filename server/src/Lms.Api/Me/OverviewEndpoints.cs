@@ -16,7 +16,7 @@ public sealed record ClassSummary(string Id, int SubjectId, string? SubjectCode,
     string InstructorName, string? TermName, int StudentCount, IReadOnlyList<ClassMeeting> Meetings);
 public sealed record ModuleItem(long Id, string ClassId, long? ParentModuleId, string Title, int SortOrder);
 public sealed record MaterialItem(long Id, string ClassId, long ModuleId, string Title, string Kind, string? Description,
-    string? FileName, string? FileType, string? FileSize, string Status, DateTime CreatedAt);
+    string? FileName, string? FileType, string? FileSize, string Status, DateTime CreatedAt, MaterialFileDto? File = null);
 public sealed record AnnouncementItem(long Id, string ClassId, string Title, string Message, string Status, DateTime PublishedAt, string? PostedBy, string? PostedByName);
 public sealed record CourseworkItem(string ClassId, CourseworkDto Coursework);
 public sealed record SubmissionItem(long CourseworkId, string ClassId, SubmissionDto Submission);
@@ -76,6 +76,7 @@ public static class OverviewEndpoints
                 courseworkQuery = courseworkQuery.Where(c => (c.Status == CourseworkStatus.Published || c.Status == CourseworkStatus.Closed) && (c.AvailableFrom == null || c.AvailableFrom <= now));
             }
             var materials = await materialQuery.OrderBy(m => m.Id).ToListAsync(ct);
+            var materialFiles = await MaterialFileEndpoints.FilesOfAsync(db, materials, ct);
             var announcements = await announcementQuery.OrderByDescending(a => a.PublishedAt).ThenByDescending(a => a.Id).ToListAsync(ct);
             var coursework = await courseworkQuery.OrderBy(c => c.DueAt == null).ThenBy(c => c.DueAt).ThenBy(c => c.Id).ToListAsync(ct);
             var counts = await CourseworkEndpoints.QuestionCountsAsync(db, coursework, ct);
@@ -118,7 +119,8 @@ public static class OverviewEndpoints
                 classes.Select(c => new ClassSummary(c.Id, c.SubjectId, c.SubjectCode, c.SubjectName, c.SectionName, c.InstructorId, c.InstructorName, c.TermName,
                     roster.Count(s => s.ClassId == c.Id), JsonSerializer.Deserialize<List<ClassMeeting>>(c.MeetingsJson, JsonSerializerOptions.Web) ?? [])).ToList(),
                 modules.Select(m => new ModuleItem(m.Id, m.ClassId, m.ParentModuleId, m.Title, m.SortOrder)).ToList(),
-                materials.Select(m => new MaterialItem(m.Id, m.ClassId, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt)).ToList(),
+                materials.Select(m => new MaterialItem(m.Id, m.ClassId, m.ModuleId, m.Title, m.Kind, m.Description, m.FileName, m.FileType, m.FileSize, m.Status, m.CreatedAt,
+                    m.FileDto(materialFiles))).ToList(),
                 announcements.Select(a => new AnnouncementItem(a.Id, a.ClassId, a.Title, a.Message, a.Status, a.PublishedAt, a.CreatedBy, a.CreatedBy is { } by ? names.GetValueOrDefault(by) : null)).ToList(),
                 coursework.Select(c => new CourseworkItem(c.ClassId, CourseworkEndpoints.ToDto(c, user, counts, progress, turnIn))).ToList(),
                 submissions,

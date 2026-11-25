@@ -143,55 +143,67 @@
       "classId": "biology",
       "title": "Programming Logic and Pseudocode",
       "kind": "Study guide",
-      "description": "A quick reference for expressing an algorithm before writing code."
+      "description": "A quick reference for expressing an algorithm before writing code.",
+      "file": "programming-logic-and-pseudocode.pdf"
     },
     {
       "classId": "biology",
       "title": "Variables and Data Types",
       "kind": "Reference sheet",
-      "description": "Review common types and how variables hold program values."
+      "description": "Review common types and how variables hold program values.",
+      "file": "variables-and-data-types.png"
     },
     {
       "classId": "biology",
       "title": "Control Flow Practice",
       "kind": "Practice set",
-      "description": "Trace decisions and loops through short code examples."
+      "description": "Trace decisions and loops through short code examples.",
+      "file": "control-flow-practice.txt"
     },
     {
       "classId": "math",
       "title": "Relational Database Design",
       "kind": "Study guide",
-      "description": "Connect entities, attributes, keys, and relationships in a relational model."
+      "description": "Connect entities, attributes, keys, and relationships in a relational model.",
+      "file": "relational-database-design.pptx",
+      "preview": "relational-database-design.preview.pdf"
     },
     {
       "classId": "math",
       "title": "SQL Query Workbook",
       "kind": "Practice set",
-      "description": "Practice selecting, filtering, joining, and grouping records."
+      "description": "Practice selecting, filtering, joining, and grouping records.",
+      "file": "sql-query-workbook.xlsx",
+      "preview": "sql-query-workbook.preview.pdf"
     },
     {
       "classId": "english",
       "title": "Semantic HTML Reference",
       "kind": "Study guide",
-      "description": "Choose HTML elements that describe the purpose of page content."
+      "description": "Choose HTML elements that describe the purpose of page content.",
+      "file": "semantic-html-reference.docx",
+      "preview": "semantic-html-reference.preview.pdf"
     },
     {
       "classId": "english",
       "title": "Responsive CSS Layout Lab",
       "kind": "Practice set",
-      "description": "Explore grid, flexbox, and breakpoints for adaptable interfaces."
+      "description": "Explore grid, flexbox, and breakpoints for adaptable interfaces.",
+      "file": "responsive-css-layout-lab.pdf"
     },
     {
       "classId": "history",
       "title": "Networking Models Overview",
       "kind": "Study guide",
-      "description": "Compare the layers and responsibilities in common network models."
+      "description": "Compare the layers and responsibilities in common network models.",
+      "file": "networking-models-overview.pdf"
     },
     {
       "classId": "history",
       "title": "IPv4 Addressing Practice",
       "kind": "Practice set",
-      "description": "Read addresses and identify network and host portions."
+      "description": "Read addresses and identify network and host portions.",
+      "file": "ipv4-addressing-practice.pdf"
     }
   ],
   "coursework": [

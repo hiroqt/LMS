@@ -86,6 +86,38 @@ public sealed class RetentionTests : IDisposable
     }
 
     [Fact]
+    public async Task Student_files_are_deleted_but_class_material_files_stay()
+    {
+        var (work, material) = await _factory.WithDbAsync(async db =>
+        {
+            var (_, essay) = await ClassWithWorkAsync(db, "old", 1, 1, active: false);
+            // Two later terms, so "old" is past the retention setting.
+            await ClassWithWorkAsync(db, "recent", 1, 2, active: false);
+            await ClassWithWorkAsync(db, "between", 2, 1, active: false);
+            await ClassWithWorkAsync(db, "current", 2, 2, active: true);
+            var courseworkId = await db.Submissions.Where(s => s.Id == essay).Select(s => s.CourseworkId).SingleAsync();
+            var studentFile = new StoredFile { ClassId = "old", CourseworkId = courseworkId, OwnerId = "STU-1", StorageKey = new string('a', 32), Name = "lia-abad-essay.pdf", ContentType = "application/pdf", ContentHash = "x" };
+            // A material's file belongs to no assignment (D-067).
+            var materialFile = new StoredFile { ClassId = "old", OwnerId = "EMP-1", StorageKey = new string('b', 32), Name = "normal-forms.pdf", ContentType = "application/pdf", ContentHash = "y" };
+            db.StoredFiles.AddRange(studentFile, materialFile);
+            await db.SaveChangesAsync();
+            return (studentFile.Id, materialFile.Id);
+        });
+
+        await _factory.WithServiceAsync<AttemptRetention, RetentionResult>(r => r.RunAsync(CancellationToken.None));
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var gone = await db.StoredFiles.SingleAsync(f => f.Id == work);
+            Assert.Equal("", gone.Name);
+            Assert.NotNull(gone.DeletedAt);
+            var kept = await db.StoredFiles.SingleAsync(f => f.Id == material);
+            Assert.Equal(("normal-forms.pdf", (DateTime?)null), (kept.Name, kept.DeletedAt));
+            return 0;
+        });
+    }
+
+    [Fact]
     public async Task Nothing_is_touched_when_no_class_is_offered()
     {
         await _factory.WithDbAsync(async db => (await ClassWithWorkAsync(db, "old", 1, 1, active: false), await ClassWithWorkAsync(db, "later", 3, 1, active: false)));

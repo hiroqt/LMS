@@ -1,0 +1,69 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 2134 >>
+stream
+0.086 0.396 0.204 rg BT /F2 20 Tf 72 770 Td (Responsive CSS Layout Lab) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 738 Td (IT212 Web Application Development - Practice set) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 708 Td (Goal) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 682 Td (Build one page that reads well on a 320 px phone and a 1280 px laptop, using grid, flexbox) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 666 Td (and one breakpoint.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 636 Td (Part 1: flexbox) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 610 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 610 Td (Lay out a header with the site name on the left and three links on the right.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 592 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 592 Td (Let the links wrap below the name when the screen is narrow.) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 574 Td (.site-header { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 560 Td (between; }) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 532 Td (Part 2: grid) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 506 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 506 Td (Show six cards: one column on phones, three columns on wide screens.) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 488 Td (.cards { display: grid; gap: 1rem; grid-template-columns: 1fr; }) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 468 Td (@media \(min-width: 48rem\) { .cards { grid-template-columns: repeat\(3, 1fr\); } }) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 440 Td (Part 3: check it) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 414 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 414 Td (Nothing scrolls sideways at 320 px.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 396 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 396 Td (Text stays at least 16 px, and links are easy to tap.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 378 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 378 Td (Write two sentences on what changed between the two widths and why.) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (Responsive CSS Layout Lab - page 1 of 1) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Title (Responsive CSS Layout Lab) /Producer (TMCC LMS demo files) >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000320 00000 n 
+0000000415 00000 n 
+0000002601 00000 n 
+0000002747 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R /Info 8 0 R >>
+startxref
+2835
+%%EOF

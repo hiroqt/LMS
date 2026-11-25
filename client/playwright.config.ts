@@ -52,6 +52,9 @@ export default defineConfig({
         Lms__Demo__DataDirectory: `${process.env.RUNNER_TEMP ?? process.env.TMPDIR ?? "/tmp"}/lms-e2e-${API_PORT}`,
         // Adds this run's client origin to the Demo CORS list (appsettings.Demo.json has 4317).
         Cors__AllowedOrigins__3: BASE_URL,
+        // Office uploads get no preview, whether or not this machine has LibreOffice (D-067). The
+        // seeded Office materials carry ready-made previews, so previews are still tested.
+        Lms__Files__Converter: "none",
       },
     },
     {

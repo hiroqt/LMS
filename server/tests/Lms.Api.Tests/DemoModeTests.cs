@@ -95,6 +95,9 @@ public sealed class DemoModeTests : IDisposable
         var created = await Json(await teacher.PostAsJsonAsync("/api/classes/biology/coursework", new { type = "assignment", moduleId = module, title = "Cell diagram", maxPoints = 10, status = "published" }));
         var id = created.GetProperty("id").GetInt64();
         var student = As("s0", CurrentUser.Student, "sandbox-a");
+        // The seeded materials' files are already there (D-067).
+        int Kept() => Directory.GetFiles(Path.Combine(_dir, "files", "sandbox-a"), "*", SearchOption.AllDirectories).Count(f => Path.GetFileName(Path.GetDirectoryName(f)) != "tmp");
+        var seeded = Kept();
 
         using var flagged = TestFiles.Form(System.Text.Encoding.ASCII.GetBytes(Lms.Api.Files.NoScanner.TestMarker), "notes.txt");
         var refused = await student.PostAsync($"/api/classes/biology/coursework/{id}/draft/files", flagged);
@@ -108,8 +111,29 @@ public sealed class DemoModeTests : IDisposable
         Assert.Equal(TestFiles.Pdf(), await (await student.GetAsync($"/api/files/{fileId}")).Content.ReadAsByteArrayAsync());
 
         // The bytes are in this sandbox's folder, and another sandbox has neither the row nor the file.
-        Assert.Single(Directory.GetFiles(Path.Combine(_dir, "files", "sandbox-a"), "*", SearchOption.AllDirectories));
+        Assert.Equal(seeded + 1, Kept());
         Assert.Equal(HttpStatusCode.NotFound, (await As("s0", CurrentUser.Student, "sandbox-b").GetAsync($"/api/files/{fileId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Seeded_materials_carry_their_demo_files_and_office_previews()
+    {
+        var student = As("s0", CurrentUser.Student);
+        var materials = (await Json(await student.GetAsync("/api/me/overview"))).GetProperty("materials").EnumerateArray().ToList();
+        Assert.Equal(9, materials.Count);
+        Assert.All(materials, m => Assert.Equal(JsonValueKind.Object, m.GetProperty("file").ValueKind));
+        JsonElement Titled(string title) => materials.Single(m => m.GetProperty("title").GetString() == title);
+
+        var guide = Titled("Programming Logic and Pseudocode");
+        var download = await student.GetAsync($"/api/classes/biology/materials/{guide.GetProperty("id").GetInt64()}/file");
+        Assert.Equal(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Demo", "files", "programming-logic-and-pseudocode.pdf")), await download.Content.ReadAsByteArrayAsync());
+
+        var deck = Titled("Relational Database Design").GetProperty("file");
+        Assert.Equal(("relational-database-design.pptx", "powerpoint", "ready"), (deck.GetProperty("name").GetString(), deck.GetProperty("type").GetString(), deck.GetProperty("preview").GetString()));
+        var preview = await student.GetAsync($"/api/classes/math/materials/{Titled("Relational Database Design").GetProperty("id").GetInt64()}/preview");
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        Assert.Equal("relational-database-design.pdf", preview.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+        Assert.StartsWith("%PDF-", System.Text.Encoding.Latin1.GetString((await preview.Content.ReadAsByteArrayAsync())[..5]));
     }
 
     [Fact]

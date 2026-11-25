@@ -168,9 +168,14 @@ comes from.
 | POST | `/api/classes/{classId}/modules` | `{ title, parentModuleId?, sortOrder? }`. Two levels at most; `sortOrder` defaults to the next number |
 | PATCH | `/api/classes/{classId}/modules/{id}` | `{ title?, sortOrder? }` |
 | GET | `/api/classes/{classId}/materials?moduleId=&page=&pageSize=` | Paged `{ items, page, pageSize, total }` |
-| POST | `/api/classes/{classId}/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }`. `kind` is one of the six types on the Instructor form. File name only; nothing is uploaded |
+| POST | `/api/classes/{classId}/materials` | `{ moduleId, title, kind, description?, fileName?, fileType?, fileSize? }`. `kind` is one of the six types on the Instructor form. No file: `fileName` and the rest are text only, as before uploads. To send the file, use `…/materials/upload` |
+| POST | `/api/classes/{classId}/materials/upload` | Multipart: `moduleId`, `title`, `kind`, `description?`, then `file`. The material and its file are saved together or not at all ([material files](#class-material-files-d-067)). 201 with the material |
+| PUT | `/api/classes/{classId}/materials/{id}/file` | Multipart `file`: adds a file to the material or replaces its file. 409 when another change to its file got there first |
+| DELETE | `/api/classes/{classId}/materials/{id}/file` | Takes the file off; the material stays |
+| GET | `/api/classes/{classId}/materials/{id}/file` | The file, as a download. Instructor of the class, or a student on its class list while the material is active; anyone else 404 |
+| GET | `/api/classes/{classId}/materials/{id}/preview` | The PDF copy of a Word, PowerPoint or Excel file, when `file.preview` is `ready`; 404 otherwise |
 | PATCH | `/api/classes/{classId}/materials/{id}` | `{ title?, kind?, description?, status?, moduleId? }`, where status is `active` or `archived`; `moduleId` moves it to another module or submodule of the same class |
-| DELETE | `/api/classes/{classId}/materials/{id}` | 204 |
+| DELETE | `/api/classes/{classId}/materials/{id}` | 204. Its file and preview are deleted too. 409 when a change to its file got there first |
 | GET | `/api/classes/{classId}/announcements?page=&pageSize=` | Newest first, paged; `postedBy` is the instructor's ISMS id |
 | POST | `/api/classes/{classId}/announcements` | `{ title (≤120), message (≤1,200) }` |
 | PATCH | `/api/classes/{classId}/announcements/{id}` | `{ status }`: archive or restore |
@@ -373,7 +378,9 @@ the same 404 as for a file that doesn't exist.
 | `Lms:Files:Root` | `App_Data/files` in Development; a folder per sandbox in Demo mode; otherwise **required** | Keep it outside any web root, back it up, and make it writable by the API only |
 | `Lms:Files:Scanner` | `none` in Development and Demo mode; otherwise **required** | `clamav` or `none`. `none` is refused outside Development and Demo mode. It is not a scanner: it refuses only a file that starts with `LMS-VIRUS-SCAN-TEST-FILE`, so the refusal can be tried out |
 | `Lms:Files:ClamAv:Host` / `Port` / `TimeoutSeconds` | `127.0.0.1` / `3310` / `60` | clamd over TCP (`INSTREAM`). Set clamd's `StreamMaxLength` to at least `26M` |
-| `Lms:Files:UploadsPerMinute` | 20 | Per student |
+| `Lms:Files:UploadsPerMinute` | 20 | Per person |
+| `Lms:Files:Converter` | LibreOffice when it is installed, otherwise `none` | `libreoffice` or `none`: what makes the PDF previews of Office materials. `libreoffice` without LibreOffice stops the API from starting |
+| `Lms:Files:LibreOffice:Path` / `TimeoutSeconds` / `MaxConcurrent` | found on the PATH or in the usual install folder / `45` / `2` | `soffice`. The time covers the wait for a free slot |
 
 The API refuses to start without a folder and a scanner, like a missing connection string. To
 try ClamAV locally:
@@ -386,6 +393,31 @@ dotnet user-secrets set Lms:Files:Scanner clamav
 ```
 
 When clamd can't be reached the upload fails with 503 and nothing is kept; the student tries again.
+
+### Class material files (D-067)
+
+An instructor's file for a material goes through the same steps as a student's: received under
+25 MB, its type decided from the bytes, scanned, then kept under a random key in `stored_files`
+(with no `coursework_id`). `materials.file_id` points at it. A material has at most one file.
+Replacing or removing it deletes the old bytes only after the database change commits, and
+retention never touches material files.
+
+**Previews.** A PDF, image or text file is shown as it is. A Word, PowerPoint or Excel file gets a
+PDF copy during the upload, after the scan: LibreOffice runs headless with its own throwaway
+profile and folder, at most `MaxConcurrent` at once, and is stopped after `TimeoutSeconds`. The
+copy must pass the PDF check before it is kept in `materials.preview_file_id`. `preview_status`
+says how it went: `ready`, `failed` (the material is still saved and downloadable), or `off` (no
+converter). A material's `file` carries `preview` (that status, null for a PDF, image or text file)
+and `previewSize`, the copy's bytes, which is what the preview downloads. The API logs at start-up
+which converter it uses. To try previews locally:
+
+```bash
+brew install --cask libreoffice     # macOS; on Ubuntu: apt-get install libreoffice-writer libreoffice-impress libreoffice-calc
+```
+
+In production, run LibreOffice inside the API's container with no outside network. Demo mode
+seeds every material with a file from `src/Lms.Api/Demo/files` (made by `tools/demo-files`),
+including Office files with ready-made previews, so previews work there without LibreOffice.
 
 ## Late penalties, a student's own dates, rubrics (D-062)
 
