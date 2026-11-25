@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <None Update="Demo/demo-seed.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The seeded materials' files (D-067), made by server/tools/demo-files. -->
+    <None Update="Demo/files/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

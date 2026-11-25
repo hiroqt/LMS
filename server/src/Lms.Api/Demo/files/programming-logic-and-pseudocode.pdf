@@ -1,0 +1,99 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 1815 >>
+stream
+0.086 0.396 0.204 rg BT /F2 20 Tf 72 770 Td (Programming Logic and Pseudocode) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 738 Td (IT101 Introduction to Programming - Study guide, Module 1) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 708 Td (What an algorithm is) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 682 Td (An algorithm is a finite list of clear steps that turns an input into an output. Before) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 666 Td (writing code, describe the steps in plain words so you can check the logic without worrying) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 650 Td (about syntax.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 620 Td (Writing pseudocode) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 594 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 594 Td (Write one action per line, in the order it happens.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 576 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 576 Td (Use capital keywords for structure: INPUT, OUTPUT, IF, ELSE, WHILE, FOR, END.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 558 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 558 Td (Indent the steps that belong to a decision or a loop.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 540 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 540 Td (Name values the way you would name variables: total, count, average.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 514 Td (Example: the average of three scores) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 488 Td (INPUT score1, score2, score3) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 468 Td (SET total TO score1 + score2 + score3) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 448 Td (SET average TO total / 3) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 428 Td (OUTPUT average) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (Programming Logic and Pseudocode - page 1 of 2) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 1859 >>
+stream
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 770 Td (Decisions) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 744 Td (A decision chooses between paths. Each path ends before the next step of the algorithm) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 728 Td (starts.) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 706 Td (IF average >= 75 THEN) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 686 Td (    OUTPUT "Passed") Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 666 Td (ELSE) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 646 Td (    OUTPUT "Needs review") Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 626 Td (END IF) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 598 Td (Loops) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 572 Td (A loop repeats steps while a condition holds. Always check that something inside the loop) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 556 Td (moves it toward the end, or it will never stop.) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 534 Td (SET count TO 1) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 514 Td (WHILE count <= 5) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 494 Td (    OUTPUT count) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 474 Td (    SET count TO count + 1) Tj ET
+0.11 0.13 0.12 rg BT /F3 10 Tf 72 454 Td (END WHILE) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 426 Td (Check your understanding) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 400 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 400 Td (Write pseudocode that reads a number and says whether it is even or odd.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 382 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 382 Td (Change the loop above so it counts down from 10 to 1.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 364 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 364 Td (Trace the average example with the scores 80, 72 and 91.) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (Programming Logic and Pseudocode - page 2 of 2) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+10 0 obj
+<< /Title (Programming Logic and Pseudocode) /Producer (TMCC LMS demo files) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000326 00000 n 
+0000000421 00000 n 
+0000002288 00000 n 
+0000002434 00000 n 
+0000004345 00000 n 
+0000004491 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 10 0 R >>
+startxref
+4587
+%%EOF

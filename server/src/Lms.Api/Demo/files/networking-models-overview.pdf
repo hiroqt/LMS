@@ -1,0 +1,89 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 2042 >>
+stream
+0.086 0.396 0.204 rg BT /F2 20 Tf 72 770 Td (Networking Models Overview) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 738 Td (IT230 Computer Networking - Study guide) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 708 Td (Why models) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 682 Td (A model splits the job of moving data into layers. Each layer offers a service to the one) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 666 Td (above it, so a change in one layer does not break the others.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 636 Td (The OSI model, top to bottom) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 610 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 610 Td (7 Application - what the user's program asks for, such as a web page.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 592 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 592 Td (6 Presentation - formats and encryption.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 574 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 574 Td (5 Session - starting and ending a conversation.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 556 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 556 Td (4 Transport - reliable delivery \(TCP\) or quick delivery \(UDP\).) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 538 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 538 Td (3 Network - addresses and routes \(IP\).) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 520 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 520 Td (2 Data link - frames on one link \(Ethernet, Wi-Fi\).) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 502 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 502 Td (1 Physical - signals on cables and radio.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 476 Td (The TCP/IP model) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 450 Td (TCP/IP uses four layers: Application, Transport, Internet and Link. It is the model the) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 434 Td (internet actually runs on; OSI is the common vocabulary for describing it.) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (Networking Models Overview - page 1 of 2) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 966 >>
+stream
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 770 Td (Following one request) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 744 Td (When a browser loads a page, the request is wrapped by each layer on the way down and) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 72 728 Td (unwrapped on the way up at the server. This wrapping is called encapsulation.) Tj ET
+0.086 0.396 0.204 rg BT /F2 14 Tf 72 698 Td (Review questions) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 672 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 672 Td (Which layer decides the route a packet takes?) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 654 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 654 Td (Name one protocol at the transport layer and say when you would choose it.) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 76 636 Td (-) Tj ET
+0.11 0.13 0.12 rg BT /F1 11 Tf 90 636 Td (Match each TCP/IP layer to the OSI layers it covers.) Tj ET
+0.35 0.38 0.36 rg BT /F1 9 Tf 72 40 Td (Networking Models Overview - page 2 of 2) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+10 0 obj
+<< /Title (Networking Models Overview) /Producer (TMCC LMS demo files) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000326 00000 n 
+0000000421 00000 n 
+0000002515 00000 n 
+0000002661 00000 n 
+0000003678 00000 n 
+0000003824 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 10 0 R >>
+startxref
+3914
+%%EOF
