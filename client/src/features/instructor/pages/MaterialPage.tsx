@@ -29,7 +29,8 @@ export default function MaterialPage() {
   const toast = useToast();
   const actions = useInstructorActions();
   const { store, instructor, rooms } = useInstructorWorkspace();
-  const [pages, setPages] = useState<number>();
+  // Kept with the file it was counted from, so a replaced file doesn't show the old count.
+  const [pages, setPages] = useState<{ file: number; count: number }>();
   const [confirm, setConfirm] = useState<"remove" | "delete" | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ name: string; fraction: number; office: boolean } | null>(null);
@@ -76,7 +77,7 @@ export default function MaterialPage() {
   };
 
   const preview = file ? (
-    <MaterialPreview key={file.id} viewer={viewer} classId={room.id} materialId={material.id} title={material.title} file={file} onPageCount={setPages} />
+    <MaterialPreview key={file.id} viewer={viewer} classId={room.id} materialId={material.id} title={material.title} file={file} onPageCount={(count) => setPages({ file: file.id, count })} />
   ) : (
     <PreviewNotice
       icon={<FileX2 />}
@@ -92,7 +93,7 @@ export default function MaterialPage() {
           file={file}
           viewer={viewer}
           fetchFile={() => fetchMaterialFile(viewer, room.id, material.id, "file")}
-          detail={pages ? pageCount(pages, file.type === "powerpoint" ? "slide" : "page") : undefined}
+          detail={pages?.file === file.id ? pageCount(pages.count, file.type === "powerpoint" ? "slide" : "page") : undefined}
         />
       ) : (
         <p className="m-0 text-body text-muted">No file attached.</p>

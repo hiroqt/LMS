@@ -9,7 +9,10 @@ export interface UploadProgressProps {
   onCancel: () => void;
 }
 
-/** An upload on its way: how far, then what the server is doing, with a way to stop it. Announced politely. */
+/**
+ * An upload on its way: how far, then what the server is doing. It can be stopped while the bytes
+ * are sent; once they all are, the server finishes the job, so stopping then would only hide it.
+ */
 export function UploadProgress({ name, fraction, finishing, onCancel }: UploadProgressProps) {
   const percent = Math.round(fraction * 100);
   const sent = fraction >= 1;
@@ -19,7 +22,7 @@ export function UploadProgress({ name, fraction, finishing, onCancel }: UploadPr
         <p role="status" className="m-0 min-w-0 flex-1 basis-48 text-body break-words text-ink">
           {sent ? `${finishing}…` : `Uploading ${name}: ${percent}%`}
         </p>
-        <Button variant="ghost" className="max-w-full shrink whitespace-normal" onClick={onCancel}>Cancel upload</Button>
+        {!sent && <Button variant="ghost" className="max-w-full shrink whitespace-normal" onClick={onCancel}>Cancel upload</Button>}
       </div>
       <div role="progressbar" aria-label={`Uploading ${name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-2 overflow-hidden rounded-full bg-line">
         <div className="h-full bg-primary-600" style={{ width: `${percent}%` }} />

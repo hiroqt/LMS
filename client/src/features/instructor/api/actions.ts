@@ -95,7 +95,8 @@ export function useInstructorActions() {
     const send = <T = unknown>(method: "POST" | "PUT" | "PATCH" | "DELETE", path: string, body?: unknown) => sendJson<T>(method, path, body, { viewer });
     const run = async (change: () => Promise<unknown>) => {
       const result = await attempt(change);
-      if (result.ok) await refresh();
+      // A cancelled upload may have reached the server just before it stopped, so look again.
+      if (result.ok || result.cancelled) await refresh();
       return result;
     };
 
