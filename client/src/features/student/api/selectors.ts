@@ -1,6 +1,6 @@
 import { inMonth, monthGrid, type CalendarMark } from "../../../shared/lib/calendar";
 import { moduleTree } from "../../../shared/lib/moduleTree";
-import type { AcademicEvent, Assessment, CourseModule, StudentCatalog, StudentProgress } from "./types";
+import type { AcademicEvent, Assessment, CourseModule, Material, StudentCatalog, StudentProgress } from "./types";
 
 export { inMonth, monthGrid };
 export { upcomingSchoolEvents } from "../../../shared/lib/schoolNews";
@@ -126,6 +126,45 @@ export interface ModuleSection {
   entries: ModuleEntry[];
   submodules: Array<{ module: CourseModule; entries: ModuleEntry[] }>;
 }
+
+/** A module or submodule's materials, in the order the instructor added them. */
+export interface MaterialGroup {
+  id: string;
+  title: string;
+  materials: Material[];
+  /** Submodules with materials; a submodule never has its own. */
+  submodules: MaterialGroup[];
+}
+
+/**
+ * A class's materials grouped by module, then submodule, in the instructor's order (D-067).
+ * Modules and submodules with no materials are left out; a material whose module is unknown
+ * goes in "Other materials" at the end.
+ */
+export function materialsByModule(catalog: Pick<StudentCatalog, "modules" | "materials">, courseId: string): MaterialGroup[] {
+  const mine = catalog.materials.filter((item) => item.courseId === courseId);
+  const of = (moduleId: string) => mine.filter((item) => item.moduleId === moduleId);
+  const tree = moduleTree(catalog.modules.filter((item) => item.courseId === courseId));
+  const groups = tree
+    .map(({ module, submodules }) => ({
+      id: module.id,
+      title: module.title,
+      materials: of(module.id),
+      submodules: submodules.map((sub) => ({ id: sub.id, title: sub.title, materials: of(sub.id), submodules: [] })).filter((sub) => sub.materials.length > 0),
+    }))
+    .filter((group) => group.materials.length > 0 || group.submodules.length > 0);
+  const placed = new Set(groups.flatMap((group) => [...group.materials, ...group.submodules.flatMap((sub) => sub.materials)]).map((item) => item.id));
+  const other = mine.filter((item) => !placed.has(item.id));
+  return other.length ? [...groups, { id: "other", title: "Other materials", materials: other, submodules: [] }] : groups;
+}
+
+/** The class's materials in reading order: module by module, each module's own before its submodules'. */
+export function materialSequence(catalog: Pick<StudentCatalog, "modules" | "materials">, courseId: string): Material[] {
+  return materialsByModule(catalog, courseId).flatMap((group) => [...group.materials, ...group.submodules.flatMap((sub) => sub.materials)]);
+}
+
+/** Newest first; equal dates keep their order. */
+export const newestFirst = (materials: readonly Material[]) => [...materials].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
 /**
  * A class's modules in order, each with its submodules and the materials and
