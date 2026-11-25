@@ -125,10 +125,10 @@ export default function OverviewPage() {
           className="@4xl:col-span-7"
           label="Totals"
           items={[
-            { icon: <UsersRound />, tone: classTones[0], value: students.length, label: "Total students", note: `${activeStudents} active · ${students.length - activeStudents} inactive`, name: `Total students: ${students.length}. View students`, onOpen: () => navigate(adminPaths.users("student")) },
-            { icon: <GraduationCap />, tone: classTones[1], value: faculty.length, label: "Total faculty", note: `${activeFaculty} active · ${faculty.length - activeFaculty} inactive`, name: `Total faculty: ${faculty.length}. View faculty`, onOpen: () => navigate(adminPaths.users("instructor")) },
-            { icon: <School />, tone: classTones[2], value: model.metrics.activeCourses, label: "Active courses", note: `Class sections across ${model.metrics.totalSubjects} subjects`, name: `Active courses: ${model.metrics.activeCourses}. View classrooms`, onOpen: () => navigate(adminPaths.courses("classrooms")) },
-            { icon: <UserRound />, tone: classTones[3], value: model.metrics.activeUsers, label: "Active users", note: `of ${data.users.length} user accounts`, name: `Active users: ${model.metrics.activeUsers}. Manage users`, onOpen: () => navigate(adminPaths.users()) },
+            { icon: <UsersRound />, tone: classTones[0], value: students.length, label: "Total students", note: `${activeStudents} active · ${students.length - activeStudents} inactive`, name: `${students.length} Total students. View students`, onOpen: () => navigate(adminPaths.users("student")) },
+            { icon: <GraduationCap />, tone: classTones[1], value: faculty.length, label: "Total faculty", note: `${activeFaculty} active · ${faculty.length - activeFaculty} inactive`, name: `${faculty.length} Total faculty. View faculty`, onOpen: () => navigate(adminPaths.users("instructor")) },
+            { icon: <School />, tone: classTones[2], value: model.metrics.activeCourses, label: "Active courses", note: `Class sections across ${model.metrics.totalSubjects} subjects`, name: `${model.metrics.activeCourses} Active courses. View classrooms`, onOpen: () => navigate(adminPaths.courses("classrooms")) },
+            { icon: <UserRound />, tone: classTones[3], value: model.metrics.activeUsers, label: "Active users", note: `of ${data.users.length} user accounts`, name: `${model.metrics.activeUsers} Active users. Manage users`, onOpen: () => navigate(adminPaths.users()) },
           ]}
         />
 

@@ -8,13 +8,19 @@ export interface SummaryItem {
   tone: string;
   value: number;
   label: string;
-  /** Shown instead of the label when the cell is about 9rem wide (phones). The full label stays the accessible name. */
+  /**
+   * Shown instead of the label when the cell is about 9rem wide (phones). The full label stays the
+   * accessible name, so the short one must be words from it ("Due" for "Due this week", L-105).
+   */
   shortLabel?: string;
   /** One fact the reader can use (a count, a date). Hidden when the cell is narrow. */
   note?: ReactNode;
   /** When present the cell is a button. Its name starts with the value ("5 Due this week") unless `name` is given. */
   onOpen?: () => void;
-  /** Overrides the button's accessible name, e.g. "Total students: 12. View students". */
+  /**
+   * Overrides the button's accessible name. Start it with the visible words ("12 Total students.
+   * View students") so speech control finds the button by what it shows (WCAG 2.5.3, L-105).
+   */
   name?: string;
 }
 

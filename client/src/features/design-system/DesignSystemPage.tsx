@@ -167,7 +167,7 @@ export default function DesignSystemPage() {
                 label="Summary"
                 items={[
                   { icon: <BookOpen />, tone: classTones[0], value: 4, label: "Active classes", shortLabel: "Classes", note: "Fall 2026" },
-                  { icon: <AlarmClock />, tone: classTones[1], value: 5, label: "Due this week", shortLabel: "Due soon", note: "2 in the next 3 days", onOpen: () => {} },
+                  { icon: <AlarmClock />, tone: classTones[1], value: 5, label: "Due this week", shortLabel: "Due", note: "2 in the next 3 days", onOpen: () => {} },
                   { icon: <ClipboardCheck />, tone: classTones[3], value: 2, label: "Assessments done", shortLabel: "Done", note: "of 12 assessments", onOpen: () => {} },
                 ]}
               />
