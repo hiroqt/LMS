@@ -26,8 +26,9 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | ✅ |
 | T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | ✅ |
 | T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | ✅ |
-| TD | "Assessments done" summary → Tasks: Done | ✔ `student-flow` (after reload) | ✅ |
-| TW | "Due this week" summary → Tasks | ✔ `shell` TW | ✅ |
+| TD | "Done" count in Tasks & Assessments → Tasks: Done (D-071; was "Assessments done") | ✔ `student-flow` (after reload) | ✅ |
+| TM | "Missing" count in Tasks & Assessments → Tasks: Missing (D-071) | ✔ `shell` TM | ✅ |
+| TW | "Due this week" count in Tasks & Assessments → Tasks | ✔ `shell` TW | ✅ |
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT | Materials grouped by module and submodule; type filter; By module / Newest first; search; a material page with preview, file details, Download, Previous and Next (D-067) | ✔ `materials` | ✅ |
