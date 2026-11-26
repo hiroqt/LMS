@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { shouldRetryApiRead } from "../../../shared/api/http";
 import type { Viewer } from "../../../shared/api/viewer";
-import { fetchMeetings, meetingKeys } from "../api/meetings";
+import { fetchMeetings, fetchMyMeetings, meetingKeys } from "../api/meetings";
 
 /** How often an open class page checks for a meeting that started or ended (D-070: no WebSocket). */
 export const MEETINGS_REFRESH_MS = 20_000;
@@ -23,4 +23,16 @@ export function useClassMeetings(viewer: Viewer, classId: string) {
 export function useRefreshMeetings(viewer: Viewer, classId: string): () => Promise<void> {
   const queryClient = useQueryClient();
   return useCallback(() => queryClient.invalidateQueries({ queryKey: meetingKeys.list(viewer.id, classId) }), [queryClient, viewer.id, classId]);
+}
+
+/** The viewer's live and coming meetings across their classes, for a dashboard; refreshed like a class's. */
+export function useMyMeetings(viewer: Viewer) {
+  return useQuery({
+    queryKey: meetingKeys.mine(viewer.id),
+    queryFn: ({ signal }) => fetchMyMeetings(viewer, signal),
+    retry: shouldRetryApiRead,
+    networkMode: "always",
+    refetchInterval: MEETINGS_REFRESH_MS,
+    enabled: Boolean(viewer.id),
+  });
 }

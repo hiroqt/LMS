@@ -1,6 +1,7 @@
 import type { Room } from "livekit-client";
-import { Ellipsis, Hand, LayoutGrid, MessageSquare, Mic, MicOff, MonitorUp, PhoneOff, UserRound, UsersRound, Video, VideoOff, WifiLow } from "lucide-react";
+import { Ellipsis, Hand, LayoutGrid, MessageSquare, Mic, MicOff, MonitorUp, PhoneOff, ShieldCheck, UserRound, UsersRound, Video, VideoOff, WifiLow } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "../../../shared/ui/Menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../shared/ui/Popover";
 import { SegmentedControl } from "../../../shared/ui/SegmentedControl";
 import { cn } from "../../../shared/lib/cn";
@@ -19,11 +20,13 @@ const failedText: Record<PublishSource, string> = {
 /** Phones and most tablets can't share a screen from the browser; the control isn't shown there. */
 const canShareScreen = () => typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getDisplayMedia === "function" && !/Android|iPhone|iPad/i.test(navigator.userAgent);
 
-export type Panel = "chat" | "people";
+export type Panel = "chat" | "people" | "host";
 
 /** The meeting's controls along the bottom. */
-export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, onHand, onReact, dataSaver, onDataSaver, layout, onLayout, onLeave, onNotice }: {
+export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, onHand, onReact, dataSaver, onDataSaver, layout, onLayout, onLeave, onNotice, onEnd }: {
   room: Room;
+  /** The instructor only: ends the meeting for everyone (after the page confirms). */
+  onEnd?: () => void;
   /** Says something above the meeting; a toast would cover these controls on a phone. */
   onNotice: (text: string, tone?: "warning" | "danger") => void;
   /** Narrow screens: icons, with the names read and shown as tooltips. */
@@ -73,6 +76,7 @@ export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, 
       <ReactionsButton onSend={onReact} labelHidden={compact} />
       <MediaToggle label="Chat" tone="plain" labelHidden={compact} on={panel === "chat"} onIcon={<MessageSquare />} onPress={() => onPanel(panel === "chat" ? null : "chat")} badge={unread > 0 ? String(unread) : undefined} badgeSuffix="unread" />
       <MediaToggle label="People" tone="plain" labelHidden={compact} on={panel === "people"} onIcon={<UsersRound />} onPress={() => onPanel(panel === "people" ? null : "people")} />
+      {onEnd && <MediaToggle label="Host controls" tone="plain" labelHidden={compact} on={panel === "host"} onIcon={<ShieldCheck />} onPress={() => onPanel(panel === "host" ? null : "host")} />}
       <Popover>
         <PopoverTrigger asChild>
           <button
@@ -100,7 +104,19 @@ export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, 
           />
         </PopoverContent>
       </Popover>
-      <Button variant="danger" onClick={onLeave} icon={<PhoneOff aria-hidden className="size-4" />} className="ml-1">Leave</Button>
+      {onEnd ? (
+        <Menu>
+          <MenuTrigger asChild>
+            <Button variant="danger" icon={<PhoneOff aria-hidden className="size-4" />} className="ml-1">Leave</Button>
+          </MenuTrigger>
+          <MenuContent side="top">
+            <MenuItem onSelect={onLeave}>Leave the meeting</MenuItem>
+            <MenuItem onSelect={onEnd} className="text-danger">End the meeting for everyone</MenuItem>
+          </MenuContent>
+        </Menu>
+      ) : (
+        <Button variant="danger" onClick={onLeave} icon={<PhoneOff aria-hidden className="size-4" />} className="ml-1">Leave</Button>
+      )}
     </nav>
   );
 }

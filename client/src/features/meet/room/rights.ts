@@ -38,3 +38,6 @@ export const isHost = (participant: Pick<Participant, "attributes">) => particip
 
 /** When the person raised their hand (the API sets it, D-070), or null. */
 export const handRaisedAt = (participant: Pick<Participant, "attributes">): string | null => participant.attributes["lms.hand"] || null;
+
+/** The instructor let this student speak while students may not turn on their own mic. */
+export const isLetSpeak = (participant: Pick<Participant, "attributes">) => participant.attributes["lms.letSpeak"] === "true";

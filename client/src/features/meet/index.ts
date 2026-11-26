@@ -6,6 +6,7 @@ import { lazy } from "react";
  * only when a meeting is opened (a recorded budget exception, kept out of the install cache).
  */
 export { LiveMeetingBanner, MeetingsTab, StartMeetingButton } from "./components/ClassMeetings";
-export type { Meeting } from "./api/meetings";
+export { MyMeetingsPanel } from "./components/MyMeetingsPanel";
+export type { Meeting, MyMeeting } from "./api/meetings";
 export type { MeetingRoomPageProps } from "./room/MeetingRoomPage";
 export const MeetingRoomPage = lazy(() => import("./room/MeetingRoomPage"));

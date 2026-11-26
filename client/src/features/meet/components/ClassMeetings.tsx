@@ -11,7 +11,7 @@ import { Dialog, DialogClose, DialogContent } from "../../../shared/ui/Dialog";
 import { Field, Input } from "../../../shared/ui/Field";
 import { IconButton } from "../../../shared/ui/IconButton";
 import { useToast } from "../../../shared/ui/toast/useToast";
-import { createMeeting, deleteMeeting, describeMeetingError, liveMeeting, pastMeetings, startMeeting, upcomingMeetings, type Meeting } from "../api/meetings";
+import { createMeeting, deleteMeeting, describeMeetingError, liveMeeting, pastMeetings, startMeeting, upcomingMeetings, type Meeting, type MeetingSettings } from "../api/meetings";
 import { formatClock, formatDuration, formatMeetingTime, nextFullHour, toLocalInput } from "../api/time";
 import { useClassMeetings, useRefreshMeetings } from "../hooks/useClassMeetings";
 
@@ -206,6 +206,17 @@ function ScheduleMeetingDialog({ open, onOpenChange, viewer, classId, defaultTit
   const [when, setWhen] = useState(() => toLocalInput(nextFullHour(new Date())));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  // The API's defaults (D-070, decision 7); changeable during the meeting too.
+  const [settings, setSettings] = useState<Pick<MeetingSettings, "studentsMayUnmute" | "studentsMayVideo" | "studentsMayShareScreen" | "studentsMayChat" | "saveChat">>({
+    studentsMayUnmute: true, studentsMayVideo: true, studentsMayShareScreen: false, studentsMayChat: true, saveChat: false,
+  });
+  const choices: { key: keyof typeof settings; label: string }[] = [
+    { key: "studentsMayUnmute", label: "Students may turn on their mic" },
+    { key: "studentsMayVideo", label: "Students may turn on their camera" },
+    { key: "studentsMayShareScreen", label: "Students may share their screen" },
+    { key: "studentsMayChat", label: "Students may chat" },
+    { key: "saveChat", label: "Save the chat" },
+  ];
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -215,7 +226,7 @@ function ScheduleMeetingDialog({ open, onOpenChange, viewer, classId, defaultTit
     }
     setSaving(true);
     try {
-      const meeting = await createMeeting(viewer, classId, { title: title.trim() || undefined, scheduledStart: new Date(when).toISOString() });
+      const meeting = await createMeeting(viewer, classId, { title: title.trim() || undefined, scheduledStart: new Date(when).toISOString(), settings });
       await onScheduled();
       onOpenChange(false);
       setTitle("");
@@ -243,6 +254,16 @@ function ScheduleMeetingDialog({ open, onOpenChange, viewer, classId, defaultTit
           <Field label="Starts" required error={errors.scheduledStart}>
             <Input type="datetime-local" value={when} onChange={(event) => setWhen(event.target.value)} />
           </Field>
+          <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+            <legend className="mb-1 p-0 text-body font-medium text-ink">In the meeting</legend>
+            <p className="m-0 mb-1 text-body text-muted">Students join with the mic off. You can change these during the meeting.</p>
+            {choices.map((choice) => (
+              <label key={choice.key} className="flex min-h-touch cursor-pointer items-center gap-3 rounded-control px-1 hover:bg-primary-50">
+                <input type="checkbox" checked={settings[choice.key]} onChange={(event) => setSettings((current) => ({ ...current, [choice.key]: event.target.checked }))} className="size-5 shrink-0 accent-primary-700" />
+                <span className="text-body">{choice.label}</span>
+              </label>
+            ))}
+          </fieldset>
           <div className="flex flex-wrap justify-end gap-2">
             <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
             <Button type="submit" loading={saving} loadingLabel="Scheduling">Schedule</Button>

@@ -64,6 +64,7 @@ export interface MeetingCreate {
 const base = (classId: string) => `/api/classes/${encodeURIComponent(classId)}/meetings`;
 
 export const meetingKeys = {
+  mine: (viewerId: string) => ["meet", "mine", viewerId] as const,
   list: (viewerId: string, classId: string) => ["meet", "list", viewerId, classId] as const,
   one: (viewerId: string, classId: string, id: number) => ["meet", "one", viewerId, classId, id] as const,
 };
@@ -99,6 +100,30 @@ export const fetchSavedChat = (viewer: Viewer, classId: string, id: number, sign
 /** Raises or lowers the viewer's own hand (a participant attribute the server sets). */
 export const setHand = (viewer: Viewer, classId: string, id: number, raised: boolean) =>
   sendJson<void>("POST", `${base(classId)}/${id}/hand`, { raised }, { viewer });
+
+/** Title, time, the lock, and settings; a live meeting changes for everyone at once. */
+export const updateMeeting = (viewer: Viewer, classId: string, id: number, input: { title?: string; scheduledStart?: string; locked?: boolean; settings?: Partial<MeetingSettings> }) =>
+  sendJson<Meeting>("PATCH", `${base(classId)}/${id}`, input, { viewer });
+
+/** The instructor's controls for one person in the meeting. */
+export type HostAction = "mute" | "ask-unmute" | "stop-share" | "remove" | "lower-hand";
+export const hostAction = (viewer: Viewer, classId: string, id: number, personId: string, action: HostAction) =>
+  sendJson<void>("POST", `${base(classId)}/${id}/people/${encodeURIComponent(personId)}/${action}`, undefined, { viewer });
+
+/** Lets a student speak (or stops), when students may not turn on their own mic. */
+export const letSpeak = (viewer: Viewer, classId: string, id: number, personId: string, allowed: boolean) =>
+  sendJson<void>("POST", `${base(classId)}/${id}/people/${encodeURIComponent(personId)}/let-speak`, { allowed }, { viewer });
+
+export const muteEveryone = (viewer: Viewer, classId: string, id: number) =>
+  sendJson<{ muted: number }>("POST", `${base(classId)}/${id}/mute-all`, undefined, { viewer });
+
+/** One of the viewer's live or coming meetings, for a dashboard. */
+export interface MyMeeting {
+  meeting: Meeting;
+  className: string;
+}
+
+export const fetchMyMeetings = (viewer: Viewer, signal?: AbortSignal) => getJson<MyMeeting[]>("/api/me/meetings", { identity: true, viewer, signal });
 
 /** The meeting that is on now, if any. */
 export const liveMeeting = (meetings: readonly Meeting[] | undefined) => meetings?.find((m) => m.status === "live");
