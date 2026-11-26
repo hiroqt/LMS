@@ -1,0 +1,31 @@
+# LiveKit media server for class meetings (D-070, client/docs/MEETINGS_PLAN.md), local
+# development ONLY.
+#
+#   docker compose up -d      # start it on ws://localhost:7880
+#   ./check.sh                # two test publishers and two viewers for 10 seconds
+#   docker compose down       # stop it (it keeps nothing)
+#
+# Bound to 127.0.0.1 so it is not reachable from the LAN, and it tells browsers to send media to
+# 127.0.0.1, so only browsers on this computer can join. README.md explains how to test from a
+# phone.
+#
+# The key and secret below are obvious dev-only placeholders. Override them with environment
+# variables or an untracked meet-server/.env file:
+#   LIVEKIT_API_KEY=...  LIVEKIT_API_SECRET=...   (the secret needs at least 32 characters)
+name: lms-meet-dev
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    container_name: lms-meet-dev
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-lms-dev}: ${LIVEKIT_API_SECRET:-dev_only_livekit_secret_change_me_0123}"
+      NODE_IP: ${MEET_NODE_IP:-127.0.0.1}
+    ports:
+      - "${MEET_BIND_IP:-127.0.0.1}:7880:7880"       # signalling (WebSocket) and the server API
+      - "${MEET_BIND_IP:-127.0.0.1}:7881:7881"       # media over TCP, when UDP is blocked
+      - "${MEET_BIND_IP:-127.0.0.1}:7882:7882/udp"   # media over UDP
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro

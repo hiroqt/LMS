@@ -1,0 +1,19 @@
+# LiveKit media server settings for class meetings (D-070), local development ONLY.
+# The API key and secret come from LIVEKIT_KEYS in docker-compose.yml, never from this file.
+port: 7880
+rtc:
+  # Media goes over one UDP port (7882), with TCP 7881 as the fallback when UDP is blocked.
+  # Production uses a UDP range and TURN on 443 instead (MEETINGS_PLAN.md, "Going live").
+  tcp_port: 7881
+  udp_port: 7882
+  # Advertise NODE_IP (set in docker-compose.yml) instead of looking up a public IP.
+  use_external_ip: false
+room:
+  # A room nobody joins closes after 5 minutes, and a room closes 5 minutes after the last
+  # person leaves, so a dropped instructor can come back. There is no limit on a meeting's length.
+  empty_timeout: 300
+  departure_timeout: 300
+  # Nobody can switch on someone else's mic or camera (D-070, decision 7).
+  enable_remote_unmute: false
+logging:
+  level: info
