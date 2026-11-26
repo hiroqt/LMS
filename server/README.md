@@ -74,7 +74,7 @@ without a migration.
 | Group | Tables |
 |---|---|
 | ISMS reference (written only by the sync) | `isms_classes`, `isms_class_students` |
-| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `stored_files`, `submission_files`, `grades`, `grade_rubric_scores`, `coursework_exceptions`, `rubrics`, `rubric_criteria`, `rubric_levels`, `saved_comments`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `audit_log` |
+| LMS-owned | `modules` (optional parent for submodules), `materials`, `announcements`, `questionnaires`, `questions`, `question_options`, `question_expected_answers`, `coursework`, `submissions`, `submission_answers`, `stored_files`, `submission_files`, `grades`, `grade_rubric_scores`, `coursework_exceptions`, `rubrics`, `rubric_criteria`, `rubric_levels`, `saved_comments`, `gradebook_settings`, `attendance_months`, `attendance_entries`, `meetings`, `meeting_attendance`, `meeting_chat_messages`, `audit_log` |
 
 Every LMS-owned row records `created_at`, `created_by`, `updated_at` and `updated_by`. ISMS people
 are stored by their ISMS reference ids, never as LMS accounts.
@@ -459,4 +459,84 @@ handed-in version, a folder per student, up to 250 MB of files.
 | Setting | Default | Notes |
 |---|---|---|
 | `Lms:TimeZone` | `Asia/Manila` | The zone calendar days late are counted in |
+
+## Class meetings (D-070)
+
+Live video for a class, like Google Meet, on a LiveKit media server we host ourselves
+(`../meet-server/`, plan in `../client/docs/MEETINGS_PLAN.md`). The browser sends video and sound
+to the media server. This API decides who may join and what each person may publish, and records
+attendance from the media server's webhooks. Migration: `Meetings` (`meetings`,
+`meeting_attendance`, `meeting_chat_messages`).
+
+```
+browser ──join pass──▶ LiveKit (WebRTC) ──signed webhooks──▶ this API ──▶ meeting_attendance
+   └──/api/classes/{id}/meetings──▶ this API ──room API (Twirp)──▶ LiveKit
+```
+
+**Settings.** Without a URL, key, and secret, meetings are off: they can be listed and scheduled,
+and starting or joining answers 503 `meetings_off`. The key and secret go in user-secrets, never in
+a committed file. Locally, with `meet-server/` running:
+
+```bash
+cd server/src/Lms.Api
+dotnet user-secrets set Lms:Meet:Url "ws://localhost:7880"
+dotnet user-secrets set Lms:Meet:ApiKey "lms-dev"
+dotnet user-secrets set Lms:Meet:ApiSecret "dev_only_livekit_secret_change_me_0123"   # meet-server's placeholder
+```
+
+| Setting | Default | Notes |
+|---|---|---|
+| `Lms:Meet:Url` | none | What browsers connect to: `wss://…` when live, `ws://localhost:7880` locally |
+| `Lms:Meet:ApiUrl` | `Url` with `http(s)` | The room API this server calls, if it differs from `Url` |
+| `Lms:Meet:ApiKey`, `Lms:Meet:ApiSecret` | none | The media server's key and secret. A secret under 32 characters stops the API from starting |
+| `Lms:Meet:JoinPassMinutes` | 10 | How long a pass can be used to join. Once in, LiveKit keeps the person in |
+| `Lms:Meet:EmptyRoomMinutes` | 5 | A room nobody joins, or everyone has left, closes after this, which ends the meeting |
+| `Lms:Meet:ChatMessagesPerMinute` | 30 | Per person |
+
+The media server sends its webhooks to `POST /api/meetings/livekit-webhook` (`meet-server/livekit.yaml`).
+Use `https://` once the API runs outside Development. Only a webhook signed with the secret,
+carrying the SHA-256 of its body, is read. Each one is applied once, by its participant session id. In
+Demo mode the room name starts with the sandbox (`sandbox.random`), because webhooks carry no
+sandbox header (L-104).
+
+All under `/api/classes/{classId}/meetings`. The instructor and the active class list can read and
+join. Everyone else gets 404.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `…/meetings` | class | Live, then upcoming (soonest first), then past (newest first) |
+| POST | `…/meetings` | instructor | `{ title?, scheduledStart?, startNow?, settings? }`. One live meeting per class (409 `already_live`) |
+| GET | `/{id}` | class | One meeting, with `savedChatMessages` |
+| PATCH | `/{id}` | instructor | `{ title?, scheduledStart?, locked?, settings? }`. A live change reaches everyone at once |
+| DELETE | `/{id}` | instructor | Only before it starts |
+| POST | `/{id}/start` | instructor | Creates the room. 409 `ended` after it ended |
+| POST | `/{id}/end` | instructor | Closes the room for everyone. Ends even if the media server can't be reached |
+| POST | `/{id}/join` | class | `{ serverUrl, token, expiresAt, identity, name, role, meeting }`. 409 `not_started` or `ended`, 403 `locked` or `removed` |
+| POST | `/{id}/people/{personId}/mute` | instructor | Mutes their mic. Only they can unmute (remote unmute is off) |
+| POST | `/{id}/mute-all` | instructor | Everyone but the instructor |
+| POST | `/{id}/people/{personId}/let-speak` | instructor | `{ allowed }`. Only when students may not turn on their own mic |
+| POST | `/{id}/people/{personId}/ask-unmute` | instructor | Sends them `lms.ask-unmute` |
+| POST | `/{id}/people/{personId}/stop-share` | instructor | Stops their screen share. They can share again |
+| POST | `/{id}/people/{personId}/remove` | instructor | Disconnects them. They can't rejoin this meeting |
+| POST | `/{id}/chat` | class, in the meeting | `{ text }` (1000 characters). Saved only while `saveChat` is on |
+| GET | `/{id}/chat` | class | The saved chat |
+| DELETE | `/{id}/chat` | instructor | Deletes the saved chat |
+| GET | `/{id}/attendance` | instructor | Each person's first join, last leave, stays, and minutes (overlaps once) |
+
+**Settings of a meeting:** `studentsJoinMuted` (on), `studentsMayUnmute` (on), `studentsMayVideo`
+(on), `studentsMayShareScreen` (off), `studentsMayChat` (on), `saveChat` (off). The join pass
+carries the rights (`canPublishSources`). A student with nothing to publish gets `canPublish:
+false`, because LiveKit reads an empty source list as "everything". A right taken away during the
+meeting is unpublished at once. A locked meeting still lets back in anyone who was already in it.
+
+**What the page trusts:** chat (`lms.chat`) and "ask to unmute" (`lms.ask-unmute`) come only from
+the server, as data messages with no sender. The room's metadata carries the title, the lock,
+`saveChat`, and the student rights. Raised hands and reactions are the page's own data messages.
+
+**Errors:** 503 `meeting_server_unavailable` (no answer), 502 `meeting_server_rejected_key` (the
+key or secret doesn't match the media server), 409 `meeting_server_refused` (any other refusal).
+
+**Tests:** `MeetingTests` use a stand-in media server. `LiveKitContractTests` call a real one
+when `LMS_TEST_LIVEKIT_URL` is set (`http://127.0.0.1:7880` with `meet-server/` up). API CI runs
+LiveKit as a service and sets `LMS_REQUIRE_LIVEKIT=1`.
 
