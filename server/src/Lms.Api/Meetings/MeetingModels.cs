@@ -31,6 +31,8 @@ public sealed record MeetingChatMessageDto(string Key, long? Id, string SenderId
 
 public sealed record MeetingLetSpeakInput(bool? Allowed);
 
+public sealed record MeetingHandInput(bool? Raised);
+
 public sealed record MeetingAttendancePersonDto(string PersonId, string Name, string Role, bool OnClassList, bool Joined,
     DateTime? FirstJoinedAt, DateTime? LastLeftAt, int Stays, int MinutesIn);
 

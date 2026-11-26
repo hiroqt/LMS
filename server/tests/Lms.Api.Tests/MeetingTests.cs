@@ -463,6 +463,29 @@ public sealed class MeetingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_person_in_the_meeting_raises_and_lowers_their_own_hand_and_it_keeps_their_rights()
+    {
+        await SeedAsync();
+        var (id, room) = await StartAsync(new { studentsMayUnmute = false });
+        var rights = new MeetingPermission(true, true, true, ["camera"]);
+        Meet.Join(room, Lia, rights);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await Student().PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true })).StatusCode);
+        Assert.Equal(_factory.Time.Now.UtcDateTime, DateTime.Parse(Meet.Person(room, Lia)!.Attributes[MeetingRights.HandAttribute], null, System.Globalization.DateTimeStyles.RoundtripKind));
+        // Only the attribute changed: what she may publish is untouched.
+        Assert.Equal(rights, Meet.Person(room, Lia)!.Permission);
+        Assert.Empty(Meet.CallsTo(nameof(IMeetingServer.UpdateParticipantAsync)));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await Student().PostAsJsonAsync($"{Base}/{id}/hand", new { raised = false })).StatusCode);
+        Assert.False(Meet.Person(room, Lia)!.Attributes.ContainsKey(MeetingRights.HandAttribute));
+
+        // Someone not in the meeting can't, nor can anyone outside the class.
+        var notIn = await Student(Max).PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true });
+        Assert.Equal("not_in_meeting", Code(await Json(notIn)));
+        Assert.Equal(HttpStatusCode.NotFound, (await Student(Outsider).PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true })).StatusCode);
+    }
+
+    [Fact]
     public async Task Ending_closes_the_room_and_open_stays_even_when_the_media_server_is_down()
     {
         await SeedAsync();

@@ -38,6 +38,8 @@ public interface IMeetingServer
     Task<MeetingParticipant?> GetParticipantAsync(string room, string identity, CancellationToken ct);
     /// <summary>Replaces what the person may publish. A source taken away is unpublished at once.</summary>
     Task UpdateParticipantAsync(string room, string identity, MeetingPermission permission, IReadOnlyDictionary<string, string>? attributes, CancellationToken ct);
+    /// <summary>Changes only the person's attributes (an empty value removes one); what they may publish stays as it is.</summary>
+    Task SetAttributesAsync(string room, string identity, IReadOnlyDictionary<string, string> attributes, CancellationToken ct);
     /// <summary>Mutes one published track. Unmuting someone else is not possible (remote unmute is off).</summary>
     Task MuteTrackAsync(string room, string identity, string trackSid, CancellationToken ct);
     /// <summary>Disconnects one person. Someone who already left is fine.</summary>
@@ -64,6 +66,7 @@ internal sealed class MeetingServerOff : IMeetingServer
     public Task<IReadOnlyList<MeetingParticipant>> ListParticipantsAsync(string room, CancellationToken ct) => throw Off();
     public Task<MeetingParticipant?> GetParticipantAsync(string room, string identity, CancellationToken ct) => throw Off();
     public Task UpdateParticipantAsync(string room, string identity, MeetingPermission permission, IReadOnlyDictionary<string, string>? attributes, CancellationToken ct) => throw Off();
+    public Task SetAttributesAsync(string room, string identity, IReadOnlyDictionary<string, string> attributes, CancellationToken ct) => throw Off();
     public Task MuteTrackAsync(string room, string identity, string trackSid, CancellationToken ct) => throw Off();
     public Task RemoveParticipantAsync(string room, string identity, CancellationToken ct) => throw Off();
     public Task SendDataAsync(string room, string topic, byte[] data, IReadOnlyList<string>? to, CancellationToken ct) => throw Off();
@@ -122,6 +125,14 @@ internal sealed class LiveKitMeetingServer(HttpClient http, MeetingTokens tokens
             request["attributes"] = new JsonObject(attributes.Select(a => KeyValuePair.Create(a.Key, (JsonNode?)a.Value)));
         return CallAsync(room, "UpdateParticipant", request, ct);
     }
+
+    public Task SetAttributesAsync(string room, string identity, IReadOnlyDictionary<string, string> attributes, CancellationToken ct) =>
+        CallAsync(room, "UpdateParticipant", new JsonObject
+        {
+            ["room"] = room,
+            ["identity"] = identity,
+            ["attributes"] = new JsonObject(attributes.Select(a => KeyValuePair.Create(a.Key, (JsonNode?)a.Value))),
+        }, ct);
 
     public Task MuteTrackAsync(string room, string identity, string trackSid, CancellationToken ct) =>
         CallAsync(room, "MutePublishedTrack", new JsonObject { ["room"] = room, ["identity"] = identity, ["track_sid"] = trackSid, ["muted"] = true }, ct);

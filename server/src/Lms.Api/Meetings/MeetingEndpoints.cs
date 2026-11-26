@@ -277,6 +277,25 @@ public static class MeetingEndpoints
             return TypedResults.NoContent();
         }).WithName("RemoveMeetingPerson");
 
+        // ---------------------------------------------------------------- hands
+
+        // Raise or lower one's own hand. Kept as a participant attribute, so people who join later see it.
+        group.MapPost("/{meetingId:long}/hand", async Task<IResult> (string classId, long meetingId, MeetingHandInput input, HttpContext http,
+            ClassAccess access, LmsDbContext db, IMeetingServer server, TimeProvider time, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var (_, denied) = await access.ForReadAsync(classId, user, ct);
+            if (denied is not null) return denied;
+            var meeting = await db.Meetings.AsNoTracking().SingleOrDefaultAsync(m => m.ClassId == classId && m.Id == meetingId, ct);
+            if (meeting is null) return MeetingNotFound();
+            if (meeting.StartedAt is null || meeting.EndedAt is not null) return Conflict("This meeting isn't on now.", "not_live");
+            if (await server.GetParticipantAsync(meeting.RoomName, user.Id, ct) is null) return Conflict("Join the meeting first.", "not_in_meeting");
+            var raised = input.Raised ?? true;
+            var value = raised ? time.GetUtcNow().UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "";
+            await server.SetAttributesAsync(meeting.RoomName, user.Id, new Dictionary<string, string> { [MeetingRights.HandAttribute] = value }, ct);
+            return TypedResults.NoContent();
+        }).WithName("RaiseMeetingHand");
+
         // ---------------------------------------------------------------- chat
 
         group.MapPost("/{meetingId:long}/chat", async Task<IResult> (string classId, long meetingId, MeetingChatInput input, HttpContext http,

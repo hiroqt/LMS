@@ -57,6 +57,9 @@ public sealed class LiveKitContractTests
         var update = await Assert.ThrowsAsync<MeetingServerException>(() =>
             server.UpdateParticipantAsync(room, "nobody", MeetingRights.ForInstructor(), new Dictionary<string, string> { ["lms.letSpeak"] = "true" }, ct));
         Assert.NotNull(update.Code);
+        var attributes = await Assert.ThrowsAsync<MeetingServerException>(() =>
+            server.SetAttributesAsync(room, "nobody", new Dictionary<string, string> { [MeetingRights.HandAttribute] = "2026-11-26T13:00:00Z" }, ct));
+        Assert.NotNull(attributes.Code);
 
         await server.DeleteRoomAsync(room, ct);
         // Ending twice, or a room that is gone, is fine.
