@@ -69,12 +69,12 @@ test.describe("Student · Tasks and assessments", () => {
     await expect(page.getByText("Answer review")).toBeVisible();
     await expect(page.getByRole("button", { name: /Practice again/ })).toBeVisible();
 
-    // Completion persists across a fresh page load, and TD (the "Assessments
-    // done" summary) opens Tasks with Done selected, listing the submitted quiz.
+    // Completion persists across a fresh page load, and TD (the "Done" count on the
+    // dashboard, D-067) opens Tasks with Done selected, listing the submitted quiz.
     // A fresh load of /student (not reload()): the rebuilt UI keeps the result
     // page's own URL on reload, the classic UI returns to Today (D-013).
     await page.goto("/student");
-    await page.getByRole("button", { name: /^1 Assessments done/ }).click();
+    await page.getByRole("button", { name: /^1 Done$/ }).click();
     await expect(page.getByRole("heading", { name: "Tasks" })).toBeVisible();
     await expect(page.getByRole("main").getByText("Done", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: QUIZ })).toBeVisible();

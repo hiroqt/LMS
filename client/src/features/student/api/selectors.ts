@@ -59,7 +59,7 @@ export function taskGroups(assessments: Assessment[], completed: string[], now: 
     { status: "Due soon", description: "Work with a future due date", items: assessments.filter((item) => open(item) && due(item) >= now) },
     { status: "Due this week", description: "Unfinished work due before the week ends", items: dueThisWeek(assessments, completed, now) },
     { status: "Missing", description: "Work past its due date that has not been submitted", items: assessments.filter((item) => open(item) && due(item) < now) },
-    { status: "Done", description: "Assessments you have submitted", items: assessments.filter((item) => completed.includes(item.id)) },
+    { status: "Done", description: "Work you have submitted: assessments, activities, and assignments", items: assessments.filter((item) => completed.includes(item.id)) },
   ].map((group) => ({ ...group, items: [...group.items].sort(byDue) })) as TaskGroup[];
 }
 

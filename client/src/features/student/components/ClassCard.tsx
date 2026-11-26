@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, Clock3 } from "lucide-react";
 import { SubjectIcon } from "../../../shared/components/SubjectIcon";
 import { cn } from "../../../shared/lib/cn";
 import { toneFor } from "../../../shared/lib/tones";
@@ -8,20 +8,24 @@ import type { Course } from "../api/types";
 /** A course: subject icon, title, code and section, and when it next meets. */
 export function ClassCard({ course, index, onOpen, tile = false }: { course: Course; index: number; onOpen: () => void; /** A flat tinted tile for dashboard mosaics. */ tile?: boolean }) {
   if (tile) {
+    // Two short lines beside the icon (D-067), so the dashboard's class row stays one tile tall.
+    // Long text is cut on screen only; the button's name keeps all of it. The section is left
+    // to the class page and the sidebar.
     return (
       <button
         type="button"
         onClick={onOpen}
-        className={cn("group flex h-full w-full flex-col justify-between gap-4 rounded-card border-0 p-4 text-left font-sans transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none", toneFor(index))}
+        title={`${course.name} · ${courseCode(course)} · Next class ${course.next}`}
+        className={cn("group flex h-full w-full items-center gap-3 rounded-card border-0 p-3 text-left font-sans transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none", toneFor(index))}
       >
-        <span aria-hidden className="flex w-full items-start justify-between">
-          <span className="grid size-11 place-items-center rounded-control bg-surface"><SubjectIcon subject={`${course.name} ${course.subject}`} className="size-6" /></span>
-          <ArrowUpRight className="size-5" />
-        </span>
-        <span className="flex flex-col gap-0.5">
-          <strong className="text-card-title leading-snug font-semibold text-ink">{course.name}</strong>
-          <span className="text-body">{course.section}</span>
-          <span className="text-body">{courseCode(course)} · Next class {course.next}</span>
+        <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-control bg-surface"><SubjectIcon subject={`${course.name} ${course.subject}`} className="size-5" /></span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <strong className="truncate text-card-title leading-snug font-semibold text-ink">{course.name}</strong>
+          {/* The time first, so a cut line still says when the class meets. */}
+          <span className="flex min-w-0 items-center gap-1.5 text-body">
+            <Clock3 aria-hidden className="size-4 shrink-0" />
+            <span className="truncate"><span className="sr-only">Next class </span>{course.next} · {courseCode(course)}</span>
+          </span>
         </span>
       </button>
     );

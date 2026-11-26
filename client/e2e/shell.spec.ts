@@ -45,25 +45,42 @@ test.describe("Student · shell", () => {
     await expect(page.getByRole("main").getByText("Unfinished work due before the week ends").filter({ visible: true })).toHaveCount(1);
   });
 
+  // D-067: the dashboard counts every Tasks status but the list itself; each button opens its status.
+  test("TM: the Missing count opens Tasks on Missing, showing the same number", async ({ page }) => {
+    await openRole(page, "student");
+    const statuses = page.getByRole("main").getByRole("group", { name: "Work by status" });
+    await expect(statuses.getByRole("button")).toHaveText([/^\d+\s*Due this week$/, /^\d+\s*Missing$/, /^\d+\s*Done$/]);
+    const missing = statuses.getByRole("button", { name: /^\d+ Missing$/ });
+    const count = Number.parseInt((await missing.innerText()).trim(), 10);
+    await missing.click();
+    await expect(page).toHaveURL(/\/student\/tasks\?status=Missing$/);
+    await expect(page.getByRole("main").getByText("Work past its due date that has not been submitted")).toBeVisible();
+    await expect(page.getByRole("group", { name: "Filter by status" }).getByRole("button", { name: new RegExp(`^Missing ${count}$`), pressed: true })).toBeVisible();
+  });
+
   // P changed with D-032: work lives on the server, so there is no browser progress to reset.
   // The workspace shows one student at a time, chosen on Today.
   test("P: the profile names the student being viewed, and Today switches student", async ({ page }) => {
     await openRole(page, "student");
     await submitQuiz(page);
     await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Dashboard" }).click();
-    await expect(page.getByRole("button", { name: /^1 Assessments done/ })).toBeVisible();
-    await expect(page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^1 Done$/ })).toBeVisible();
+    await expect(page.getByRole("banner")).toContainText("Alex Rivera");
 
     await page.getByRole("combobox", { name: "Choose demo student" }).selectOption({ label: "Jamie Lee" });
     await expect(page.getByRole("heading", { level: 1, name: /Good morning, Jamie/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^0 Assessments done/ })).toBeVisible();
-    await expect(page.getByRole("banner").getByRole("button", { name: /Jamie Lee/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^0 Done$/ })).toBeVisible();
+    await expect(page.getByRole("banner")).toContainText("Jamie Lee");
   });
 
-  test("ROLE: the profile menu switches workspace", async ({ page }) => {
+  // D-066: Log out (now in the sidebar only) returns to sign-in, where another workspace is chosen.
+  test("ROLE: Log out returns to sign-in, which opens another workspace", async ({ page }) => {
     await openRole(page, "student");
-    await page.getByRole("banner").getByRole("button", { name: /Alex Rivera/ }).click();
-    await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
+    await page.getByRole("button", { name: "Log out" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByLabel("Email", { exact: true }).fill("instructor@tmcc.edu.ph");
+    await page.getByLabel("Password", { exact: true }).fill("instructor123");
+    await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/instructor$/);
     await expect(page.getByRole("heading", { level: 1, name: "Your teaching day" })).toBeVisible();
   });

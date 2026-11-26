@@ -1,17 +1,16 @@
-import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, Layers, ListChecks, Megaphone, Newspaper, X } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ChevronRight, Layers, ListChecks, Megaphone, Newspaper, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Panel } from "../../../shared/components/Panel";
-import { StatCard } from "../../../shared/components/StatCard";
-import { ViewToggle } from "../../../shared/components/ViewToggle";
-import { useClassView } from "../../../shared/hooks/useClassView";
+import { useOverflows } from "../../../shared/hooks/useOverflows";
 import { cn } from "../../../shared/lib/cn";
 import { formatDue, formatFullDate } from "../../../shared/lib/format";
 import { featuredSlides } from "../../../shared/lib/schoolNews";
 import { termStatus } from "../../../shared/lib/term";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting, needsWork } from "../api/selectors";
+import { Select } from "../../../shared/ui/Field";
+import { calendarEntries, DAY, dueSoon, greeting, needsWork, taskGroups, type TaskStatus } from "../api/selectors";
 import type { Assessment, StudentCatalog } from "../api/types";
 import { ClassList } from "../components/ClassList";
 import { AssessmentTypeIcon } from "../components/visuals";
@@ -75,29 +74,94 @@ function DuePill({ item, now }: { item: Assessment; now: number }) {
   return <span className={cn("shrink-0 rounded-full px-3 py-1 text-body font-medium whitespace-nowrap", tone)}>Due {date}</span>;
 }
 
+/**
+ * A tile stretches to its row so the row ends on one line (C-018). A list too short to
+ * use that height is sized to its content instead of holding blank space (D-067).
+ */
+const FIT_CONTENT = "@4xl:self-start";
+
+/*
+ * On a desktop window tall enough (`screen-fit`, D-067) the dashboard is exactly one screen:
+ * the grid fills the height under the top bar, and a list longer than its tile scrolls inside
+ * the tile, never the page. A list with no controls becomes a keyboard stop only while it scrolls.
+ */
+const FIT_PANEL = "screen-fit:@4xl:min-h-0";
+const FIT_LIST = "screen-fit:@4xl:min-h-0 screen-fit:@4xl:overflow-y-auto";
+const SCROLL_FOCUS = "rounded-control focus-visible:outline-3 focus-visible:outline-focus";
+
+/** The Tasks statuses counted on the dashboard. "Due soon" is the list under them and "View all". */
+// Each has its own color (D-067): yellow for what is coming, red for what is late, green for
+// what is finished. The name is always written out, so the color only supports it (C-004).
+const STATUS_BUTTONS: { status: TaskStatus; box: string; number: string }[] = [
+  { status: "Due this week", box: "border-accent-400 bg-accent-100 hover:bg-accent-200", number: "text-warning" },
+  { status: "Missing", box: "border-danger/40 bg-danger-soft hover:bg-danger/15", number: "text-danger" },
+  { status: "Done", box: "border-success/40 bg-success-soft hover:bg-success-200", number: "text-success" },
+];
+
+/**
+ * A status inside Tasks & Assessments: a plain button with how much work is in it, which opens
+ * Tasks on that status (D-067; a StatCard tile before that).
+ * Its name starts with the number, e.g. "2 Missing".
+ *
+ * The three share the tile's width (D-067). Beside a full list each is one line, number then
+ * name, and the name drops under the number when the button is too narrow for both. With
+ * `fill` (a list too short to use the tile's height) the buttons take that height instead:
+ * a larger number over the name, centered.
+ */
+function StatusButton({ value, label, box, number, fill, onOpen }: { value: number; label: string; box: string; number: string; fill: boolean; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "flex min-h-touch min-w-0 rounded-control border px-3 py-1.5 font-sans text-body font-medium text-ink transition-colors focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none",
+        box,
+        fill ? "flex-col items-center justify-center gap-0.5 py-3 text-center" : "flex-wrap content-center items-baseline gap-x-2 text-left",
+      )}
+    >
+      <strong className={cn("font-semibold tabular-nums", fill ? "text-page-mobile sm:text-page" : "text-section", number)}>{value}</strong>
+      {" "}
+      <span className="min-w-0 break-words">{label}</span>
+    </button>
+  );
+}
+
 const TILES = ["bg-accent-100 text-accent-700", "bg-info-soft text-info", "bg-success-soft text-success", "bg-primary-100 text-primary-700"];
 
 function TasksPanel({ catalog, completed, now, className }: { catalog: StudentCatalog; completed: string[]; now: number; className?: string }) {
   const navigate = useNavigate();
-  const items = dueSoon(catalog.assessments, completed, now, 4);
+  const items = dueSoon(catalog.assessments, completed, now, TASKS_SHOWN);
+  const groups = taskGroups(catalog.assessments, completed, now);
   const index = (id: string) => Math.max(catalog.courses.findIndex((entry) => entry.id === id), 0);
+  // The tile always stretches to its row (D-067). Three rows or more
+  // use the height themselves; with fewer the status buttons grow into it, so the tile never
+  // holds blank space and never leaves a gap beside the calendar.
+  const fill = items.length < 3;
   return (
-    <Panel id="tasks-panel" className={className} icon={<ListChecks />} title="Tasks & Assessments" action={<ViewAll onClick={() => navigate(studentPaths.tasks())} />}>
+    <Panel id="tasks-panel" className={cn(className, FIT_PANEL)} icon={<ListChecks />} title="Tasks & Assessments" action={<ViewAll onClick={() => navigate(studentPaths.tasks())} />}>
+      {/* The counts live with the work they count (D-067). Each is the size of the Tasks page's
+          own group, so the number on the button is the number of rows it opens. */}
+      <div role="group" aria-label="Work by status" className={cn("grid shrink-0 grid-cols-3 gap-2", fill && "flex-1")}>
+        {STATUS_BUTTONS.map(({ status, box, number }) => {
+          const count = groups.find((group) => group.status === status)?.items.length ?? 0;
+          return <StatusButton key={status} value={count} label={status} box={box} number={number} fill={fill} onOpen={() => navigate(studentPaths.tasks(status))} />;
+        })}
+      </div>
       {items.length ? (
-        <ul className="m-0 flex flex-1 list-none flex-col divide-y divide-line p-0">
+        <ul className={cn("m-0 flex list-none flex-col divide-y divide-line p-0", !fill && "flex-1", FIT_LIST)}>
           {items.map((item) => (
-            <li key={item.id} className="flex flex-1">
+            <li key={item.id} className={cn("flex", !fill && "flex-1")}>
               <button
                 type="button"
                 onClick={() => navigate(studentPaths.assessment(item.id))}
-                className="flex min-h-touch w-full flex-1 items-center gap-3 rounded-control border-0 bg-transparent px-1 py-3 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus sm:gap-4"
+                className="flex min-h-touch w-full flex-1 items-center gap-3 rounded-control border-0 bg-transparent px-1 py-2 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus sm:gap-4"
               >
-                <span aria-hidden className={cn("grid size-11 shrink-0 place-items-center rounded-control", TILES[index(item.courseId) % TILES.length])}>
+                <span aria-hidden className={cn("grid size-10 shrink-0 place-items-center rounded-control", TILES[index(item.courseId) % TILES.length])}>
                   <AssessmentTypeIcon type={item.type} className="size-5" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="text-card-title font-semibold">{item.title}</strong>
-                  <span className="text-body text-muted">{catalog.courses[index(item.courseId)]?.name ?? "Class"} · {item.type}</span>
+                  <strong className="text-card-title font-semibold @4xl:truncate">{item.title}</strong>
+                  <span className="text-body text-muted @4xl:truncate">{catalog.courses[index(item.courseId)]?.name ?? "Class"} · {item.type}</span>
                   {/* On phones the pill sits under the title so the title keeps the full width. */}
                   <span className="mt-1.5 sm:hidden"><DuePill item={item} now={now} /></span>
                 </span>
@@ -114,35 +178,42 @@ function TasksPanel({ catalog, completed, now, className }: { catalog: StudentCa
   );
 }
 
+/** How many deadlines Tasks & Assessments lists; the calendar starts after them (D-067). */
+const TASKS_SHOWN = 4;
+
 function CalendarPanel({ catalog, completed, now, className }: { catalog: StudentCatalog; completed: string[]; now: number; className?: string }) {
   const navigate = useNavigate();
   const today = new Date(now);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  // The next deadlines are already in Tasks beside it, so the calendar shows what comes after
+  // them and the school's own dates, instead of the same four quizzes twice.
+  const inTasks = new Set(dueSoon(catalog.assessments, completed, now, TASKS_SHOWN).map((item) => item.id));
   const entries = calendarEntries(catalog.assessments, catalog.academicEvents)
-    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && !needsWork(entry.assessment, completed)))
+    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && (!needsWork(entry.assessment, completed) || inTasks.has(entry.assessment.id))))
     .slice(0, 4);
   const courseName = (id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
+  const [listRef, overflows] = useOverflows<HTMLOListElement>();
   return (
-    <Panel id="calendar-panel" className={className} icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll label="View calendar" onClick={() => navigate(studentPaths.calendar())} />}>
+    <Panel id="calendar-panel" className={cn(className, FIT_PANEL, entries.length < 3 && FIT_CONTENT)} icon={<CalendarDays />} title="Academic Calendar" action={<ViewAll onClick={() => navigate(studentPaths.calendar())} />}>
       {entries.length ? (
-        <ol className="m-0 flex flex-1 list-none flex-col justify-between p-0">
+        <ol ref={listRef} tabIndex={overflows ? 0 : undefined} aria-label={overflows ? "Calendar dates" : undefined} className={cn("m-0 flex flex-1 list-none flex-col justify-between p-0", FIT_LIST, SCROLL_FOCUS)}>
           {entries.map((entry) => {
             const body = (
               <>
-                <span className="flex w-14 shrink-0 flex-col items-center rounded-control bg-canvas py-1.5 leading-tight">
+                <span className="flex w-14 shrink-0 flex-col items-center rounded-control bg-canvas py-1 leading-tight">
                   <span className="text-body text-muted">{new Intl.DateTimeFormat("en-US", { month: "short" }).format(entry.date)}</span>
                   <span className="text-section font-semibold tabular-nums">{entry.date.getDate()}</span>
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="text-card-title font-semibold">{entry.title}</strong>
-                  <span className="text-body text-muted">{entry.assessment ? courseName(entry.assessment.courseId) : `${entry.category} · School calendar`}</span>
+                  <strong className="text-card-title font-semibold @4xl:truncate">{entry.title}</strong>
+                  <span className="text-body text-muted @4xl:truncate">{entry.assessment ? courseName(entry.assessment.courseId) : `${entry.category} · School calendar`}</span>
                 </span>
               </>
             );
             // Read-only timeline: deadlines are opened from Tasks & Assessments, so each
             // assessment has one control on the dashboard, not two.
             return (
-              <li key={entry.id} className="flex w-full items-center gap-3 py-2 font-sans text-ink">
+              <li key={entry.id} className="flex w-full items-center gap-3 py-1.5 font-sans text-ink">
                 {body}
               </li>
             );
@@ -163,24 +234,23 @@ function AnnouncementsPanel({ catalog, now, className }: { catalog: StudentCatal
     ...catalog.announcements.map((item) => ({ id: item.id, title: item.title, body: item.message, meta: `${item.author} · ${courseName(item.classroomId)} · ${formatDue(item.createdAt)}` })),
     ...featuredSlides(catalog.featured, catalog.academicEvents, now).map((item) => ({ id: item.id, title: item.title, body: item.summary, meta: `School announcement · ${item.category}` })),
   ].slice(0, 3);
+  const [listRef, overflows] = useOverflows<HTMLUListElement>();
   return (
-    <Panel id="announcements-panel" className={className} icon={<Megaphone />} title="Announcements" action={<ViewAll onClick={() => navigate(studentPaths.news)} />}>
+    <Panel id="announcements-panel" className={cn(className, items.length < 2 && FIT_CONTENT)} icon={<Megaphone />} title="Announcements" action={<ViewAll onClick={() => navigate(studentPaths.news)} />}>
       {items.length ? (
-        /* Side by side when the tile is wide, stacked when it is a narrow column. */
-        <div className="@container flex flex-1 flex-col">
-        <ul className="m-0 grid flex-1 list-none grid-cols-1 gap-3 p-0 @3xl:grid-cols-3">
+        /* Always stacked (D-067). Two lines each, title and who posted it, so three fit beside the
+           greeting; the full message is one click away in News & Announcements. */
+        <ul ref={listRef} tabIndex={overflows ? 0 : undefined} aria-label={overflows ? "Latest announcements" : undefined} className={cn("m-0 flex flex-1 list-none flex-col gap-2 p-0", FIT_LIST, SCROLL_FOCUS)}>
           {items.map((item) => (
-            <li key={item.id} className="flex items-start gap-3 rounded-control bg-canvas p-3">
-              <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-control bg-surface text-primary-700"><Newspaper className="size-5" /></span>
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <h3 className="m-0 text-card-title font-semibold">{item.title}</h3>
-                <p className="m-0 line-clamp-2 text-body">{item.body}</p>
-                <p className="m-0 text-body text-muted">{item.meta}</p>
+            <li key={item.id} className="flex items-center gap-3 rounded-control bg-canvas px-3 py-1">
+              <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-control bg-surface text-primary-700"><Newspaper className="size-5" /></span>
+              <div className="flex min-w-0 flex-col">
+                <h3 className="m-0 text-card-title font-semibold @4xl:truncate">{item.title}</h3>
+                <p className="m-0 text-body text-muted @4xl:truncate">{item.meta}</p>
               </div>
             </li>
           ))}
         </ul>
-        </div>
       ) : (
         <p className="m-0 text-body text-muted">No announcements yet.</p>
       )}
@@ -196,16 +266,12 @@ function ViewingAs() {
   const students = people.data?.students ?? [];
   if (students.length < 2) return null;
   return (
-    <label className="flex flex-col gap-1 font-sans text-body text-primary-100">
+    // The label stays light on the green hero; the dropdown is the shared Select.
+    <label className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-body font-medium text-primary-100">
       Viewing as student
-      <select
-        aria-label="Choose demo student"
-        value={studentId}
-        onChange={(event) => setStudentId(event.target.value)}
-        className="min-h-touch rounded-control border border-primary-300 bg-surface px-3 text-body-lg text-ink focus-visible:outline-3 focus-visible:outline-focus"
-      >
+      <Select className="min-w-48 flex-1" aria-label="Choose demo student" value={studentId} onChange={(event) => setStudentId(event.target.value)}>
         {students.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select>
+      </Select>
     </label>
   );
 }
@@ -214,62 +280,54 @@ export default function TodayPage() {
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
   const term = termStatus(catalog.academicEvents, now);
-  const { courses, assessments } = catalog;
-  const [classView, setClassView] = useClassView();
-
-  const next = dueSoon(assessments, completed, now, 1)[0];
+  const { courses } = catalog;
 
   return (
-    // One 12-column bento grid: every tile shares the gutter and stretches to its
-    // row, and tiles differ in size by importance (D-026, D-027).
-    <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
-      <header className="flex flex-col justify-between gap-4 rounded-card bg-primary-700 p-5 text-white @4xl:col-span-5 sm:p-6">
-        <p className="m-0 text-body text-primary-100">
-          {formatFullDate(now)}
-          {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
-        </p>
-        <div className="flex flex-col gap-1">
-          <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold tracking-tight outline-none sm:text-page">
-            {greeting(now)}, {catalog.me.firstName}
-          </h1>
-          <p className="m-0 text-body text-primary-100">
-            {next ? <>Next due: {next.title}, {formatDue(next.dueAt)}</> : "Nothing is due in the next few days."}
-          </p>
-        </div>
-        <ViewingAs />
-      </header>
-      <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 @4xl:col-span-7 sm:gap-4">
-        <li><StatCard icon={<BookOpen />} tone="bg-primary-100 text-primary-700" value={courses.length} label="Active classes" shortLabel="Classes" /></li>
-        <li><StatCard icon={<AlarmClock />} tone="bg-accent-100 text-accent-700" value={dueThisWeek(assessments, completed, now).length} label="Due this week" shortLabel="Due soon" onOpen={() => navigate(studentPaths.tasks("Due this week"))} /></li>
-        <li><StatCard icon={<ClipboardCheck />} tone="bg-success-soft text-success" value={completed.length} label="Assessments done" shortLabel="Done" onOpen={() => navigate(studentPaths.tasks("Done"))} /></li>
-      </ul>
-
-      <div className="col-span-full empty:hidden"><NewDesignIntro /></div>
-
-      {/* Reading order: tasks, calendar, classes, announcements.
-          12 columns:  tasks 7 | calendar 5, then classes 8 | announcements 4.
-          Wide (@7xl): tasks 5 | calendar 3 | classes 4, then announcements across. */}
-      <TasksPanel className="@4xl:col-span-7 @7xl:col-span-5" catalog={catalog} completed={completed} now={now} />
-      <CalendarPanel className="@4xl:col-span-5 @7xl:col-span-3" catalog={catalog} completed={completed} now={now} />
-      <Panel
-        id="my-classes"
-        className="@4xl:col-span-7 @7xl:col-span-4"
-        icon={<Layers />}
-        title="My Classes"
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <ViewToggle view={classView} onChange={setClassView} />
-            <ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />
+    // One 12-column bento grid (D-026, D-027), two columns of tiles over the classes (D-067):
+    //   greeting      | announcements
+    //   calendar      | tasks & assessments (with the due and done counts)
+    //   my classes, across
+    // 6 | 6 at @4xl, 5 | 7 from @6xl. The DOM (and a phone's one column) reads greeting,
+    // announcements, tasks, calendar, classes, so tasks and calendar are placed explicitly.
+    // On a tall enough desktop window (screen-fit) the page is one screen: the grid fills the
+    // height under the top bar (64px) and main's padding (2 x 32px), the greeting's row is at
+    // least its content and shares the rest 5 : 9 with the lower row, and lists scroll inside.
+    // A one-time welcome note, when shown, opens the page above the grid (D-067).
+    <div className="flex flex-col gap-3 sm:gap-4 screen-fit:@4xl:h-[calc(100dvh-8rem)]">
+      <NewDesignIntro />
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12 screen-fit:@4xl:min-h-0 screen-fit:@4xl:flex-1 screen-fit:@4xl:grid-rows-[minmax(auto,5fr)_minmax(0,9fr)_auto]">
+        <header className="flex flex-col justify-center gap-4 rounded-card bg-primary-700 p-5 text-white @4xl:col-span-6 @6xl:col-span-5 sm:p-6">
+          <div className="flex flex-col gap-1">
+            <p className="m-0 text-body text-primary-100">
+              {formatFullDate(now)}
+              {term?.phase === "in" && <> · {term.name}, Week {term.week}</>}
+            </p>
+            {/* No "Next due" line: the next deadline heads Tasks & Assessments (D-067). */}
+            <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold tracking-tight outline-none sm:text-page">
+              {greeting(now)}, {catalog.me.firstName}
+            </h1>
           </div>
-        }
-      >
-        {courses.length ? (
-          <ClassList fill courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
-        ) : (
-          <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
-        )}
-      </Panel>
-      <AnnouncementsPanel className="@4xl:col-span-5 @7xl:col-span-12" catalog={catalog} now={now} />
+          <ViewingAs />
+        </header>
+        {/* In screen-fit the greeting alone sets the top row's height (contain-size); the
+            announcements fill it and scroll inside, even when they would be shorter (self-stretch). */}
+        <AnnouncementsPanel className="@4xl:col-span-6 @6xl:col-span-7 screen-fit:@4xl:self-stretch! screen-fit:@4xl:contain-size" catalog={catalog} now={now} />
+        <TasksPanel className="@4xl:col-span-6 @4xl:col-start-7 @4xl:row-start-2 @6xl:col-span-7 @6xl:col-start-6" catalog={catalog} completed={completed} now={now} />
+        <CalendarPanel className="@4xl:col-span-6 @4xl:col-start-1 @4xl:row-start-2 @6xl:col-span-5" catalog={catalog} completed={completed} now={now} />
+        <Panel
+          id="my-classes"
+          className="@4xl:col-span-12"
+          icon={<Layers />}
+          title="My Classes"
+          action={<ViewAll label="View all classes" onClick={() => navigate(studentPaths.classes)} />}
+        >
+          {courses.length ? (
+            <ClassList fill courses={courses} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
+          ) : (
+            <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
