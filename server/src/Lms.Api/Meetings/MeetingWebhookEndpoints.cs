@@ -19,9 +19,15 @@ public static class MeetingWebhookEndpoints
         app.MapPost(Path, async Task<IResult> (HttpContext http, MeetingTokens tokens, MeetingRooms rooms, CancellationToken ct) =>
         {
             if (http.Request.ContentLength is > MeetingLimits.WebhookBodyBytes) return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+            // Read at most the limit, also when no length was sent.
             using var buffer = new MemoryStream();
-            await http.Request.Body.CopyToAsync(buffer, ct);
-            if (buffer.Length > MeetingLimits.WebhookBodyBytes) return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+            var chunk = new byte[16 * 1024];
+            int read;
+            while ((read = await http.Request.Body.ReadAsync(chunk, ct)) > 0)
+            {
+                if (buffer.Length + read > MeetingLimits.WebhookBodyBytes) return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+                buffer.Write(chunk, 0, read);
+            }
             var body = buffer.ToArray();
             if (!tokens.IsGenuineWebhook(http.Request.Headers.Authorization.ToString(), body))
                 return TypedResults.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "This webhook isn't signed by the meeting server.");

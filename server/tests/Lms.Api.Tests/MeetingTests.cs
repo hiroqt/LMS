@@ -324,6 +324,9 @@ public sealed class MeetingTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, expires: _factory.Time.Now.AddMinutes(-5).ToUnixTimeSeconds())));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(Hook("participant_joined", room, Max, "PA_max1", t0), Sign(joined)));
         Assert.Equal(0, await _factory.WithDbAsync(db => db.MeetingAttendance.CountAsync()));
+        // A body over the limit is refused before it is read, signed or not.
+        var huge = new byte[MeetingLimits.WebhookBodyBytes + 1];
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, await PostHookAsync(huge, Sign(huge)));
 
         // Signed: recorded once, even when delivered twice.
         Assert.Equal(HttpStatusCode.OK, await PostHookAsync(joined, Sign(joined)));
