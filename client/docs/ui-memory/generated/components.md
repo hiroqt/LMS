@@ -197,11 +197,15 @@
 | `src/features/isms-link/components/StatusPanel.tsx` | `StatusPanel` |
 | `src/features/isms-link/components/SubjectsPanel.tsx` | `SubjectsPanel` |
 | `src/features/meet/components/ClassMeetings.tsx` | `LiveMeetingBanner`, `StartMeetingButton`, `MeetingsTab` |
+| `src/features/meet/room/ChatPanel.tsx` | `ChatPanel` |
 | `src/features/meet/room/ControlBar.tsx` | `ControlBar` |
 | `src/features/meet/room/MediaToggle.tsx` | `MediaToggle` |
 | `src/features/meet/room/MeetingRoomPage.tsx` | `MeetingRoomPage` |
 | `src/features/meet/room/ParticipantTile.tsx` | `ParticipantTile` |
+| `src/features/meet/room/PeoplePanel.tsx` | `PeoplePanel` |
 | `src/features/meet/room/PreJoin.tsx` | `PreJoin` |
+| `src/features/meet/room/ReactionsButton.tsx` | `ReactionsButton` |
+| `src/features/meet/room/Stage.tsx` | `Stage` |
 | `src/features/meet/room/VideoView.tsx` | `VideoView`, `AudioView` |
 | `src/features/student/StudentApp.tsx` | `StudentApp` |
 | `src/features/student/components/AssessmentRow.tsx` | `AssessmentRow` |

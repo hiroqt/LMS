@@ -1046,5 +1046,25 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
   - **Mic and camera:** a control the person may not use is `aria-disabled`, not `disabled`, so
     pressing it says why. Students start with the mic off unless the meeting says otherwise. The
     tracks made on the pre-join screen are the ones published.
+- **Phase 2b (in the meeting, 2026-11-26).**
+  - **Chat** arrives only as data messages from the server (topic `lms.chat`, no sender). A
+    person's own message on that topic is ignored. Sending goes through the API. Saved chat
+    loads on joining as history, not unread, and the Chat button counts unread messages.
+  - **Raised hands** are the `lms.hand` attribute, set by `POST …/hand`. Late joiners see them,
+    the order uses the API's clock, and rights are untouched. Hands come first in People, in the
+    order they went up.
+  - **Reactions** are the person's own data messages (`lms.reaction`). Only the six on the list
+    are shown, on the sender's tile for 4 s, with no animation (C-019), and announced once.
+  - **The stage:** a shared screen fills it, with everyone in a strip. Otherwise the pinned
+    person, or the last speaker in Speaker view, fills it; otherwise everyone is in a grid.
+    Share screen shows only where the browser can (not Android or iOS).
+  - **Data saver** stops receiving other people's cameras (`setSubscribed(false)`) and keeps
+    their sound and shared screens. It is suggested when the connection is 2G or data saver is
+    on.
+  - **Panels:** Chat and People are a column at 64 rem and wider, and a sheet below that (C-010).
+    The meeting page's messages are a line above the stage, not toasts, which on phones cover
+    the controls.
+  - **Pre-join:** Join waits while a camera or mic is starting. A device that finishes starting
+    after the screen has gone is stopped, so the camera light doesn't stay on.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
