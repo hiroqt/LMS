@@ -440,4 +440,96 @@ test.describe("Class meetings @all", () => {
     const [meeting] = (await list.json()) as { settings: Record<string, boolean> }[];
     expect(meeting?.settings).toMatchObject({ studentsMayChat: false, saveChat: true, studentsMayUnmute: true, studentsJoinMuted: true });
   });
+
+  test("MT → CL-MT: after a meeting, its page has the attendance (instructor, with a CSV) and the saved chat (class)", async ({ page, browser, browserName, sandbox }, info) => {
+    test.skip(needsMedia(browserName), skipReason);
+    const { student, done } = await together(page, browser, info, sandbox, { saveChat: true });
+    await controls(student).getByRole("button", { name: "Chat" }).click();
+    await student.getByRole("textbox", { name: "Message" }).fill("Thanks, see you Friday");
+    await student.getByRole("textbox", { name: "Message" }).press("Enter");
+    await expect(student.getByRole("log", { name: "Chat messages" }).getByText("Thanks, see you Friday")).toBeVisible();
+    await controls(page).getByRole("button", { name: "Leave" }).click();
+    await page.getByRole("menuitem", { name: "End the meeting for everyone" }).click();
+    await page.getByRole("dialog", { name: "End the meeting for everyone?" }).getByRole("button", { name: "End the meeting" }).click();
+    await page.getByRole("button", { name: "Back to class" }).click();
+
+    // The class's Meetings tab → the past meeting's page.
+    await page.getByRole("list", { name: "Past meetings" }).getByRole("button", { name: /Lecture 7/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Lecture 7" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Attendance", exact: true })).toContainText("students joined");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download CSV" }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(/^lecture-7-attendance-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect((await (await import("node:fs/promises")).readFile(await file.path(), "utf8")).replace("\uFEFF", "")).toMatch(/^Name,Role,On the class list,Joined,First joined,Last left,Times joined,Minutes\r\nAngela Reyes,Instructor,Yes,/);
+    await expect(page.getByRole("region", { name: "Saved chat" })).toContainText("Thanks, see you Friday");
+    await expectNoAxeViolations(page);
+
+    // The student reads the saved chat; no attendance and nothing to delete.
+    await student.getByRole("button", { name: "Back to class" }).click();
+    await classTab(student, "student", /^Meetings/).click();
+    await student.getByRole("list", { name: "Past meetings" }).getByRole("button", { name: /Lecture 7/ }).click();
+    await expect(student.getByRole("region", { name: "Saved chat" })).toContainText("Thanks, see you Friday");
+    await expect(student.getByRole("region", { name: "Attendance", exact: true })).toHaveCount(0);
+    await expect(student.getByRole("button", { name: "Delete the saved chat" })).toHaveCount(0);
+
+    // The instructor deletes it, after confirming.
+    await page.getByRole("button", { name: "Delete the saved chat" }).click();
+    await page.getByRole("dialog", { name: "Delete the saved chat?" }).getByRole("button", { name: "Delete the saved chat" }).click();
+    await expect(page.getByText("The chat wasn't saved in this meeting.")).toBeVisible();
+    await done();
+  });
+
+  test("MT: the attendance table and CSV show who came, for how long, and who didn't", async ({ page, sandbox }) => {
+    // A meeting's attendance comes from LiveKit's signed webhooks (server MeetingTests); here the report is given to the page.
+    const id = await apiMeeting(page, sandbox, { title: "Lecture 7", startNow: true });
+    await page.request.post(`${API}/api/classes/biology/meetings/${id}/end`, { headers: headers(sandbox, "instructor-1", "instructor") });
+    const at = (h: number, m: number) => new Date(Date.UTC(2026, 9, 23, h - 8, m)).toISOString();
+    await page.route(`**/api/classes/biology/meetings/${id}/attendance`, (route) => route.fulfill({ json: {
+      meetingId: id, studentsJoined: 1, studentsOnClassList: 2,
+      people: [
+        { personId: "instructor-1", name: "Angela Reyes", role: "instructor", onClassList: true, joined: true, firstJoinedAt: at(9, 0), lastLeftAt: at(10, 35), stays: 1, minutesIn: 95 },
+        { personId: "s0", name: "Alex Rivera", role: "student", onClassList: true, joined: true, firstJoinedAt: at(9, 2), lastLeftAt: at(10, 30), stays: 2, minutesIn: 80 },
+        { personId: "s1", name: "=Jamie Lee", role: "student", onClassList: true, joined: false, firstJoinedAt: null, lastLeftAt: null, stays: 0, minutesIn: 0 },
+      ],
+    } }));
+    await openRole(page, "instructor");
+    await page.goto(`/instructor/classes/biology/meetings/${id}`);
+    const panel = page.getByRole("region", { name: "Attendance", exact: true });
+    await expect(panel).toContainText("1 of 2 students joined. Not counted in monthly attendance.");
+    const alex = panel.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Alex Rivera" }) });
+    await expect(alex.getByRole("cell")).toHaveText(["Yes", "9:02 AM", "10:30 AM", "2", "80"]);
+    const jamie = panel.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "=Jamie Lee" }) });
+    await expect(jamie.getByRole("cell")).toHaveText(["No", "—", "—", "0", "0"]);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download CSV" }).click();
+    const csv = (await (await import("node:fs/promises")).readFile(await (await download).path(), "utf8")).replace("\uFEFF", "").split("\r\n");
+    expect(csv[2]).toBe("Alex Rivera,Student,Yes,Yes,2026-10-23 09:02,2026-10-23 10:30,2,80");
+    // A name that looks like a formula can't run in a spreadsheet.
+    expect(csv[3]).toBe("'=Jamie Lee,Student,Yes,No,,,0,0");
+  });
+
+  test("CL-MT: background blur runs from the LMS itself and follows the person into the meeting", async ({ page, sandbox, browserName, isMobile }) => {
+    test.skip(needsMedia(browserName) || isMobile, "Blur is offered on computers only.");
+    const outside: string[] = [];
+    page.on("request", (request) => {
+      const host = new URL(request.url()).hostname;
+      if (host !== "localhost" && host !== "127.0.0.1") outside.push(request.url());
+    });
+    const id = await apiMeeting(page, sandbox, { startNow: true });
+    await openRole(page, "instructor");
+    await page.goto(`/instructor/meet/biology/${id}`);
+    await expect(page.getByRole("button", { name: "Blur background" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Camera" }).click();
+    await page.getByRole("button", { name: "Blur background" }).click();
+    await expect(page.getByRole("button", { name: "Blur background" })).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+    await page.getByRole("button", { name: "Join now" }).click();
+    await expect(people(page)).toHaveCount(1);
+    await controls(page).getByRole("button", { name: "More" }).click();
+    await expect(page.getByRole("button", { name: "Blur background" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Blur background" }).click();
+    await expect(page.getByRole("button", { name: "Blur background" })).toHaveAttribute("aria-pressed", "false");
+    // MediaPipe's code and model came from /meeting-blur/, not a CDN: no one else saw the request.
+    expect(outside).toEqual([]);
+  });
 });
