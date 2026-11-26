@@ -74,3 +74,10 @@ real secret.
   the meeting still works.
 - The LMS API creates each meeting's room with its own close delay (`Lms:Meet:EmptyRoomMinutes`),
   which replaces the two room timeouts above for meetings.
+
+## Sizing a server
+
+`./load-test.sh` runs four classes of 50 against a throwaway LiveKit (2 minutes each, about 10 in
+all) and prints the server's CPU and memory and what each viewer receives. Run it on the kind of
+server you mean to buy. The rough numbers from a Mac are in the plan's "Going live" section.
+
