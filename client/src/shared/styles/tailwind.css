@@ -49,6 +49,7 @@
 
   /* Accent: the original gold, for fills only. Use accent-700 for text. */
   --color-accent-100: #fdf1db;
+  --color-accent-200: #f9dca6;
   --color-accent-400: #f4b94f;
   --color-accent-700: #8a5a0b;
 
@@ -64,6 +65,7 @@
   /* Status: each passes 4.5:1 as text on surface. */
   --color-success: #2f6f4a;
   --color-success-soft: #e6f4ec;
+  --color-success-200: #c8e8d2;
   --color-warning: #8f4f05;
   --color-warning-soft: #fdf1db;
   --color-danger: #b42318;
@@ -160,3 +162,15 @@
     color: var(--color-primary-900);
   }
 }
+
+/*
+ * A phone held sideways: wide enough for two columns, too short for a tall card. The sign-in
+ * page (D-066) moves its heading beside the form here instead of making people scroll.
+ */
+@custom-variant landscape-short (@media (orientation: landscape) and (max-height: 32rem) and (min-width: 34rem));
+
+/*
+ * A desktop window (sidebar shown) tall enough to hold a whole dashboard. Pair it with a container
+ * width such as `screen-fit:@4xl:` so it applies only when the dashboard has columns (D-067).
+ */
+@custom-variant screen-fit (@media (min-width: 64rem) and (min-height: 40rem));
