@@ -1066,5 +1066,22 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     the controls.
   - **Pre-join:** Join waits while a camera or mic is starting. A device that finishes starting
     after the screen has gone is stopped, so the camera light doesn't stay on.
+- **Phase 2c (the instructor's controls, 2026-11-26).**
+  - **People:** each person has an "Actions for {name}" menu offering what applies now: Mute,
+    Ask to unmute, Let speak or Stop letting speak (only when students may not turn on their
+    mic), Lower hand, Stop their screen share, and Remove from the meeting (confirmed by name).
+    There is also **Mute everyone**.
+  - **Host controls:** a third panel with the lock and the meeting's settings as checkboxes. Each
+    is saved at once and shows the room's own state, so it follows a change made elsewhere. The
+    same settings can be chosen when scheduling.
+  - **Leave:** for the instructor, Leave is a menu: Leave the meeting, or End the meeting for
+    everyone (confirmed).
+  - **Students are told** in the line above the stage when their mic, camera, or screen is
+    allowed or taken away, the meeting is locked, or the chat starts being saved. "Ask to unmute"
+    is a prompt with Turn on mic and Not now. It is trusted only from the server, like chat.
+  - **Dashboards:** a full-width **Meetings** panel after the summary on both roles' dashboards
+    (`GET /api/me/meetings`, every 20 s): live meetings join from their row, coming ones open the
+    class's Meetings tab. There is no panel when there are none, so dashboards without meetings
+    are unchanged.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
