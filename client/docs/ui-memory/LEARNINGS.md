@@ -807,3 +807,17 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
 - **Testing sound:** Chrome feeds a received track to Web Audio only while it is attached to a
   media element (L-106).
 
+### L-108 · A new tab loses the demo identity; Playwright waits on aria-disabled; Demo's clock vs LiveKit's
+`2026-11-26` · hiro (D-070, Phase 2a) · scope: shared, tests, meetings · confidence: high
+- **New tabs:** the "viewing as" choice lives in `sessionStorage`, and a link with
+  `target="_blank"` (noopener by default) opens a tab that doesn't inherit it. Checked in
+  Chromium and WebKit. Anything that must stay the same person opens in the same tab until real
+  sign-in.
+- **aria-disabled in tests:** Playwright counts `aria-disabled="true"` as disabled and waits for
+  "enabled" before a click. A control that stays pressable to say why needs `click({ force: true })`.
+- **Clocks:** the browser specs start the API's clock on 2026-10-23, but LiveKit checks passes
+  by the real clock, so passes signed by the API's clock arrived expired. Anything another
+  server checks uses the real clock.
+- **WebKit:** Playwright's WebKit has no stand-in camera or mic, so specs that join a meeting
+  run on the Chromium projects and skip on iPhone WebKit.
+
