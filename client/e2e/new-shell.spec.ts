@@ -31,12 +31,13 @@ test.describe("New Student shell", () => {
     await expect(page.getByRole("navigation", { name: "admin navigation" })).toBeVisible();
   });
 
-  test("the profile menu switches workspace", async ({ page }) => {
-    await page.goto("/student");
-    await page.getByRole("button", { name: "Profile: Alex Rivera" }).click();
-    await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
-    await expect(page).toHaveURL(/\/instructor$/);
-    await expect(page.getByRole("navigation", { name: "instructor navigation" })).toBeVisible();
+  // D-066: the top-bar profile only names who is signed in; Log out stays in the sidebar.
+  test("the profile names the instructor and opens no menu; the sidebar has Log out", async ({ page }) => {
+    await page.goto("/instructor");
+    const banner = page.getByRole("banner");
+    await expect(banner).toContainText("Faculty · Instructor");
+    await expect(banner.getByRole("button", { name: /^Profile:/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
   });
 
   test("an offline connection is announced and clears when back online", async ({ page, context }) => {

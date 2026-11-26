@@ -16,7 +16,7 @@ function multiRoutePlugin(): Plugin {
       if (!fs.existsSync(indexPath)) return;
 
       const indexHtml = fs.readFileSync(indexPath, "utf-8");
-      const routes = ["student", "instructor", "admin"];
+      const routes = ["student", "instructor", "admin", "login"];
 
       // 1. Generate 404.html for static hosting fallback (GitHub Pages, Netlify, etc.)
       fs.writeFileSync(path.join(distDir, "404.html"), indexHtml);

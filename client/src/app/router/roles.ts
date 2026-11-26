@@ -27,6 +27,18 @@ export function matchRole(location: LocationLike): RoleMatch {
   return { role: isRole(role) ? role : null, unknownPath };
 }
 
+/**
+ * True when the URL names no workspace at all: the site root, `/index.html`, or
+ * the deployment base path, with no `?role=` or `#role`. That is the landing
+ * page, which is sign-in (D-066). Every URL that names a role, including
+ * `/student`, still opens that workspace (D-004).
+ */
+export function isLanding(location: LocationLike): boolean {
+  if (matchRole(location).role !== "student") return false;
+  const named = `${location.pathname}${location.search}${location.hash}`.toLowerCase();
+  return !named.includes("student");
+}
+
 /** Canonical URL for a role, including any deployment base path. */
 export function roleUrl(role: Role): string {
   return getRoleUrl(role);

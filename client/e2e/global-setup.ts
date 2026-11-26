@@ -29,6 +29,9 @@ export default async function globalSetup(config: FullConfig) {
       await page.goto(`${baseURL}/${role}`);
       await page.getByRole("main").waitFor({ timeout: 120_000 }).catch(() => undefined);
     }
+    // The sign-in page is its own chunk too; WebKit timed out on its first visit (D-066).
+    await page.goto(`${baseURL}/login`);
+    await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 120_000 }).catch(() => undefined);
   } finally {
     await browser.close();
   }

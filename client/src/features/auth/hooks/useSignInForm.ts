@@ -63,14 +63,21 @@ export function useSignInForm({
       const { roles } = await signIn({ email, password: values.password });
       setSubmitting(false);
       onSignedIn(roles, email);
-    } catch {
+    } catch (err) {
       setSubmitting(false);
-      setFailure("Sign-in did not go through. Check your connection and try again.");
+      setFailure(err instanceof Error && err.message && err.message !== "offline" ? err.message : "Sign-in did not go through. Check your connection and try again.");
     }
+  };
+
+  const fill = (email: string, password: string) => {
+    setValues({ email, password });
+    setErrors({ email: null, password: null });
+    setChecked({ email: true, password: true });
+    setFailure(null);
   };
 
   /** The email shows a check once it has been checked and passes. */
   const emailValid = checked.email && !errors.email && Boolean(values.email.trim());
 
-  return { values, errors, emailValid, submitting, failure, change, blur, submit };
+  return { values, errors, emailValid, submitting, failure, change, blur, submit, fill };
 }

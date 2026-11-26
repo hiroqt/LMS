@@ -2,8 +2,9 @@ import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, ListChecks, Search 
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
+import { LogoutButton } from "../../shared/components/LogoutButton";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
-import { ProfileMenu } from "../../shared/components/ProfileMenu";
+import { ProfileSummary } from "../../shared/components/ProfileSummary";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
 import { SidebarGroup } from "../../shared/layout/SidebarGroup";
@@ -108,6 +109,7 @@ function useNavigationGuard() {
 function Workspace({ onNavigateRole }: RoleAppProps) {
   const { guard, dialog: leaveDialog } = useNavigationGuard();
   const navigate = guard.navigate;
+  const handleLogout = () => navigate("/login");
   const location = useLocation();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
   const [mobileSearch, setMobileSearch] = useState(false);
@@ -170,7 +172,12 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
       mobileNav="drawer"
       pageKey={instructorPaths.pageKey(location.pathname)}
       sidebarExtra={myClasses}
-      sidebarFooter={(collapsed) => <HelpSupport collapsed={collapsed} />}
+      sidebarFooter={(collapsed) => (
+        <>
+          <HelpSupport collapsed={collapsed} />
+          <LogoutButton collapsed={collapsed} onLogout={handleLogout} />
+        </>
+      )}
       topbarStart={
         <nav aria-label="Breadcrumb" className="hidden md:block">
           <ol className="m-0 flex list-none items-center gap-1 p-0 font-sans text-body">
@@ -198,7 +205,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               if (entry) navigate(instructorPaths.classPage(entry.classroomId, "Submissions", { review: entry.id }));
             }}
           />
-          <ProfileMenu name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" currentRole="instructor" onSwitchRole={(role) => navigate(() => onNavigateRole(role))} />
+          <ProfileSummary name={`${instructor.firstName} ${instructor.lastName}`} subtitle="Faculty · Instructor" />
         </>
       }
     >

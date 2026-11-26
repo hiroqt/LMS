@@ -1,7 +1,9 @@
-import { ArrowRight, Check, CircleAlert, Info, Mail } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Check, ChevronDown, CircleAlert, Mail } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Button } from "../../../shared/ui/Button";
 import { Field } from "../../../shared/ui/Field";
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "../../../shared/ui/Menu";
+import { MOCK_ACCOUNTS } from "../api/demoAccount";
 import { useRememberedEmail } from "../hooks/useRememberedEmail";
 import { useSignInForm } from "../hooks/useSignInForm";
 import type { SignIn, WorkspaceRole } from "../types";
@@ -15,7 +17,16 @@ import { ResetPasswordDialog } from "./ResetPasswordDialog";
  * `signIn` is pending, keeps or forgets the email for "Remember me" once sign-in succeeds,
  * and hands the account's workspaces to `onSignedIn`.
  */
-export function SignInForm({ signIn, onSignedIn }: { signIn: SignIn; onSignedIn: (roles: WorkspaceRole[]) => void }) {
+export function SignInForm({
+  brand,
+  signIn,
+  onSignedIn,
+}: {
+  /** Shown above the heading, e.g. the product's mark. */
+  brand?: ReactNode;
+  signIn: SignIn;
+  onSignedIn: (roles: WorkspaceRole[]) => void;
+}) {
   const [rememberedEmail, setRememberedEmail] = useRememberedEmail();
   const [remember, setRemember] = useState(Boolean(rememberedEmail));
   const form = useSignInForm({
@@ -28,13 +39,27 @@ export function SignInForm({ signIn, onSignedIn }: { signIn: SignIn; onSignedIn:
   });
 
   return (
-    <section aria-labelledby="login-title" className="flex w-full flex-col gap-7">
-      <div className="flex flex-col gap-2">
-        <h1 id="login-title" className="text-page-mobile font-semibold tracking-tight sm:text-page">Sign in</h1>
-        <p className="text-body-lg text-muted">Use your college email and password to open your workspace.</p>
+    // One column; on a phone held sideways (landscape-short, D-066) the brand, heading, and demo
+    // accounts sit on the left and the form on the right, so the card fits the short screen.
+    <section
+      aria-labelledby="login-title"
+      className="flex w-full flex-col gap-7 landscape-short:grid landscape-short:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] landscape-short:grid-rows-[auto_1fr] landscape-short:gap-x-6 landscape-short:gap-y-3"
+    >
+      <div className="flex flex-col gap-8 landscape-short:col-start-1 landscape-short:row-start-1 landscape-short:gap-4">
+        {brand}
+        <div className="flex flex-col gap-2 landscape-short:gap-1">
+          <h1 id="login-title" className="text-page-mobile font-semibold tracking-tight sm:text-page landscape-short:text-page-mobile">Sign in</h1>
+          <p className="text-body-lg text-muted landscape-short:text-body">Use your college email and password to open your workspace.</p>
+        </div>
       </div>
 
-      <form noValidate onSubmit={form.submit} aria-labelledby="login-title" aria-busy={form.submitting || undefined} className="flex flex-col gap-5">
+      <form
+        noValidate
+        onSubmit={form.submit}
+        aria-labelledby="login-title"
+        aria-busy={form.submitting || undefined}
+        className="flex flex-col gap-5 landscape-short:col-start-2 landscape-short:row-span-2 landscape-short:row-start-1 landscape-short:gap-3"
+      >
         <Field label="Email" error={form.errors.email && <FieldError message={form.errors.email} />}>
           <AuthInput
             icon={Mail}
@@ -98,10 +123,41 @@ export function SignInForm({ signIn, onSignedIn }: { signIn: SignIn; onSignedIn:
         </Button>
       </form>
 
-      <p className="flex items-start gap-2 rounded-control bg-info-soft p-3 text-body text-info">
-        <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
-        <span>Accounts are not connected yet. Any email and password open the demo workspaces. Remember me keeps only your email, on this device.</span>
-      </p>
+      <div className="flex justify-center pt-1 landscape-short:col-start-1 landscape-short:row-start-2 landscape-short:items-end landscape-short:justify-start landscape-short:pt-0">
+        <Menu modal={false}>
+          <MenuTrigger asChild>
+            {/* Every dropdown button is a secondary Button with a trailing chevron. */}
+            <Button variant="secondary">
+              Demo accounts
+              <ChevronDown aria-hidden className="size-4 shrink-0" />
+            </Button>
+          </MenuTrigger>
+          <MenuContent
+            side="top"
+            align="center"
+            sideOffset={8}
+            avoidCollisions
+            collisionPadding={16}
+            className="w-72 max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height,18rem))] overflow-y-auto"
+          >
+            <MenuLabel>Select an account to fill</MenuLabel>
+            <MenuSeparator />
+            {MOCK_ACCOUNTS.map((account) => (
+              <MenuItem
+                key={account.role}
+                onSelect={() => form.fill(account.email, account.password)}
+                className="flex flex-col items-start gap-0.5 py-2"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="font-semibold text-ink">{account.label}</span>
+                  <span className="text-body text-muted">{account.password}</span>
+                </div>
+                <span className="text-body text-muted break-all">{account.email}</span>
+              </MenuItem>
+            ))}
+          </MenuContent>
+        </Menu>
+      </div>
     </section>
   );
 }

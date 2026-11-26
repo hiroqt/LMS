@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { axeViolations } from "../../test/axe";
 import LoginPage from "./LoginPage";
-import { CollegePanel } from "./components/CollegePanel";
 import type { SignIn, WorkspaceRole } from "./types";
 import { emailError } from "./validation";
 
@@ -26,14 +25,15 @@ const signIn = () => screen.getByRole("button", { name: "Sign in to portal" });
 afterEach(() => localStorage.clear());
 
 describe("LoginPage", () => {
-  it("shows the sign-in form and the college's billboard, with no axe violations", async () => {
+  it("shows only the sign-in form, with no axe violations", async () => {
     setup();
     expect(screen.getByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeRequired();
     expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
-    expect(screen.getByRole("heading", { level: 2, name: "Trece Martires City College" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "College highlights" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Connect with us" })).toBeInTheDocument();
+    // The college panel was removed (D-066): no second heading, profile, or links beside the form.
+    expect(screen.getAllByRole("heading").map((heading) => heading.textContent)).toEqual(["Sign in"]);
+    expect(screen.queryByRole("button", { name: "Institutional profile" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Connect with us" })).not.toBeInTheDocument();
     expect(document.title).toBe("TMCC LMS · Sign in");
     expect(await axeViolations()).toEqual([]);
   });
@@ -192,79 +192,6 @@ describe("LoginPage", () => {
     const result = await screen.findByRole("status", {}, { timeout: 2000 });
     expect(result).toHaveTextContent("no email was sent to alex@example.com");
     expect(await axeViolations()).toEqual([]);
-  });
-});
-
-describe("CollegePanel", () => {
-  const openProfile = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.click(screen.getByRole("button", { name: "Institutional profile" }));
-    return screen.getByRole("dialog", { name: "Trece Martires City College" });
-  };
-
-  it("shows the billboard, then the profile button and the icon links", () => {
-    render(<CollegePanel />);
-    const billboard = screen.getByRole("region", { name: "College highlights" });
-    expect(billboard).toHaveAttribute("aria-roledescription", "carousel");
-    const button = screen.getByRole("button", { name: "Institutional profile" });
-    expect(billboard.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const links = within(screen.getByRole("navigation", { name: "Connect with us" })).getAllByRole("link");
-    expect(links.map((link) => link.getAttribute("aria-label"))).toEqual([
-      "Facebook page (opens in a new tab)",
-      "Trece Martires City website (opens in a new tab)",
-    ]);
-  });
-
-  it("compiles every statement in one dialog, in the college's order and wording", async () => {
-    const user = userEvent.setup();
-    render(<CollegePanel />);
-    const dialog = await openProfile(user);
-    const sections = ["Vision", "Mission", "Goal", "Philosophy", "Core Values"];
-    // The billboard behind the dialog is hidden from screen readers while it is open.
-    expect(within(dialog).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(sections);
-    expect(within(within(dialog).getByRole("navigation", { name: "Sections" })).getAllByRole("button").map((button) => button.textContent)).toEqual(sections);
-
-    expect(within(dialog).getByRole("region", { name: "Vision" })).toHaveTextContent(
-      "VisionTo be a premier institution of sustainable higher learning, producing globally competitive, God-loving, empowered, and holistic citizens who enrich society through their knowledge, skills, and values.",
-    );
-    const mission = within(dialog).getByRole("region", { name: "Mission" });
-    expect(mission.querySelectorAll("p")).toHaveLength(3);
-    expect(mission).toHaveTextContent(/^MissionTo provide high-quality education to less privileged students of Trece Martires City and nearby community,/);
-    expect(mission).toHaveTextContent(/who embody truth, excellence, competence, and community-service.$/);
-
-    const goal = within(dialog).getByRole("region", { name: "Goal" });
-    expect(goal).toHaveTextContent(/^GoalInclusive high-quality education/);
-    expect(within(within(goal).getByRole("region", { name: "General Objectives" })).getAllByRole("listitem")).toHaveLength(2);
-    const specific = within(within(goal).getByRole("region", { name: "Specific Objectives" })).getAllByRole("listitem");
-    expect(specific).toHaveLength(6);
-    expect(specific[5]).toHaveTextContent("To enhance accessible and technology-supported learning systems and academic services that ensure equitable educational opportunities for all learners.");
-
-    const philosophy = within(dialog).getByRole("region", { name: "Philosophy" });
-    expect(philosophy).toHaveTextContent(/^PhilosophyThe Trece Martires City College is based on the philosophy/);
-    expect(philosophy).toHaveTextContent(/contribute positively to society.$/);
-    expect(within(within(dialog).getByRole("region", { name: "Core Values" })).getAllByRole("listitem")).toHaveLength(4);
-    expect(await axeViolations()).toEqual([]);
-
-    await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("jumps to a section and moves focus to its heading", async () => {
-    const user = userEvent.setup();
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    render(<CollegePanel />);
-    const dialog = await openProfile(user);
-    await user.click(within(within(dialog).getByRole("navigation", { name: "Sections" })).getByRole("button", { name: "Philosophy" }));
-    expect(within(dialog).getByRole("heading", { level: 3, name: "Philosophy" })).toHaveFocus();
-    expect(scrollIntoView).toHaveBeenCalledOnce();
-    expect(scrollIntoView.mock.contexts[0]).toBe(within(dialog).getByRole("region", { name: "Philosophy" }));
-  });
-
-  it("leaves the profile button out when there are no statements, and shows only the core values", () => {
-    render(<CollegePanel statements={[]} />);
-    expect(screen.queryByRole("button", { name: "Institutional profile" })).not.toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Core Values, 1 of 1" })).toBeInTheDocument();
-    expect(within(screen.getByRole("list", { name: "Core Values" })).getAllByRole("listitem")).toHaveLength(4);
   });
 });
 

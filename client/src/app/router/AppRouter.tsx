@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
-import { matchRole } from "./roles";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
+import { isLanding, matchRole } from "./roles";
 import { useRoleNavigation } from "./useRoleNavigation";
 
 // Each workspace loads on demand, so a visitor downloads only their own role's code (L-047).
@@ -35,10 +35,12 @@ function RoleWorkspaceRoute() {
   const navigateRole = useRoleNavigation();
   const { role, unknownPath } = matchRole(location);
 
+  // The landing page is sign-in (D-066); /student and the other role URLs open their workspace.
+  if (isLanding(location)) return <Navigate to="/login" replace />;
   if (unknownPath) return <UnknownRolePage unknownPath={unknownPath} onNavigateRole={navigateRole} />;
-  if (role === "admin") return <AdminApp onNavigateRole={navigateRole} />;
+  if (role === "admin") return <AdminApp />;
   if (role === "instructor") return <InstructorApp onNavigateRole={navigateRole} />;
-  return <StudentApp onNavigateRole={navigateRole} />;
+  return <StudentApp />;
 }
 
 function LoginRoute() {
@@ -50,8 +52,9 @@ function LoginRoute() {
  * The catch-all route resolves the role exactly as the legacy router did, so
  * every old URL form still works (D-004); /ui-kit is the design-system
  * reference, /isms-link the ISMS connection check (D-030), and /login the sign-in
- * page (D-044). Since cutover (D-021), Student and Instructor always use the
- * rebuilt UI; a leftover ?ui= parameter is ignored.
+ * page (D-044), which is also where `/` lands (D-066). Since cutover (D-021),
+ * Student and Instructor always use the rebuilt UI; a leftover ?ui= parameter
+ * is ignored.
  */
 export function AppRouter() {
   return (
@@ -61,6 +64,7 @@ export function AppRouter() {
           <Route path="/ui-kit" element={<DesignSystemPage />} />
           <Route path="/isms-link" element={<IsmsLinkPage />} />
           <Route path="/login" element={<LoginRoute />} />
+          <Route path="/login.html" element={<LoginRoute />} />
           <Route path="*" element={<RoleWorkspaceRoute />} />
         </Routes>
       </Suspense>

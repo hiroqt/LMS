@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router";
 import { describe, expect, it } from "vitest";
 import { useRoleNavigation } from "./useRoleNavigation";
-import { isRole, matchRole, roleTitle } from "./roles";
+import { isLanding, isRole, matchRole, roleTitle } from "./roles";
 
 const at = (pathname: string, search = "", hash = "") => ({ pathname, search, hash });
 
@@ -19,6 +19,25 @@ describe("matchRole", () => {
 
   it("reports unknown paths", () => {
     expect(matchRole(at("/nope"))).toEqual({ role: null, unknownPath: "/nope" });
+  });
+});
+
+describe("isLanding (D-066)", () => {
+  it.each([at("/"), at(""), at("/index.html"), at("/", "?ui=classic")])("treats %o as the landing page", (location) => {
+    expect(isLanding(location)).toBe(true);
+  });
+
+  it.each([
+    at("/student"),
+    at("/student.html"),
+    at("/student/classes/biology"),
+    at("/", "?role=student"),
+    at("/", "", "#/student"),
+    at("/instructor"),
+    at("/", "?role=admin"),
+    at("/nope"),
+  ])("keeps %o out of the landing page", (location) => {
+    expect(isLanding(location)).toBe(false);
   });
 });
 

@@ -1,9 +1,10 @@
-import { BookOpen, CalendarDays, CloudOff, House, ListChecks, Megaphone, Search } from "lucide-react";
+import { BookOpen, CalendarDays, CloudOff, House, ListChecks, LogOut, Megaphone, Search } from "lucide-react";
 import { HelpSupport } from "../../shared/components/HelpSupport";
+import { LogoutButton } from "../../shared/components/LogoutButton";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
-import { ProfileMenu } from "../../shared/components/ProfileMenu";
+import { ProfileSummary } from "../../shared/components/ProfileSummary";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
 import { SidebarGroup } from "../../shared/layout/SidebarGroup";
@@ -35,10 +36,6 @@ const ResultPage = lazy(() => import("./pages/ResultPage"));
 const MaterialPage = lazy(() => import("./pages/MaterialPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
 
-export interface RoleAppProps {
-  onNavigateRole: (role: string) => void;
-}
-
 // "Main navigation" and "My classes" keep the classic landmark names (D-013).
 const nav: NavItem[] = [
   { id: "today", label: "Dashboard", icon: <House /> },
@@ -66,8 +63,9 @@ function ScreenLoading({ label = "Loading" }: { label?: string }) {
   );
 }
 
-function Workspace({ onNavigateRole }: RoleAppProps) {
+function Workspace() {
   const navigate = useNavigate();
+  const handleLogout = () => navigate("/login");
   const location = useLocation();
   const { catalog, completed, now } = useWorkspace();
 
@@ -134,7 +132,12 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
           mobileNav="bottom"
           pageKey={location.pathname}
           sidebarExtra={myClasses}
-          sidebarFooter={(collapsed) => <HelpSupport collapsed={collapsed} />}
+          sidebarFooter={(collapsed) => (
+            <>
+              <HelpSupport collapsed={collapsed} />
+              <LogoutButton collapsed={collapsed} onLogout={handleLogout} />
+            </>
+          )}
           topbarActions={
             <>
               <div className="hidden w-80 md:block">{search}</div>
@@ -152,7 +155,9 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
                 items={dueSoon(catalog.assessments, completed, now).map((item) => ({ id: item.id, title: item.title, meta: `Due ${formatDue(item.dueAt)}` }))}
                 onSelect={(item) => navigate(studentPaths.assessment(item.id))}
               />
-              <ProfileMenu name={catalog.me.name} subtitle={STUDENT_SUBTITLE} currentRole="student" onSwitchRole={onNavigateRole} />
+              <ProfileSummary name={catalog.me.name} subtitle={STUDENT_SUBTITLE} />
+              {/* Below lg Student has a bottom bar and no sidebar, so Log out lives here (D-066). */}
+              <IconButton label="Log out" className="lg:hidden" onClick={handleLogout}><LogOut /></IconButton>
             </>
           }
         >
@@ -211,7 +216,7 @@ function Gate({ query, label }: { query: { isError: boolean; error: unknown; ref
 }
 
 /** Root of the Student UI. Data comes from the LMS API (D-032). */
-export default function StudentApp(props: RoleAppProps) {
+export default function StudentApp() {
   const people = useStudentPeople();
   const [chosen, setChosen] = useState(remembered);
   const [reviewed, setReviewed] = useState<ReadonlySet<string>>(() => new Set());
@@ -243,7 +248,7 @@ export default function StudentApp(props: RoleAppProps) {
   return (
     <Toaster>
       <StudentSessionContext.Provider value={session}>
-        <Workspace {...props} />
+        <Workspace />
       </StudentSessionContext.Provider>
     </Toaster>
   );

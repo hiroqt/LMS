@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import { demoSignIn } from "./api/demoAccount";
 import { BrandMark } from "./components/BrandMark";
-import { CollegePanel } from "./components/CollegePanel";
 import { SignInForm } from "./components/SignInForm";
 import { WorkspaceDialog } from "./components/WorkspaceDialog";
-import { collegeProfile } from "./data/collegeProfile";
+import { COLLEGE_NAME } from "./data/collegeProfile";
 import type { SignIn, WorkspaceRole } from "./types";
 
 // Read once at load, so rendering stays pure.
 const COPYRIGHT_YEAR = new Date().getFullYear();
 
 /**
- * /login (D-044, D-045, D-050). One column on phones (form, then the college); from the `@4xl`
- * page width a full-height split with the form on the left and the college on the right. An account with one workspace
- * opens it directly; one with several chooses in "Choose a workspace".
+ * /login (D-044, D-066): the sign-in form alone, in one card centered on the canvas. Portrait
+ * and desktop: one column. A phone held sideways (`landscape-short`): a wider card with the
+ * brand and heading beside the form, so it fits the short screen. The page is `min-h-dvh`, so
+ * when the card is taller than the screen it scrolls instead of clipping the card's top.
+ * An account with one workspace opens it directly; one with several chooses in "Choose a workspace".
  */
 export default function LoginPage({
   onNavigateRole,
@@ -36,24 +37,15 @@ export default function LoginPage({
   };
 
   return (
-    <div className="@container/page min-h-dvh bg-surface font-sans text-ink">
-      {/* The college panel gets the larger share (D-052); the form column keeps room for its 28rem form. */}
-      <div className="grid min-h-dvh grid-cols-1 @4xl/page:grid-cols-[minmax(26rem,2fr)_minmax(0,3fr)] @7xl/page:grid-cols-[minmax(32rem,1fr)_minmax(0,2fr)]">
-        <main className="flex flex-col gap-10 px-4 py-6 sm:px-8 sm:py-8 @4xl/page:py-10 @7xl/page:px-12">
-          <BrandMark />
-          {/* The form sits on the page itself, without a card (D-050). */}
-          <div className="flex flex-1 items-center justify-center">
-            <div className="w-full max-w-md">
-              <SignInForm signIn={signIn} onSignedIn={onSignedIn} />
-            </div>
-          </div>
-          <footer className="text-center text-body text-muted">
-            <p>© {COPYRIGHT_YEAR} {collegeProfile.name}</p>
-          </footer>
-        </main>
-
-        <CollegePanel />
-      </div>
+    <div className="flex min-h-dvh flex-col bg-canvas font-sans text-ink">
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:gap-6 sm:px-6 sm:py-10 landscape-short:gap-2 landscape-short:px-[max(1rem,env(safe-area-inset-left),env(safe-area-inset-right))] landscape-short:py-3">
+        <div className="w-full max-w-md rounded-card border border-line bg-surface p-5 sm:p-8 landscape-short:max-w-3xl landscape-short:px-6 landscape-short:py-4">
+          <SignInForm brand={<BrandMark />} signIn={signIn} onSignedIn={onSignedIn} />
+        </div>
+        <footer className="text-center text-body text-muted">
+          <p>© {COPYRIGHT_YEAR} {COLLEGE_NAME}</p>
+        </footer>
+      </main>
 
       <WorkspaceDialog roles={workspaceRoles} onClose={() => setWorkspaceRoles(null)} onChoose={onNavigateRole} />
     </div>

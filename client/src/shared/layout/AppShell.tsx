@@ -170,11 +170,14 @@ export function AppShell({ roleLabel, navLabel: navLabelOverride, nav, activeId,
         aria-label="Workspace"
         className={cn("fixed inset-y-0 left-0 hidden flex-col gap-6 border-r border-line bg-surface py-5 lg:flex", collapsed ? "w-20 px-3" : "w-72 px-4")}
       >
-        <span className={collapsed ? "flex justify-center" : "px-1"}><Brand full sealOnly={collapsed} /></span>
-        <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" collapsed={collapsed} />
+        <span className={cn("shrink-0", collapsed ? "flex justify-center" : "px-1")}><Brand full sealOnly={collapsed} /></span>
+        {/* A nav taller than the window scrolls, so the footer (Log out) stays on screen (D-066). -m-1 p-1 keeps focus rings unclipped. */}
+        <div className="-m-1 min-h-0 shrink overflow-y-auto p-1">
+          <NavList nav={nav} activeId={activeId} onNavigate={navigate} label={navLabel} layout="column" collapsed={collapsed} />
+        </div>
         {sidebarExtra && <div className="min-h-0 flex-1 overflow-y-auto">{renderSlot(sidebarExtra, collapsed)}</div>}
         {/* The collapse control is the last row of the sidebar it controls. */}
-        <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
+        <div className="mt-auto flex shrink-0 flex-col gap-1 border-t border-line pt-4">
           {renderSlot(sidebarFooter, collapsed)}
           <button
             type="button"

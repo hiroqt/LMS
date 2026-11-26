@@ -7,7 +7,6 @@ const STUDENT = /Good morning, Alex/;
 const INSTRUCTOR = "Your teaching day";
 
 const cases: Array<[path: string, expected: "student" | "instructor" | "admin"]> = [
-  ["/", "student"],
   ["/student", "student"],
   ["/student/", "student"],
   ["/student.html", "student"],
@@ -29,6 +28,16 @@ for (const [path, role] of cases) {
   });
 }
 
+// D-066: the landing page is sign-in. Only a URL that names a role opens a workspace.
+for (const path of ["/", "/index.html"]) {
+  test(`${path} lands on the sign-in page`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveTitle("TMCC LMS · Sign in");
+    await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+  });
+}
+
 test("an unknown path shows the role fallback, which can return to Student", async ({ page }) => {
   await page.goto("/not-a-role");
   await expect(page.getByRole("heading", { name: "Role path not found" })).toBeVisible();
@@ -38,17 +47,21 @@ test("an unknown path shows the role fallback, which can return to Student", asy
   await expect(page.getByRole("heading", { level: 1, name: STUDENT })).toBeVisible();
 });
 
-test("switching role updates the URL and title, and Back returns to the previous role", async ({ page }) => {
+// D-066: there is no workspace switcher; another role is reached by logging out and signing in again.
+test("switching role goes through Log out and sign-in, and Back returns to the previous role", async ({ page }) => {
   await page.goto("/student");
-  await page.getByRole("button", { name: "Profile: Alex Rivera" }).click();
-  await page.getByRole("group", { name: "Switch workspace" }).getByRole("button", { name: "Instructor workspace" }).click();
+  await page.getByRole("button", { name: "Log out" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+
+  await page.getByLabel("Email", { exact: true }).fill("instructor@tmcc.edu.ph");
+  await page.getByLabel("Password", { exact: true }).fill("instructor123");
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/instructor$/);
   await expect(page).toHaveTitle("TMCC LMS · Instructor Workspace");
   await expect(page.getByRole("heading", { level: 1, name: INSTRUCTOR })).toBeVisible();
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/student$/);
-  await expect(page.getByRole("heading", { level: 1, name: STUDENT })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("Admin smoke: overview loads and sidebar navigation works (Admin is out of revamp scope)", async ({ page }) => {

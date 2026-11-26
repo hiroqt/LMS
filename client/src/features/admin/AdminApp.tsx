@@ -2,8 +2,9 @@ import { BookOpen, CalendarDays, ClipboardCheck, FileText, LayoutDashboard, List
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
+import { LogoutButton } from "../../shared/components/LogoutButton";
 import { NotificationsPopover, type NotificationItem } from "../../shared/components/NotificationsPopover";
-import { ProfileMenu } from "../../shared/components/ProfileMenu";
+import { ProfileSummary } from "../../shared/components/ProfileSummary";
 import { TopbarSearch, type TopbarSearchResult } from "../../shared/components/TopbarSearch";
 import { AppShell, type NavItem } from "../../shared/layout/AppShell";
 import { Dialog, DialogContent, DialogTrigger } from "../../shared/ui/Dialog";
@@ -25,10 +26,6 @@ const AuditPage = lazy(() => import("./pages/AuditPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-
-export interface RoleAppProps {
-  onNavigateRole: (role: string) => void;
-}
 
 // Every destination is one click away under a plain section label (D-038).
 // "admin navigation" keeps the classic landmark name (D-013).
@@ -87,8 +84,9 @@ function ScreenLoading() {
   );
 }
 
-function Workspace({ onNavigateRole }: RoleAppProps) {
+function Workspace() {
   const navigate = useNavigate();
+  const handleLogout = () => navigate("/login");
   const location = useLocation();
   const [data, update] = useAdminData();
   const session = useMemo(() => ({ data, update }), [data, update]);
@@ -119,7 +117,12 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
         onNavigate={(id) => navigate(nav.find((item) => item.id === id)?.path ?? adminPaths.overview)}
         mobileNav="drawer"
         pageKey={location.pathname}
-        sidebarFooter={(collapsed) => <HelpSupport collapsed={collapsed} />}
+        sidebarFooter={(collapsed) => (
+          <>
+            <HelpSupport collapsed={collapsed} />
+            <LogoutButton collapsed={collapsed} onLogout={handleLogout} />
+          </>
+        )}
         topbarStart={
           <nav aria-label="Breadcrumb" className="hidden md:block">
             <ol className="m-0 flex list-none items-center gap-1 p-0 font-sans text-body">
@@ -144,7 +147,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               items={notifications}
               onSelect={(item) => navigate(notifications.find((entry) => entry.id === item.id)?.path ?? adminPaths.overview)}
             />
-            <ProfileMenu name="Taylor Morgan" subtitle="Administrator · Demo" currentRole="admin" onSwitchRole={onNavigateRole} />
+            <ProfileSummary name="Taylor Morgan" subtitle="Administrator · Demo" />
           </>
         }
       >
@@ -168,10 +171,10 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
 }
 
 /** Root of the Admin UI. Its data is fictional and browser-local (AGENTS.md). */
-export default function AdminApp(props: RoleAppProps) {
+export default function AdminApp() {
   return (
     <Toaster>
-      <Workspace {...props} />
+      <Workspace />
     </Toaster>
   );
 }

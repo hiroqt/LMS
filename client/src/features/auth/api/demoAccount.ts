@@ -1,23 +1,85 @@
 import type { Credentials, SignInResult, WorkspaceRole } from "../types";
 
-/**
- * Stand-ins for the account service (D-044, D-045). No request is sent and nothing is stored.
- * Replace these two functions when sign-in is built; the page already handles a pending
- * request, a single workspace (opens it directly), and several (asks which one).
- */
+export interface MockAccount {
+  role: WorkspaceRole;
+  label: string;
+  email: string;
+  password: string;
+  description: string;
+}
 
-const DEMO_ROLES: WorkspaceRole[] = ["student", "instructor", "admin"];
+export const MOCK_ACCOUNTS: MockAccount[] = [
+  {
+    role: "student",
+    label: "Student",
+    email: "student@tmcc.edu.ph",
+    password: "student123",
+    description: "Student dashboard",
+  },
+  {
+    role: "instructor",
+    label: "Instructor",
+    email: "instructor@tmcc.edu.ph",
+    password: "instructor123",
+    description: "Instructor dashboard",
+  },
+  {
+    role: "admin",
+    label: "Admin",
+    email: "admin@tmcc.edu.ph",
+    password: "admin123",
+    description: "Admin dashboard",
+  },
+];
 
-// Long enough that the busy state is visible, as it will be over a real network.
-const DEMO_LATENCY_MS = 450;
+// Brief latency so the button's busy state remains visible.
+const DEMO_LATENCY_MS = 250;
 
 const wait = () => new Promise<void>((resolve) => setTimeout(resolve, DEMO_LATENCY_MS));
 
-/** Every filled-in email and password opens all three demo workspaces. */
+/**
+ * Validates mockup credentials and returns the dedicated workspace role.
+ * - Student (student@tmcc.edu.ph / student123) -> direct to Student workspace
+ * - Instructor (instructor@tmcc.edu.ph / instructor123) -> direct to Instructor workspace
+ * - Admin (admin@tmcc.edu.ph / admin123) -> direct to Admin workspace
+ * - alex@example.com -> opens multi-workspace choice dialog
+ */
 export async function demoSignIn(credentials: Credentials): Promise<SignInResult> {
-  void credentials;
   await wait();
-  return { roles: [...DEMO_ROLES] };
+
+  const email = credentials.email.trim().toLowerCase();
+  const password = credentials.password;
+
+  // Multi-workspace account for testing choice dialog
+  if (email === "alex@example.com" || email === "all@tmcc.edu.ph" || email === "demo@example.com") {
+    return { roles: ["student", "instructor", "admin"] };
+  }
+
+  // Student mockup account
+  if (email === "student@tmcc.edu.ph" || email === "student@example.com" || email.startsWith("student@")) {
+    if (password === "student123" || password === "student" || password === "password123") {
+      return { roles: ["student"] };
+    }
+    throw new Error("Invalid password for Student account. Use student123.");
+  }
+
+  // Instructor mockup account
+  if (email === "instructor@tmcc.edu.ph" || email === "instructor@example.com" || email.startsWith("instructor@") || email.startsWith("faculty@")) {
+    if (password === "instructor123" || password === "instructor" || password === "password123") {
+      return { roles: ["instructor"] };
+    }
+    throw new Error("Invalid password for Instructor account. Use instructor123.");
+  }
+
+  // Admin mockup account
+  if (email === "admin@tmcc.edu.ph" || email === "admin@example.com" || email.startsWith("admin@")) {
+    if (password === "admin123" || password === "admin" || password === "password123") {
+      return { roles: ["admin"] };
+    }
+    throw new Error("Invalid password for Admin account. Use admin123.");
+  }
+
+  throw new Error("Account not found. Use student@tmcc.edu.ph, instructor@tmcc.edu.ph, or admin@tmcc.edu.ph.");
 }
 
 /** Resolves without sending anything; the dialog says no email was sent. */
