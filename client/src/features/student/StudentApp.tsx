@@ -1,7 +1,7 @@
 import { BookOpen, CalendarDays, CloudOff, House, ListChecks, Megaphone, Search } from "lucide-react";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { matchPath, Route, Routes, useLocation, useNavigate } from "react-router";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
@@ -23,6 +23,8 @@ import { useWorkspace } from "./hooks/useWorkspace";
 import TodayPage from "./pages/TodayPage";
 import { studentPaths } from "./paths";
 import { StudentSessionContext, type StudentSession } from "./studentContext";
+import { MeetingRoomPage } from "../meet";
+import { useStudentSession } from "./hooks/useStudentSession";
 
 // Today loads with the app; other screens load on first visit (smaller first download).
 const TasksPage = lazy(() => import("./pages/TasksPage"));
@@ -77,6 +79,25 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   const currentClass = location.pathname.startsWith("/student/classes/") ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
 
   const [mobileSearch, setMobileSearch] = useState(false);
+  const { studentId } = useStudentSession();
+
+  // A class meeting is full screen, outside the shell (D-070).
+  const meeting = matchPath("/student/meet/:classId/:meetingId", location.pathname);
+  if (meeting?.params.classId && Number(meeting.params.meetingId) > 0) {
+    const classId = meeting.params.classId;
+    return (
+      <Suspense fallback={<p role="status" className="m-0 p-6 font-sans text-body text-muted">Opening the meeting…</p>}>
+        <MeetingRoomPage
+          viewer={{ id: studentId, role: "student" }}
+          viewerName={catalog.me.name}
+          classId={classId}
+          meetingId={Number(meeting.params.meetingId)}
+          className={catalog.courses.find((course) => course.id === classId)?.name ?? "Class"}
+          onExit={() => navigate(studentPaths.classPage(classId, "Meetings"))}
+        />
+      </Suspense>
+    );
+  }
   const searchField = (autoFocus = false) => (
     <TopbarSearch
       label="Search student workspace"

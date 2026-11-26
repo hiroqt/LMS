@@ -1,6 +1,6 @@
 import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, ListChecks, Search } from "lucide-react";
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { matchPath, Route, Routes, useLocation, useNavigate } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
@@ -22,6 +22,8 @@ import { InstructorSessionContext, type InstructorSession } from "./instructorCo
 import { NavigationGuardContext, type NavigationGuard } from "./navigationGuard";
 import { instructorPaths } from "./paths";
 import OverviewPage from "./pages/OverviewPage";
+import { MeetingRoomPage } from "../meet";
+import { useInstructorSession } from "./hooks/useInstructorSession";
 
 const ClassesPage = lazy(() => import("./pages/ClassesPage"));
 const ClassPage = lazy(() => import("./pages/ClassPage"));
@@ -57,6 +59,11 @@ function sectionOf(pathname: string): string {
 }
 
 const navTarget: Record<string, string> = { gradebook: instructorPaths.gradebook(), "question-sets": instructorPaths.questionSets };
+
+/** While the meeting page and LiveKit's client download. */
+function MeetingLoading() {
+  return <p role="status" className="m-0 p-6 font-sans text-body text-muted">Opening the meeting…</p>;
+}
 
 function ScreenLoading() {
   return (
@@ -111,7 +118,27 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   const navigate = guard.navigate;
   const location = useLocation();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
+  const { instructorId } = useInstructorSession();
   const [mobileSearch, setMobileSearch] = useState(false);
+
+  // A class meeting is full screen, outside the shell (D-070).
+  const meeting = matchPath("/instructor/meet/:classId/:meetingId", location.pathname);
+  if (meeting?.params.classId && Number(meeting.params.meetingId) > 0) {
+    const classId = meeting.params.classId;
+    const room = rooms.find((item) => item.id === classId);
+    return (
+      <Suspense fallback={<MeetingLoading />}>
+        <MeetingRoomPage
+          viewer={{ id: instructorId, role: "instructor" }}
+          viewerName={`${instructor.firstName} ${instructor.lastName}`}
+          classId={classId}
+          meetingId={Number(meeting.params.meetingId)}
+          className={(room && subjectOf(store, room)?.title) ?? "Class"}
+          onExit={() => navigate(instructorPaths.classPage(classId, "Meetings"))}
+        />
+      </Suspense>
+    );
+  }
   const section = sectionOf(location.pathname);
   const currentClass = section === "classes" ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
 
