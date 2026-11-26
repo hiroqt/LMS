@@ -42,6 +42,18 @@ export interface MeetingJoin {
   meeting: Meeting;
 }
 
+/** A chat message, as the server sends it into the meeting (topic `lms.chat`) and as saved. */
+export interface ChatMessage {
+  key: string;
+  id: number | null;
+  senderId: string;
+  senderName: string;
+  senderRole: "instructor" | "student";
+  text: string;
+  sentAt: string;
+  saved: boolean;
+}
+
 export interface MeetingCreate {
   title?: string;
   scheduledStart?: string;
@@ -76,6 +88,17 @@ export const deleteMeeting = (viewer: Viewer, classId: string, id: number) =>
 
 export const joinMeeting = (viewer: Viewer, classId: string, id: number) =>
   sendJson<MeetingJoin>("POST", `${base(classId)}/${id}/join`, undefined, { viewer });
+
+/** Chat goes through the LMS API, which checks the rights, saves it when saving is on, and sends it into the meeting. */
+export const sendChat = (viewer: Viewer, classId: string, id: number, text: string) =>
+  sendJson<ChatMessage>("POST", `${base(classId)}/${id}/chat`, { text }, { viewer });
+
+export const fetchSavedChat = (viewer: Viewer, classId: string, id: number, signal?: AbortSignal) =>
+  getJson<ChatMessage[]>(`${base(classId)}/${id}/chat`, { identity: true, viewer, signal });
+
+/** Raises or lowers the viewer's own hand (a participant attribute the server sets). */
+export const setHand = (viewer: Viewer, classId: string, id: number, raised: boolean) =>
+  sendJson<void>("POST", `${base(classId)}/${id}/hand`, { raised }, { viewer });
 
 /** The meeting that is on now, if any. */
 export const liveMeeting = (meetings: readonly Meeting[] | undefined) => meetings?.find((m) => m.status === "live");
