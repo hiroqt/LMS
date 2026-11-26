@@ -8,6 +8,9 @@
 /node_modules/
 /dist/
 
+# Visual Studio (per-machine caches, layout, and indexes)
+.vs/
+
 # .NET build output
 server/bin/
 server/obj/
