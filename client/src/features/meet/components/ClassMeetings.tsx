@@ -22,6 +22,9 @@ export interface ClassMeetingsProps {
   onOpen: (meeting: Meeting) => void;
 }
 
+/** Opens a past meeting's own page (attendance, saved chat). */
+export type OpenDetails = (meeting: Meeting) => void;
+
 /**
  * Above a class page's tabs while a meeting is on: what it is, since when, and Join. The one
  * Join control on the page (C-015); the Meetings tab lists the rest.
@@ -71,7 +74,7 @@ export function StartMeetingButton({ viewer, classId, onOpen }: ClassMeetingsPro
 }
 
 /** The Meetings tab: upcoming and past meetings. The instructor schedules, starts, and deletes them. */
-export function MeetingsTab({ viewer, classId, onOpen, canManage, className: classTitle }: ClassMeetingsProps & { canManage: boolean; className: string }) {
+export function MeetingsTab({ viewer, classId, onOpen, onDetails, canManage, className: classTitle }: ClassMeetingsProps & { onDetails: OpenDetails; canManage: boolean; className: string }) {
   const meetings = useClassMeetings(viewer, classId);
   const refresh = useRefreshMeetings(viewer, classId);
   const toast = useToast();
@@ -170,6 +173,7 @@ export function MeetingsTab({ viewer, classId, onOpen, canManage, className: cla
                 title={meeting.title}
                 meta={meeting.startedAt && meeting.endedAt ? `${formatMeetingTime(meeting.startedAt)} · ${formatDuration(meeting.startedAt, meeting.endedAt)}` : "Ended"}
                 trail={meeting.savedChatMessages > 0 && <Badge tone="info">{meeting.savedChatMessages} saved messages</Badge>}
+                onOpen={() => onDetails(meeting)}
               />
             ))}
           </RowList>

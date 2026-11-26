@@ -1,7 +1,7 @@
 import { BookOpen, CalendarDays, CloudOff, House, ListChecks, Megaphone, Search } from "lucide-react";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { matchPath, Route, Routes, useLocation, useNavigate } from "react-router";
+import { matchPath, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
@@ -23,7 +23,7 @@ import { useWorkspace } from "./hooks/useWorkspace";
 import TodayPage from "./pages/TodayPage";
 import { studentPaths } from "./paths";
 import { StudentSessionContext, type StudentSession } from "./studentContext";
-import { MeetingRoomPage } from "../meet";
+import { MeetingDetailsPage, MeetingRoomPage } from "../meet";
 import { useStudentSession } from "./hooks/useStudentSession";
 
 // Today loads with the app; other screens load on first visit (smaller first download).
@@ -65,6 +65,26 @@ function ScreenLoading({ label = "Loading" }: { label?: string }) {
       <Skeleton className="h-28 w-full" />
       <Skeleton className="h-28 w-full" />
     </SkeletonGroup>
+  );
+}
+
+/** A meeting's own page (D-070, Phase 3): its saved chat. */
+function MeetingDetailsRoute() {
+  const { classId = "", meetingId = "" } = useParams();
+  const navigate = useNavigate();
+  const { catalog } = useWorkspace();
+  const { studentId } = useStudentSession();
+  const course = catalog.courses.find((item) => item.id === classId);
+  if (!course || !(Number(meetingId) > 0)) return <Navigate to={studentPaths.classes} replace />;
+  return (
+    <MeetingDetailsPage
+      viewer={{ id: studentId, role: "student" }}
+      classId={classId}
+      meetingId={Number(meetingId)}
+      className={course.name}
+      onBack={() => navigate(studentPaths.classPage(classId, "Meetings"))}
+      onJoin={(meeting) => navigate(studentPaths.meeting(classId, meeting.id))}
+    />
   );
 }
 
@@ -187,6 +207,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               <Route path="student/assessments/:assessmentId/quiz" element={<QuizPage />} />
               <Route path="student/assessments/:assessmentId/result" element={<ResultPage />} />
               <Route path="student/materials/:materialId" element={<MaterialPage />} />
+              <Route path="student/classes/:classId/meetings/:meetingId" element={<MeetingDetailsRoute />} />
               <Route path="student/news" element={<NewsPage />} />
               {/* /student, /, /student.html, ?role=student, #/student, … all land on Today. */}
               <Route path="*" element={<TodayPage />} />

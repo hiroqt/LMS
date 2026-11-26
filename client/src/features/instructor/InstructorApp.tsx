@@ -1,6 +1,6 @@
 import { BookOpen, CloudOff, GraduationCap, LayoutDashboard, ListChecks, Search } from "lucide-react";
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
-import { matchPath, Route, Routes, useLocation, useNavigate } from "react-router";
+import { matchPath, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
@@ -22,7 +22,8 @@ import { InstructorSessionContext, type InstructorSession } from "./instructorCo
 import { NavigationGuardContext, type NavigationGuard } from "./navigationGuard";
 import { instructorPaths } from "./paths";
 import OverviewPage from "./pages/OverviewPage";
-import { MeetingRoomPage } from "../meet";
+import { MeetingDetailsPage, MeetingRoomPage } from "../meet";
+import { useGuardedNavigate } from "./hooks/useGuardedNavigate";
 import { useInstructorSession } from "./hooks/useInstructorSession";
 
 const ClassesPage = lazy(() => import("./pages/ClassesPage"));
@@ -59,6 +60,26 @@ function sectionOf(pathname: string): string {
 }
 
 const navTarget: Record<string, string> = { gradebook: instructorPaths.gradebook(), "question-sets": instructorPaths.questionSets };
+
+/** A meeting's own page (D-070, Phase 3): the class's attendance and saved chat. */
+function MeetingDetailsRoute() {
+  const { classId = "", meetingId = "" } = useParams();
+  const navigate = useGuardedNavigate();
+  const { store, rooms } = useInstructorWorkspace();
+  const { instructorId } = useInstructorSession();
+  const room = rooms.find((item) => item.id === classId);
+  if (!room || !(Number(meetingId) > 0)) return <Navigate to={instructorPaths.classes()} replace />;
+  return (
+    <MeetingDetailsPage
+      viewer={{ id: instructorId, role: "instructor" }}
+      classId={classId}
+      meetingId={Number(meetingId)}
+      className={subjectOf(store, room)?.title ?? "Class"}
+      onBack={() => navigate(instructorPaths.classPage(classId, "Meetings"))}
+      onJoin={(meeting) => navigate(instructorPaths.meeting(classId, meeting.id))}
+    />
+  );
+}
 
 /** While the meeting page and LiveKit's client download. */
 function MeetingLoading() {
@@ -252,6 +273,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
           <Route path="instructor/classes/:classId/rubrics" element={<RubricsPage />} />
           <Route path="instructor/classes/:classId/rubrics/new" element={<RubricPage />} />
           <Route path="instructor/classes/:classId/rubrics/:rubricId" element={<RubricPage />} />
+          <Route path="instructor/classes/:classId/meetings/:meetingId" element={<MeetingDetailsRoute />} />
           {/* /instructor, ?role=instructor, #/instructor, /instructor.html … land on Overview. */}
           <Route path="*" element={<OverviewPage onNavigateRole={onNavigateRole} />} />
         </Routes>

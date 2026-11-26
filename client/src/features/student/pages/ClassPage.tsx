@@ -339,7 +339,7 @@ export default function ClassPage() {
         <TabsContent value="Materials"><ClassMaterials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>
-        <TabsContent value="Meetings"><MeetingsTab viewer={viewer} classId={course.id} onOpen={openMeeting} canManage={false} className={course.name} /></TabsContent>
+        <TabsContent value="Meetings"><MeetingsTab viewer={viewer} classId={course.id} onOpen={openMeeting} onDetails={(meeting) => navigate(studentPaths.meetingDetails(course.id, meeting.id))} canManage={false} className={course.name} /></TabsContent>
       </Tabs>
     </>
   );
