@@ -993,3 +993,17 @@ for faculty, courses, and users. The Student "Due this week" cell's phone label 
 "Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
 no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
 
+### D-070 · The student's Modules tab is topic buttons; a topic groups its content by category
+`2026-11-27` · saheejuu2 (user request) · scope: student · confidence: medium
+Supersedes D-033 for the Student class page only (the Instructor Modules tab keeps the tree). The
+tab lists one button per top-level module, a "topic", and nothing else. Each is a full-width row
+shaped like Classwork's `AssessmentRow` (class-tone icon tile, chevron, `min-h-27` so it is as tall
+as an assessment row on desktop). A button opens the topic on
+the same tab (`?tab=Modules&topic=<id>`, its own history entry; **All topics** goes back) with four
+sections in this order: Assignments, Activities, Assessments, Materials, each with its count and an
+empty line when nothing is in it. A topic holds what is placed in the module and in its submodules;
+a submodule's item names it in its meta line. Coursework whose category label mentions "activity" is
+an Activity, other hand-in work (`kind: "activity"`, category "Assignment") is an Assignment, and
+quizzes and exams are Assessments (`topicCategory` and `courseTopic` in `student/api/selectors.ts`).
+Focus moves to the topic's h2 when it opens and back to its button on All topics. The student part
+of `submodules` changed to this journey (node MODS); the instructor part is unchanged.
