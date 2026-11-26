@@ -25,10 +25,13 @@ public sealed record MeetingGrant
 
 /// <summary>
 /// Signed passes for the media server (HS256 JWTs, LiveKit's access-token format) and the check
-/// of the webhooks it sends back. The secret never leaves the server.
+/// of the webhooks it sends back. The secret never leaves the server. Times are the real clock's,
+/// because the media server checks them by its own: Demo mode's clock may start in the past.
 /// </summary>
-public sealed class MeetingTokens(IOptions<MeetingOptions> options, TimeProvider time)
+public sealed class MeetingTokens(IOptions<MeetingOptions> options)
 {
+    private static readonly TimeProvider time = TimeProvider.System;
+
     private static readonly JsonSerializerOptions Json = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
     private const string Header = """{"alg":"HS256","typ":"JWT"}""";
 

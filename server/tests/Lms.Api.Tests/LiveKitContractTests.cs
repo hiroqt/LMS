@@ -30,7 +30,7 @@ public sealed class LiveKitContractTests
 
     private static (LiveKitMeetingServer Server, MeetingTokens Tokens, HttpClient Http) Connect(MeetingOptions options)
     {
-        var tokens = new MeetingTokens(Microsoft.Extensions.Options.Options.Create(options), TimeProvider.System);
+        var tokens = new MeetingTokens(Microsoft.Extensions.Options.Options.Create(options));
         var http = new HttpClient { BaseAddress = options.ApiBase(), Timeout = TimeSpan.FromSeconds(10) };
         return (new LiveKitMeetingServer(http, tokens), tokens, http);
     }

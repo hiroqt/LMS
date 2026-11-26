@@ -16,7 +16,7 @@ public static class MeetingWebhookEndpoints
 
     public static IEndpointRouteBuilder MapMeetingWebhookEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost(Path, async Task<IResult> (HttpContext http, MeetingTokens tokens, MeetingRooms rooms, CancellationToken ct) =>
+        app.MapPost(Path, async Task<IResult> (HttpContext http, MeetingTokens tokens, MeetingRooms rooms, TimeProvider time, CancellationToken ct) =>
         {
             if (http.Request.ContentLength is > MeetingLimits.WebhookBodyBytes) return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
             // Read at most the limit, also when no length was sent.
@@ -38,15 +38,19 @@ public static class MeetingWebhookEndpoints
             if (hook is null || hook.Room.Length == 0) return TypedResults.Ok();
 
             var (db, owned) = await rooms.DatabaseForRoomAsync(hook.Room);
-            try { await ApplyAsync(db, hook, ct); }
+            try { await ApplyAsync(db, hook, time.GetUtcNow().UtcDateTime, ct); }
             finally { if (owned) await db.DisposeAsync(); }
             return TypedResults.Ok();
         }).WithName("MeetingServerWebhook");
         return app;
     }
 
-    internal static async Task ApplyAsync(LmsDbContext db, WebhookEvent hook, CancellationToken ct)
+    /// <param name="now">The API's clock. The media server's times are moved onto it (by the event's age), so a
+    /// stay lines up with the meeting's own start and end even when the two clocks differ (Demo mode).</param>
+    internal static async Task ApplyAsync(LmsDbContext db, WebhookEvent hook, DateTime now, CancellationToken ct)
     {
+        var shift = now - hook.At;
+        DateTime Here(DateTime serverTime) => serverTime + shift;
         // A room the LMS didn't make (./check.sh, another app on the same server) is not ours to record.
         var meeting = await db.Meetings.SingleOrDefaultAsync(m => m.RoomName == hook.Room, ct);
         if (meeting is null) return;
@@ -58,7 +62,7 @@ public static class MeetingWebhookEndpoints
                 if (await db.MeetingAttendance.AnyAsync(a => a.SessionId == p.Sid, ct)) return;
                 db.MeetingAttendance.Add(new MeetingAttendance
                 {
-                    MeetingId = meeting.Id, PersonId = p.Identity, Role = await RoleAsync(db, meeting, p.Identity, ct), SessionId = p.Sid, JoinedAt = p.JoinedAt ?? hook.At,
+                    MeetingId = meeting.Id, PersonId = p.Identity, Role = await RoleAsync(db, meeting, p.Identity, ct), SessionId = p.Sid, JoinedAt = Here(p.JoinedAt ?? hook.At),
                 });
                 break;
             }
@@ -71,20 +75,20 @@ public static class MeetingWebhookEndpoints
                     db.MeetingAttendance.Add(new MeetingAttendance
                     {
                         MeetingId = meeting.Id, PersonId = p.Identity, Role = await RoleAsync(db, meeting, p.Identity, ct), SessionId = p.Sid,
-                        JoinedAt = p.JoinedAt ?? hook.At, LeftAt = hook.At,
+                        JoinedAt = Here(p.JoinedAt ?? hook.At), LeftAt = now,
                     });
                 }
-                else if (stay.LeftAt is null) stay.LeftAt = hook.At;
+                else if (stay.LeftAt is null) stay.LeftAt = now;
                 break;
             }
             case "room_finished":
             {
-                var at = meeting.EndedAt is { } ended && ended < hook.At ? ended : hook.At;
+                var at = meeting.EndedAt is { } ended && ended < now ? ended : now;
                 await db.MeetingAttendance.Where(a => a.MeetingId == meeting.Id && a.LeftAt == null).ForEachAsync(a => a.LeftAt = at, ct);
                 // Closed by the media server: everyone left (or nobody came) and the room's wait ran out.
                 if (meeting.StartedAt is not null && meeting.EndedAt is null)
                 {
-                    meeting.EndedAt = hook.At;
+                    meeting.EndedAt = now;
                     meeting.EndReason = MeetingEndReason.Empty;
                 }
                 break;

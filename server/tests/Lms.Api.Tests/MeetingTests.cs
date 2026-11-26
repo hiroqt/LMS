@@ -92,10 +92,10 @@ public sealed class MeetingTests : IDisposable
 
     // ---------------------------------------------------------------- webhooks, signed as LiveKit signs them
 
-    /// <summary>Signs as LiveKit does, at the API's clock (the test clock unless <paramref name="at"/> says otherwise).</summary>
-    private string Sign(byte[] body, string key = LmsApiFactory.MeetKey, string secret = LmsApiFactory.MeetSecret, long? expires = null, DateTimeOffset? at = null)
+    /// <summary>Signs as LiveKit does, by the real clock: passes and webhooks are checked by it, not the API's (Demo mode's starts in the past).</summary>
+    private static string Sign(byte[] body, string key = LmsApiFactory.MeetKey, string secret = LmsApiFactory.MeetSecret, long? expires = null)
     {
-        var now = (at ?? _factory.Time.Now).ToUnixTimeSeconds();
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var head = Base64Url.EncodeToString("""{"alg":"HS256","typ":"JWT"}"""u8);
         var claims = JsonSerializer.SerializeToUtf8Bytes(new { iss = key, nbf = now - 5, exp = expires ?? now + 300, sha256 = Convert.ToBase64String(SHA256.HashData(body)) });
         var payload = Base64Url.EncodeToString(claims);
@@ -169,7 +169,8 @@ public sealed class MeetingTests : IDisposable
         Assert.False(claims.GetProperty("video").TryGetProperty("roomAdmin", out _));
         Assert.Equal(["camera", "microphone"], Sources(claims));
         Assert.Equal("student", claims.GetProperty("attributes").GetProperty(MeetingRights.RoleAttribute).GetString());
-        Assert.Equal(600, claims.GetProperty("exp").GetInt64() - _factory.Time.Now.ToUnixTimeSeconds());
+        // Ten minutes by the real clock, which the media server checks it with (not the API's clock).
+        Assert.InRange(claims.GetProperty("exp").GetInt64() - DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 590, 600);
         // Students join with the mic off by default; the page reads it from the settings.
         Assert.True(join.GetProperty("meeting").GetProperty("settings").GetProperty("studentsJoinMuted").GetBoolean());
 
@@ -321,42 +322,43 @@ public sealed class MeetingTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, null));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, secret: "wrong_secret_wrong_secret_wrong_secret_00")));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, key: "someone-else")));
-        Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, expires: _factory.Time.Now.AddMinutes(-5).ToUnixTimeSeconds())));
+        Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, expires: DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeSeconds())));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(Hook("participant_joined", room, Max, "PA_max1", t0), Sign(joined)));
         Assert.Equal(0, await _factory.WithDbAsync(db => db.MeetingAttendance.CountAsync()));
         // A body over the limit is refused before it is read, signed or not.
         var huge = new byte[MeetingLimits.WebhookBodyBytes + 1];
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, await PostHookAsync(huge, Sign(huge)));
 
-        // Signed: recorded once, even when delivered twice.
-        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(joined, Sign(joined)));
-        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(joined, Sign(joined)));
-        var teacherIn = Hook("participant_joined", room, Teacher, "PA_teacher", t0 - 60);
-        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(teacherIn, Sign(teacherIn)));
+        // Signed: recorded once, even when delivered twice. Times are the API's clock when each webhook
+        // arrives; the media server's own clock may differ (here it says 2026-11-26, the API 2026-11-16).
+        var start = _factory.Time.Now;
+        async Task Post(int minute, byte[] body)
+        {
+            _factory.Time.Now = start.AddMinutes(minute);
+            Assert.Equal(HttpStatusCode.OK, await PostHookAsync(body, Sign(body)));
+        }
+        await Post(-1, Hook("participant_joined", room, Teacher, "PA_teacher", t0 - 60));
+        await Post(0, joined);
+        await Post(0, joined);
         var stays = await _factory.WithDbAsync(db => db.MeetingAttendance.OrderBy(a => a.Id).ToListAsync());
-        Assert.Equal([(Lia, "student"), (Teacher, "instructor")], stays.Select(s => (s.PersonId, s.Role)).ToArray());
-        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(t0).UtcDateTime, stays[0].JoinedAt);
+        Assert.Equal([(Teacher, "instructor"), (Lia, "student")], stays.Select(s => (s.PersonId, s.Role)).ToArray());
+        Assert.Equal(start.UtcDateTime, stays[1].JoinedAt);
 
         // Lia leaves after 20 minutes and comes back for 10 more; a second tab overlapping her stay counts once.
-        foreach (var body in new[]
-        {
-            Hook("participant_left", room, Lia, "PA_lia1", t0 + 20 * 60, joinedAtMs: t0 * 1000),
-            Hook("participant_joined", room, Lia, "PA_lia2", t0 + 30 * 60),
-            Hook("participant_joined", room, Lia, "PA_lia3", t0 + 32 * 60),
-            Hook("participant_left", room, Lia, "PA_lia3", t0 + 35 * 60, joinedAtMs: (t0 + 32 * 60) * 1000),
-            Hook("participant_left", room, Lia, "PA_lia2", t0 + 40 * 60, joinedAtMs: (t0 + 30 * 60) * 1000),
-            // A leave whose join was missed is still recorded.
-            Hook("participant_left", room, Max, "PA_max9", t0 + 5 * 60, joinedAtMs: t0 * 1000),
-            // A room the LMS didn't make is ignored.
-            Hook("participant_joined", "lms-check", "pemam_pub_0", "PA_load", t0),
-        })
-            Assert.Equal(HttpStatusCode.OK, await PostHookAsync(body, Sign(body)));
+        await Post(20, Hook("participant_left", room, Lia, "PA_lia1", t0 + 20 * 60, joinedAtMs: t0 * 1000));
+        await Post(30, Hook("participant_joined", room, Lia, "PA_lia2", t0 + 30 * 60));
+        await Post(32, Hook("participant_joined", room, Lia, "PA_lia3", t0 + 32 * 60));
+        await Post(35, Hook("participant_left", room, Lia, "PA_lia3", t0 + 35 * 60, joinedAtMs: (t0 + 32 * 60) * 1000));
+        await Post(40, Hook("participant_left", room, Lia, "PA_lia2", t0 + 40 * 60, joinedAtMs: (t0 + 30 * 60) * 1000));
+        // A leave whose join was missed is still recorded: he joined 5 minutes before it, by the media server's clock.
+        await Post(40, Hook("participant_left", room, Max, "PA_max9", t0 + 40 * 60, joinedAtMs: (t0 + 35 * 60) * 1000));
+        // A room the LMS didn't make is ignored.
+        await Post(40, Hook("participant_joined", "lms-check", "pemam_pub_0", "PA_load", t0));
 
         // Everyone leaves and the media server closes the room: the meeting ends and open stays close.
-        var finished = Hook("room_finished", room, at: t0 + 45 * 60);
-        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(finished, Sign(finished)));
+        await Post(45, Hook("room_finished", room, at: t0 + 45 * 60));
         var meeting = await _factory.WithDbAsync(db => db.Meetings.SingleAsync());
-        Assert.Equal((DateTimeOffset.FromUnixTimeSeconds(t0 + 45 * 60).UtcDateTime, MeetingEndReason.Empty), (meeting.EndedAt!.Value, meeting.EndReason));
+        Assert.Equal((start.AddMinutes(45).UtcDateTime, MeetingEndReason.Empty), (meeting.EndedAt!.Value, meeting.EndReason));
         Assert.Equal(0, await _factory.WithDbAsync(db => db.MeetingAttendance.CountAsync(a => a.LeftAt == null)));
 
         var report = await Json(await Instructor.GetAsync($"{Base}/{id}/attendance"));
@@ -591,7 +593,7 @@ public sealed class MeetingTests : IDisposable
 
             var body = Hook("participant_joined", room, "s0", "PA_s0");
             using var request = new HttpRequestMessage(HttpMethod.Post, MeetingWebhookEndpoints.Path) { Content = new ByteArrayContent(body) };
-            request.Headers.TryAddWithoutValidation("Authorization", Sign(body, at: DateTimeOffset.UtcNow));
+            request.Headers.TryAddWithoutValidation("Authorization", Sign(body));
             // No sandbox header: the room name says which sandbox.
             Assert.Equal(HttpStatusCode.OK, (await demo.CreateClient().SendAsync(request)).StatusCode);
 
