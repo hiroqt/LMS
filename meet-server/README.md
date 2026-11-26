@@ -58,8 +58,9 @@ LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...   # at least 32 characters
 ```
 
-The LMS API reads the same key and secret from its user-secrets or environment variables (from
-Phase 1). Never commit a real secret.
+The LMS API needs the same key and secret, in its user-secrets or environment variables
+(`Lms:Meet:*`, see "Class meetings" in [`server/README.md`](../server/README.md)). Never commit a
+real secret.
 
 ## Settings (`livekit.yaml`)
 
@@ -67,4 +68,9 @@ Phase 1). Never commit a real secret.
   instructor whose connection drops can come back to the same meeting.
 - `enable_remote_unmute: false`: nobody can switch on someone else's mic or camera (decision 7).
   The instructor can mute people, and can ask them to unmute.
-- Webhooks to the LMS API (attendance) are added in Phase 1.
+- Webhooks go to the LMS API at `http://host.docker.internal:5200/api/meetings/livekit-webhook`
+  (joined, left, and room closed, for meeting attendance). They are signed with the API key, so
+  the LMS API reads only ours. If the API isn't running, LiveKit logs that the webhook failed, and
+  the meeting still works.
+- The LMS API creates each meeting's room with its own close delay (`Lms:Meet:EmptyRoomMinutes`),
+  which replaces the two room timeouts above for meetings.

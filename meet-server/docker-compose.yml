@@ -23,9 +23,14 @@ services:
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-lms-dev}: ${LIVEKIT_API_SECRET:-dev_only_livekit_secret_change_me_0123}"
       NODE_IP: ${MEET_NODE_IP:-127.0.0.1}
+      # Signs the webhooks sent to the LMS API (livekit.yaml, "webhook").
+      LIVEKIT_WEBHOOK_API_KEY: ${LIVEKIT_API_KEY:-lms-dev}
     ports:
       - "${MEET_BIND_IP:-127.0.0.1}:7880:7880"       # signalling (WebSocket) and the server API
       - "${MEET_BIND_IP:-127.0.0.1}:7881:7881"       # media over TCP, when UDP is blocked
       - "${MEET_BIND_IP:-127.0.0.1}:7882:7882/udp"   # media over UDP
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
+    # Lets the server reach the LMS API on this computer (host.docker.internal) on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
