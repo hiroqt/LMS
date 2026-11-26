@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Lms.Api.Data;
 using Lms.Api.Files;
+using Lms.Api.Meetings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -112,6 +113,10 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
     public ManualTimeProvider Time { get; } = new();
     public FakeScanner Scanner { get; } = new();
     public FakeConverter Converter { get; } = new();
+    /// <summary>Stands in for the media server of class meetings (D-070).</summary>
+    public FakeMeetingServer Meet { get; } = new();
+    public const string MeetKey = "lms-test";
+    public const string MeetSecret = "test_only_meeting_secret_0123456789abcdef";
     /// <summary>Where this factory's uploaded files are kept; deleted with it.</summary>
     public string FilesRoot { get; } = Path.Combine(Path.GetTempPath(), $"lms-files-test-{Guid.NewGuid():N}");
 
@@ -138,6 +143,11 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
         ["Lms:Files:Scanner"] = "clamav",
         // Tests upload far more than a student would.
         ["Lms:Files:UploadsPerMinute"] = "1000",
+        // Class meetings are on; the media server itself is FakeMeetingServer below.
+        ["Lms:Meet:Url"] = "ws://meet.test",
+        ["Lms:Meet:ApiKey"] = MeetKey,
+        ["Lms:Meet:ApiSecret"] = MeetSecret,
+        ["Lms:Meet:ChatMessagesPerMinute"] = "1000",
     };
 
     // A temp-file SQLite database per factory (no MySQL server needed).
@@ -177,6 +187,8 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IFileScanner>(Scanner);
             services.RemoveAll<IDocumentConverter>();
             services.AddSingleton<IDocumentConverter>(Converter);
+            services.RemoveAll<IMeetingServer>();
+            services.AddSingleton<IMeetingServer>(Meet);
         });
     }
 
