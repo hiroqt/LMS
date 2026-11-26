@@ -499,7 +499,9 @@ carrying the SHA-256 of its body, is read. Each one is applied once, by its part
 Demo mode the room name starts with the sandbox (`sandbox.random`), because webhooks carry no
 sandbox header (L-104).
 
-All under `/api/classes/{classId}/meetings`. The instructor and the active class list can read and
+`GET /api/me/meetings`: the viewer's live meetings and the next 14 days', across their classes (at most 10, `{ meeting, className }`), for the dashboards to poll.
+
+All the rest are under `/api/classes/{classId}/meetings`. The instructor and the active class list can read and
 join. Everyone else gets 404.
 
 | Method | Path | Who | What |
@@ -517,6 +519,7 @@ join. Everyone else gets 404.
 | POST | `/{id}/people/{personId}/let-speak` | instructor | `{ allowed }`. Only when students may not turn on their own mic |
 | POST | `/{id}/people/{personId}/ask-unmute` | instructor | Sends them `lms.ask-unmute` |
 | POST | `/{id}/people/{personId}/stop-share` | instructor | Stops their screen share. They can share again |
+| POST | `/{id}/people/{personId}/lower-hand` | instructor | Clears their `lms.hand` |
 | POST | `/{id}/people/{personId}/remove` | instructor | Disconnects them. They can't rejoin this meeting |
 | POST | `/{id}/hand` | class, in the meeting | `{ raised }`. Sets or clears the `lms.hand` attribute (the API's time), which everyone sees, late joiners too |
 | POST | `/{id}/chat` | class, in the meeting | `{ text }` (1000 characters). Saved only while `saveChat` is on |

@@ -21,6 +21,27 @@ public static class MeetingEndpoints
 
     public static IEndpointRouteBuilder MapMeetingEndpoints(this IEndpointRouteBuilder app)
     {
+        // The viewer's live meetings and the next two weeks', across their classes: for the dashboards, polled.
+        app.MapGroup("/api/me").RequireDemoUser().MapGet("/meetings", async (HttpContext http, LmsDbContext db, TimeProvider time, CancellationToken ct) =>
+        {
+            var user = http.CurrentUser();
+            var classes = await (user.IsInstructor
+                ? db.IsmsClasses.AsNoTracking().Where(c => c.IsActive && c.InstructorId == user.Id)
+                : db.IsmsClasses.AsNoTracking().Where(c => c.IsActive && db.IsmsClassStudents.Any(s => s.ClassId == c.Id && s.StudentId == user.Id && s.IsActive)))
+                .Select(c => new { c.Id, c.SubjectName }).ToListAsync(ct);
+            var ids = classes.Select(c => c.Id).ToList();
+            var now = time.GetUtcNow().UtcDateTime;
+            var until = now.AddDays(14);
+            var meetings = await db.Meetings.AsNoTracking()
+                .Where(m => ids.Contains(m.ClassId) && m.EndedAt == null && (m.StartedAt != null || (m.ScheduledStart != null && m.ScheduledStart >= now.AddHours(-1) && m.ScheduledStart <= until)))
+                .ToListAsync(ct);
+            var names = classes.ToDictionary(c => c.Id, c => c.SubjectName);
+            return TypedResults.Ok(meetings
+                .OrderBy(m => m.StartedAt == null).ThenBy(m => m.StartedAt == null ? m.ScheduledStart : null).ThenByDescending(m => m.StartedAt).ThenBy(m => m.Id)
+                .Take(10)
+                .Select(m => new MyMeetingDto(MeetingMapper.ToDto(m, 0), names.GetValueOrDefault(m.ClassId, ""))).ToList());
+        }).WithName("ListMyMeetings");
+
         var group = app.MapGroup("/api/classes/{classId}/meetings").RequireDemoUser();
 
         group.MapGet("", async Task<IResult> (string classId, HttpContext http, ClassAccess access, LmsDbContext db, CancellationToken ct) =>
@@ -295,6 +316,17 @@ public static class MeetingEndpoints
             await server.SetAttributesAsync(meeting.RoomName, user.Id, new Dictionary<string, string> { [MeetingRights.HandAttribute] = value }, ct);
             return TypedResults.NoContent();
         }).WithName("RaiseMeetingHand");
+
+        // The instructor lowers someone's hand (after answering them).
+        group.MapPost("/{meetingId:long}/people/{personId}/lower-hand", async Task<IResult> (string classId, long meetingId, string personId, HttpContext http,
+            ClassAccess access, LmsDbContext db, IMeetingServer server, CancellationToken ct) =>
+        {
+            var (meeting, denied) = await LiveHostAsync(classId, meetingId, http, access, db, ct);
+            if (denied is not null) return denied;
+            if (await server.GetParticipantAsync(meeting!.RoomName, personId, ct) is null) return NotInMeeting();
+            await server.SetAttributesAsync(meeting.RoomName, personId, new Dictionary<string, string> { [MeetingRights.HandAttribute] = "" }, ct);
+            return TypedResults.NoContent();
+        }).WithName("LowerMeetingPersonHand");
 
         // ---------------------------------------------------------------- chat
 

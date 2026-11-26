@@ -33,6 +33,9 @@ public sealed record MeetingLetSpeakInput(bool? Allowed);
 
 public sealed record MeetingHandInput(bool? Raised);
 
+/// <summary>One of the viewer's meetings, with its class's name, for a dashboard.</summary>
+public sealed record MyMeetingDto(MeetingDto Meeting, string ClassName);
+
 public sealed record MeetingAttendancePersonDto(string PersonId, string Name, string Role, bool OnClassList, bool Joined,
     DateTime? FirstJoinedAt, DateTime? LastLeftAt, int Stays, int MinutesIn);
 
