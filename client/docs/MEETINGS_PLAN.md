@@ -200,15 +200,50 @@ LiveKit media server ───┘                  our own server; open source (
 | 2a | Entry points on both class pages (Start meeting, the Live now banner, a Meetings tab with schedule and delete), the full-screen page, pre-join, join and wait, the grid, mic and camera, Leave and the ways back. Playwright with a real LiveKit and fake camera and mic, axe, 320 px | An instructor and a student meet, at desktop and 320 px widths |
 | 2b | Chat, people list, raise hand, reactions, screen share, speaker view and pinning, data saver | The core features of a Meet call work at desktop and 320 px widths |
 | 2c | The instructor's controls and settings in the meeting (mute, let speak, ask to unmute, stop share, remove, lock, end, the six settings), the dashboard's live meetings | The host controls work from the page |
-| 3 | The past meeting page (attendance and CSV, saved chat), pinning, background blur, and a load test (`lk load-test`) to size the server | One class of 50 holds a 2-hour meeting with the server under 60% CPU |
+| 3 | The past meeting page (attendance and CSV, saved chat), background blur, and a load test (`lk load-test`) to size the server. Pinning came in 2b | One class of 50 holds a 2-hour meeting with the server under 60% CPU (the local test is rough; see Going live) |
 | 4 | Recording, as designed above: Record, Pause, Resume, Stop, the "Record the whole meeting" setting, the Egress service, the notice and REC sign, joining the stretches, and the player on the past meeting page. First settle storage and how long recordings are kept | A 1-hour recording with a pause in it plays in the LMS as one video, on a phone and a computer, and the paused part isn't in it |
 | Later | Live captions, breakout rooms | Separate plans |
 
 **Going live needs a server from the school:** a Linux machine with a public IP near the users,
 a domain with TLS, and these ports open: 443 TCP, 3478 UDP, 7881 TCP, and 50000–60000 UDP.
-Rough size to start: 4–8 vCPUs. Phase 3's load test gives the real number. Recording (Phase 4)
-needs extra CPU and disk on top of that. Most of the cost is outgoing bandwidth: a 40-student
-meeting with video can use 20–60 Mbit/s at the server.
+Recording (Phase 4) needs extra CPU and disk on top of what follows.
+
+**Sizing, from the local load test (2026-11-26, rough).** This used LiveKit's `lk load-test`
+against LiveKit 1.13.11 in Docker on an Apple M5 (10 cores, 8 GB for Docker). Each run had 50
+people in one room for 2 minutes. The load generator ran in its own container on the same
+machine; CPU is the server container's alone.
+
+| Class of 50 | Each viewer receives | Server sends out | Server CPU, average / peak | Memory |
+|---|---|---|---|---|
+| Lecture: the instructor's camera, 49 watching | 1.4 Mbit/s | 68 Mbit/s | 24% / 85% of one core | 131 MB |
+| Discussion: 10 cameras, 40 watching a 3×3 grid | 5.2 Mbit/s | 207 Mbit/s | 40% / 60% | 338 MB |
+| 25 cameras, 25 watching a 5×5 grid | 4.8 Mbit/s | 120 Mbit/s | 34% / 72% | 593 MB |
+| Sound only (like Data saver): 10 voices | 0.12 Mbit/s | 5 Mbit/s | 26% / 50% | 616 MB |
+
+No packets were lost and no participant failed in any run. The peaks are the joins: 50 people
+joining in 5 seconds.
+
+What it means:
+
+- **Bandwidth, not CPU, is the limit.** The heaviest class used under half of one fast core,
+  but sent up to about 200 Mbit/s. A server with a 1 Gbit/s port carries roughly four
+  camera-heavy classes at once, or about a dozen lectures.
+- **The earlier estimate of 20–60 Mbit/s per class was too low** for full-quality video. The
+  test sends every camera at its top quality (720p). Real browsers receive smaller layers for
+  small tiles, phones, and weak connections, so real classes use less. How much less needs a
+  real class to measure.
+- **For students:** watching a lecture at full quality is about 0.6 GB an hour; sound only is
+  about 50 MB an hour. That is the case for Data saver on prepaid data.
+- **Start with 4 vCPUs and 8 GB,** and choose the plan by its included bandwidth: a school of
+  several classes a day moves terabytes a month.
+
+What it doesn't show, and so what still needs a real server:
+
+- A cloud server's slower x86 cores.
+- Real network delay and loss (everything stayed inside one machine).
+- The 2-hour goal: each run lasted 2 minutes.
+
+Run the same commands on a rented server for an hour (`meet-server/README.md`) before buying one.
 
 ## Decisions (approved 2026-11-26)
 
