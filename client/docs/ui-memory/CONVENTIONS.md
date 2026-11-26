@@ -146,6 +146,11 @@ add `!important` by hand.
 - One gutter for the whole grid: `gap-3 sm:gap-4`, between rows and between columns.
 - Leave grid items stretched (no `items-start`); give the tile's main child `flex-1` so
   the height is used by content, not by blank space under it.
+- Exception (D-067): a list tile with too few rows to use the height adds
+  `@4xl:self-start`, so it ends under its content instead of holding blank space.
+- A dashboard collection that can outgrow one row is a `CardRow` (D-067): stacked on a
+  phone, one row from `@xl` that scrolls sideways instead of wrapping. The full list keeps
+  the wrapping grid on its own page.
 - Keep DOM order equal to reading order and place tiles with spans, not `order`.
 - Card grids: `grid-cols-[repeat(auto-fit,minmax(min(100%,19rem),1fr))]`.
 - Vary tile size and weight by importance (D-027): one filled tile per dashboard, flat

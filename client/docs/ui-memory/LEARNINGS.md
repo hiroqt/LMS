@@ -713,3 +713,19 @@ listed there as having handed in nothing. When a rule gets a second screen, chec
 Also from that review: `fileNameFrom` (`http.ts`) reads `filename*=` first and never URI-decodes a
 plain `filename`, since "Lab 100% done" is not an encoding; and `latePenaltyRule` says "loses N%"
 when the cap is reached on the first day.
+
+### L-099 · A long sidebar pushed Log out off a short screen
+`2026-11-26` · saheejuu2 · scope: shared/layout · confidence: high
+The desktop sidebar is `fixed inset-y-0` and nothing in it scrolled except `sidebarExtra`, so
+Admin's nine-row nav pushed the footer (Log out, Collapse sidebar) below a 720px-tall window:
+`login` "logging out from the sidebar" timed out with "element is outside of the viewport".
+`AppShell` now scrolls the nav (`min-h-0 shrink overflow-y-auto`) and keeps the footer `shrink-0`.
+
+### L-100 · A sideways scroller needs `relative` and `min-w-0` on its items
+`2026-11-27` · saheejuu2 · scope: shared, layout · confidence: high
+Two things broke the first `CardRow` (D-067). The class tiles hold `sr-only` text, which is
+`position: absolute`: with no positioned ancestor inside the scroller, the text of cards
+scrolled out of view was not clipped and widened the whole page by 159px at 1024px. `relative`
+on the scrolling element fixes it. And a flex item's minimum width is its content's, so a tile
+with a `truncate` title grew to the full title instead of its `15rem` share until the item got
+`min-w-0`. `class-view` "stay in one row and scroll sideways" fails on either regression.

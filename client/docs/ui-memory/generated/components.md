@@ -41,15 +41,17 @@
 | File | Exports |
 | --- | --- |
 | `src/shared/components/BackLink.tsx` | `BackLink` |
+| `src/shared/components/CardRow.tsx` | `CardRow`, `CardRowItem` |
 | `src/shared/components/ClassTable.tsx` | `ClassTable` |
 | `src/shared/components/CourseCode.tsx` | `CourseCode` |
 | `src/shared/components/CourseHeader.tsx` | `CourseHeader` |
 | `src/shared/components/FeaturedNewsCarousel.tsx` | `FeaturedNewsCarousel` |
 | `src/shared/components/HelpSupport.tsx` | `HelpSupport` |
+| `src/shared/components/LogoutButton.tsx` | `LogoutButton` |
 | `src/shared/components/MonthGrid.tsx` | `MonthGrid` |
 | `src/shared/components/NotificationsPopover.tsx` | `NotificationsPopover` |
 | `src/shared/components/Panel.tsx` | `Panel` |
-| `src/shared/components/ProfileMenu.tsx` | `ProfileMenu` |
+| `src/shared/components/ProfileSummary.tsx` | `ProfileSummary` |
 | `src/shared/components/SectionHeading.tsx` | `SectionHeading` |
 | `src/shared/components/StatCard.tsx` | `StatCard` |
 | `src/shared/components/SubjectIcon.tsx` | `SubjectIcon` |
@@ -99,15 +101,10 @@
 | `src/features/auth/LoginPage.tsx` | `LoginPage` |
 | `src/features/auth/components/AuthInput.tsx` | `AuthInput` |
 | `src/features/auth/components/BrandMark.tsx` | `BrandMark` |
-| `src/features/auth/components/CollegePanel.tsx` | `CollegePanel` |
-| `src/features/auth/components/CollegeProfileDialog.tsx` | `CollegeProfileDialog` |
-| `src/features/auth/components/CoreValueList.tsx` | `CoreValueList` |
 | `src/features/auth/components/FieldError.tsx` | `FieldError` |
 | `src/features/auth/components/PasswordInput.tsx` | `PasswordInput` |
-| `src/features/auth/components/ProfileBillboard.tsx` | `ProfileBillboard` |
 | `src/features/auth/components/ResetPasswordDialog.tsx` | `ResetPasswordDialog` |
 | `src/features/auth/components/SignInForm.tsx` | `SignInForm` |
-| `src/features/auth/components/SocialIcons.tsx` | `FacebookIcon` |
 | `src/features/auth/components/WorkspaceDialog.tsx` | `WorkspaceDialog` |
 | `src/features/design-system/DesignSystemPage.tsx` | `DesignSystemPage` |
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
@@ -145,12 +142,6 @@
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
 | `src/features/instructor/pages/assessment/SummaryPanel.tsx` | `SummaryPanel` |
-| `src/features/instructor/pages/assignment/AssignmentSummary.tsx` | `AssignmentSummary` |
-| `src/features/instructor/pages/assignment/DatesTab.tsx` | `DatesTab` |
-| `src/features/instructor/pages/assignment/DetailsTab.tsx` | `DetailsTab` |
-| `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
-| `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
-| `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
 | `src/features/instructor/pages/assignmentGrading/ConfirmDialog.tsx` | `ConfirmDialog` |
 | `src/features/instructor/pages/assignmentGrading/FeedbackField.tsx` | `FeedbackField` |
 | `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
@@ -163,6 +154,12 @@
 | `src/features/instructor/pages/assignmentGrading/StudentTerms.tsx` | `StudentTerms` |
 | `src/features/instructor/pages/assignmentGrading/StudentWork.tsx` | `StudentWork` |
 | `src/features/instructor/pages/assignmentGrading/WorkFiles.tsx` | `WorkFiles` |
+| `src/features/instructor/pages/assignment/AssignmentSummary.tsx` | `AssignmentSummary` |
+| `src/features/instructor/pages/assignment/DatesTab.tsx` | `DatesTab` |
+| `src/features/instructor/pages/assignment/DetailsTab.tsx` | `DetailsTab` |
+| `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
+| `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
+| `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
 | `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |

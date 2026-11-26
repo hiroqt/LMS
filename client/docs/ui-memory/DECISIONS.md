@@ -930,3 +930,50 @@ Shapes: [`ASSIGNMENTS_API_CONTRACT.md`](../ASSIGNMENTS_API_CONTRACT.md) §10–�
   show it too), and with the chosen levels on a visible grade, where the brief leaves it out so
   it is not shown twice. A held grade shows neither the sum nor the levels (the server hides them).
 - Spec: `e2e/assignment-work-more.spec.ts`. No existing journey changed.
+
+### D-066 · `/` lands on sign-in; the sign-in page is the form alone; the profile is not a menu
+`2026-11-27` · saheejuu2 (user request) · scope: auth, router, shared, e2e · confidence: high
+Supersedes the page layout of D-045 and D-049–D-053.
+- **Landing:** a URL that names no workspace (`/`, `/index.html`, the base path) redirects to
+  `/login` (`isLanding` in `app/router/roles.ts`). Every URL that names a role, including
+  `/student`, still opens that workspace (D-004). The build also writes `login.html`.
+- **Sign-in page:** the college panel (name, rotating billboard, Institutional profile dialog,
+  Connect with us links) is removed. `/login` is the brand and the form in one flat card (max
+  `28rem`) centered on the canvas, with the copyright line under it. A phone held sideways (the
+  `landscape-short` variant: landscape, at most 32rem tall, at least 34rem wide) gets a wider
+  card with the heading and Demo accounts beside the form, so 844×390 fits without scrolling.
+  Removed code: `CollegePanel`, `ProfileBillboard`, `CollegeProfileDialog`, `CoreValueList`,
+  `SocialIcons`, `useRotation`; `data/collegeProfile.ts` keeps only the college's name.
+- **Log out and the profile:** there is no workspace switcher. The top-right profile is
+  `ProfileSummary` (initials, plus name and subtitle from xl up); it is not a button. Log out
+  (`LogoutButton`) is in the sidebar footer of every workspace and returns to `/login`, where
+  another workspace is chosen by signing in. Student below lg has no sidebar, so its top bar
+  has a Log out icon button there. The sidebar nav scrolls so Log out stays on screen (L-099).
+- **Tailwind gotcha:** variant classes must be written out in full; a class built from a
+  template string (`${SHORT}:p-5`) is never seen by Tailwind.
+Journeys changed: `routing` and `shell` ROLE switch workspace through Log out and sign-in;
+`new-shell` checks the profile opens nothing; `login` checks eight sizes from 320×640 to
+1440×900 and the Student phone Log out. `e2e/global-setup.ts` also warms `/login`.
+
+### D-067 · Student dashboard: announcements first, status buttons in Tasks, one screen on a desktop
+`2026-11-27` · saheejuu2 (user request) · scope: student, shared · confidence: high
+Supersedes the Student tile arrangement in D-026 and D-027.
+- **Layout:** greeting | announcements, then calendar | tasks, then My Classes across (6 | 6 at
+  `@4xl`, 5 | 7 from `@6xl`). One column on a phone: greeting, announcements, tasks, calendar,
+  classes. The one-time welcome note sits above the grid. The three stat tiles are gone.
+- **One screen:** on a desktop window tall enough (the `screen-fit` variant, with `@4xl`) the
+  grid fills the height under the top bar and a list longer than its tile scrolls inside it
+  (`useOverflows` makes such a list a keyboard stop only while it scrolls). Phones scroll the page.
+- **Status buttons:** Tasks & Assessments opens with three buttons, a number and the status
+  name: Due this week (yellow), Missing (red), Done (green). Each opens Tasks on that status,
+  and its number is the size of that Tasks group (`taskGroups`). They share the tile's width;
+  with fewer than three tasks they grow into the tile's height instead of leaving it blank.
+  "Assessments done" is now "Done", since the count covers assignments and activities too.
+- **Short tiles:** Calendar (under three dates) and Announcements (under two) are sized to
+  their content with `@4xl:self-start`; a full tile still stretches to its row.
+- **Calendar:** it skips the deadlines Tasks already lists and shows what comes after them.
+- **Classes:** the student's class lists are cards only (no cards-or-table toggle on the
+  dashboard or My classes). On the dashboard they are a `CardRow`: one row that scrolls
+  sideways instead of wrapping (L-100). The instructor's class list keeps its table view.
+Journeys changed: `student-flow` TD and `shell` P look for "Done"; `shell` TM is new;
+`class-view` covers the layout, the one-screen fit, the status buttons, and the class row.
