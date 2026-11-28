@@ -21,6 +21,7 @@ Use as `text-<name>`, `bg-<name>`, `border-<name>`.
 | `primary-800` | `#1f5649` |
 | `primary-900` | `#1b463d` |
 | `accent-100` | `#fdf1db` |
+| `accent-200` | `#f9dca6` |
 | `accent-400` | `#f4b94f` |
 | `accent-700` | `#8a5a0b` |
 | `ink` | `#24312d` |
@@ -31,6 +32,7 @@ Use as `text-<name>`, `bg-<name>`, `border-<name>`.
 | `surface` | `#ffffff` |
 | `success` | `#2f6f4a` |
 | `success-soft` | `#e6f4ec` |
+| `success-200` | `#c8e8d2` |
 | `warning` | `#8f4f05` |
 | `warning-soft` | `#fdf1db` |
 | `danger` | `#b42318` |

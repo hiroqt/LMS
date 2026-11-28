@@ -26,8 +26,9 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | ROLE | Profile menu → switch workspace | ✔ `shell` ROLE | ✅ |
 | T, T2 | Tasks list → open assessment | ✔ `student-flow` T → AD | ✅ |
 | T1 | Filter dropdown (Due soon / this week / Missing / Done) | ✖ | ✅ |
-| TD | "Assessments done" summary → Tasks: Done | ✔ `student-flow` (after reload) | ✅ |
-| TW | "Due this week" summary → Tasks | ✔ `shell` TW | ✅ |
+| TD | "Done" count in Tasks & Assessments → Tasks: Done (D-071; was "Assessments done") | ✔ `student-flow` (after reload) | ✅ |
+| TM | "Missing" count in Tasks & Assessments → Tasks: Missing (D-071) | ✔ `shell` TM | ✅ |
+| TW | "Due this week" count in Tasks & Assessments → Tasks | ✔ `shell` TW | ✅ |
 | CL, CL1, CL2 | Class opens on Stream; all tabs | ✔ `student-flow` CL → CL2 | ✅ |
 | STREAM → MD | Open material from Stream | ✔ `student-flow` STREAM → MD | ✅ |
 | MAT | Materials grouped by module and submodule; type filter; By module / Newest first; search; a material page with preview, file details, Download, Previous and Next (D-067) | ✔ `materials` | ✅ |
@@ -40,7 +41,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Dashboards: meetings | Student and instructor dashboards list live and coming meetings only when there are any; a live row joins, a coming one opens the class's Meetings tab (D-072) | ✔ `meetings` | ✅ |
 | CL-MT: in the meeting | Chat both ways (links, unread count, "being saved"), a raised hand first in People, a reaction on the tile and announced, a shared screen filling the stage, pin, Speaker view, Data saver pausing video, chat as a sheet on a phone at 320px; axe (D-072) | ✔ `meetings` | ✅ |
 | CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
-| MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
+| MODS | Modules tab: one button per topic (module); a topic lists its and its submodules' content as Assignments, Activities, Assessments, Materials; item opens; Back returns (D-070) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |

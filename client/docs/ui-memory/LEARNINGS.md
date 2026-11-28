@@ -772,6 +772,15 @@ visible text. pdfjs-dist installs `@napi-rs/canvas`, and two real problems appea
 (D-069). Unit-level axe results depend on what is installed: a passing axe test without a canvas
 proves less than it seems, and the browser specs remain the reference.
 
+### L-107 · A sideways scroller needs `relative` and `min-w-0` on its items
+`2026-11-27` · saheejuu2 · scope: shared, layout · confidence: high
+Two things broke the first `CardRow` (D-071). The class tiles hold `sr-only` text, which is
+`position: absolute`: with no positioned ancestor inside the scroller, the text of cards
+scrolled out of view was not clipped and widened the whole page by 159px at 1024px. `relative`
+on the scrolling element fixes it. And a flex item's minimum width is its content's, so a tile
+with a `truncate` title grew to the full title instead of its `15rem` share until the item got
+`min-w-0`. `class-view` "stay in one row and scroll sideways" fails on either regression.
+
 ### L-106 · Fake-media WebRTC checks: count tracks and measure sound with an analyser
 `2026-11-26` · hiro (D-072, Phase 0) · scope: tests, meetings · confidence: medium
 Two headless Chromium browsers with `--use-fake-device-for-media-stream` joined the local

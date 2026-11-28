@@ -1,5 +1,6 @@
-import { ArrowRight, BookOpen, CalendarDays, ClipboardList, Clock3, FileText, FolderTree, GraduationCap, MapPin, UsersRound } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardList, Clock3, FileText, FolderTree, GraduationCap, MapPin, PencilRuler, UsersRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BackLink } from "../../../shared/components/BackLink";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
 import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
@@ -7,7 +8,7 @@ import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
-import { courseModules, dueSoon, type ModuleEntry } from "../api/selectors";
+import { courseModules, courseTopic, dueSoon, type Topic, type TopicCategory, type TopicEntry } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
 import { ListSearch } from "../components/ListSearch";
@@ -15,6 +16,7 @@ import { ClassMaterials, MaterialRows } from "../components/MaterialList";
 import { SectionHeading } from "../../../shared/components/SectionHeading";
 import { CourseHeader } from "../../../shared/components/CourseHeader";
 import { termStatus } from "../../../shared/lib/term";
+import { toneFor } from "../../../shared/lib/tones";
 import { courseCode } from "../api/catalog";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { useStudentSession } from "../hooks/useStudentSession";
@@ -149,63 +151,115 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
   );
 }
 
-function ModuleEntries({ label, entries }: { label: string; entries: ModuleEntry[] }) {
+const TOPIC_ICONS: Record<TopicCategory, typeof FileText> = { Assignments: ClipboardList, Activities: PencilRuler, Assessments: GraduationCap, Materials: FileText };
+
+function TopicEntries({ category, entries }: { category: TopicCategory; entries: TopicEntry[] }) {
   const navigate = useNavigate();
-  if (!entries.length) return <p className="m-0 text-body text-muted">Nothing in {label} yet.</p>;
+  if (!entries.length) return <p className="m-0 text-body text-muted">No {category.toLowerCase()} in this topic.</p>;
+  const Icon = TOPIC_ICONS[category];
   return (
-    <ul aria-label={`Content in ${label}`} className="m-0 flex list-none flex-col gap-2 p-0">
-      {entries.map((entry) => {
-        const Icon = entry.kind === "material" ? FileText : ClipboardList;
-        return (
-          <li key={`${entry.kind}-${entry.id}`}>
-            <button
-              type="button"
-              onClick={() => navigate(entry.kind === "material" ? studentPaths.material(entry.id) : studentPaths.assessment(entry.id))}
-              className="flex min-h-touch w-full items-center gap-3 rounded-control border border-line bg-surface p-3 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
-            >
-              <Icon aria-hidden className="size-5 shrink-0 text-primary-700" />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <strong className="text-body font-semibold">{entry.title}</strong>
-                <span className="text-body text-muted">{entry.kind === "material" ? `Material · ${entry.type}` : entry.type}</span>
-              </span>
-            </button>
-          </li>
-        );
-      })}
+    <ul aria-label={category} className="m-0 flex list-none flex-col gap-2 p-0">
+      {entries.map((entry) => (
+        <li key={`${entry.kind}-${entry.id}`}>
+          <button
+            type="button"
+            onClick={() => navigate(entry.kind === "material" ? studentPaths.material(entry.id) : studentPaths.assessment(entry.id))}
+            className="flex min-h-touch w-full items-center gap-3 rounded-control border border-line bg-surface p-3 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
+          >
+            <Icon aria-hidden className="size-5 shrink-0 text-primary-700" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <strong className="text-body font-semibold">{entry.title}</strong>
+              <span className="text-body text-muted">{[entry.type, entry.submodule].filter(Boolean).join(" · ")}</span>
+            </span>
+          </button>
+        </li>
+      ))}
     </ul>
   );
 }
 
-/** The class's modules with their submodules, and what is placed in each (D-033). */
-function Modules({ course, catalog }: { course: Course; catalog: StudentCatalog }) {
+/** One topic: what is placed in it and its submodules, by category (D-070). */
+function TopicView({ topic, focusOnOpen, onBack }: { topic: Topic; focusOnOpen: boolean; onBack: () => void }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focusOnOpen) heading.current?.focus();
+  }, [focusOnOpen]);
+  return (
+    <div className="flex flex-col gap-4">
+      <BackLink label="All topics" onBack={onBack} />
+      <h2 ref={heading} tabIndex={-1} className="m-0 flex items-center gap-2.5 font-sans text-section font-semibold text-ink focus-visible:outline-3 focus-visible:outline-focus">
+        <FolderTree aria-hidden className="size-6 text-primary-700" />
+        {topic.module.title}
+      </h2>
+      {topic.groups.map(({ category, entries }) => (
+        <Card key={category} className="p-5">
+          <section aria-labelledby={`topic-${category}`} className="flex flex-col gap-3">
+            <h3 id={`topic-${category}`} className="m-0 font-sans text-card-title font-semibold">
+              {category} <span className="font-normal text-muted">· {entries.length}</span>
+            </h3>
+            <TopicEntries category={category} entries={entries} />
+          </section>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The class's topics (its top-level modules) as buttons; one opens on the same
+ * tab with its content grouped by category (D-070, supersedes D-033's tree).
+ */
+function Modules({ course, catalog, courseIndex, topicId, onTopic }: { course: Course; catalog: StudentCatalog; courseIndex: number; topicId: string | null; onTopic: (id: string | null) => void }) {
   const sections = courseModules(catalog, course.id);
+  const topic = topicId ? courseTopic(catalog, course.id, topicId) : undefined;
+  // Focus follows a click only, so a page opened by URL keeps the shell's h1 focus.
+  const [focus, setFocus] = useState<{ to: "topic" } | { to: "button"; id: string } | null>(null);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (!topic && focus?.to === "button") buttons.current.get(focus.id)?.focus();
+  }, [topic, focus]);
+
+  if (topic) {
+    return (
+      <TopicView
+        topic={topic}
+        focusOnOpen={focus?.to === "topic"}
+        onBack={() => {
+          setFocus({ to: "button", id: topic.module.id });
+          onTopic(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <SectionHeading title="Modules" />
       {sections.length ? (
-        sections.map(({ module, entries, submodules }) => (
-          <Card key={module.id} className="p-5">
-            <section aria-labelledby={`module-${module.id}`} className="flex flex-col gap-4">
-              <h3 id={`module-${module.id}`} className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold">
-                <FolderTree aria-hidden className="size-5 text-primary-700" />
-                {module.title}
-              </h3>
-              {(entries.length > 0 || submodules.length === 0) && <ModuleEntries label={module.title} entries={entries} />}
-              {submodules.length > 0 && (
-                <ol aria-label={`Submodules of ${module.title}`} className="m-0 flex list-none flex-col gap-3 p-0 pl-4 sm:pl-6">
-                  {submodules.map((sub) => (
-                    <li key={sub.module.id}>
-                      <section aria-labelledby={`module-${sub.module.id}`} className="flex flex-col gap-3">
-                        <h4 id={`module-${sub.module.id}`} className="m-0 font-sans text-body-lg font-semibold">{sub.module.title}</h4>
-                        <ModuleEntries label={sub.module.title} entries={sub.entries} />
-                      </section>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-          </Card>
-        ))
+        <ul aria-label="Topics" className="m-0 flex list-none flex-col gap-3 p-0">
+          {sections.map(({ module }) => (
+            <li key={module.id}>
+              <button
+                ref={(node) => {
+                  if (node) buttons.current.set(module.id, node);
+                  else buttons.current.delete(module.id);
+                }}
+                type="button"
+                onClick={() => {
+                  setFocus({ to: "topic" });
+                  onTopic(module.id);
+                }}
+                className="group flex min-h-27 w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink transition-colors hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
+              >
+                <span aria-hidden className={`grid size-11 shrink-0 place-items-center rounded-control ${toneFor(courseIndex)}`}>
+                  <FolderTree className="size-5" />
+                </span>
+                <strong className="min-w-0 flex-1 text-card-title font-semibold">{module.title}</strong>
+                <ChevronRight aria-hidden className="size-5 shrink-0 text-muted group-hover:text-ink" />
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className="m-0 rounded-card border border-dashed border-line-strong p-4 text-body text-muted">This class has no modules yet.</p>
       )}
@@ -303,6 +357,9 @@ export default function ClassPage() {
   const workCount = catalog.assessments.filter((item) => item.courseId === course.id).length;
   const viewer = { id: studentId, role: "student" as const };
   const openMeeting = (meeting: Meeting) => navigate(studentPaths.meeting(course.id, meeting.id));
+  const topicId = tab === "Modules" ? params.get("topic") : null;
+  // A topic is its own history entry, so Back returns to the list of topics.
+  const setTopic = (id: string | null) => setParams(id ? { tab: "Modules", topic: id } : { tab: "Modules" });
 
   return (
     <>
@@ -335,7 +392,7 @@ export default function ClassPage() {
         </TabsList>
         <TabsContent value="Stream"><Stream course={course} catalog={catalog} completed={completed} now={now} onTab={setTab} /></TabsContent>
         <TabsContent value="Classwork"><Classwork course={course} catalog={catalog} completed={completed} courseIndex={index} /></TabsContent>
-        <TabsContent value="Modules"><Modules course={course} catalog={catalog} /></TabsContent>
+        <TabsContent value="Modules"><Modules course={course} catalog={catalog} courseIndex={index} topicId={topicId} onTopic={setTopic} /></TabsContent>
         <TabsContent value="Materials"><ClassMaterials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>

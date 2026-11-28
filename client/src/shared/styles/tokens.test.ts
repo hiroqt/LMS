@@ -48,6 +48,10 @@ describe("design token contrast (WCAG 2.2 AA)", () => {
     ["danger", "danger-soft"],
     ["info", "info-soft"],
     ["primary-700", "primary-100"],
+    // The dashboard status buttons (D-071): the number on its tint and on the darker hover tint.
+    ["warning", "accent-100"],
+    ["warning", "accent-200"],
+    ["success", "success-200"],
   ])("%s text on %s badges ≥ 4.5:1", (fg, bg) => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(TEXT);
   });

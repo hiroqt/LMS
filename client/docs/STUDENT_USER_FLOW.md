@@ -21,8 +21,9 @@ flowchart TD
     C -->|Search| S[Search classes, assessments, and materials]
     C -->|Notifications bell| NO[Open upcoming assessment reminder]
     C -->|Today| P[Choose the demo student to view]
-    C -->|Due this week summary| TW[Tasks: Due this week selected]
-    C -->|Assessment done summary| TD[Tasks: Done selected]
+    C -->|Due this week count| TW[Tasks: Due this week selected]
+    C -->|Missing count| TM[Tasks: Missing selected]
+    C -->|Done count| TD[Tasks: Done selected]
     C -->|Week activities summary| CAL
     C -->|Active class| CL
     C -->|Assessment shortcut| AD
@@ -37,6 +38,7 @@ flowchart TD
     T1 --> T2[Browse matching assessments]
     TW --> T2
     TD --> T2
+    TM --> T2
     T2 -->|Open an assessment| AD
     T2 -->|No matching work| T1
 
@@ -44,7 +46,7 @@ flowchart TD
     CL1 --> CL2{Choose class tab}
     CL2 -->|Stream| STREAM[Read class updates and open linked work or material]
     CL2 -->|Classwork| CW[Browse or filter Quiz, Long Quiz, and Exam]
-    CL2 -->|Modules| MODS[Modules with their submodules; open a material or assessment from them]
+    CL2 -->|Modules| MODS[Topic buttons; open a topic to see its assignments, activities, assessments, and materials, then open one]
     CL2 -->|Materials| MAT[Materials by module and submodule, or newest first; filter by type; search]
     CL2 -->|People| PEOPLE[Search the student roster]
     CL2 -->|Attendance| CLAT[Read own attendance % per month]
@@ -106,7 +108,7 @@ The journeys above are unchanged and are verified by `e2e/student-flow.spec.ts` 
 - **Exams show the instructor's grade and feedback** on the assessment page once graded, plus "View your result" (D-015).
 - **Quiz:** number keys 1–4 pick answers, the timer and progress stay visible while scrolling, and timer milestones are announced politely. Per-question timers keep the same rules but are timestamp-based, so a sleeping phone cannot slow them.
 - **Navigation (D-023):** Dashboard (formerly Today), My Classes, Tasks & Assessments, Calendar, and News & Announcements, which is now its own page instead of a toggle on the dashboard. On phones these are in the bottom bar (Dashboard, Classes, Tasks, Calendar, News), with a search sheet.
-- **Dashboard:** greeting with the date and term week, summary chips, Tasks & Assessments with due-date pills, My Classes, an Academic Calendar timeline, and the latest announcement.
+- **Dashboard (D-066, D-071):** greeting with the date and term week, the Next due tile with the latest announcements beside it, then Tasks & Assessments (status buttons that count the work due this week, missing, and done, over the next deadlines with due-date pills) beside an Academic Calendar timeline, and My Classes as one row of cards that scrolls sideways when they outnumber the width.
 - **Offline:** after one visit the app opens without a connection, and answers keep saving on the device.
 - **Closed activities** (D-036): once the instructor closes an assignment or assessment it shows **Closed** and offers no hand-in or start; a grade the instructor gave without anything handed in reads **Not handed in** with the score (`e2e/close-activities.spec.ts`).
 - **Handing in an assignment** (D-060): the assignment page lists the instructions and the rules in plain words, and a **Your work** card shows the state (Assigned, Draft, Turned in, Missing, Graded, Returned, Not handed in, and Late). The written answer and link save as the student types; files are chosen (or photographed on phones) and upload one at a time with progress, Cancel, and Retry or Remove when one is refused. **Turn in** confirms exactly what is handed in (and "This is my own work" when asked), then shows a receipt with the time, the version, and each file's code, which stays after a reload. **Take back** and **Turn in a new version** appear when the assignment allows them; earlier versions are listed. Past the due date with late work off, the card gives the reason and nothing can be edited. Uploading and turning in need a connection, and the card says so offline (`e2e/assignment-work.spec.ts`).
