@@ -511,6 +511,9 @@ test.describe("Class meetings @all", () => {
 
   test("CL-MT: background blur runs from the LMS itself and follows the person into the meeting", async ({ page, sandbox, browserName, isMobile }) => {
     test.skip(needsMedia(browserName) || isMobile, "Blur is offered on computers only.");
+    // Blur downloads MediaPipe (about 3 MB) and starts it before joining: about 20 s on a fast,
+    // idle machine, so the default 30 s ran out on CI runners.
+    test.slow();
     const outside: string[] = [];
     page.on("request", (request) => {
       const host = new URL(request.url()).hostname;
