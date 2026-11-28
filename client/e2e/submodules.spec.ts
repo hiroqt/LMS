@@ -26,6 +26,11 @@ async function addSubmodule(page: Page, title: string) {
   await expect(submodules(page).getByRole("heading", { level: 4, name: title })).toBeVisible();
 }
 
+async function openTopic(page: Page) {
+  await page.getByRole("list", { name: "Topics" }).getByRole("button", { name: UNIT }).click();
+  await expect(page.getByRole("heading", { level: 2, name: UNIT })).toBeFocused();
+}
+
 test.describe("Submodules", () => {
   test("instructor adds, reorders, and renames submodules and files content in them; the student sees them nested", async ({ page }) => {
     await openModules(page);
@@ -65,24 +70,42 @@ test.describe("Submodules", () => {
     await expect(page.getByRole("list", { name: "Content in 1.1 Writing pseudocode" }).getByText("Programming Logic and Pseudocode")).toBeVisible();
     await expect(page.getByRole("list", { name: `Content in ${UNIT}` }).getByText("Programming Logic and Pseudocode")).toHaveCount(0);
 
-    // The student sees the same tree, with each item under its submodule.
+    // The student sees the module as a topic button (D-070); the topic lists its own and its
+    // submodules' content by category, each item naming its submodule.
     await page.goto("/student/classes/biology?tab=Modules");
     await expect(page.getByRole("tab", { name: "Modules" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("heading", { level: 3, name: UNIT })).toBeVisible();
-    await expect(submodules(page).getByRole("heading", { level: 4 })).toHaveText(["1.1 Writing pseudocode", "1.2 Flowcharts"]);
-    await expect(page.getByRole("list", { name: "Content in 1.2 Flowcharts" }).getByRole("button", { name: /Flowchart symbols/ })).toBeVisible();
-    await page.getByRole("list", { name: "Content in 1.1 Writing pseudocode" }).getByRole("button", { name: /Programming Logic and Pseudocode/ }).click();
+    await openTopic(page);
+    const materials = page.getByRole("list", { name: "Materials" });
+    await expect(materials.getByRole("button", { name: /Flowchart symbols.*1\.2 Flowcharts/ })).toBeVisible();
+    await materials.getByRole("button", { name: /Programming Logic and Pseudocode.*1\.1 Writing pseudocode/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Programming Logic and Pseudocode" })).toBeVisible();
+  });
+
+  test("student opens a topic from the Modules tab, sees its work by category, and goes back @all", async ({ page }) => {
+    await page.goto("/student/classes/biology?tab=Modules");
+    const topics = page.getByRole("list", { name: "Topics" });
+    await expect(topics.getByRole("button")).toHaveText([UNIT]);
+    await openTopic(page);
+    await expect(page).toHaveURL(/[?&]topic=/);
+    await expect(page.getByRole("heading", { level: 3 })).toHaveText([/^Assignments/, /^Activities/, /^Assessments/, /^Materials/]);
+    await expect(page.getByRole("list", { name: "Assessments" }).getByRole("button").first()).toBeVisible();
+
+    await page.getByRole("button", { name: "All topics" }).click();
+    await expect(topics.getByRole("button", { name: UNIT })).toBeFocused();
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 2, name: UNIT })).toBeVisible();
+    await page.goBack();
+    await expect(topics.getByRole("button", { name: UNIT })).toBeVisible();
   });
 
   test("the Modules tabs have no accessibility violations and no sideways scroll at 320px @all", async ({ page, sandbox }) => {
     const [unit] = await callApi<Array<{ id: number }>>(page, sandbox, INSTRUCTOR, "GET", "/api/classes/biology/modules");
     await callApi(page, sandbox, INSTRUCTOR, "POST", "/api/classes/biology/modules", { title: "1.1 Pseudocode", parentModuleId: unit!.id });
-    const narrow = async (path: string) => {
+    const narrow = async (path: string, ready = () => expect(submodules(page).getByRole("heading", { level: 4, name: "1.1 Pseudocode" })).toBeVisible()) => {
       const viewport = page.viewportSize();
       await page.setViewportSize({ width: 320, height: 640 });
       await page.goto(path);
-      await expect(submodules(page).getByRole("heading", { level: 4, name: "1.1 Pseudocode" })).toBeVisible();
+      await ready();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(1);
       if (viewport) await page.setViewportSize(viewport);
     };
@@ -94,8 +117,12 @@ test.describe("Submodules", () => {
     await narrow("/instructor/classes/biology?tab=Modules");
 
     await page.goto("/student/classes/biology?tab=Modules");
-    await expect(submodules(page).getByRole("heading", { level: 4, name: "1.1 Pseudocode" })).toBeVisible();
+    const topicButton = page.getByRole("list", { name: "Topics" }).getByRole("button", { name: UNIT });
+    await expect(topicButton).toBeVisible();
     await expectNoAxeViolations(page);
-    await narrow("/student/classes/biology?tab=Modules");
+    await narrow("/student/classes/biology?tab=Modules", () => expect(topicButton).toBeVisible());
+    await openTopic(page);
+    await expectNoAxeViolations(page);
+    await narrow(page.url(), () => expect(page.getByRole("heading", { level: 2, name: UNIT })).toBeVisible());
   });
 });

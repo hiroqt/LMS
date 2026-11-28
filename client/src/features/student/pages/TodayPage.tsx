@@ -1,13 +1,10 @@
-import { AlarmClock, ArrowRight, BookOpen, CalendarDays, ClipboardCheck, Clock, Layers, ListChecks, Megaphone, Newspaper } from "lucide-react";
+import { AlarmClock, ArrowRight, BookOpen, CalendarDays, Clock, Layers, ListChecks, Megaphone, Newspaper } from "lucide-react";
 import { useNavigate } from "react-router";
 import { DateTile } from "../../../shared/components/DateTile";
 import { FocusTile } from "../../../shared/components/FocusTile";
 import { IconTile, ListRow, RowList } from "../../../shared/components/ListRow";
 import { Panel } from "../../../shared/components/Panel";
 import { PanelLink } from "../../../shared/components/PanelLink";
-import { SummaryStrip } from "../../../shared/components/SummaryStrip";
-import { ViewToggle } from "../../../shared/components/ViewToggle";
-import { useClassView } from "../../../shared/hooks/useClassView";
 import { DashboardHeader } from "../../../shared/layout/DashboardHeader";
 import { cn } from "../../../shared/lib/cn";
 import { formatDue, formatFullDate } from "../../../shared/lib/format";
@@ -16,7 +13,7 @@ import { termStatus } from "../../../shared/lib/term";
 import { classTones, onFillFocus } from "../../../shared/lib/tones";
 import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
-import { calendarEntries, DAY, dueSoon, dueThisWeek, greeting, needsWork } from "../api/selectors";
+import { calendarEntries, DAY, dueSoon, greeting, needsWork, taskGroups, type TaskStatus } from "../api/selectors";
 import type { Assessment, StudentCatalog } from "../api/types";
 import { ClassList } from "../components/ClassList";
 import { AssessmentTypeIcon } from "../components/visuals";
@@ -68,11 +65,69 @@ function NextDueTile({ catalog, item, className }: { catalog: StudentCatalog; it
   );
 }
 
-/** What is due after the next item. The next one opens from its own tile, so each assessment has one control here (C-015). */
-function TasksPanel({ catalog, items, hasNext, now, className }: { catalog: StudentCatalog; items: Assessment[]; hasNext: boolean; now: number; className?: string }) {
+/**
+ * A tile stretches to its row so the row ends on one line (C-018). A list too short to use
+ * that height is sized to its content instead of holding blank space (D-071).
+ */
+const FIT_CONTENT = "@4xl:self-start";
+
+/**
+ * The Tasks statuses counted on the dashboard (D-071), each in its own color: yellow for what
+ * is coming, red for what is late, green for what is finished. "Due soon" is the list under
+ * them and "View all". The name is always written out, so the color only supports it (C-004).
+ */
+const STATUS_BUTTONS: { status: TaskStatus; box: string; number: string }[] = [
+  { status: "Due this week", box: "border-accent-400 bg-accent-100 hover:bg-accent-200", number: "text-warning" },
+  { status: "Missing", box: "border-danger/40 bg-danger-soft hover:bg-danger/15", number: "text-danger" },
+  { status: "Done", box: "border-success/40 bg-success-soft hover:bg-success-200", number: "text-success" },
+];
+
+/**
+ * A status inside Tasks & Assessments: a button with how much work is in it, which opens
+ * Tasks on that status. Its name starts with the number, e.g. "2 Missing".
+ *
+ * The three share the tile's width. Beside a full list each is one line, number then name,
+ * and the name drops under the number when the button is too narrow for both. With `fill`
+ * (a list too short to use the tile's height) the buttons take that height instead: a
+ * larger number over the name, centered.
+ */
+function StatusButton({ value, label, box, number, fill, onOpen }: { value: number; label: string; box: string; number: string; fill: boolean; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "flex min-h-touch min-w-0 rounded-control border px-3 py-1.5 font-sans text-body font-medium text-ink transition-colors focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none",
+        box,
+        fill ? "flex-col items-center justify-center gap-0.5 py-3 text-center" : "flex-wrap content-center items-baseline gap-x-2 text-left",
+      )}
+    >
+      <strong className={cn("font-semibold tabular-nums", fill ? "text-page-mobile sm:text-page" : "text-section", number)}>{value}</strong>
+      {" "}
+      <span className="min-w-0 break-words">{label}</span>
+    </button>
+  );
+}
+
+/**
+ * The status counts, then what is due after the next item. The next one opens from its own
+ * tile, so each assessment has one control here (C-015).
+ */
+function TasksPanel({ catalog, completed, items, hasNext, now, className }: { catalog: StudentCatalog; completed: string[]; items: Assessment[]; hasNext: boolean; now: number; className?: string }) {
   const navigate = useNavigate();
+  // Each count is the size of the Tasks page's own group, so the number on a button is the
+  // number of rows it opens.
+  const groups = taskGroups(catalog.assessments, completed, now);
+  // Three rows or more use the tile's height themselves; with fewer the status buttons grow
+  // into it, so the tile never holds blank space or leaves a gap beside the calendar.
+  const fill = items.length < 3;
   return (
     <Panel id="tasks-panel" className={className} icon={<ListChecks />} title="Tasks & Assessments" action={<PanelLink onClick={() => navigate(studentPaths.tasks())}>View all</PanelLink>}>
+      <div role="group" aria-label="Work by status" className={cn("grid shrink-0 grid-cols-3 gap-2", fill && "flex-1")}>
+        {STATUS_BUTTONS.map(({ status, box, number }) => (
+          <StatusButton key={status} value={groups.find((group) => group.status === status)?.items.length ?? 0} label={status} box={box} number={number} fill={fill} onOpen={() => navigate(studentPaths.tasks(status))} />
+        ))}
+      </div>
       {items.length ? (
         <RowList>
           {items.map((item) => (
@@ -95,15 +150,18 @@ function TasksPanel({ catalog, items, hasNext, now, className }: { catalog: Stud
   );
 }
 
-function CalendarPanel({ catalog, completed, now, className }: { catalog: StudentCatalog; completed: string[]; now: number; className?: string }) {
+function CalendarPanel({ catalog, completed, shown, now, className }: { catalog: StudentCatalog; completed: string[]; /** Deadlines the Next due tile and Tasks already list. */ shown: Assessment[]; now: number; className?: string }) {
   const navigate = useNavigate();
   const today = new Date(now);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  // The next deadlines are in the tiles beside it, so the calendar shows what comes after
+  // them and the school's own dates, instead of the same work twice (D-071).
+  const listed = new Set(shown.map((item) => item.id));
   const entries = calendarEntries(catalog.assessments, catalog.academicEvents)
-    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && !needsWork(entry.assessment, completed)))
+    .filter((entry) => entry.date.getTime() >= startOfToday && !(entry.assessment && (!needsWork(entry.assessment, completed) || listed.has(entry.assessment.id))))
     .slice(0, 4);
   return (
-    <Panel id="calendar-panel" className={className} icon={<CalendarDays />} title="Academic Calendar" action={<PanelLink onClick={() => navigate(studentPaths.calendar())}>View calendar</PanelLink>}>
+    <Panel id="calendar-panel" className={cn(className, entries.length < 3 && FIT_CONTENT)} icon={<CalendarDays />} title="Academic Calendar" action={<PanelLink onClick={() => navigate(studentPaths.calendar())}>View calendar</PanelLink>}>
       {entries.length ? (
         // Read-only timeline: deadlines open from Tasks, so each has one control (C-015).
         <RowList>
@@ -127,27 +185,26 @@ function AnnouncementsPanel({ catalog, now, className }: { catalog: StudentCatal
   const navigate = useNavigate();
   // Teacher posts first, then school news, so the tile is never a single short line.
   const items = [
-    ...catalog.announcements.map((item) => ({ id: item.id, title: item.title, body: item.message, meta: `${item.author} · ${courseName(catalog, item.classroomId)} · ${formatDue(item.createdAt)}` })),
-    ...featuredSlides(catalog.featured, catalog.academicEvents, now).map((item) => ({ id: item.id, title: item.title, body: item.summary, meta: `School announcement · ${item.category}` })),
+    ...catalog.announcements.map((item) => ({ id: item.id, title: item.title, meta: `${item.author} · ${courseName(catalog, item.classroomId)} · ${formatDue(item.createdAt)}` })),
+    ...featuredSlides(catalog.featured, catalog.academicEvents, now).map((item) => ({ id: item.id, title: item.title, meta: `School announcement · ${item.category}` })),
   ].slice(0, 3);
   return (
-    <Panel id="announcements-panel" className={className} icon={<Megaphone />} title="Announcements" action={<PanelLink onClick={() => navigate(studentPaths.news)}>View all</PanelLink>}>
+    <Panel id="announcements-panel" className={cn(className, items.length < 2 && FIT_CONTENT)} icon={<Megaphone />} title="Announcements" action={<PanelLink onClick={() => navigate(studentPaths.news)}>View all</PanelLink>}>
       {items.length ? (
-        /* Side by side when the tile is wide, stacked when it is a narrow column. */
-        <div className="@container flex flex-1 flex-col">
-          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 @3xl:grid-cols-3">
-            {items.map((item) => (
-              <li key={item.id} className="flex items-start gap-3 rounded-control bg-canvas p-3">
-                <IconTile tone="bg-surface text-primary-700"><Newspaper /></IconTile>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <h3 className="m-0 text-card-title font-semibold">{item.title}</h3>
-                  <p className="m-0 line-clamp-2 text-body">{item.body}</p>
-                  <p className="m-0 text-body text-muted">{item.meta}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        /* Always stacked: beside the Next due tile the rows fill the tile's height (D-071).
+           Two lines each, the title and who posted it, so three fit beside that tile; the
+           message itself is one click away in News & Announcements. */
+        <ul className="m-0 flex flex-1 list-none flex-col gap-2 p-0">
+          {items.map((item) => (
+            <li key={item.id} className="flex flex-1 items-center gap-3 rounded-control bg-canvas p-3">
+              <IconTile tone="bg-surface text-primary-700"><Newspaper /></IconTile>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <h3 className="m-0 text-card-title font-semibold">{item.title}</h3>
+                <p className="m-0 text-body text-muted">{item.meta}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className="m-0 text-body text-muted">No announcements yet.</p>
       )}
@@ -176,17 +233,18 @@ function ViewingAs() {
   );
 }
 
-/** The student dashboard (D-066): heading, next due and the numbers, then tasks, calendar, classes, and news. */
+/**
+ * The student dashboard (D-066, D-071): heading, then what is due next beside the
+ * announcements, then tasks (with the status counts) beside the calendar, then the classes.
+ */
 export default function TodayPage() {
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
   const term = termStatus(catalog.academicEvents, now);
   const { courses, assessments } = catalog;
-  const [classView, setClassView] = useClassView();
 
-  const [next, ...later] = dueSoon(assessments, completed, now, 5);
-  const thisWeek = dueThisWeek(assessments, completed, now);
-  const withinThreeDays = thisWeek.filter((item) => new Date(item.dueAt).getTime() - now <= 3 * DAY).length;
+  const soon = dueSoon(assessments, completed, now, 5);
+  const [next, ...later] = soon;
 
   return (
     <>
@@ -196,43 +254,21 @@ export default function TodayPage() {
         controls={<ViewingAs />}
       />
       {/* One 12-column bento grid: every tile shares the gutter and stretches to its
-          row, and tiles differ in size by importance (D-026, D-027, D-066). */}
+          row, and tiles differ in size by importance (D-026, D-027, D-066).
+          Reading order (D-071): next due, announcements, tasks, calendar, classes.
+          12 columns: next due 5 | announcements 7, then tasks 7 | calendar 5, then classes across. */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
         <NextDueTile className="@4xl:col-span-5" catalog={catalog} item={next} />
-        <SummaryStrip
-          className="@4xl:col-span-7"
-          label="Summary"
-          items={[
-            { icon: <BookOpen />, tone: classTones[0], value: courses.length, label: "Active classes", shortLabel: "Classes", note: term?.name ?? "This term" },
-            { icon: <AlarmClock />, tone: classTones[1], value: thisWeek.length, label: "Due this week", shortLabel: "Due", note: `${withinThreeDays} in the next 3 days`, onOpen: () => navigate(studentPaths.tasks("Due this week")) },
-            { icon: <ClipboardCheck />, tone: classTones[3], value: completed.length, label: "Assessments done", shortLabel: "Done", note: `of ${assessments.length} assessments`, onOpen: () => navigate(studentPaths.tasks("Done")) },
-          ]}
-        />
-
-        {/* Reading order: tasks, calendar, classes, announcements.
-            12 columns:  tasks 7 | calendar 5, then classes 7 | announcements 5.
-            Wide (@7xl): tasks 5 | calendar 3 | classes 4, then announcements across. */}
-        <TasksPanel className="@4xl:col-span-7 @7xl:col-span-5" catalog={catalog} items={later} hasNext={Boolean(next)} now={now} />
-        <CalendarPanel className="@4xl:col-span-5 @7xl:col-span-3" catalog={catalog} completed={completed} now={now} />
-        <Panel
-          id="my-classes"
-          className="@4xl:col-span-7 @7xl:col-span-4"
-          icon={<Layers />}
-          title="My Classes"
-          action={
-            <div className="flex flex-wrap items-center gap-2">
-              <ViewToggle view={classView} onChange={setClassView} />
-              <PanelLink onClick={() => navigate(studentPaths.classes)}>View all classes</PanelLink>
-            </div>
-          }
-        >
+        <AnnouncementsPanel className="@4xl:col-span-7" catalog={catalog} now={now} />
+        <TasksPanel className="@4xl:col-span-7" catalog={catalog} completed={completed} items={later} hasNext={Boolean(next)} now={now} />
+        <CalendarPanel className="@4xl:col-span-5" catalog={catalog} completed={completed} shown={soon} now={now} />
+        <Panel id="my-classes" className="@4xl:col-span-12" icon={<Layers />} title="My Classes" action={<PanelLink onClick={() => navigate(studentPaths.classes)}>View all classes</PanelLink>}>
           {courses.length ? (
-            <ClassList fill courses={courses} view={classView} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
+            <ClassList fill courses={courses} onOpen={(course) => navigate(studentPaths.classPage(course.id))} />
           ) : (
             <EmptyState className="flex-1 justify-center" icon={<BookOpen />} title="You are not enrolled in any classes yet" description="Classes appear here once your enrollment is active." />
           )}
         </Panel>
-        <AnnouncementsPanel className="@4xl:col-span-5 @7xl:col-span-12" catalog={catalog} now={now} />
       </div>
     </>
   );

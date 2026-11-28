@@ -43,6 +43,7 @@
 | File | Exports |
 | --- | --- |
 | `src/shared/components/BackLink.tsx` | `BackLink` |
+| `src/shared/components/CardRow.tsx` | `CardRow`, `CardRowItem` |
 | `src/shared/components/ClassTable.tsx` | `ClassTable` |
 | `src/shared/components/CourseCode.tsx` | `CourseCode` |
 | `src/shared/components/CourseHeader.tsx` | `CourseHeader` |

@@ -59,7 +59,7 @@ export function taskGroups(assessments: Assessment[], completed: string[], now: 
     { status: "Due soon", description: "Work with a future due date", items: assessments.filter((item) => open(item) && due(item) >= now) },
     { status: "Due this week", description: "Unfinished work due before the week ends", items: dueThisWeek(assessments, completed, now) },
     { status: "Missing", description: "Work past its due date that has not been submitted", items: assessments.filter((item) => open(item) && due(item) < now) },
-    { status: "Done", description: "Assessments you have submitted", items: assessments.filter((item) => completed.includes(item.id)) },
+    { status: "Done", description: "Work you have submitted: assessments, activities, and assignments", items: assessments.filter((item) => completed.includes(item.id)) },
   ].map((group) => ({ ...group, items: [...group.items].sort(byDue) })) as TaskGroup[];
 }
 
@@ -180,4 +180,47 @@ export function courseModules(catalog: Pick<StudentCatalog, "modules" | "materia
     entries: entriesOf(module.id),
     submodules: submodules.map((sub) => ({ module: sub, entries: entriesOf(sub.id) })),
   }));
+}
+
+export const TOPIC_CATEGORIES = ["Assignments", "Activities", "Assessments", "Materials"] as const;
+export type TopicCategory = (typeof TOPIC_CATEGORIES)[number];
+
+export interface TopicEntry extends ModuleEntry {
+  /** The submodule it sits in, when it is not placed in the topic itself. */
+  submodule?: string;
+}
+
+export interface Topic {
+  module: CourseModule;
+  groups: Array<{ category: TopicCategory; entries: TopicEntry[] }>;
+}
+
+/**
+ * Where a piece of coursework is listed in a topic (D-070): a category label
+ * that names an activity wins, then hand-in work (assignments), then the rest
+ * (quizzes and exams) are assessments.
+ */
+export function topicCategory(item: Pick<Assessment, "type" | "kind">): Exclude<TopicCategory, "Materials"> {
+  if (/activit/i.test(item.type)) return "Activities";
+  return item.kind === "activity" ? "Assignments" : "Assessments";
+}
+
+/**
+ * One top-level module of a class (a "topic" on the student's Modules tab)
+ * with everything placed in it or its submodules, grouped by category.
+ * Undefined when the module is not a topic of that class.
+ */
+export function courseTopic(catalog: Pick<StudentCatalog, "modules" | "materials" | "assessments">, courseId: string, topicId: string): Topic | undefined {
+  const section = courseModules(catalog, courseId).find((item) => item.module.id === topicId);
+  if (!section) return undefined;
+  const placed = [
+    ...section.entries.map((entry): TopicEntry => entry),
+    ...section.submodules.flatMap((sub) => sub.entries.map((entry): TopicEntry => ({ ...entry, submodule: sub.module.title }))),
+  ];
+  const categoryOf = (entry: TopicEntry): TopicCategory => {
+    if (entry.kind === "material") return "Materials";
+    const work = catalog.assessments.find((item) => item.id === entry.id);
+    return work ? topicCategory(work) : "Assessments";
+  };
+  return { module: section.module, groups: TOPIC_CATEGORIES.map((category) => ({ category, entries: placed.filter((entry) => categoryOf(entry) === category) })) };
 }
