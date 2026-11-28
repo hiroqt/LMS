@@ -8,6 +8,8 @@ export const studentPaths = {
   classes: "/student/classes",
   news: "/student/news",
   classPage: (id: string, tab: ClassTab = "Stream") => `/student/classes/${encodeURIComponent(id)}${tab === "Stream" ? "" : `?tab=${tab}`}`,
+  /** A module of a class on its own page (D-073). */
+  module: (classId: string, moduleId: string) => `/student/classes/${encodeURIComponent(classId)}/modules/${encodeURIComponent(moduleId)}`,
   assessment: (id: string) => `/student/assessments/${encodeURIComponent(id)}`,
   quiz: (id: string) => `/student/assessments/${encodeURIComponent(id)}/quiz`,
   result: (id: string) => `/student/assessments/${encodeURIComponent(id)}/result`,
