@@ -125,13 +125,13 @@ export default function AssessmentPage() {
               {assessment.answerReview && (
                 <p className="m-0 flex items-center gap-2 text-body text-ink"><Eye aria-hidden className="size-4 shrink-0 text-muted" />{ANSWER_REVIEW_NOTES[assessment.answerReview]}</p>
               )}
+              {!isActivity && (
+                <p className="m-0 flex items-start gap-2 text-body text-accent-700">
+                  <AlarmClock aria-hidden className="mt-0.5 size-4 shrink-0" />
+                  <span><strong className="font-semibold">Each question has its own timer,</strong> one minute unless your instructor set another. Time pauses while you review other questions.</span>
+                </p>
+              )}
             </Card>
-            {!isActivity && (
-              <p className="m-0 flex items-start gap-3 rounded-card bg-accent-100 p-4 text-body text-ink">
-                <AlarmClock aria-hidden className="mt-0.5 size-5 shrink-0 text-accent-700" />
-                <span><strong className="font-semibold">Each question has its own timer,</strong> one minute unless your instructor set another. Time pauses while you review other questions.</span>
-              </p>
-            )}
             {closedNote}
             </>
           )}
