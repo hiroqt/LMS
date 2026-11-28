@@ -37,6 +37,9 @@ function multiRoutePlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Meeting code loaded on demand: pre-bundled at start, so the dev server doesn't discover it
+  // mid-meeting and reload the page (which ended a pre-join screen's camera and choices).
+  optimizeDeps: { include: ["livekit-client", "@livekit/track-processors"] },
   plugins: [
     react(),
     tailwindcss(),
@@ -69,7 +72,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
         // The PDF viewer (pdf.js, about 500 KB) is for phones that open a PDF material; it is cached
         // the first time it is used instead of being downloaded by everyone at install (D-067).
-        globIgnores: ["**/PdfPages-*.js", "**/pdf.worker*"],
+        // The meeting page with LiveKit's client (about 145 KB) needs a connection anyway; it is cached
+        // the first time someone opens a meeting (D-072).
+        globIgnores: ["**/PdfPages-*.js", "**/pdf.worker*", "**/MeetingRoomPage-*.js", "**/meetingBlur-*.js", "meeting-blur/**"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
         runtimeCaching: [
@@ -77,6 +82,17 @@ export default defineConfig({
             urlPattern: ({ url }) => /\/assets\/(PdfPages-|pdf\.worker)/.test(url.pathname),
             handler: "CacheFirst",
             options: { cacheName: "pdf-viewer", expiration: { maxEntries: 4, maxAgeSeconds: 90 * 24 * 60 * 60 } },
+          },
+          {
+            // Background blur's code, WebAssembly, and model: fetched only by someone who turns blur on (D-072).
+            urlPattern: ({ url }) => /\/(assets\/meetingBlur-|meeting-blur\/)/.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: "meeting-blur", expiration: { maxEntries: 8, maxAgeSeconds: 90 * 24 * 60 * 60 } },
+          },
+          {
+            urlPattern: ({ url }) => /\/assets\/MeetingRoomPage-/.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: "meeting-page", expiration: { maxEntries: 2, maxAgeSeconds: 90 * 24 * 60 * 60 } },
           },
           {
             urlPattern: ({ request }) => request.destination === "image",

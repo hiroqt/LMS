@@ -1036,3 +1036,114 @@ dashboard had no count of missing work.
 Journeys changed: `student-flow` TD and `shell` P look for "Done"; `shell` TM is new;
 `class-view` moved the cards-or-table check to My classes and covers the layout, the status
 buttons, the calendar, and the class row.
+
+### D-072 · Class meetings: live video in the LMS on our own LiveKit server
+`2026-11-26` · hiro (user request, approved plan) · scope: student, instructor, shared, server · confidence: high
+The user asked for a separate video-meeting page like Google Meet, used inside the LMS, with no
+time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS_PLAN.md`.
+- **Media:** a self-hosted LiveKit SFU (`meet-server/`). No vendor and no code sets a time limit.
+  Simulcast, adaptive streams, and a Data saver mode serve weak phones. The meeting page is a
+  lazy, full-screen route, `/meet/{meetingId}`, outside `AppShell`. `livekit-client` (about 140
+  KB gzipped) is a recorded budget exception there only, like pdf.js (D-067).
+- **Who:** only the class's instructor starts a meeting. Only that instructor and students on
+  the class list can join, and there are no guest links. The LMS API checks this and issues a
+  10-minute join pass. Host actions go through the LMS API.
+- **Mic:** students join with the mic off by default. The instructor's meeting settings decide
+  whether students may turn on their mic and camera, share their screen, and chat, and the media
+  server enforces them. The instructor can mute, let speak, and ask to unmute. Nobody can switch
+  on someone else's mic (`enable_remote_unmute: false`).
+- **Chat** goes through the LMS API. It is saved only while the instructor's "Save the chat" is
+  on, and everyone sees that it is on.
+- **Recording** isn't in v1. It is designed now and built in Phase 4. It is optional and only the
+  instructor controls it. It records the whole meeting until the instructor pauses or stops it, or
+  the meeting ends, and a meeting can be set to record from its start. Paused stretches are never
+  captured, and the stretches become one video per meeting. Everyone sees a notice and a REC sign.
+- **Attendance** from the media server's webhooks is a report for the instructor. It doesn't
+  change monthly attendance (D-035).
+- **Phase 1 (API, 2026-11-26).** The endpoints are in "Class meetings" in `server/README.md`.
+  - A student with no source to publish gets `canPublish: false`, never an empty source list,
+    which LiveKit reads as "everything".
+  - The page trusts `lms.chat` and `lms.ask-unmute` only as server messages, with no sender.
+  - A locked meeting still lets back in anyone who was in it before. A removed student can't
+    rejoin that meeting.
+  - "Let speak" lasts until the student leaves.
+  - Ending works even when the media server can't be reached.
+  - One class has one live meeting at a time.
+  - The entity is `OnlineMeeting`, because `Classes.ClassMeeting` is an ISMS timetable slot.
+  - Join passes and webhook checks use the real clock, which LiveKit checks them by. Webhook
+    times are moved onto the API's clock, so Demo mode's shifted clock still lines up.
+- **Phase 2a (the page, 2026-11-26).**
+  - **The meeting page opens in the same tab, not a new one.** The demo identity is kept in
+    `sessionStorage`, which a new tab doesn't inherit (checked in Chromium and WebKit), so a new
+    tab would join as the wrong person. Leave goes back to the class's Meetings tab. With real
+    sign-in a new tab would work.
+  - **Routes:** `/instructor/meet/{classId}/{id}` and `/student/meet/{classId}/{id}`. Each role
+    app renders them full screen, outside `AppShell`: an exception to C-010. The page focuses its
+    own h1 and has one control per action: Back to class before joining, Leave in the controls,
+    and its own way back after.
+  - **Entry points:** the instructor's **Start meeting** sits in the class header and is hidden
+    while a meeting is on. A **Live now** banner above both roles' tabs holds the one Join. The
+    **Meetings** tab lists upcoming and past meetings. The student class page's Discord link is
+    gone.
+  - **Budget:** `MeetingRoomPage-*` (about 145 KB gzipped, mostly LiveKit's client) has its own
+    175 KB limit, leaving room for 2b and 2c. It is kept out of the install cache, like pdf.js.
+  - **Mic and camera:** a control the person may not use is `aria-disabled`, not `disabled`, so
+    pressing it says why. Students start with the mic off unless the meeting says otherwise. The
+    tracks made on the pre-join screen are the ones published.
+- **Phase 2b (in the meeting, 2026-11-26).**
+  - **Chat** arrives only as data messages from the server (topic `lms.chat`, no sender). A
+    person's own message on that topic is ignored. Sending goes through the API. Saved chat
+    loads on joining as history, not unread, and the Chat button counts unread messages.
+  - **Raised hands** are the `lms.hand` attribute, set by `POST …/hand`. Late joiners see them,
+    the order uses the API's clock, and rights are untouched. Hands come first in People, in the
+    order they went up.
+  - **Reactions** are the person's own data messages (`lms.reaction`). Only the six on the list
+    are shown, on the sender's tile for 4 s, with no animation (C-019), and announced once.
+  - **The stage:** a shared screen fills it, with everyone in a strip. Otherwise the pinned
+    person, or the last speaker in Speaker view, fills it; otherwise everyone is in a grid.
+    Share screen shows only where the browser can (not Android or iOS).
+  - **Data saver** stops receiving other people's cameras (`setSubscribed(false)`) and keeps
+    their sound and shared screens. It is suggested when the connection is 2G or data saver is
+    on.
+  - **Panels:** Chat and People are a column at 64 rem and wider, and a sheet below that (C-010).
+    The meeting page's messages are a line above the stage, not toasts, which on phones cover
+    the controls.
+  - **Pre-join:** Join waits while a camera or mic is starting. A device that finishes starting
+    after the screen has gone is stopped, so the camera light doesn't stay on.
+- **Phase 2c (the instructor's controls, 2026-11-26).**
+  - **People:** each person has an "Actions for {name}" menu offering what applies now: Mute,
+    Ask to unmute, Let speak or Stop letting speak (only when students may not turn on their
+    mic), Lower hand, Stop their screen share, and Remove from the meeting (confirmed by name).
+    There is also **Mute everyone**.
+  - **Host controls:** a third panel with the lock and the meeting's settings as checkboxes. Each
+    is saved at once and shows the room's own state, so it follows a change made elsewhere. The
+    same settings can be chosen when scheduling.
+  - **Leave:** for the instructor, Leave is a menu: Leave the meeting, or End the meeting for
+    everyone (confirmed).
+  - **Students are told** in the line above the stage when their mic, camera, or screen is
+    allowed or taken away, the meeting is locked, or the chat starts being saved. "Ask to unmute"
+    is a prompt with Turn on mic and Not now. It is trusted only from the server, like chat.
+  - **Dashboards:** a full-width **Meetings** panel after the summary on both roles' dashboards
+    (`GET /api/me/meetings`, every 20 s): live meetings join from their row, coming ones open the
+    class's Meetings tab. There is no panel when there are none, so dashboards without meetings
+    are unchanged.
+- **Phase 3 (after a meeting, blur, sizing; 2026-11-26).**
+  - **A meeting's own page:** `/instructor|student/classes/{classId}/meetings/{id}`, inside the
+    shell, opened from a past meeting in the Meetings tab.
+    - The instructor sees **Attendance**: everyone on the class list, joined or not, with first
+      join, last leave, times joined, and minutes. It has **Download CSV** and is not counted in
+      monthly attendance.
+    - The class sees the **Saved chat**; only the instructor can delete it (confirmed).
+    - A live meeting's page offers Join.
+  - **CSV:** UTF-8 with a byte-order mark, local times, and any cell starting with `= + - @` given
+    a leading apostrophe so a spreadsheet can't run it.
+  - **Background blur:** LiveKit's processor with Google's MediaPipe, offered on computers whose
+    browser can run it (WebGL2, OffscreenCanvas, VideoFrame); not on phones.
+    - Its code is the `meetingBlur-*` chunk, with its own 60 KB budget. The WebAssembly (about
+      2.9 MB gzipped) and the selfie-segmentation model are served from the LMS's own
+      `/meeting-blur/`, never a CDN, and none of it is in the install cache.
+    - The choice is remembered (`tmcc-meeting-blur`), and Join waits while blur loads.
+  - **Sizing:** a local load test on an Apple M5, rough numbers, in MEETINGS_PLAN's "Going live".
+    A real server needs its own test.
+- Safe for demos only until real sign-in exists, like the rest of the LMS.
+

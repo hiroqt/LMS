@@ -43,6 +43,31 @@ jobs:
   e2e:
     name: Flow parity (Playwright)
     runs-on: ubuntu-latest
+    # Class meetings (D-072) join a real LiveKit media server, set up like meet-server/: one UDP
+    # port, and it tells the browsers to send media to 127.0.0.1. CI-only key and secret.
+    services:
+      livekit:
+        image: livekit/livekit-server:v1.13.11
+        env:
+          LIVEKIT_KEYS: "lms-ci: ci_only_livekit_secret_0123456789abcdef"
+          NODE_IP: 127.0.0.1
+          LIVEKIT_CONFIG: |
+            rtc:
+              tcp_port: 7881
+              udp_port: 7882
+              use_external_ip: false
+            room:
+              auto_create: false
+        ports:
+          - 7880:7880
+          - 7881:7881
+          - 7882:7882/udp
+    env:
+      E2E_LIVEKIT_URL: ws://127.0.0.1:7880
+      E2E_LIVEKIT_KEY: lms-ci
+      E2E_LIVEKIT_SECRET: ci_only_livekit_secret_0123456789abcdef
+      # A missing media server fails the meeting specs instead of skipping them.
+      E2E_REQUIRE_LIVEKIT: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

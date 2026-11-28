@@ -860,6 +860,101 @@ namespace Lms.Api.Data.Migrations
                     b.ToTable("materials", (string)null);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.MeetingAttendance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTime?>("LeftAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("left_at");
+
+                    b.Property<long>("MeetingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("meeting_id");
+
+                    b.Property<string>("PersonId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("person_id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("Id")
+                        .HasName("PK_meeting_attendance");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.HasIndex("MeetingId", "PersonId");
+
+                    b.ToTable("meeting_attendance", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.MeetingChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<long>("MeetingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("meeting_id");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("sender_id");
+
+                    b.Property<string>("SenderName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("sender_name");
+
+                    b.Property<string>("SenderRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("sender_role");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("PK_meeting_chat_messages");
+
+                    b.HasIndex("MeetingId");
+
+                    b.ToTable("meeting_chat_messages", (string)null);
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Module", b =>
                 {
                     b.Property<long>("Id")
@@ -913,6 +1008,110 @@ namespace Lms.Api.Data.Migrations
                     b.HasIndex("ParentModuleId");
 
                     b.ToTable("modules", (string)null);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.OnlineMeeting", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClassId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("class_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("end_reason");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("ended_at");
+
+                    b.Property<bool>("Locked")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("locked");
+
+                    b.Property<string>("RemovedJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("removed_json");
+
+                    b.Property<string>("RoomName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("room_name");
+
+                    b.Property<bool>("SaveChat")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("save_chat");
+
+                    b.Property<DateTime?>("ScheduledStart")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("scheduled_start");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("started_at");
+
+                    b.Property<bool>("StudentsJoinMuted")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("students_join_muted");
+
+                    b.Property<bool>("StudentsMayChat")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("students_may_chat");
+
+                    b.Property<bool>("StudentsMayShareScreen")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("students_may_share_screen");
+
+                    b.Property<bool>("StudentsMayUnmute")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("students_may_unmute");
+
+                    b.Property<bool>("StudentsMayVideo")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("students_may_video");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("PK_meetings");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("RoomName")
+                        .IsUnique();
+
+                    b.ToTable("meetings", (string)null);
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Question", b =>
@@ -1778,6 +1977,24 @@ namespace Lms.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("Lms.Api.Data.MeetingAttendance", b =>
+                {
+                    b.HasOne("Lms.Api.Data.OnlineMeeting", null)
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.MeetingChatMessage", b =>
+                {
+                    b.HasOne("Lms.Api.Data.OnlineMeeting", null)
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Lms.Api.Data.Module", b =>
                 {
                     b.HasOne("Lms.Api.Data.IsmsClass", null)
@@ -1790,6 +2007,15 @@ namespace Lms.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ParentModuleId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Lms.Api.Data.OnlineMeeting", b =>
+                {
+                    b.HasOne("Lms.Api.Data.IsmsClass", null)
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Lms.Api.Data.Question", b =>

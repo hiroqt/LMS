@@ -32,6 +32,7 @@ import { YearFilter } from "../components/YearFilter";
 import { useInstructorSession } from "../hooks/useInstructorSession";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { instructorPaths } from "../paths";
+import { MyMeetingsPanel } from "../../meet";
 
 const events = academicEvents as SchoolEvent[];
 
@@ -48,6 +49,7 @@ function monthMarks(store: RoleStore, roomIds: Set<string>): CalendarMark[] {
 function Overview({ onNews }: { onNews: () => void }) {
   const navigate = useNavigate();
   const { store, rooms, queue, term } = useInstructorWorkspace();
+  const { instructorId } = useInstructorSession();
   const [year, setYear] = useState<number | "all">("all");
   const [classView, setClassView] = useClassView();
   const [now] = useState(Date.now);
@@ -92,6 +94,13 @@ function Overview({ onNews }: { onNews: () => void }) {
           { icon: <ClipboardCheck />, tone: classTones[2], value: activeAssessments, label: "Active assessments", note: `Across ${rooms.length} ${rooms.length === 1 ? "classroom" : "classrooms"}` },
           { icon: <UsersRound />, tone: classTones[3], value: reached, label: "Students reached", note: "Active enrollments" },
         ]}
+      />
+
+      <MyMeetingsPanel
+        className="@4xl:col-span-12"
+        viewer={{ id: instructorId, role: "instructor" }}
+        onJoin={(item) => navigate(instructorPaths.meeting(item.meeting.classId, item.meeting.id))}
+        onOpenClass={(item) => navigate(instructorPaths.classPage(item.meeting.classId, "Meetings"))}
       />
 
       {/* 12 columns: classes 7 | calendar 5 (two rows), then review 7. */}

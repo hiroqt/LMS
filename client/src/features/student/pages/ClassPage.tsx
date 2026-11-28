@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardList, Clock3, ExternalLink, FileText, FolderTree, GraduationCap, MapPin, PencilRuler, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardList, Clock3, FileText, FolderTree, GraduationCap, MapPin, PencilRuler, UsersRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { BackLink } from "../../../shared/components/BackLink";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
@@ -19,6 +19,8 @@ import { termStatus } from "../../../shared/lib/term";
 import { toneFor } from "../../../shared/lib/tones";
 import { courseCode } from "../api/catalog";
 import { useWorkspace } from "../hooks/useWorkspace";
+import { useStudentSession } from "../hooks/useStudentSession";
+import { LiveMeetingBanner, MeetingsTab, type Meeting } from "../../meet";
 import { CLASS_TABS, isClassTab, studentPaths, type ClassTab } from "../paths";
 
 function Stream({ course, catalog, completed, now, onTab }: { course: Course; catalog: StudentCatalog; completed: string[]; now: number; onTab: (tab: ClassTab) => void }) {
@@ -343,6 +345,7 @@ export default function ClassPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
+  const { studentId } = useStudentSession();
   const term = termStatus(catalog.academicEvents, now)?.name ?? "This term";
   const index = catalog.courses.findIndex((item) => item.id === classId);
   const course = catalog.courses[index];
@@ -352,6 +355,8 @@ export default function ClassPage() {
   const tab: ClassTab = isClassTab(requested) ? requested : "Stream";
   const setTab = (next: ClassTab) => setParams(next === "Stream" ? {} : { tab: next }, { replace: true });
   const workCount = catalog.assessments.filter((item) => item.courseId === course.id).length;
+  const viewer = { id: studentId, role: "student" as const };
+  const openMeeting = (meeting: Meeting) => navigate(studentPaths.meeting(course.id, meeting.id));
   const topicId = tab === "Modules" ? params.get("topic") : null;
   // A topic is its own history entry, so Back returns to the list of topics.
   const setTopic = (id: string | null) => setParams(id ? { tab: "Modules", topic: id } : { tab: "Modules" });
@@ -372,14 +377,9 @@ export default function ClassPage() {
           { label: "Enrolled", value: `${course.count} students`, icon: <UsersRound /> },
           { label: "Next class", value: course.next, icon: <Clock3 /> },
         ]}
-        actions={
-          course.id === "biology" && (
-            <Button asChild variant="secondary">
-              <a href="https://discord.com/app" target="_blank" rel="noreferrer">Join live class on Discord<ExternalLink aria-hidden className="size-4" /><span className="sr-only"> (opens in a new tab)</span></a>
-            </Button>
-          )
-        }
       />
+      {/* The class's own meetings replace the Discord link (D-072). */}
+      <LiveMeetingBanner viewer={viewer} classId={course.id} onOpen={openMeeting} />
 
       <Tabs value={tab} onValueChange={(value) => isClassTab(value) && setTab(value)}>
         <TabsList aria-label="Class sections">
@@ -396,6 +396,7 @@ export default function ClassPage() {
         <TabsContent value="Materials"><ClassMaterials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>
+        <TabsContent value="Meetings"><MeetingsTab viewer={viewer} classId={course.id} onOpen={openMeeting} onDetails={(meeting) => navigate(studentPaths.meetingDetails(course.id, meeting.id))} canManage={false} className={course.name} /></TabsContent>
       </Tabs>
     </>
   );

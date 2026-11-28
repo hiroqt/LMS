@@ -98,6 +98,35 @@ public sealed class DatabaseTests : IDisposable
     }
 
     [Fact]
+    public async Task A_student_ISMS_drops_is_disconnected_from_the_class_s_live_meeting()
+    {
+        IsmsOffers([Schedule("SCH-1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))], new() { ["SCH-1"] = [Student("S-1"), Student("S-2")] });
+        await SyncAsync();
+        await _factory.WithDbAsync(async db =>
+        {
+            db.Meetings.AddRange(
+                new OnlineMeeting { ClassId = Database, Title = "Live", RoomName = "room-live", StartedAt = _factory.Time.Now.UtcDateTime },
+                new OnlineMeeting { ClassId = Database, Title = "Over", RoomName = "room-over", StartedAt = _factory.Time.Now.UtcDateTime.AddDays(-1), EndedAt = _factory.Time.Now.UtcDateTime.AddDays(-1) });
+            return await db.SaveChangesAsync();
+        });
+        var meet = _factory.Meet;
+        meet.Join("room-live", "S-1", Lms.Api.Meetings.MeetingRights.ForStudent(new OnlineMeeting()));
+        meet.Join("room-live", "S-2", Lms.Api.Meetings.MeetingRights.ForStudent(new OnlineMeeting()));
+
+        // ISMS no longer lists S-1: she leaves the live meeting now, not when her join pass would run out.
+        IsmsOffers([Schedule("SCH-1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))], new() { ["SCH-1"] = [Student("S-2")] });
+        await SyncAsync();
+        Assert.Null(meet.Person("room-live", "S-1"));
+        Assert.NotNull(meet.Person("room-live", "S-2"));
+        Assert.Equal([("room-live", "S-1")], meet.CallsTo(nameof(FakeMeetingServer.RemoveParticipantAsync)).Select(c => (c.Room, c.Identity!)).ToArray());
+
+        // A media server that can't be reached doesn't stop the sync.
+        meet.Down = true;
+        IsmsOffers([Schedule("SCH-1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))], new() { ["SCH-1"] = [Student("S-1")] });
+        Assert.Null((await SyncAsync()).Error);
+    }
+
+    [Fact]
     public async Task An_empty_answer_from_ISMS_does_not_deactivate_every_class()
     {
         IsmsOffers([Schedule("SCH-1", 101, "EMP-7", Meeting("MW", "08:00", "09:30"))], new() { ["SCH-1"] = [Student("S-1")] });

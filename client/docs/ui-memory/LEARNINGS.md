@@ -780,3 +780,94 @@ scrolled out of view was not clipped and widened the whole page by 159px at 1024
 on the scrolling element fixes it. And a flex item's minimum width is its content's, so a tile
 with a `truncate` title grew to the full title instead of its `15rem` share until the item got
 `min-w-0`. `class-view` "stay in one row and scroll sideways" fails on either regression.
+
+### L-106 · Fake-media WebRTC checks: count tracks and measure sound with an analyser
+`2026-11-26` · hiro (D-072, Phase 0) · scope: tests, meetings · confidence: medium
+Two headless Chromium browsers with `--use-fake-device-for-media-stream` joined the local
+LiveKit server. The page that joined first always reported `totalAudioEnergy: 0` for the sound
+it received, though its packets arrived and an `AnalyserNode` on the same track measured the fake
+beep at a peak of about 1.0. That page also held stale, paused media elements from an earlier
+subscription. Swapping who joined first moved the 0 to the other person, so the stat followed the
+page, not the sender. For "can they hear each other", measure the received track with Web Audio
+(`createMediaStreamSource` → `AnalyserNode`), not the inbound-rtp energy stat. In Docker,
+`meet-server/` uses one UDP port (7882) instead of LiveKit's 10,000-port range, and advertises
+`NODE_IP=127.0.0.1`. So the `lk` CLI runs inside the server's network
+(`--network container:lms-meet-dev`), where `127.0.0.1` reaches the server.
+
+### L-108 · LiveKit's room API and webhooks, as they really behave (1.13.11)
+`2026-11-26` · hiro (D-072, Phase 1) · scope: server, meetings · confidence: high
+Checked against a running server, and kept true by `LiveKitContractTests` in API CI.
+- **Sources:** an empty `canPublishSources` means every source is allowed. A pass without
+  `microphone` makes the client's publish fail with "insufficient permissions". Taking a source
+  away with `UpdateParticipant` unpublishes that track at once, and the client gets
+  `LocalTrackUnpublished`.
+- **Muting:** `MutePublishedTrack` mutes. Unmuting someone else answers 412 `failed_precondition`
+  while `enable_remote_unmute` is off.
+- **Server messages:** `SendData` arrives with no participant, so the page can trust it.
+  `destination_identities` reaches only those people.
+- **Errors:** Twirp requests use snake_case field names (enums as names, e.g. `MICROPHONE`), and
+  errors come back as `{code, msg}`. A pass with a bad signature gets 401 as plain text, not
+  Twirp JSON, so a wrong secret has to be told apart from an outage by its status code.
+  `GET /rtc/validate?access_token=` checks a join pass over plain HTTP: 200 or 401.
+- **Webhooks:** `application/webhook+json` in camelCase, with Unix times as strings (`createdAt`,
+  `joinedAtMs`). The `Authorization` header holds a JWT (no `Bearer`) whose `sha256` claim is the
+  standard base64 SHA-256 of the body. "Room finished" arrives after the room's
+  `departure_timeout`, and the value given to `CreateRoom` overrides `livekit.yaml`.
+- **Testing sound:** Chrome feeds a received track to Web Audio only while it is attached to a
+  media element (L-106).
+
+### L-109 · A new tab loses the demo identity; Playwright waits on aria-disabled; Demo's clock vs LiveKit's
+`2026-11-26` · hiro (D-072, Phase 2a) · scope: shared, tests, meetings · confidence: high
+- **New tabs:** the "viewing as" choice lives in `sessionStorage`, and a link with
+  `target="_blank"` (noopener by default) opens a tab that doesn't inherit it. Checked in
+  Chromium and WebKit. Anything that must stay the same person opens in the same tab until real
+  sign-in.
+- **aria-disabled in tests:** Playwright counts `aria-disabled="true"` as disabled and waits for
+  "enabled" before a click. A control that stays pressable to say why needs `click({ force: true })`.
+- **Clocks:** the browser specs start the API's clock on 2026-10-23, but LiveKit checks passes
+  by the real clock, so passes signed by the API's clock arrived expired. Anything another
+  server checks uses the real clock.
+- **WebKit:** Playwright's WebKit has no stand-in camera or mic, so specs that join a meeting
+  run on the Chromium projects and skip on iPhone WebKit.
+
+### L-110 · role="log" on a list, sheets hiding the page, and toasts over a control bar
+`2026-11-26` · hiro (D-072, Phase 2b) · scope: shared, a11y, tests, meetings · confidence: high
+- **role="log" on a list:** `role="log"` on an `<ol>` replaces its list role, so axe reports
+  every `<li>` as outside a list (`listitem`). Put the role on a wrapper `div` and keep the `ol`.
+- **Sheets:** on phones the chat and people panels are Radix sheets, which hide the rest of the
+  page from assistive technology. A spec must close the sheet before it reads anything behind it
+  (a status line, the controls).
+- **Toasts:** on a phone, toasts sit at the bottom, over a page's own bottom controls. The
+  meeting page writes its messages into a line above the stage instead.
+- **Starting devices:** `createLocalVideoTrack` takes a moment. A Join pressed meanwhile left
+  without the camera, and the camera started afterwards stayed on. Make Join wait for devices
+  and stop a device that starts after the screen has gone.
+
+### L-111 · Vite reloads a page the first time a lazily imported package is used; date tests and the machine's zone
+`2026-11-26` · hiro (D-072, Phase 3) · scope: tests, build, meetings · confidence: high
+- **Vite reloads on new packages:** a package first reached through a dynamic `import()` (here
+  `@livekit/track-processors`, when blur is turned on) is discovered by the dev server only then.
+  It optimizes it and reloads the page, which ended the pre-join screen's camera and choices.
+  The production build is unaffected. List such packages in `optimizeDeps.include`.
+- **Time zones:** a unit test that expects "09:05" from a UTC timestamp passes only in Manila.
+  Vitest uses the machine's zone, unlike Playwright, which pins Asia/Manila. Build the moment
+  from local parts (`new Date(2026, 9, 23, 9, 5)`) and check the test under `TZ=UTC` too.
+- **Third-party defaults:** LiveKit's blur fetches MediaPipe from jsdelivr and Google Storage
+  unless given `assetPaths`. Check a new browser dependency's default URLs, and test for
+  requests outside the LMS.
+
+
+### L-112 · A LiveKit join pass can't be taken back; a join that finishes after the page is gone
+`2026-11-28` · review of D-072 (integration PR) · scope: meetings, server, tests · confidence: high
+- **Rooms:** LiveKit opens a room for any valid join pass unless `room.auto_create` is false. With
+  it on, a 10-minute pass reopened a meeting the instructor had ended, as a new, empty room. Only
+  the LMS API opens rooms now (`meet-server/livekit.yaml`, both CI services, and
+  `LiveKitContractTests`, where `rtc/validate` answers 404 for a room that doesn't exist).
+- **Joins in flight:** a join is several awaits (pass, then connect). Leaving the page or pressing
+  Stop waiting in between must make that attempt stale, or it connects with no page left to show
+  it. `useMeetingRoom` counts attempts; `useMeetingRoom.test.tsx` checks both ways out.
+- **Check people when they arrive, not only when they get a pass:** connected clients receive
+  fresh passes from LiveKit itself, so a short pass alone doesn't keep a removed student out. The
+  API re-checks each `participant_joined` webhook (`MeetingPresence`) and removes anyone the
+  instructor removed or the class list dropped; the ISMS sync removes dropped students from live
+  meetings at once.

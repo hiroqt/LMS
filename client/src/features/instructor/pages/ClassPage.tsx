@@ -5,6 +5,8 @@ import { CourseHeader } from "../../../shared/components/CourseHeader";
 import { Button } from "../../../shared/ui/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { useToast } from "../../../shared/ui/toast/useToast";
+import { LiveMeetingBanner, MeetingsTab, StartMeetingButton, type Meeting } from "../../meet";
+import { useInstructorSession } from "../hooks/useInstructorSession";
 import { classContent, classMark, classWork, publishedWork, subjectOf, yearOf } from "../api/selectors";
 import { useInstructorWorkspace } from "../hooks/useInstructorWorkspace";
 import { CLASS_TABS, instructorPaths, isClassTab, isContentType, type ClassTab, type ContentType } from "../paths";
@@ -27,6 +29,7 @@ export default function ClassPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { store, instructor, rooms, queue } = useInstructorWorkspace();
+  const { instructorId } = useInstructorSession();
   const requested = params.get("tab");
   const urlTab: ClassTab = isClassTab(requested) ? requested : "Stream";
   // Show the chosen tab at once; the URL follows. Router navigations render in a
@@ -64,6 +67,8 @@ export default function ClassPage() {
     Submissions: submissions.length,
   };
   const props = { store, room, subject, instructor, content, goTab };
+  const viewer = { id: instructorId, role: "instructor" as const };
+  const openMeeting = (meeting: Meeting) => navigate(instructorPaths.meeting(room.id, meeting.id));
 
   const copyCode = async () => {
     try {
@@ -91,13 +96,17 @@ export default function ClassPage() {
           { label: "Awaiting review", value: `${submissions.length}`, icon: <Inbox /> },
         ]}
         actions={
-          room.enrollmentCode && (
-            <Button variant="secondary" onClick={copyCode} icon={<Copy aria-hidden className="size-4" />}>
-              <span className="sr-only">Copy class code </span>{room.enrollmentCode}
-            </Button>
-          )
+          <>
+            <StartMeetingButton viewer={viewer} classId={room.id} onOpen={openMeeting} />
+            {room.enrollmentCode && (
+              <Button variant="secondary" onClick={copyCode} icon={<Copy aria-hidden className="size-4" />}>
+                <span className="sr-only">Copy class code </span>{room.enrollmentCode}
+              </Button>
+            )}
+          </>
         }
       />
+      <LiveMeetingBanner viewer={viewer} classId={room.id} onOpen={openMeeting} />
 
       {/* Radix derives element ids from tab values, so values must not contain
           spaces ("Create content" broke aria-controls); labels and URLs keep them. */}
@@ -117,6 +126,9 @@ export default function ClassPage() {
         <TabsContent value={slug("Materials")}><MaterialsTab {...props} /></TabsContent>
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>
         <TabsContent value={slug("Attendance")}><AttendanceTab {...props} /></TabsContent>
+        <TabsContent value={slug("Meetings")}>
+          <MeetingsTab viewer={viewer} classId={room.id} onOpen={openMeeting} onDetails={(meeting) => navigate(instructorPaths.meetingDetails(room.id, meeting.id))} canManage className={subject?.title ?? "Class"} />
+        </TabsContent>
         <TabsContent value={slug("Submissions")}>
           <SubmissionsTab
             items={submissions}

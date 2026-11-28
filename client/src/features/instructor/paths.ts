@@ -1,5 +1,5 @@
 /** Instructor routes. Every screen, tab, open form, and selected submission has a URL. */
-export const CLASS_TABS = ["Stream", "Classwork", "Modules", "Announcements", "Materials", "People", "Attendance", "Submissions", "Create content"] as const;
+export const CLASS_TABS = ["Stream", "Classwork", "Modules", "Announcements", "Materials", "People", "Attendance", "Meetings", "Submissions", "Create content"] as const;
 export type ClassTab = (typeof CLASS_TABS)[number];
 export const isClassTab = (value: unknown): value is ClassTab => CLASS_TABS.includes(value as ClassTab);
 
@@ -65,6 +65,10 @@ export const instructorPaths = {
   rubrics: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics`,
   rubricNew: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/new`,
   rubric: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/${id}`,
+  /** A class meeting's full-screen page (D-072), in the same tab: the demo identity is per tab. */
+  meeting: (classId: string, id: number | string) => `/instructor/meet/${encodeURIComponent(classId)}/${encodeURIComponent(String(id))}`,
+  /** A meeting's own page in the class: attendance and the saved chat (D-072, Phase 3). */
+  meetingDetails: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/meetings/${encodeURIComponent(String(id))}`,
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,
   /**

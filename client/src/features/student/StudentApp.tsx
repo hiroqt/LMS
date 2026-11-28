@@ -1,7 +1,7 @@
 import { BookOpen, CalendarDays, CloudOff, House, ListChecks, Megaphone, Search } from "lucide-react";
 import { HelpSupport } from "../../shared/components/HelpSupport";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { matchPath, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { NotificationsPopover } from "../../shared/components/NotificationsPopover";
 import { ProfileMenu } from "../../shared/components/ProfileMenu";
 import { TopbarSearch } from "../../shared/components/TopbarSearch";
@@ -23,6 +23,8 @@ import { useWorkspace } from "./hooks/useWorkspace";
 import TodayPage from "./pages/TodayPage";
 import { studentPaths } from "./paths";
 import { StudentSessionContext, type StudentSession } from "./studentContext";
+import { MeetingDetailsPage, MeetingRoomPage } from "../meet";
+import { useStudentSession } from "./hooks/useStudentSession";
 
 // Today loads with the app; other screens load on first visit (smaller first download).
 const TasksPage = lazy(() => import("./pages/TasksPage"));
@@ -66,6 +68,26 @@ function ScreenLoading({ label = "Loading" }: { label?: string }) {
   );
 }
 
+/** A meeting's own page (D-072, Phase 3): its saved chat. */
+function MeetingDetailsRoute() {
+  const { classId = "", meetingId = "" } = useParams();
+  const navigate = useNavigate();
+  const { catalog } = useWorkspace();
+  const { studentId } = useStudentSession();
+  const course = catalog.courses.find((item) => item.id === classId);
+  if (!course || !(Number(meetingId) > 0)) return <Navigate to={studentPaths.classes} replace />;
+  return (
+    <MeetingDetailsPage
+      viewer={{ id: studentId, role: "student" }}
+      classId={classId}
+      meetingId={Number(meetingId)}
+      className={course.name}
+      onBack={() => navigate(studentPaths.classPage(classId, "Meetings"))}
+      onJoin={(meeting) => navigate(studentPaths.meeting(classId, meeting.id))}
+    />
+  );
+}
+
 function Workspace({ onNavigateRole }: RoleAppProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,6 +99,25 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   const currentClass = location.pathname.startsWith("/student/classes/") ? decodeURIComponent(location.pathname.split("/")[3] ?? "") : "";
 
   const [mobileSearch, setMobileSearch] = useState(false);
+  const { studentId } = useStudentSession();
+
+  // A class meeting is full screen, outside the shell (D-072).
+  const meeting = matchPath("/student/meet/:classId/:meetingId", location.pathname);
+  if (meeting?.params.classId && Number(meeting.params.meetingId) > 0) {
+    const classId = meeting.params.classId;
+    return (
+      <Suspense fallback={<p role="status" className="m-0 p-6 font-sans text-body text-muted">Opening the meeting…</p>}>
+        <MeetingRoomPage
+          viewer={{ id: studentId, role: "student" }}
+          viewerName={catalog.me.name}
+          classId={classId}
+          meetingId={Number(meeting.params.meetingId)}
+          className={catalog.courses.find((course) => course.id === classId)?.name ?? "Class"}
+          onExit={() => navigate(studentPaths.classPage(classId, "Meetings"))}
+        />
+      </Suspense>
+    );
+  }
   const searchField = (autoFocus = false) => (
     <TopbarSearch
       label="Search student workspace"
@@ -166,6 +207,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               <Route path="student/assessments/:assessmentId/quiz" element={<QuizPage />} />
               <Route path="student/assessments/:assessmentId/result" element={<ResultPage />} />
               <Route path="student/materials/:materialId" element={<MaterialPage />} />
+              <Route path="student/classes/:classId/meetings/:meetingId" element={<MeetingDetailsRoute />} />
               <Route path="student/news" element={<NewsPage />} />
               {/* /student, /, /student.html, ?role=student, #/student, … all land on Today. */}
               <Route path="*" element={<TodayPage />} />

@@ -532,3 +532,74 @@ public sealed class AuditLogEntry
     public string Summary { get; set; } = "";
     public DateTime CreatedAt { get; set; }
 }
+
+// ---------------------------------------------------------------- Class meetings (D-072)
+
+/// <summary>
+/// A live class meeting on the media server (LiveKit). Scheduled, then live from
+/// <see cref="StartedAt"/>, then ended at <see cref="EndedAt"/>. A meeting is used once; the
+/// instructor starts a new one for the next session.
+/// </summary>
+public sealed class OnlineMeeting : Audited
+{
+    public long Id { get; set; }
+    public string ClassId { get; set; } = "";
+    public string Title { get; set; } = "";
+    public DateTime? ScheduledStart { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public DateTime? EndedAt { get; set; }
+    /// <summary><see cref="MeetingEndReason"/>.</summary>
+    public string? EndReason { get; set; }
+    /// <summary>The media server's room name: random, so it can't be guessed. In Demo mode it starts with the sandbox.</summary>
+    public string RoomName { get; set; } = "";
+    /// <summary>No new students may join. People already in stay.</summary>
+    public bool Locked { get; set; }
+    public bool StudentsJoinMuted { get; set; } = true;
+    public bool StudentsMayUnmute { get; set; } = true;
+    public bool StudentsMayVideo { get; set; } = true;
+    public bool StudentsMayShareScreen { get; set; }
+    public bool StudentsMayChat { get; set; } = true;
+    public bool SaveChat { get; set; }
+    /// <summary>JSON array of the ids the instructor removed; they can't join this meeting again.</summary>
+    public string RemovedJson { get; set; } = "[]";
+}
+
+public static class MeetingStatus
+{
+    public const string Scheduled = "scheduled";
+    public const string Live = "live";
+    public const string Ended = "ended";
+}
+
+public static class MeetingEndReason
+{
+    /// <summary>The instructor ended it for everyone.</summary>
+    public const string Instructor = "instructor";
+    /// <summary>The media server closed the room after the last person left.</summary>
+    public const string Empty = "empty";
+}
+
+/// <summary>One stay in a meeting: from joining to leaving, from the media server's webhooks.</summary>
+public sealed class MeetingAttendance
+{
+    public long Id { get; set; }
+    public long MeetingId { get; set; }
+    public string PersonId { get; set; } = "";
+    public string Role { get; set; } = "";
+    /// <summary>The media server's participant session id; a webhook sent twice changes nothing.</summary>
+    public string SessionId { get; set; } = "";
+    public DateTime JoinedAt { get; set; }
+    public DateTime? LeftAt { get; set; }
+}
+
+/// <summary>A chat message, kept only while the meeting's "Save the chat" is on.</summary>
+public sealed class MeetingChatMessage
+{
+    public long Id { get; set; }
+    public long MeetingId { get; set; }
+    public string SenderId { get; set; } = "";
+    public string SenderRole { get; set; } = "";
+    public string SenderName { get; set; } = "";
+    public string Text { get; set; } = "";
+    public DateTime SentAt { get; set; }
+}

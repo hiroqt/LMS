@@ -9,6 +9,7 @@ using Lms.Api.Files;
 using Lms.Api.Import;
 using Lms.Api.Isms;
 using Lms.Api.Me;
+using Lms.Api.Meetings;
 using Lms.Api.Rubrics;
 using Lms.Api.Sync;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<IsmsExceptionHandler>();
 builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
+builder.Services.AddExceptionHandler<MeetingExceptionHandler>();
 builder.Services.AddOpenApi();
 // Demo mode (Development tooling and browser tests only): SQLite per sandbox and a built-in fake
 // ISMS, so the API runs with no MySQL and no ISMS API. See Demo/DemoMode.cs.
@@ -52,6 +54,8 @@ builder.Services.AddScoped<ClassAccess>();
 // Student uploads (D-055): the file store, the virus scanner and the upload rate limit.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLmsFiles(builder.Configuration, builder.Environment, demo);
+// Class meetings on the media server (D-072); off without Lms:Meet settings.
+builder.Services.AddLmsMeetings(builder.Configuration);
 
 // CORS origins come from Cors:AllowedOrigins (only http://localhost:5173 in Development).
 // Read lazily so test hosts and environment overrides apply. Never allow-any-origin.
@@ -114,6 +118,9 @@ app.MapAccuracyEndpoints();
 app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();
 app.MapOverviewEndpoints();
+// Class meetings and the media server's webhooks (D-072).
+app.MapMeetingEndpoints();
+app.MapMeetingWebhookEndpoints();
 
 app.Run();
 

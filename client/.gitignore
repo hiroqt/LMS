@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# MediaPipe's WebAssembly for meeting blur, copied from node_modules by scripts/meeting-blur-assets.ts
+public/meeting-blur/vision_wasm*

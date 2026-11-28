@@ -18,6 +18,18 @@ jobs:
     defaults:
       run:
         working-directory: server
+    # Class meetings (D-072): the contract tests call a real LiveKit server. CI-only key and secret.
+    services:
+      livekit:
+        image: livekit/livekit-server:v1.13.11
+        env:
+          LIVEKIT_KEYS: "lms-ci: ci_only_livekit_secret_0123456789abcdef"
+          # As meet-server/livekit.yaml: only the LMS API opens rooms (a contract test checks it).
+          LIVEKIT_CONFIG: |
+            room:
+              auto_create: false
+        ports:
+          - 7880:7880
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v5
@@ -27,10 +39,17 @@ jobs:
       - name: Install LibreOffice
         run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libreoffice-writer libreoffice-impress libreoffice-calc
       - run: dotnet build Lms.slnx
+      - name: Wait for LiveKit
+        run: for i in $(seq 1 30); do curl -sf http://127.0.0.1:7880/ >/dev/null && exit 0; sleep 1; done; echo "LiveKit did not start"; exit 1
       - run: dotnet test Lms.slnx --no-build
         env:
           # A missing LibreOffice fails the converter test instead of skipping it.
           LMS_REQUIRE_LIBREOFFICE: "1"
+          # A missing LiveKit fails the meeting contract tests instead of skipping them.
+          LMS_REQUIRE_LIVEKIT: "1"
+          LMS_TEST_LIVEKIT_URL: http://127.0.0.1:7880
+          LMS_TEST_LIVEKIT_KEY: lms-ci
+          LMS_TEST_LIVEKIT_SECRET: ci_only_livekit_secret_0123456789abcdef
 
   isms-api:
     name: ISMS API (build, test)

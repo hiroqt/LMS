@@ -22,8 +22,20 @@ const BUDGET = {
    */
   pdfViewer: 140 * KB,
   pdfWorker: 380 * KB,
+  /**
+   * The meeting page with LiveKit's client (about 140 KB of it), loaded only when someone opens a
+   * class meeting and kept out of the install cache (D-072).
+   */
+  meetingRoom: 175 * KB,
+  /**
+   * Background blur's code (LiveKit's processor and MediaPipe's loader), loaded only when someone
+   * turns blur on in a meeting, then its WebAssembly from /meeting-blur/ (D-072, Phase 3).
+   */
+  meetingBlur: 60 * KB,
 };
 const isPdfViewer = (name: string) => name.startsWith("PdfPages-");
+const isMeetingRoom = (name: string) => name.startsWith("MeetingRoomPage-");
+const isMeetingBlur = (name: string) => name.startsWith("meetingBlur-");
 
 const dir = join(process.cwd(), "dist", "assets");
 const files = readdirSync(dir).filter((name) => name.endsWith(".js") || name.endsWith(".mjs") || name.endsWith(".css"));
@@ -33,7 +45,7 @@ const entry = html.match(/assets\/(index-[^"]+\.js)/)?.[1];
 const failures: string[] = [];
 const rows = files.map((name) => {
   const size = gzipSync(readFileSync(join(dir, name))).length;
-  const limit = name.endsWith(".css") ? BUDGET.css : name === entry ? BUDGET.entryJs : isPdfViewer(name) ? BUDGET.pdfViewer : name.startsWith("pdf.worker") ? BUDGET.pdfWorker : BUDGET.chunkJs;
+  const limit = name.endsWith(".css") ? BUDGET.css : name === entry ? BUDGET.entryJs : isPdfViewer(name) ? BUDGET.pdfViewer : isMeetingRoom(name) ? BUDGET.meetingRoom : isMeetingBlur(name) ? BUDGET.meetingBlur : name.startsWith("pdf.worker") ? BUDGET.pdfWorker : BUDGET.chunkJs;
   if (size > limit) failures.push(`${name}: ${(size / KB).toFixed(1)} KB gz > ${(limit / KB).toFixed(0)} KB`);
   return { name, size, limit };
 });

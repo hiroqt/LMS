@@ -21,6 +21,7 @@ import { useStudentPeople } from "../hooks/useStudentCatalog";
 import { useStudentSession } from "../hooks/useStudentSession";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
+import { MyMeetingsPanel } from "../../meet";
 
 const courseIndex = (catalog: StudentCatalog, id: string) => Math.max(catalog.courses.findIndex((entry) => entry.id === id), 0);
 const courseName = (catalog: StudentCatalog, id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
@@ -240,6 +241,7 @@ function ViewingAs() {
 export default function TodayPage() {
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
+  const { studentId } = useStudentSession();
   const term = termStatus(catalog.academicEvents, now);
   const { courses, assessments } = catalog;
 
@@ -255,11 +257,17 @@ export default function TodayPage() {
       />
       {/* One 12-column bento grid: every tile shares the gutter and stretches to its
           row, and tiles differ in size by importance (D-026, D-027, D-066).
-          Reading order (D-071): next due, announcements, tasks, calendar, classes.
+          Reading order (D-071, D-072): next due, announcements, live and coming meetings (only when there are any), tasks, calendar, classes.
           12 columns: next due 5 | announcements 7, then tasks 7 | calendar 5, then classes across. */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 @4xl:grid-cols-12">
         <NextDueTile className="@4xl:col-span-5" catalog={catalog} item={next} />
         <AnnouncementsPanel className="@4xl:col-span-7" catalog={catalog} now={now} />
+        <MyMeetingsPanel
+          className="@4xl:col-span-12"
+          viewer={{ id: studentId, role: "student" }}
+          onJoin={(item) => navigate(studentPaths.meeting(item.meeting.classId, item.meeting.id))}
+          onOpenClass={(item) => navigate(studentPaths.classPage(item.meeting.classId, "Meetings"))}
+        />
         <TasksPanel className="@4xl:col-span-7" catalog={catalog} completed={completed} items={later} hasNext={Boolean(next)} now={now} />
         <CalendarPanel className="@4xl:col-span-5" catalog={catalog} completed={completed} shown={soon} now={now} />
         <Panel id="my-classes" className="@4xl:col-span-12" icon={<Layers />} title="My Classes" action={<PanelLink onClick={() => navigate(studentPaths.classes)}>View all classes</PanelLink>}>
