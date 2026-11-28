@@ -1147,3 +1147,42 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
+### D-073 · A student's module opens on its own page with four columns
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Supersedes D-070's in-tab topic view. The Student class page's Modules tab lists one button per
+top-level module (list "Modules"); a button opens `ModulePage` at
+`/student/classes/:classId/modules/:moduleId` (`studentPaths.module`), a page of its own with the
+module title as its h1 and four columns in this order: Assessments, Activities, Assignments,
+Materials (`TOPIC_CATEGORIES`; one column on phones, two from `@xl`, four from `@4xl`, so a 1280px laptop shows all four; C-017 would say `@7xl`). What goes in
+each column is unchanged from D-070 (`courseTopic`, submodule content included). **Back to modules**
+returns to the class's Modules tab: when the page was opened from that tab (router state
+`fromModules`) it steps back in history, so Back/Forward do not pile up; opened by URL it navigates
+there. Old `?tab=Modules&topic=<id>` links redirect to the module page. Check: `submodules`.
+
+### D-074 · The student's module page shows its submodules
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Builds on D-073. A submodule an instructor made was invisible to students until something was
+posted in it, and then only as a grey label on the item. When a module has submodules, its page now
+opens with a **Submodules** panel listing each one in order with its item count, or "Nothing posted
+yet" when empty. In each column the module's own items come first, then one group per submodule
+that has items in that category, under an `h3` with the submodule's title (list "<Category> in
+<submodule>"); items no longer repeat the submodule in their meta line. The grouping is
+`courseTopic`'s `sections` and `submodules` in `student/api/selectors.ts`. Check: `submodules`.
+
+### D-075 · The Submodules card lists what each submodule holds
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Builds on D-074. Each submodule in the module page's **Submodules** card is a tile with its title
+(`h3`), its item count or "Nothing posted yet", and its items (list "Items in <submodule>") in
+column order: Assessments, Activities, Assignments, Materials. Each item is a button that opens it,
+with its column's icon and its type ("Material · Study guide" for materials). The four columns keep
+their submodule groups, so an item appears in both places; the card answers "what is in this
+submodule", the columns "what do I have of this kind". Check: `submodules`.
+
+### D-076 · Submodules in the Submodules card are closed until clicked
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Supersedes the always-open tiles in D-075. Each submodule in the module page's **Submodules** card
+shows only its title, inside its `h3`, as a button with `aria-expanded`, `aria-controls`, and a chevron
+(the `SidebarGroup` disclosure pattern). Clicking it shows the submodule's items (list "Items in
+<submodule>", unchanged from D-075) or "Nothing posted yet"; clicking again hides them. All start
+closed, each opens on its own, and the open state is not remembered. The tile grid uses
+`items-start` so opening one tile does not stretch its closed neighbours. Check: `submodules`.

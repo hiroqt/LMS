@@ -46,7 +46,7 @@ flowchart TD
     CL1 --> CL2{Choose class tab}
     CL2 -->|Stream| STREAM[Read class updates and open linked work or material]
     CL2 -->|Classwork| CW[Browse or filter Quiz, Long Quiz, and Exam]
-    CL2 -->|Modules| MODS[Topic buttons; open a topic to see its assignments, activities, assessments, and materials, then open one]
+    CL2 -->|Modules| MODS[Module buttons; open a module's own page to see its assessments, activities, assignments, and materials in four columns, then open one or go back to Modules]
     CL2 -->|Materials| MAT[Materials by module and submodule, or newest first; filter by type; search]
     CL2 -->|People| PEOPLE[Search the student roster]
     CL2 -->|Attendance| CLAT[Read own attendance % per month]

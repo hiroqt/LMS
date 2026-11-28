@@ -182,17 +182,27 @@ export function courseModules(catalog: Pick<StudentCatalog, "modules" | "materia
   }));
 }
 
-export const TOPIC_CATEGORIES = ["Assignments", "Activities", "Assessments", "Materials"] as const;
+/** The module page's columns, in order (D-073). */
+export const TOPIC_CATEGORIES = ["Assessments", "Activities", "Assignments", "Materials"] as const;
 export type TopicCategory = (typeof TOPIC_CATEGORIES)[number];
 
-export interface TopicEntry extends ModuleEntry {
-  /** The submodule it sits in, when it is not placed in the topic itself. */
-  submodule?: string;
+export type TopicEntry = ModuleEntry;
+
+/** A column's items from one place: the module itself (no `submodule`) or one of its submodules. */
+export interface TopicSection {
+  submodule?: CourseModule;
+  entries: TopicEntry[];
 }
 
 export interface Topic {
   module: CourseModule;
-  groups: Array<{ category: TopicCategory; entries: TopicEntry[] }>;
+  /** Every submodule in order, empty ones included, with its items in column order (D-074, D-075). */
+  submodules: Array<{ module: CourseModule; entries: Array<TopicEntry & { category: TopicCategory }> }>;
+  /**
+   * One per category in column order. `entries` is everything in the category; `sections` splits
+   * it into the module's own items first, then each submodule that has some, in submodule order.
+   */
+  groups: Array<{ category: TopicCategory; entries: TopicEntry[]; sections: TopicSection[] }>;
 }
 
 /**
@@ -207,20 +217,32 @@ export function topicCategory(item: Pick<Assessment, "type" | "kind">): Exclude<
 
 /**
  * One top-level module of a class (a "topic" on the student's Modules tab)
- * with everything placed in it or its submodules, grouped by category.
+ * with everything placed in it or its submodules, grouped by category and,
+ * inside each category, by submodule (D-074).
  * Undefined when the module is not a topic of that class.
  */
 export function courseTopic(catalog: Pick<StudentCatalog, "modules" | "materials" | "assessments">, courseId: string, topicId: string): Topic | undefined {
   const section = courseModules(catalog, courseId).find((item) => item.module.id === topicId);
   if (!section) return undefined;
-  const placed = [
-    ...section.entries.map((entry): TopicEntry => entry),
-    ...section.submodules.flatMap((sub) => sub.entries.map((entry): TopicEntry => ({ ...entry, submodule: sub.module.title }))),
-  ];
   const categoryOf = (entry: TopicEntry): TopicCategory => {
     if (entry.kind === "material") return "Materials";
     const work = catalog.assessments.find((item) => item.id === entry.id);
     return work ? topicCategory(work) : "Assessments";
   };
-  return { module: section.module, groups: TOPIC_CATEGORIES.map((category) => ({ category, entries: placed.filter((entry) => categoryOf(entry) === category) })) };
+  const places: TopicSection[] = [{ entries: section.entries }, ...section.submodules.map((sub) => ({ submodule: sub.module, entries: sub.entries }))];
+  return {
+    module: section.module,
+    submodules: section.submodules.map((sub) => ({
+      module: sub.module,
+      entries: sub.entries
+        .map((entry) => ({ ...entry, category: categoryOf(entry) }))
+        .sort((a, b) => TOPIC_CATEGORIES.indexOf(a.category) - TOPIC_CATEGORIES.indexOf(b.category)),
+    })),
+    groups: TOPIC_CATEGORIES.map((category) => {
+      const sections = places
+        .map((place) => ({ ...place, entries: place.entries.filter((entry) => categoryOf(entry) === category) }))
+        .filter((place) => place.entries.length > 0);
+      return { category, entries: sections.flatMap((place) => place.entries), sections };
+    }),
+  };
 }
