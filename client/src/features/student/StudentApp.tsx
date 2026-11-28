@@ -31,6 +31,7 @@ const TasksPage = lazy(() => import("./pages/TasksPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ClassesPage = lazy(() => import("./pages/ClassesPage"));
 const ClassPage = lazy(() => import("./pages/ClassPage"));
+const ModulePage = lazy(() => import("./pages/ModulePage"));
 const AssessmentPage = lazy(() => import("./pages/AssessmentPage"));
 const QuizPage = lazy(() => import("./pages/QuizPage"));
 const ResultPage = lazy(() => import("./pages/ResultPage"));
@@ -203,6 +204,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
               <Route path="student/calendar" element={<CalendarPage />} />
               <Route path="student/classes" element={<ClassesPage />} />
               <Route path="student/classes/:classId" element={<ClassPage />} />
+              <Route path="student/classes/:classId/modules/:moduleId" element={<ModulePage />} />
               <Route path="student/assessments/:assessmentId" element={<AssessmentPage />} />
               <Route path="student/assessments/:assessmentId/quiz" element={<QuizPage />} />
               <Route path="student/assessments/:assessmentId/result" element={<ResultPage />} />

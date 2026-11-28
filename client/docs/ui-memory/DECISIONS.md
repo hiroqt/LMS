@@ -1147,3 +1147,22 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
+### D-073 · A student's module opens on its own page: four columns and a Submodules card
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Supersedes D-070's in-tab topic view. The Student class page's Modules tab lists one button per
+top-level module (list "Modules"); a button opens `ModulePage` at
+`/student/classes/:classId/modules/:moduleId` (`studentPaths.module`), with the module title as its h1
+and four columns in this order: Assessments, Activities, Assignments, Materials (`TOPIC_CATEGORIES`;
+one column on phones, two from `@xl`, four from `@4xl`, so a 1280px laptop shows all four; C-017
+would say `@7xl`). What goes in each column is unchanged from D-070. In a column, the module's own
+items come first, then one group per submodule that has items there, under an `h3` with its title
+(list "<Category> in <submodule>"). When the module has submodules, a **Submodules** card above the
+columns lists every one, empty ones included, so a submodule shows before anything is posted in it.
+Each is closed by default and shows only its title: an `h3` holding a button with `aria-expanded`
+and a chevron (the `SidebarGroup` pattern). Opening it lists its items (list "Items in
+<submodule>", in column order, each a button that opens it) or "Nothing posted yet". The card's grid
+uses `items-start` so an open tile does not stretch its closed neighbours. **Back to modules**
+returns to the Modules tab: opened from that tab (router state `fromModules`) it steps back in
+history; opened by URL it navigates there. Old `?tab=Modules&topic=<id>` links redirect to the
+module page. Grouping lives in `courseTopic` (`sections`, `submodules`) in
+`student/api/selectors.ts`. Check: `submodules`.

@@ -1,6 +1,5 @@
-import { ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardList, Clock3, FileText, FolderTree, GraduationCap, MapPin, PencilRuler, UsersRound } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { BackLink } from "../../../shared/components/BackLink";
+import { ArrowRight, BookOpen, CalendarDays, ChevronRight, ClipboardList, Clock3, FileText, FolderTree, GraduationCap, MapPin, UsersRound } from "lucide-react";
+import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { attendancePercent, formatPercent, monthKey, monthLabel } from "../../../shared/lib/attendance";
 import { FilterChip, FilterChipGroup } from "../../../shared/ui/FilterChip";
@@ -8,7 +7,7 @@ import { formatDue } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
-import { courseModules, courseTopic, dueSoon, type Topic, type TopicCategory, type TopicEntry } from "../api/selectors";
+import { courseModules, dueSoon } from "../api/selectors";
 import type { Course, StudentCatalog } from "../api/types";
 import { AssessmentRow } from "../components/AssessmentRow";
 import { ListSearch } from "../components/ListSearch";
@@ -151,104 +150,23 @@ function Classwork({ course, catalog, completed, courseIndex }: { course: Course
   );
 }
 
-const TOPIC_ICONS: Record<TopicCategory, typeof FileText> = { Assignments: ClipboardList, Activities: PencilRuler, Assessments: GraduationCap, Materials: FileText };
-
-function TopicEntries({ category, entries }: { category: TopicCategory; entries: TopicEntry[] }) {
-  const navigate = useNavigate();
-  if (!entries.length) return <p className="m-0 text-body text-muted">No {category.toLowerCase()} in this topic.</p>;
-  const Icon = TOPIC_ICONS[category];
-  return (
-    <ul aria-label={category} className="m-0 flex list-none flex-col gap-2 p-0">
-      {entries.map((entry) => (
-        <li key={`${entry.kind}-${entry.id}`}>
-          <button
-            type="button"
-            onClick={() => navigate(entry.kind === "material" ? studentPaths.material(entry.id) : studentPaths.assessment(entry.id))}
-            className="flex min-h-touch w-full items-center gap-3 rounded-control border border-line bg-surface p-3 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
-          >
-            <Icon aria-hidden className="size-5 shrink-0 text-primary-700" />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <strong className="text-body font-semibold">{entry.title}</strong>
-              <span className="text-body text-muted">{[entry.type, entry.submodule].filter(Boolean).join(" · ")}</span>
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** One topic: what is placed in it and its submodules, by category (D-070). */
-function TopicView({ topic, focusOnOpen, onBack }: { topic: Topic; focusOnOpen: boolean; onBack: () => void }) {
-  const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (focusOnOpen) heading.current?.focus();
-  }, [focusOnOpen]);
-  return (
-    <div className="flex flex-col gap-4">
-      <BackLink label="All topics" onBack={onBack} />
-      <h2 ref={heading} tabIndex={-1} className="m-0 flex items-center gap-2.5 font-sans text-section font-semibold text-ink focus-visible:outline-3 focus-visible:outline-focus">
-        <FolderTree aria-hidden className="size-6 text-primary-700" />
-        {topic.module.title}
-      </h2>
-      {topic.groups.map(({ category, entries }) => (
-        <Card key={category} className="p-5">
-          <section aria-labelledby={`topic-${category}`} className="flex flex-col gap-3">
-            <h3 id={`topic-${category}`} className="m-0 font-sans text-card-title font-semibold">
-              {category} <span className="font-normal text-muted">· {entries.length}</span>
-            </h3>
-            <TopicEntries category={category} entries={entries} />
-          </section>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 /**
- * The class's topics (its top-level modules) as buttons; one opens on the same
- * tab with its content grouped by category (D-070, supersedes D-033's tree).
+ * The class's modules (its top-level modules) as buttons; each opens the module
+ * on its own page with four columns (D-073, supersedes D-070's in-tab view).
  */
-function Modules({ course, catalog, courseIndex, topicId, onTopic }: { course: Course; catalog: StudentCatalog; courseIndex: number; topicId: string | null; onTopic: (id: string | null) => void }) {
+function Modules({ course, catalog, courseIndex }: { course: Course; catalog: StudentCatalog; courseIndex: number }) {
+  const navigate = useNavigate();
   const sections = courseModules(catalog, course.id);
-  const topic = topicId ? courseTopic(catalog, course.id, topicId) : undefined;
-  // Focus follows a click only, so a page opened by URL keeps the shell's h1 focus.
-  const [focus, setFocus] = useState<{ to: "topic" } | { to: "button"; id: string } | null>(null);
-  const buttons = useRef(new Map<string, HTMLButtonElement>());
-  useEffect(() => {
-    if (!topic && focus?.to === "button") buttons.current.get(focus.id)?.focus();
-  }, [topic, focus]);
-
-  if (topic) {
-    return (
-      <TopicView
-        topic={topic}
-        focusOnOpen={focus?.to === "topic"}
-        onBack={() => {
-          setFocus({ to: "button", id: topic.module.id });
-          onTopic(null);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <SectionHeading title="Modules" />
       {sections.length ? (
-        <ul aria-label="Topics" className="m-0 flex list-none flex-col gap-3 p-0">
+        <ul aria-label="Modules" className="m-0 flex list-none flex-col gap-3 p-0">
           {sections.map(({ module }) => (
             <li key={module.id}>
               <button
-                ref={(node) => {
-                  if (node) buttons.current.set(module.id, node);
-                  else buttons.current.delete(module.id);
-                }}
                 type="button"
-                onClick={() => {
-                  setFocus({ to: "topic" });
-                  onTopic(module.id);
-                }}
+                onClick={() => navigate(studentPaths.module(course.id, module.id), { state: { fromModules: true } })}
                 className="group flex min-h-27 w-full items-center gap-4 rounded-card border border-line bg-surface p-4 text-left font-sans text-ink transition-colors hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus motion-reduce:transition-none"
               >
                 <span aria-hidden className={`grid size-11 shrink-0 place-items-center rounded-control ${toneFor(courseIndex)}`}>
@@ -357,9 +275,9 @@ export default function ClassPage() {
   const workCount = catalog.assessments.filter((item) => item.courseId === course.id).length;
   const viewer = { id: studentId, role: "student" as const };
   const openMeeting = (meeting: Meeting) => navigate(studentPaths.meeting(course.id, meeting.id));
-  const topicId = tab === "Modules" ? params.get("topic") : null;
-  // A topic is its own history entry, so Back returns to the list of topics.
-  const setTopic = (id: string | null) => setParams(id ? { tab: "Modules", topic: id } : { tab: "Modules" });
+  // Links from before D-073 (`?tab=Modules&topic=<id>`) open the module's own page.
+  const legacyTopic = tab === "Modules" ? params.get("topic") : null;
+  if (legacyTopic) return <Navigate to={studentPaths.module(course.id, legacyTopic)} replace />;
 
   return (
     <>
@@ -392,7 +310,7 @@ export default function ClassPage() {
         </TabsList>
         <TabsContent value="Stream"><Stream course={course} catalog={catalog} completed={completed} now={now} onTab={setTab} /></TabsContent>
         <TabsContent value="Classwork"><Classwork course={course} catalog={catalog} completed={completed} courseIndex={index} /></TabsContent>
-        <TabsContent value="Modules"><Modules course={course} catalog={catalog} courseIndex={index} topicId={topicId} onTopic={setTopic} /></TabsContent>
+        <TabsContent value="Modules"><Modules course={course} catalog={catalog} courseIndex={index} /></TabsContent>
         <TabsContent value="Materials"><ClassMaterials course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="People"><People course={course} catalog={catalog} /></TabsContent>
         <TabsContent value="Attendance"><Attendance course={course} catalog={catalog} /></TabsContent>

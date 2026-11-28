@@ -231,6 +231,7 @@
 | `src/features/student/pages/ClassPage.tsx` | `ClassPage` |
 | `src/features/student/pages/ClassesPage.tsx` | `ClassesPage` |
 | `src/features/student/pages/MaterialPage.tsx` | `MaterialPage` |
+| `src/features/student/pages/ModulePage.tsx` | `ModulePage` |
 | `src/features/student/pages/NewsPage.tsx` | `NewsPage` |
 | `src/features/student/pages/QuizPage.tsx` | `QuizPage` |
 | `src/features/student/pages/ResultPage.tsx` | `ResultPage` |

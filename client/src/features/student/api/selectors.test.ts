@@ -128,6 +128,7 @@ describe("courseTopic", () => {
   const work = (id: string, type: string, moduleId: string, kind?: "activity"): Assessment => ({ ...item(id, "", type), title: id, moduleId, ...(kind ? { kind } : {}) });
   const catalog = {
     modules: [
+      { id: "4", courseId: "c", parentId: "1", title: "1.2 Views", order: 2 },
       { id: "2", courseId: "c", parentId: "1", title: "1.1 Joins", order: 1 },
       { id: "1", courseId: "c", title: "Unit 1", order: 1 },
       { id: "3", courseId: "c", title: "Unit 2", order: 2 },
@@ -152,9 +153,26 @@ describe("courseTopic", () => {
     expect(titles("3")).toEqual({ Assignments: [], Activities: [], Assessments: ["later"], Materials: ["Unit 2 notes"] });
   });
 
-  it("names the submodule an item sits in", () => {
-    const materials = courseTopic(catalog, "c", "1")?.groups.find((group) => group.category === "Materials")?.entries;
-    expect(materials?.map((entry) => entry.submodule)).toEqual(["1.1 Joins"]);
+  it("lists the columns in the module page's order (D-073)", () => {
+    expect(courseTopic(catalog, "c", "1")?.groups.map((group) => group.category)).toEqual(["Assessments", "Activities", "Assignments", "Materials"]);
+  });
+
+  it("splits each column into the module's own items, then one group per submodule that has some (D-073)", () => {
+    const sections = (category: string) =>
+      courseTopic(catalog, "c", "1")
+        ?.groups.find((group) => group.category === category)
+        ?.sections.map((section) => [section.submodule?.title ?? "own", section.entries.map((entry) => entry.title)]);
+    expect(sections("Assessments")).toEqual([["own", ["quiz"]], ["1.1 Joins", ["exam"]]]);
+    expect(sections("Materials")).toEqual([["1.1 Joins", ["Join notes"]]]);
+    expect(sections("Assignments")).toEqual([["own", ["essay"]]]);
+  });
+
+  it("lists every submodule in order with its items in column order, empty ones included (D-073)", () => {
+    expect(courseTopic(catalog, "c", "1")?.submodules.map((sub) => [sub.module.title, sub.entries.map((entry) => `${entry.category}:${entry.title}`)])).toEqual([
+      ["1.1 Joins", ["Assessments:exam", "Activities:lab", "Materials:Join notes"]],
+      ["1.2 Views", []],
+    ]);
+    expect(courseTopic(catalog, "c", "3")?.submodules).toEqual([]);
   });
 
   it("is undefined for a submodule, another class's module, or an unknown id", () => {
