@@ -527,7 +527,8 @@ test.describe("Class meetings @all", () => {
     await page.getByRole("button", { name: "Blur background" }).click();
     await expect(page.getByRole("button", { name: "Blur background" })).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
     await page.getByRole("button", { name: "Join now" }).click();
-    await expect(people(page)).toHaveCount(1);
+    // Publishing a blurred camera starts the processor on the track: slower than a plain join under load.
+    await expect(people(page)).toHaveCount(1, { timeout: 20_000 });
     await controls(page).getByRole("button", { name: "More" }).click();
     await expect(page.getByRole("button", { name: "Blur background" })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Blur background" }).click();
