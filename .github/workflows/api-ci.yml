@@ -18,7 +18,7 @@ jobs:
     defaults:
       run:
         working-directory: server
-    # Class meetings (D-070): the contract tests call a real LiveKit server. CI-only key and secret.
+    # Class meetings (D-072): the contract tests call a real LiveKit server. CI-only key and secret.
     services:
       livekit:
         image: livekit/livekit-server:v1.13.11

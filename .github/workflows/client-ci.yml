@@ -43,7 +43,7 @@ jobs:
   e2e:
     name: Flow parity (Playwright)
     runs-on: ubuntu-latest
-    # Class meetings (D-070) join a real LiveKit media server, set up like meet-server/: one UDP
+    # Class meetings (D-072) join a real LiveKit media server, set up like meet-server/: one UDP
     # port, and it tells the browsers to send media to 127.0.0.1. CI-only key and secret.
     services:
       livekit:

@@ -460,7 +460,7 @@ handed-in version, a folder per student, up to 250 MB of files.
 |---|---|---|
 | `Lms:TimeZone` | `Asia/Manila` | The zone calendar days late are counted in |
 
-## Class meetings (D-070)
+## Class meetings (D-072)
 
 Live video for a class, like Google Meet, on a LiveKit media server we host ourselves
 (`../meet-server/`, plan in `../client/docs/MEETINGS_PLAN.md`). The browser sends video and sound

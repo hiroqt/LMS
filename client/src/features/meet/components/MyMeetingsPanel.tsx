@@ -9,7 +9,7 @@ import { formatClock, formatMeetingTime } from "../api/time";
 import { useMyMeetings } from "../hooks/useClassMeetings";
 
 /**
- * A dashboard's meetings (D-070): what is on now (the row joins it) and what is coming in the
+ * A dashboard's meetings (D-072): what is on now (the row joins it) and what is coming in the
  * next two weeks (the row opens the class's Meetings tab). Not shown when there are none, so a
  * dashboard without meetings looks as it did.
  */

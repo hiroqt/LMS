@@ -4,7 +4,7 @@ An instructor starts a live meeting for a class, and the class's students join f
 works like Google Meet: video and voice, screen sharing, chat, raised hands, reactions, and host
 controls. There is no time limit, and the delay is as short as Meet's. The meeting is its own
 module and its own full-screen page. People can open it only from the LMS, and only members of
-the class can join. Decision: D-070, approved 2026-11-26 (see Decisions). D-068 is still held by
+the class can join. Decision: D-072, approved 2026-11-26 (see Decisions). D-068 is still held by
 the offline plan.
 
 ## What "no time limit" and "no delay" mean
@@ -73,7 +73,7 @@ Class page (instructor)                       Class page (student)
 [▶ Start meeting] [Schedule]                  ● Live now: Programming 1 lecture  [Join]
 Meetings: upcoming · live · past              Upcoming: Fri 27 Nov, 9:00
 
-            both open ↓ in the same tab (the demo identity is per tab, D-070)
+            both open ↓ in the same tab (the demo identity is per tab, D-072)
 /meet/{meetingId}   full screen, outside the sidebar shell
 ┌────────────────────────────────────────────┬────────────┐
 │  video grid / shared screen                │ Chat │People│
@@ -195,7 +195,7 @@ LiveKit media server ───┘                  our own server; open source (
 
 | Phase | What | Done when |
 |---|---|---|
-| 0 | This plan and D-070. `meet-server/` Compose file running LiveKit in dev mode | Two browsers on one computer see and hear each other |
+| 0 | This plan and D-072. `meet-server/` Compose file running LiveKit in dev mode | Two browsers on one computer see and hear each other |
 | 1 | API: the `Meetings` migration, start, schedule, end, settings, join pass, host actions, chat relay and saving, webhook → attendance. Unit and API tests | Someone who isn't on the class list is refused. A student without mic rights can't publish sound. Chat is saved only while saving is on. The attendance rows are right |
 | 2a | Entry points on both class pages (Start meeting, the Live now banner, a Meetings tab with schedule and delete), the full-screen page, pre-join, join and wait, the grid, mic and camera, Leave and the ways back. Playwright with a real LiveKit and fake camera and mic, axe, 320 px | An instructor and a student meet, at desktop and 320 px widths |
 | 2b | Chat, people list, raise hand, reactions, screen share, speaker view and pinning, data saver | The core features of a Meet call work at desktop and 320 px widths |

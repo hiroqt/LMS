@@ -321,7 +321,7 @@ export default function ClassPage() {
           { label: "Next class", value: course.next, icon: <Clock3 /> },
         ]}
       />
-      {/* The class's own meetings replace the Discord link (D-070). */}
+      {/* The class's own meetings replace the Discord link (D-072). */}
       <LiveMeetingBanner viewer={viewer} classId={course.id} onOpen={openMeeting} />
 
       <Tabs value={tab} onValueChange={(value) => isClassTab(value) && setTab(value)}>

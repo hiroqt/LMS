@@ -17,7 +17,7 @@ const blocked = {
 
 /**
  * Before joining: see yourself, choose mic and camera, and join. The meeting's settings decide
- * what a student may turn on (D-070, decision 7); students start with the mic off by default.
+ * what a student may turn on (D-072, decision 7); students start with the mic off by default.
  * The tracks made here are handed to the meeting, so the camera doesn't blink or ask again.
  */
 export function PreJoin({ meeting, role, name, busy, onJoin }: {

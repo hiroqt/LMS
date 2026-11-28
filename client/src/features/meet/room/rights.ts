@@ -9,7 +9,7 @@ const SOURCE_CODE: Record<PublishSource, number> = { camera: 1, microphone: 2, s
 
 export interface PublishPermission {
   canPublish: boolean;
-  /** Empty means every source (LiveKit's rule), so the API never sends it empty with canPublish (D-070). */
+  /** Empty means every source (LiveKit's rule), so the API never sends it empty with canPublish (D-072). */
   canPublishSources: readonly number[];
 }
 
@@ -33,10 +33,10 @@ export const notAllowedText: Record<PublishSource, string> = {
   screen_share: "The instructor hasn't let students share their screen.",
 };
 
-/** The role the LMS API put in the join pass (D-070). */
+/** The role the LMS API put in the join pass (D-072). */
 export const isHost = (participant: Pick<Participant, "attributes">) => participant.attributes["lms.role"] === "instructor";
 
-/** When the person raised their hand (the API sets it, D-070), or null. */
+/** When the person raised their hand (the API sets it, D-072), or null. */
 export const handRaisedAt = (participant: Pick<Participant, "attributes">): string | null => participant.attributes["lms.hand"] || null;
 
 /** The instructor let this student speak while students may not turn on their own mic. */

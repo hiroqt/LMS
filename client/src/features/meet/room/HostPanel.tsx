@@ -25,7 +25,7 @@ const valueOf = (info: RoomInfo, key: Setting): boolean =>
     : info.students.mayChat;
 
 /**
- * The instructor's settings for the meeting (D-070, decision 7). Each change is saved at once and
+ * The instructor's settings for the meeting (D-072, decision 7). Each change is saved at once and
  * reaches everyone in the meeting; the boxes show the room's own state, so they follow a change
  * made elsewhere too.
  */

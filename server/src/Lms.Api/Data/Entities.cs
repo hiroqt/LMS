@@ -533,7 +533,7 @@ public sealed class AuditLogEntry
     public DateTime CreatedAt { get; set; }
 }
 
-// ---------------------------------------------------------------- Class meetings (D-070)
+// ---------------------------------------------------------------- Class meetings (D-072)
 
 /// <summary>
 /// A live class meeting on the media server (LiveKit). Scheduled, then live from

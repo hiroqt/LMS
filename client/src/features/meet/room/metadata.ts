@@ -40,7 +40,7 @@ export function parseRoomInfo(metadata: string | undefined): RoomInfo {
   }
 }
 
-/** Data-message topics. The server's are trusted only from the server (no sender, D-070). */
+/** Data-message topics. The server's are trusted only from the server (no sender, D-072). */
 export const TOPIC = { chat: "lms.chat", askUnmute: "lms.ask-unmute", reaction: "lms.reaction" } as const;
 
 /** A chat message from a data message, or null when it isn't one. */

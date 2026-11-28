@@ -1,5 +1,5 @@
 #!/bin/sh
-# Sizes the meeting server (D-070, Phase 3): four classes of 50 (a lecture, a discussion, many
+# Sizes the meeting server (D-072, Phase 3): four classes of 50 (a lecture, a discussion, many
 # cameras, sound only), 2 minutes each, on a throwaway LiveKit set up like docker-compose.yml.
 # Prints the server's own CPU and memory and what each viewer receives. Needs Docker and python3.
 #   ./load-test.sh [output folder]        (default: ./load-results)

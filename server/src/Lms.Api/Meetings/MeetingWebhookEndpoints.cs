@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Lms.Api.Meetings;
 
 /// <summary>
-/// The media server's webhooks (D-070): who joined and left each meeting, and when a room closed.
+/// The media server's webhooks (D-072): who joined and left each meeting, and when a room closed.
 /// Only a request signed with our secret, carrying the SHA-256 of its body, is read. A webhook
 /// can arrive twice or late; each one is applied once, by its participant session id.
 /// </summary>

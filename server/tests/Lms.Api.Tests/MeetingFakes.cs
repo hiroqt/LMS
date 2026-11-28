@@ -4,7 +4,7 @@ using Lms.Api.Meetings;
 namespace Lms.Api.Tests;
 
 /// <summary>
-/// Stands in for the LiveKit media server (D-070): rooms and the people in them, with LiveKit's
+/// Stands in for the LiveKit media server (D-072): rooms and the people in them, with LiveKit's
 /// rules where they matter. A source taken away is unpublished; a muted track stays muted. Records
 /// every call. The real server's behaviour is checked by LiveKitContractTests.
 /// </summary>

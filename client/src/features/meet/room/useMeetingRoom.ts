@@ -22,7 +22,7 @@ const closedFor = (code: string | undefined): ClosedReason | null =>
   code === "ended" ? "ended" : code === "locked" ? "locked" : code === "removed" ? "removed" : code === "meetings_off" ? "off" : null;
 
 /**
- * The meeting page's connection (D-070): read the meeting, ask the LMS API for a join pass, wait
+ * The meeting page's connection (D-072): read the meeting, ask the LMS API for a join pass, wait
  * if the instructor hasn't started, connect to the media server, publish what the pre-join screen
  * chose, and turn every way of leaving into a screen. One Room per stay; leaving the page
  * disconnects it.

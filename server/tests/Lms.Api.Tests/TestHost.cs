@@ -113,7 +113,7 @@ public sealed class LmsApiFactory : WebApplicationFactory<Program>
     public ManualTimeProvider Time { get; } = new();
     public FakeScanner Scanner { get; } = new();
     public FakeConverter Converter { get; } = new();
-    /// <summary>Stands in for the media server of class meetings (D-070).</summary>
+    /// <summary>Stands in for the media server of class meetings (D-072).</summary>
     public FakeMeetingServer Meet { get; } = new();
     public const string MeetKey = "lms-test";
     public const string MeetSecret = "test_only_meeting_secret_0123456789abcdef";

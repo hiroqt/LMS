@@ -1,4 +1,4 @@
-# LiveKit media server for class meetings (D-070, client/docs/MEETINGS_PLAN.md), local
+# LiveKit media server for class meetings (D-072, client/docs/MEETINGS_PLAN.md), local
 # development ONLY.
 #
 #   docker compose up -d      # start it on ws://localhost:7880

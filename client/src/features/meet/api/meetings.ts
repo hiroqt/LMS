@@ -2,7 +2,7 @@ import { describeApiError, getJson, isApiError, sendJson } from "../../../shared
 import type { Viewer } from "../../../shared/api/viewer";
 
 /*
- * Class meetings (D-070): the LMS API's /api/classes/{classId}/meetings routes ("Class meetings"
+ * Class meetings (D-072): the LMS API's /api/classes/{classId}/meetings routes ("Class meetings"
  * in server/README.md). Video and sound go to the media server (LiveKit) with the pass `join`
  * returns; everything else goes through these calls.
  */

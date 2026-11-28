@@ -65,9 +65,9 @@ export const instructorPaths = {
   rubrics: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics`,
   rubricNew: (classId: string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/new`,
   rubric: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/rubrics/${id}`,
-  /** A class meeting's full-screen page (D-070), in the same tab: the demo identity is per tab. */
+  /** A class meeting's full-screen page (D-072), in the same tab: the demo identity is per tab. */
   meeting: (classId: string, id: number | string) => `/instructor/meet/${encodeURIComponent(classId)}/${encodeURIComponent(String(id))}`,
-  /** A meeting's own page in the class: attendance and the saved chat (D-070, Phase 3). */
+  /** A meeting's own page in the class: attendance and the saved chat (D-072, Phase 3). */
   meetingDetails: (classId: string, id: number | string) => `/instructor/classes/${encodeURIComponent(classId)}/meetings/${encodeURIComponent(String(id))}`,
   questionSets: "/instructor/question-sets",
   questionSet: (id: number) => `/instructor/question-sets/${id}`,

@@ -27,7 +27,7 @@ export interface MeetingDetailsPageProps {
 const query = { retry: shouldRetryApiRead, networkMode: "always" } as const;
 
 /**
- * One meeting's own page (D-070, Phase 3): when it was and how long it lasted; for the
+ * One meeting's own page (D-072, Phase 3): when it was and how long it lasted; for the
  * instructor, who came and for how long (with a CSV); for the class, the saved chat. A meeting
  * still on offers Join; one still to come says when.
  */

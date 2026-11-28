@@ -5,7 +5,7 @@ import { fetchSavedChat, sendChat, type ChatMessage } from "../api/meetings";
 import { chatIdentity, readChatMessage, TOPIC } from "./metadata";
 
 /**
- * The meeting's chat (D-070): messages arrive as data messages from the server only (a person
+ * The meeting's chat (D-072): messages arrive as data messages from the server only (a person
  * can't fake one), sending goes through the LMS API. When saving is on, what was already saved
  * is loaded on joining. `unread` counts other people's messages that arrived while the panel
  * was closed.

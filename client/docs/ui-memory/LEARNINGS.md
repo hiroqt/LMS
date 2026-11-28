@@ -773,7 +773,7 @@ visible text. pdfjs-dist installs `@napi-rs/canvas`, and two real problems appea
 proves less than it seems, and the browser specs remain the reference.
 
 ### L-106 · Fake-media WebRTC checks: count tracks and measure sound with an analyser
-`2026-11-26` · hiro (D-070, Phase 0) · scope: tests, meetings · confidence: medium
+`2026-11-26` · hiro (D-072, Phase 0) · scope: tests, meetings · confidence: medium
 Two headless Chromium browsers with `--use-fake-device-for-media-stream` joined the local
 LiveKit server. The page that joined first always reported `totalAudioEnergy: 0` for the sound
 it received, though its packets arrived and an `AnalyserNode` on the same track measured the fake
@@ -785,8 +785,8 @@ page, not the sender. For "can they hear each other", measure the received track
 `NODE_IP=127.0.0.1`. So the `lk` CLI runs inside the server's network
 (`--network container:lms-meet-dev`), where `127.0.0.1` reaches the server.
 
-### L-107 · LiveKit's room API and webhooks, as they really behave (1.13.11)
-`2026-11-26` · hiro (D-070, Phase 1) · scope: server, meetings · confidence: high
+### L-108 · LiveKit's room API and webhooks, as they really behave (1.13.11)
+`2026-11-26` · hiro (D-072, Phase 1) · scope: server, meetings · confidence: high
 Checked against a running server, and kept true by `LiveKitContractTests` in API CI.
 - **Sources:** an empty `canPublishSources` means every source is allowed. A pass without
   `microphone` makes the client's publish fail with "insufficient permissions". Taking a source
@@ -807,8 +807,8 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
 - **Testing sound:** Chrome feeds a received track to Web Audio only while it is attached to a
   media element (L-106).
 
-### L-108 · A new tab loses the demo identity; Playwright waits on aria-disabled; Demo's clock vs LiveKit's
-`2026-11-26` · hiro (D-070, Phase 2a) · scope: shared, tests, meetings · confidence: high
+### L-109 · A new tab loses the demo identity; Playwright waits on aria-disabled; Demo's clock vs LiveKit's
+`2026-11-26` · hiro (D-072, Phase 2a) · scope: shared, tests, meetings · confidence: high
 - **New tabs:** the "viewing as" choice lives in `sessionStorage`, and a link with
   `target="_blank"` (noopener by default) opens a tab that doesn't inherit it. Checked in
   Chromium and WebKit. Anything that must stay the same person opens in the same tab until real
@@ -821,8 +821,8 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
 - **WebKit:** Playwright's WebKit has no stand-in camera or mic, so specs that join a meeting
   run on the Chromium projects and skip on iPhone WebKit.
 
-### L-109 · role="log" on a list, sheets hiding the page, and toasts over a control bar
-`2026-11-26` · hiro (D-070, Phase 2b) · scope: shared, a11y, tests, meetings · confidence: high
+### L-110 · role="log" on a list, sheets hiding the page, and toasts over a control bar
+`2026-11-26` · hiro (D-072, Phase 2b) · scope: shared, a11y, tests, meetings · confidence: high
 - **role="log" on a list:** `role="log"` on an `<ol>` replaces its list role, so axe reports
   every `<li>` as outside a list (`listitem`). Put the role on a wrapper `div` and keep the `ol`.
 - **Sheets:** on phones the chat and people panels are Radix sheets, which hide the rest of the
@@ -834,8 +834,8 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   without the camera, and the camera started afterwards stayed on. Make Join wait for devices
   and stop a device that starts after the screen has gone.
 
-### L-110 · Vite reloads a page the first time a lazily imported package is used; date tests and the machine's zone
-`2026-11-26` · hiro (D-070, Phase 3) · scope: tests, build, meetings · confidence: high
+### L-111 · Vite reloads a page the first time a lazily imported package is used; date tests and the machine's zone
+`2026-11-26` · hiro (D-072, Phase 3) · scope: tests, build, meetings · confidence: high
 - **Vite reloads on new packages:** a package first reached through a dynamic `import()` (here
   `@livekit/track-processors`, when blur is turned on) is discovered by the dev server only then.
   It optimizes it and reloads the page, which ended the pre-join screen's camera and choices.
@@ -848,8 +848,8 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   requests outside the LMS.
 
 
-### L-111 · A LiveKit join pass can't be taken back; a join that finishes after the page is gone
-`2026-11-28` · review of D-070 (integration PR) · scope: meetings, server, tests · confidence: high
+### L-112 · A LiveKit join pass can't be taken back; a join that finishes after the page is gone
+`2026-11-28` · review of D-072 (integration PR) · scope: meetings, server, tests · confidence: high
 - **Rooms:** LiveKit opens a room for any valid join pass unless `room.auto_create` is false. With
   it on, a 10-minute pass reopened a meeting the instructor had ended, as a new, empty room. Only
   the LMS API opens rooms now (`meet-server/livekit.yaml`, both CI services, and

@@ -73,7 +73,7 @@ export default defineConfig({
         // The PDF viewer (pdf.js, about 500 KB) is for phones that open a PDF material; it is cached
         // the first time it is used instead of being downloaded by everyone at install (D-067).
         // The meeting page with LiveKit's client (about 145 KB) needs a connection anyway; it is cached
-        // the first time someone opens a meeting (D-070).
+        // the first time someone opens a meeting (D-072).
         globIgnores: ["**/PdfPages-*.js", "**/pdf.worker*", "**/MeetingRoomPage-*.js", "**/meetingBlur-*.js", "meeting-blur/**"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
@@ -84,7 +84,7 @@ export default defineConfig({
             options: { cacheName: "pdf-viewer", expiration: { maxEntries: 4, maxAgeSeconds: 90 * 24 * 60 * 60 } },
           },
           {
-            // Background blur's code, WebAssembly, and model: fetched only by someone who turns blur on (D-070).
+            // Background blur's code, WebAssembly, and model: fetched only by someone who turns blur on (D-072).
             urlPattern: ({ url }) => /\/(assets\/meetingBlur-|meeting-blur\/)/.test(url.pathname),
             handler: "CacheFirst",
             options: { cacheName: "meeting-blur", expiration: { maxEntries: 8, maxAgeSeconds: 90 * 24 * 60 * 60 } },

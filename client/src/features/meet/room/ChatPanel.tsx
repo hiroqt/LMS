@@ -11,7 +11,7 @@ const MAX = 1000;
 /**
  * The meeting's chat: every message, newest at the bottom, with clickable links; a box to write
  * in (Enter sends, Shift+Enter starts a new line). Everyone sees when the chat is being saved
- * (D-070, decision 4). A student can't write when the instructor has turned chat off.
+ * (D-072, decision 4). A student can't write when the instructor has turned chat off.
  */
 export function ChatPanel({ messages, onSend, saving, canWrite, viewerId }: {
   messages: ChatMessage[];

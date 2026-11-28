@@ -3,7 +3,7 @@ import { expectNoAxeViolations } from "./a11y";
 import { API, DEMO_NOW, expect, openRole, test, type Page } from "./fixtures";
 
 /*
- * Class meetings (D-070): INSTRUCTOR_USER_FLOW MT and STUDENT_USER_FLOW CL-MT. The journeys that
+ * Class meetings (D-072): INSTRUCTOR_USER_FLOW MT and STUDENT_USER_FLOW CL-MT. The journeys that
  * join a meeting need a LiveKit media server (E2E_LIVEKIT_URL; meet-server/ locally, a service in
  * CI) and a camera and mic, which only Chromium fakes, so they skip on WebKit.
  */
@@ -90,7 +90,7 @@ test.describe("Class meetings @all", () => {
     await page.goto("/student/classes/biology?tab=Meetings");
     await expect(page.getByRole("list", { name: "Upcoming meetings" }).getByRole("listitem").filter({ hasText: "Loops review" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Start|Delete|Schedule/ })).toHaveCount(0);
-    // The class's own meetings replace the Discord link (D-070).
+    // The class's own meetings replace the Discord link (D-072).
     await expect(page.getByRole("link", { name: /Discord/ })).toHaveCount(0);
 
     await openRole(page, "instructor");
@@ -165,7 +165,7 @@ test.describe("Class meetings @all", () => {
 
   test("CL-MT: when students may not turn on their mic or camera, each says why and stays off", async ({ page, sandbox, browserName }) => {
     test.skip(needsMedia(browserName), skipReason);
-    // Nothing to publish: the pass says can't-publish, not an empty source list (D-070).
+    // Nothing to publish: the pass says can't-publish, not an empty source list (D-072).
     const id = await apiMeeting(page, sandbox, { startNow: true, settings: { studentsMayUnmute: false, studentsMayVideo: false, studentsJoinMuted: false } });
     await openRole(page, "student");
     await page.goto(`/student/meet/biology/${id}`);

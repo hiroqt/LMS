@@ -2,7 +2,7 @@ import { Track, type Room } from "livekit-client";
 import { useEffect } from "react";
 
 /**
- * Data saver (D-070): stops receiving everyone else's camera. Sound and shared screens keep
+ * Data saver (D-072): stops receiving everyone else's camera. Sound and shared screens keep
  * coming. Applied again whenever someone joins or publishes (`version`).
  */
 export function useDataSaver(room: Room, on: boolean, version: number) {

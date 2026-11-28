@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Lms.Api.Meetings;
 
 /// <summary>
-/// What each person may publish, from the meeting's settings (D-070, decision 7). The media
+/// What each person may publish, from the meeting's settings (D-072, decision 7). The media
 /// server enforces it: a source missing here is refused, and one taken away during the meeting
 /// is unpublished at once.
 /// </summary>

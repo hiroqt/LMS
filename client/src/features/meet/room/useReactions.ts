@@ -16,7 +16,7 @@ export interface ShownReaction {
 }
 
 /**
- * Reactions (D-070): a person's own data messages, not saved and not checked by the server; only
+ * Reactions (D-072): a person's own data messages, not saved and not checked by the server; only
  * the six on the list are shown. Each shows on the sender's tile for a few seconds and is
  * announced once (`latest`).
  */

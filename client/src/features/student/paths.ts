@@ -12,9 +12,9 @@ export const studentPaths = {
   quiz: (id: string) => `/student/assessments/${encodeURIComponent(id)}/quiz`,
   result: (id: string) => `/student/assessments/${encodeURIComponent(id)}/result`,
   material: (id: string) => `/student/materials/${encodeURIComponent(id)}`,
-  /** A class meeting's full-screen page (D-070), in the same tab: the demo identity is per tab. */
+  /** A class meeting's full-screen page (D-072), in the same tab: the demo identity is per tab. */
   meeting: (classId: string, id: number | string) => `/student/meet/${encodeURIComponent(classId)}/${encodeURIComponent(String(id))}`,
-  /** A meeting's own page in the class: its saved chat (D-070, Phase 3). */
+  /** A meeting's own page in the class: its saved chat (D-072, Phase 3). */
   meetingDetails: (classId: string, id: number | string) => `/student/classes/${encodeURIComponent(classId)}/meetings/${encodeURIComponent(String(id))}`,
 };
 

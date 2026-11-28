@@ -2,7 +2,7 @@ import { BackgroundProcessor } from "@livekit/track-processors";
 import type { LocalVideoTrack } from "livekit-client";
 
 /*
- * Background blur (D-070, Phase 3). Loaded only when someone turns it on: this chunk, then
+ * Background blur (D-072, Phase 3). Loaded only when someone turns it on: this chunk, then
  * MediaPipe's WebAssembly and the selfie-segmentation model from the LMS's own
  * /meeting-blur/ folder (scripts/meeting-blur-assets.ts), never from a CDN.
  */

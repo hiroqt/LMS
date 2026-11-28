@@ -1,6 +1,6 @@
 # Meeting server (LiveKit), local development
 
-The media server behind class meetings: live video, sound, and screen sharing (D-070,
+The media server behind class meetings: live video, sound, and screen sharing (D-072,
 [`client/docs/MEETINGS_PLAN.md`](../client/docs/MEETINGS_PLAN.md)). It is
 [LiveKit](https://github.com/livekit/livekit), an open-source SFU (Apache 2.0) that forwards each
 person's streams to everyone else without re-encoding them. It holds no LMS data. The LMS API

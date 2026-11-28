@@ -42,7 +42,7 @@ export interface MeetingRoomPageProps {
 }
 
 /**
- * The meeting page (D-070): full screen, outside the sidebar shell, in the same tab as the LMS
+ * The meeting page (D-072): full screen, outside the sidebar shell, in the same tab as the LMS
  * (the demo identity is per tab). Pre-join, then the grid and the controls; every way out of the
  * meeting has its own screen with a way back. The role app's Toaster is above it.
  */

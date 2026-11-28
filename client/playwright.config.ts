@@ -10,7 +10,7 @@ const API_URL = `http://localhost:${API_PORT}`;
 /** The fixtures pin the browser clock to this moment; the API's clock starts at the same instant. */
 const DEMO_NOW = "2026-10-23T09:00:00+08:00";
 /**
- * Class meetings (D-070) need a LiveKit media server: `meet-server/` locally (ws://127.0.0.1:7880),
+ * Class meetings (D-072) need a LiveKit media server: `meet-server/` locally (ws://127.0.0.1:7880),
  * a service container in CI. Without E2E_LIVEKIT_URL the meeting specs that join skip.
  */
 const LIVEKIT: Record<string, string> = process.env.E2E_LIVEKIT_URL

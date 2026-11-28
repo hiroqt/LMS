@@ -24,12 +24,12 @@ const BUDGET = {
   pdfWorker: 380 * KB,
   /**
    * The meeting page with LiveKit's client (about 140 KB of it), loaded only when someone opens a
-   * class meeting and kept out of the install cache (D-070).
+   * class meeting and kept out of the install cache (D-072).
    */
   meetingRoom: 175 * KB,
   /**
    * Background blur's code (LiveKit's processor and MediaPipe's loader), loaded only when someone
-   * turns blur on in a meeting, then its WebAssembly from /meeting-blur/ (D-070, Phase 3).
+   * turns blur on in a meeting, then its WebAssembly from /meeting-blur/ (D-072, Phase 3).
    */
   meetingBlur: 60 * KB,
 };

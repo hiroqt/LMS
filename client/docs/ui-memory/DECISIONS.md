@@ -993,7 +993,7 @@ for faculty, courses, and users. The Student "Due this week" cell's phone label 
 "Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
 no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
 
-### D-070 · Class meetings: live video in the LMS on our own LiveKit server
+### D-072 · Class meetings: live video in the LMS on our own LiveKit server
 `2026-11-26` · hiro (user request, approved plan) · scope: student, instructor, shared, server · confidence: high
 The user asked for a separate video-meeting page like Google Meet, used inside the LMS, with no
 time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS_PLAN.md`.

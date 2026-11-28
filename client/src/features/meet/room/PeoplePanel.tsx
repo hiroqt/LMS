@@ -16,7 +16,7 @@ const splitName = (name: string) => {
   return { firstName: first, lastName: rest.join(" ") };
 };
 
-/** What the instructor can do to people from this list (D-070, Phase 2c). */
+/** What the instructor can do to people from this list (D-072, Phase 2c). */
 export interface HostTools {
   studentsMayUnmute: boolean;
   act: (personId: string, action: HostAction) => Promise<void>;

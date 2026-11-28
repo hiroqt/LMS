@@ -18,7 +18,7 @@ import { useClassMeetings, useRefreshMeetings } from "../hooks/useClassMeetings"
 export interface ClassMeetingsProps {
   viewer: Viewer;
   classId: string;
-  /** Opens the meeting page (same tab: the demo identity is per tab, D-070). */
+  /** Opens the meeting page (same tab: the demo identity is per tab, D-072). */
   onOpen: (meeting: Meeting) => void;
 }
 
@@ -210,7 +210,7 @@ function ScheduleMeetingDialog({ open, onOpenChange, viewer, classId, defaultTit
   const [when, setWhen] = useState(() => toLocalInput(nextFullHour(new Date())));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  // The API's defaults (D-070, decision 7); changeable during the meeting too.
+  // The API's defaults (D-072, decision 7); changeable during the meeting too.
   const [settings, setSettings] = useState<Pick<MeetingSettings, "studentsMayUnmute" | "studentsMayVideo" | "studentsMayShareScreen" | "studentsMayChat" | "saveChat">>({
     studentsMayUnmute: true, studentsMayVideo: true, studentsMayShareScreen: false, studentsMayChat: true, saveChat: false,
   });

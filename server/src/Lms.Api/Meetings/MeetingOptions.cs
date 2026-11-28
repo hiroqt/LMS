@@ -5,7 +5,7 @@ using System.Threading.RateLimiting;
 namespace Lms.Api.Meetings;
 
 /// <summary>
-/// The media server for class meetings (D-070): a LiveKit server we host ourselves. Without a
+/// The media server for class meetings (D-072): a LiveKit server we host ourselves. Without a
 /// URL, key, and secret, meetings are off: classes can still list and schedule meetings, but
 /// nobody can start or join one.
 /// </summary>

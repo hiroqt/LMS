@@ -1,4 +1,4 @@
-# LiveKit media server settings for class meetings (D-070), local development ONLY.
+# LiveKit media server settings for class meetings (D-072), local development ONLY.
 # The API key and secret come from LIVEKIT_KEYS in docker-compose.yml, never from this file.
 port: 7880
 rtc:
@@ -13,13 +13,13 @@ room:
   # person leaves, so a dropped instructor can come back. There is no limit on a meeting's length.
   empty_timeout: 300
   departure_timeout: 300
-  # Nobody can switch on someone else's mic or camera (D-070, decision 7).
+  # Nobody can switch on someone else's mic or camera (D-072, decision 7).
   enable_remote_unmute: false
   # Only the LMS API opens a room (when the instructor starts a meeting). Without this, a join pass
   # that hasn't expired yet would open a new, empty room after the instructor ended the meeting.
   auto_create: false
 webhook:
-  # Joined, left, and meeting ended events, for meeting attendance (D-070). Signed with the API
+  # Joined, left, and meeting ended events, for meeting attendance (D-072). Signed with the API
   # key set in docker-compose.yml (LIVEKIT_WEBHOOK_API_KEY). The LMS API runs on the host at 5200.
   urls:
     - http://host.docker.internal:5200/api/meetings/livekit-webhook

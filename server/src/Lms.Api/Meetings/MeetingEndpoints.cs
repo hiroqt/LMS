@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace Lms.Api.Meetings;
 
 /// <summary>
-/// Class meetings (D-070, docs/MEETINGS_PLAN.md). The class's instructor schedules, starts, runs,
+/// Class meetings (D-072, docs/MEETINGS_PLAN.md). The class's instructor schedules, starts, runs,
 /// and ends them; the instructor and the students on the class list join them. Everyone else gets
 /// the same 404 as for a class they can't see. The media server enforces what each person may
 /// publish; these endpoints decide it.

@@ -68,7 +68,7 @@ function ScreenLoading({ label = "Loading" }: { label?: string }) {
   );
 }
 
-/** A meeting's own page (D-070, Phase 3): its saved chat. */
+/** A meeting's own page (D-072, Phase 3): its saved chat. */
 function MeetingDetailsRoute() {
   const { classId = "", meetingId = "" } = useParams();
   const navigate = useNavigate();
@@ -101,7 +101,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   const [mobileSearch, setMobileSearch] = useState(false);
   const { studentId } = useStudentSession();
 
-  // A class meeting is full screen, outside the shell (D-070).
+  // A class meeting is full screen, outside the shell (D-072).
   const meeting = matchPath("/student/meet/:classId/:meetingId", location.pathname);
   if (meeting?.params.classId && Number(meeting.params.meetingId) > 0) {
     const classId = meeting.params.classId;

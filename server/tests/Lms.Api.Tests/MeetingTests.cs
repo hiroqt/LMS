@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Lms.Api.Tests;
 
-/// <summary>Class meetings (D-070): who may join, what each person may publish, chat, attendance, and the host's controls.</summary>
+/// <summary>Class meetings (D-072): who may join, what each person may publish, chat, attendance, and the host's controls.</summary>
 public sealed class MeetingTests : IDisposable
 {
     private readonly LmsApiFactory _factory = new();

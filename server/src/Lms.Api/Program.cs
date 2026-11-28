@@ -54,7 +54,7 @@ builder.Services.AddScoped<ClassAccess>();
 // Student uploads (D-055): the file store, the virus scanner and the upload rate limit.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLmsFiles(builder.Configuration, builder.Environment, demo);
-// Class meetings on the media server (D-070); off without Lms:Meet settings.
+// Class meetings on the media server (D-072); off without Lms:Meet settings.
 builder.Services.AddLmsMeetings(builder.Configuration);
 
 // CORS origins come from Cors:AllowedOrigins (only http://localhost:5173 in Development).
@@ -118,7 +118,7 @@ app.MapAccuracyEndpoints();
 app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();
 app.MapOverviewEndpoints();
-// Class meetings and the media server's webhooks (D-070).
+// Class meetings and the media server's webhooks (D-072).
 app.MapMeetingEndpoints();
 app.MapMeetingWebhookEndpoints();
 

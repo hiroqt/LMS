@@ -61,7 +61,7 @@ function sectionOf(pathname: string): string {
 
 const navTarget: Record<string, string> = { gradebook: instructorPaths.gradebook(), "question-sets": instructorPaths.questionSets };
 
-/** A meeting's own page (D-070, Phase 3): the class's attendance and saved chat. */
+/** A meeting's own page (D-072, Phase 3): the class's attendance and saved chat. */
 function MeetingDetailsRoute() {
   const { classId = "", meetingId = "" } = useParams();
   const navigate = useGuardedNavigate();
@@ -142,7 +142,7 @@ function Workspace({ onNavigateRole }: RoleAppProps) {
   const { instructorId } = useInstructorSession();
   const [mobileSearch, setMobileSearch] = useState(false);
 
-  // A class meeting is full screen, outside the shell (D-070).
+  // A class meeting is full screen, outside the shell (D-072).
   const meeting = matchPath("/instructor/meet/:classId/:meetingId", location.pathname);
   if (meeting?.params.classId && Number(meeting.params.meetingId) > 0) {
     const classId = meeting.params.classId;
