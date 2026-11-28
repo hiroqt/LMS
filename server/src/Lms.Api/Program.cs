@@ -4,6 +4,7 @@ using Lms.Api.Coursework;
 using Lms.Api.Submissions;
 using Lms.Api.Data;
 using Lms.Api.Demo;
+using Lms.Api.Discussion;
 using Lms.Api.Endpoints;
 using Lms.Api.Files;
 using Lms.Api.Import;
@@ -119,6 +120,7 @@ app.MapGradebookEndpoints();
 app.MapAttendanceEndpoints();
 app.MapOverviewEndpoints();
 // Class meetings and the media server's webhooks (D-072).
+app.MapCommentEndpoints();
 app.MapMeetingEndpoints();
 app.MapMeetingWebhookEndpoints();
 
