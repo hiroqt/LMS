@@ -113,7 +113,7 @@ public sealed class LiveKitContractTests
         // Started: the pass joins.
         await server.CreateRoomAsync(room, "{}", TimeSpan.FromMinutes(1), ct);
         Assert.Equal(HttpStatusCode.OK, await Validate());
-        // Ended: the same pass, still within its 10 minutes, opens nothing.
+        // Ended: the same pass, not yet expired, opens nothing.
         await server.DeleteRoomAsync(room, ct);
         Assert.Equal(HttpStatusCode.NotFound, await Validate());
         Assert.Empty(await server.ListParticipantsAsync(room, ct));

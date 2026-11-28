@@ -69,13 +69,15 @@ public sealed class MeetingTokens(IOptions<MeetingOptions> options)
 
     /// <summary>
     /// True when a webhook came from our media server: the Authorization header is a JWT signed
-    /// with our secret, issued by our key, not expired, and carrying the SHA-256 of this body.
+    /// with our secret, issued by our key, with an expiry that hasn't passed, and carrying the SHA-256 of this body.
     /// </summary>
     public bool IsGenuineWebhook(string? authorization, ReadOnlySpan<byte> body)
     {
         if (string.IsNullOrWhiteSpace(authorization)) return false;
         var token = authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? authorization[7..].Trim() : authorization.Trim();
         if (!TryReadVerified(token, out var claims)) return false;
+        // LiveKit signs every webhook with a short expiry; one without any could be replayed forever.
+        if (!claims.TryGetProperty("exp", out var exp) || !exp.TryGetInt64(out _)) return false;
         if (!claims.TryGetProperty("iss", out var iss) || iss.ValueKind != JsonValueKind.String || iss.GetString() != options.Value.ApiKey) return false;
         if (!claims.TryGetProperty("sha256", out var hash) || hash.ValueKind != JsonValueKind.String) return false;
         var expected = Convert.ToBase64String(SHA256.HashData(body));

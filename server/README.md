@@ -489,13 +489,14 @@ dotnet user-secrets set Lms:Meet:ApiSecret "dev_only_livekit_secret_change_me_01
 | `Lms:Meet:Url` | none | What browsers connect to: `wss://…` when live, `ws://localhost:7880` locally |
 | `Lms:Meet:ApiUrl` | `Url` with `http(s)` | The room API this server calls, if it differs from `Url` |
 | `Lms:Meet:ApiKey`, `Lms:Meet:ApiSecret` | none | The media server's key and secret. A secret under 32 characters stops the API from starting |
-| `Lms:Meet:JoinPassMinutes` | 10 | How long a pass can be used to join. Once in, LiveKit keeps the person in |
+| `Lms:Meet:JoinPassMinutes` | 2 | How long a pass can be used to join. The page uses it at once; once in, LiveKit keeps the person in with passes of its own |
 | `Lms:Meet:EmptyRoomMinutes` | 5 | A room nobody joins, or everyone has left, closes after this, which ends the meeting |
 | `Lms:Meet:ChatMessagesPerMinute` | 30 | Per person |
+| `Lms:Meet:HandChangesPerMinute` | 20 | Per person (raise or lower), then 429 |
 
 The media server sends its webhooks to `POST /api/meetings/livekit-webhook` (`meet-server/livekit.yaml`).
 Use `https://` once the API runs outside Development. Only a webhook signed with the secret,
-carrying the SHA-256 of its body, is read. Each one is applied once, by its participant session id. In
+carrying the SHA-256 of its body, is read. Each one is applied once, by its participant session id, and a signature without an expiry is refused. **Each arrival is checked again:** LiveKit can't take back a pass, so someone the instructor removed, or who is no longer on the active class list, is disconnected as soon as `participant_joined` arrives and isn't counted as attending. The ISMS sync also disconnects a student it takes off a class list from that class's live meeting. In
 Demo mode the room name starts with the sandbox (`sandbox.random`), because webhooks carry no
 sandbox header (L-104).
 
@@ -520,7 +521,7 @@ join. Everyone else gets 404.
 | POST | `/{id}/people/{personId}/ask-unmute` | instructor | Sends them `lms.ask-unmute` |
 | POST | `/{id}/people/{personId}/stop-share` | instructor | Stops their screen share. They can share again |
 | POST | `/{id}/people/{personId}/lower-hand` | instructor | Clears their `lms.hand` |
-| POST | `/{id}/people/{personId}/remove` | instructor | Disconnects them. They can't rejoin this meeting |
+| POST | `/{id}/people/{personId}/remove` | instructor | Disconnects them. They can't rejoin this meeting, not even with a pass they still hold (the webhook puts them out) |
 | POST | `/{id}/hand` | class, in the meeting | `{ raised }`. Sets or clears the `lms.hand` attribute (the API's time), which everyone sees, late joiners too |
 | POST | `/{id}/chat` | class, in the meeting | `{ text }` (1000 characters). Saved only while `saveChat` is on |
 | GET | `/{id}/chat` | class | The saved chat |

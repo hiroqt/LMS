@@ -866,3 +866,8 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
 - **Joins in flight:** a join is several awaits (pass, then connect). Leaving the page or pressing
   Stop waiting in between must make that attempt stale, or it connects with no page left to show
   it. `useMeetingRoom` counts attempts; `useMeetingRoom.test.tsx` checks both ways out.
+- **Check people when they arrive, not only when they get a pass:** connected clients receive
+  fresh passes from LiveKit itself, so a short pass alone doesn't keep a removed student out. The
+  API re-checks each `participant_joined` webhook (`MeetingPresence`) and removes anyone the
+  instructor removed or the class list dropped; the ISMS sync removes dropped students from live
+  meetings at once.

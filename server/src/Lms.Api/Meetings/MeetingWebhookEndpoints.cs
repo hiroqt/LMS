@@ -16,7 +16,8 @@ public static class MeetingWebhookEndpoints
 
     public static IEndpointRouteBuilder MapMeetingWebhookEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost(Path, async Task<IResult> (HttpContext http, MeetingTokens tokens, MeetingRooms rooms, TimeProvider time, CancellationToken ct) =>
+        app.MapPost(Path, async Task<IResult> (HttpContext http, MeetingTokens tokens, MeetingRooms rooms, IMeetingServer server, TimeProvider time,
+            ILoggerFactory loggers, CancellationToken ct) =>
         {
             if (http.Request.ContentLength is > MeetingLimits.WebhookBodyBytes) return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
             // Read at most the limit, also when no length was sent.
@@ -38,7 +39,7 @@ public static class MeetingWebhookEndpoints
             if (hook is null || hook.Room.Length == 0) return TypedResults.Ok();
 
             var (db, owned) = await rooms.DatabaseForRoomAsync(hook.Room);
-            try { await ApplyAsync(db, hook, time.GetUtcNow().UtcDateTime, ct); }
+            try { await ApplyAsync(db, hook, time.GetUtcNow().UtcDateTime, ct, server, loggers.CreateLogger(typeof(MeetingWebhookEndpoints))); }
             finally { if (owned) await db.DisposeAsync(); }
             return TypedResults.Ok();
         }).WithName("MeetingServerWebhook");
@@ -47,7 +48,10 @@ public static class MeetingWebhookEndpoints
 
     /// <param name="now">The API's clock. The media server's times are moved onto it (by the event's age), so a
     /// stay lines up with the meeting's own start and end even when the two clocks differ (Demo mode).</param>
-    internal static async Task ApplyAsync(LmsDbContext db, WebhookEvent hook, DateTime now, CancellationToken ct)
+    /// <param name="server">When given, someone who joined but may no longer be in the meeting (removed by the
+    /// instructor, or no longer on the class list) is disconnected at once: the media server can't take back
+    /// a join pass they still hold (<see cref="MeetingPresence"/>).</param>
+    internal static async Task ApplyAsync(LmsDbContext db, WebhookEvent hook, DateTime now, CancellationToken ct, IMeetingServer? server = null, ILogger? logger = null)
     {
         var shift = now - hook.At;
         DateTime Here(DateTime serverTime) => serverTime + shift;
@@ -59,6 +63,16 @@ public static class MeetingWebhookEndpoints
         {
             case "participant_joined" when hook.Participant is { } p:
             {
+                if (server is not null && !await MeetingPresence.MayBeInAsync(db, meeting, p.Identity, ct))
+                {
+                    // Refused at the door: disconnected, and not counted as attending.
+                    try { await server.RemoveParticipantAsync(meeting.RoomName, p.Identity, ct); }
+                    catch (MeetingServerException e) when (!e.Off)
+                    {
+                        logger?.LogWarning(e, "Couldn't disconnect someone who may not be in meeting {Id}", meeting.Id);
+                    }
+                    return;
+                }
                 if (await db.MeetingAttendance.AnyAsync(a => a.SessionId == p.Sid, ct)) return;
                 db.MeetingAttendance.Add(new MeetingAttendance
                 {
@@ -71,6 +85,8 @@ public static class MeetingWebhookEndpoints
                 var stay = await db.MeetingAttendance.SingleOrDefaultAsync(a => a.SessionId == p.Sid, ct);
                 if (stay is null)
                 {
+                    // Someone refused at the door (above) leaves without having attended.
+                    if (server is not null && !await MeetingPresence.MayBeInAsync(db, meeting, p.Identity, ct)) return;
                     // The join was missed (the API was down): record the stay from the leave.
                     db.MeetingAttendance.Add(new MeetingAttendance
                     {

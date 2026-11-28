@@ -13,6 +13,7 @@ public sealed class MeetingOptions
 {
     public const string SectionName = "Lms:Meet";
     public const string ChatPolicy = "meeting-chat";
+    public const string HandPolicy = "meeting-hand";
 
     /// <summary>The address browsers connect to, e.g. <c>wss://meet.school.edu</c> or <c>ws://localhost:7880</c>.</summary>
     public string? Url { get; set; }
@@ -22,12 +23,18 @@ public sealed class MeetingOptions
     public string? ApiKey { get; set; }
     /// <summary>The media server's API secret (32 characters or more). Never in a committed file.</summary>
     public string? ApiSecret { get; set; }
-    /// <summary>How long a join pass can be used to join. Once in, the media server keeps the person in.</summary>
-    public int JoinPassMinutes { get; set; } = 10;
+    /// <summary>
+    /// How long a join pass can be used to join. The page uses it at once; once in, the media server
+    /// keeps the person in with passes of its own. Short, because a pass can't be taken back (the
+    /// webhook check, <see cref="MeetingPresence"/>, refuses a removed or dropped student either way).
+    /// </summary>
+    public int JoinPassMinutes { get; set; } = 2;
     /// <summary>A room nobody joins, or everyone has left, closes after this long. Ends the meeting.</summary>
     public int EmptyRoomMinutes { get; set; } = 5;
     /// <summary>Chat messages one person may send per minute.</summary>
     public int ChatMessagesPerMinute { get; set; } = 30;
+    /// <summary>Times one person may raise or lower their hand per minute; each change reaches everyone in the meeting.</summary>
+    public int HandChangesPerMinute { get; set; } = 20;
     public int TimeoutSeconds { get; set; } = 10;
 
     public bool Configured =>
@@ -80,15 +87,22 @@ public static class MeetingServices
         services.AddHostedService<MeetingNoticeLogger>();
         services.AddScoped<MeetingRooms>();
 
-        services.AddRateLimiter(limiter => limiter.AddPolicy(MeetingOptions.ChatPolicy, http =>
+        services.AddRateLimiter(limiter =>
         {
-            var who = http.Request.Headers[DemoIdentity.UserHeader].ToString() is { Length: > 0 and <= 64 } id ? id : http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var perMinute = Math.Max(1, http.RequestServices.GetRequiredService<IOptions<MeetingOptions>>().Value.ChatMessagesPerMinute);
-            return RateLimitPartition.GetFixedWindowLimiter($"{Demo.DemoDatabases.SandboxOf(http)}|{who}", _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = perMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true,
-            });
-        }));
+            limiter.AddPolicy(MeetingOptions.ChatPolicy, http => PerPerson(http, MeetingOptions.ChatPolicy, o => o.ChatMessagesPerMinute));
+            limiter.AddPolicy(MeetingOptions.HandPolicy, http => PerPerson(http, MeetingOptions.HandPolicy, o => o.HandChangesPerMinute));
+        });
+    }
+
+    /// <summary>A fixed one-minute window per person (and per sandbox in Demo mode); without an identity, per address.</summary>
+    private static RateLimitPartition<string> PerPerson(HttpContext http, string policy, Func<MeetingOptions, int> perMinuteOf)
+    {
+        var who = http.Request.Headers[DemoIdentity.UserHeader].ToString() is { Length: > 0 and <= 64 } id ? id : http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var perMinute = Math.Max(1, perMinuteOf(http.RequestServices.GetRequiredService<IOptions<MeetingOptions>>().Value));
+        return RateLimitPartition.GetFixedWindowLimiter($"{policy}|{Demo.DemoDatabases.SandboxOf(http)}|{who}", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = perMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true,
+        });
     }
 }
 

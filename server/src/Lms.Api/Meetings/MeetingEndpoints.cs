@@ -315,7 +315,8 @@ public static class MeetingEndpoints
             var value = raised ? time.GetUtcNow().UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "";
             await server.SetAttributesAsync(meeting.RoomName, user.Id, new Dictionary<string, string> { [MeetingRights.HandAttribute] = value }, ct);
             return TypedResults.NoContent();
-        }).WithName("RaiseMeetingHand");
+        }).WithName("RaiseMeetingHand").RequireRateLimiting(MeetingOptions.HandPolicy)
+          .WithMetadata(new RateLimitTitle("Too many hand changes. Wait a minute and try again."));
 
         // The instructor lowers someone's hand (after answering them).
         group.MapPost("/{meetingId:long}/people/{personId}/lower-hand", async Task<IResult> (string classId, long meetingId, string personId, HttpContext http,

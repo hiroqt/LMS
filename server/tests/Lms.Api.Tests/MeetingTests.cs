@@ -93,11 +93,13 @@ public sealed class MeetingTests : IDisposable
     // ---------------------------------------------------------------- webhooks, signed as LiveKit signs them
 
     /// <summary>Signs as LiveKit does, by the real clock: passes and webhooks are checked by it, not the API's (Demo mode's starts in the past).</summary>
-    private static string Sign(byte[] body, string key = LmsApiFactory.MeetKey, string secret = LmsApiFactory.MeetSecret, long? expires = null)
+    private static string Sign(byte[] body, string key = LmsApiFactory.MeetKey, string secret = LmsApiFactory.MeetSecret, long? expires = null, bool withExpiry = true)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var head = Base64Url.EncodeToString("""{"alg":"HS256","typ":"JWT"}"""u8);
-        var claims = JsonSerializer.SerializeToUtf8Bytes(new { iss = key, nbf = now - 5, exp = expires ?? now + 300, sha256 = Convert.ToBase64String(SHA256.HashData(body)) });
+        var fields = new Dictionary<string, object> { ["iss"] = key, ["nbf"] = now - 5, ["sha256"] = Convert.ToBase64String(SHA256.HashData(body)) };
+        if (withExpiry) fields["exp"] = expires ?? now + 300;
+        var claims = JsonSerializer.SerializeToUtf8Bytes(fields);
         var payload = Base64Url.EncodeToString(claims);
         var signature = Base64Url.EncodeToString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.ASCII.GetBytes($"{head}.{payload}")));
         return $"{head}.{payload}.{signature}";
@@ -169,8 +171,8 @@ public sealed class MeetingTests : IDisposable
         Assert.False(claims.GetProperty("video").TryGetProperty("roomAdmin", out _));
         Assert.Equal(["camera", "microphone"], Sources(claims));
         Assert.Equal("student", claims.GetProperty("attributes").GetProperty(MeetingRights.RoleAttribute).GetString());
-        // Ten minutes by the real clock, which the media server checks it with (not the API's clock).
-        Assert.InRange(claims.GetProperty("exp").GetInt64() - DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 590, 600);
+        // Two minutes by the real clock, which the media server checks it with (not the API's clock).
+        Assert.InRange(claims.GetProperty("exp").GetInt64() - DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 110, 120);
         // Students join with the mic off by default; the page reads it from the settings.
         Assert.True(join.GetProperty("meeting").GetProperty("settings").GetProperty("studentsJoinMuted").GetBoolean());
 
@@ -323,6 +325,8 @@ public sealed class MeetingTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, secret: "wrong_secret_wrong_secret_wrong_secret_00")));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, key: "someone-else")));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, expires: DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeSeconds())));
+        // Signed but with no expiry at all: it could be replayed forever, so it is refused too.
+        Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(joined, Sign(joined, withExpiry: false)));
         Assert.Equal(HttpStatusCode.Unauthorized, await PostHookAsync(Hook("participant_joined", room, Max, "PA_max1", t0), Sign(joined)));
         Assert.Equal(0, await _factory.WithDbAsync(db => db.MeetingAttendance.CountAsync()));
         // A body over the limit is refused before it is read, signed or not.
@@ -399,6 +403,75 @@ public sealed class MeetingTests : IDisposable
         // Only people on the class list can be removed, and only by the instructor.
         Assert.Equal(HttpStatusCode.NotFound, (await Instructor.PostAsync($"{Base}/{id}/people/{Outsider}/remove", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Student().PostAsync($"{Base}/{id}/people/{Max}/remove", null)).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_student_removed_or_dropped_who_comes_back_with_a_pass_they_still_hold_is_disconnected_at_once()
+    {
+        await SeedAsync();
+        var (id, room) = await StartAsync();
+        // A pass is short: the page uses it at once, and the media server can't take it back.
+        var pass = Claims((await JoinAsync(id, Student(Max))).GetProperty("token").GetString()!);
+        Assert.InRange(pass.GetProperty("exp").GetInt64() - DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 60, 2 * 60);
+
+        // Max is in, and the instructor removes him.
+        Meet.Join(room, Max, MeetingRights.ForStudent(new OnlineMeeting()));
+        var maxIn = Hook("participant_joined", room, Max, "PA_max1");
+        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(maxIn, Sign(maxIn)));
+        Assert.Equal(HttpStatusCode.NoContent, (await Instructor.PostAsync($"{Base}/{id}/people/{Max}/remove", null)).StatusCode);
+        var maxOut = Hook("participant_left", room, Max, "PA_max1");
+        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(maxOut, Sign(maxOut)));
+        var removals = Meet.CallsTo(nameof(FakeMeetingServer.RemoveParticipantAsync)).Count();
+
+        // He connects again with the pass he still holds (no new pass is given to him): the media server
+        // lets him in, and the webhook of his arrival puts him straight out, without counting a stay.
+        Meet.Join(room, Max, MeetingRights.ForStudent(new OnlineMeeting()));
+        var maxBack = Hook("participant_joined", room, Max, "PA_max2");
+        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(maxBack, Sign(maxBack)));
+        Assert.Null(Meet.Person(room, Max));
+        Assert.Equal(removals + 1, Meet.CallsTo(nameof(FakeMeetingServer.RemoveParticipantAsync)).Count());
+        var maxGone = Hook("participant_left", room, Max, "PA_max2");
+        Assert.Equal(HttpStatusCode.OK, await PostHookAsync(maxGone, Sign(maxGone)));
+
+        // The same for a student no longer on the active class list, and for someone not in the class at all.
+        foreach (var (who, sid) in new[] { (Dropped, "PA_dropped"), (Outsider, "PA_outsider") })
+        {
+            Meet.Join(room, who, MeetingRights.ForStudent(new OnlineMeeting()));
+            var hook = Hook("participant_joined", room, who, sid);
+            Assert.Equal(HttpStatusCode.OK, await PostHookAsync(hook, Sign(hook)));
+            Assert.Null(Meet.Person(room, who));
+            var left = Hook("participant_left", room, who, sid);
+            Assert.Equal(HttpStatusCode.OK, await PostHookAsync(left, Sign(left)));
+        }
+
+        // The instructor and a student on the list stay in.
+        foreach (var (who, sid) in new[] { (Teacher, "PA_teacher"), (Lia, "PA_lia1") })
+        {
+            Meet.Join(room, who, who == Teacher ? MeetingRights.ForInstructor() : MeetingRights.ForStudent(new OnlineMeeting()));
+            var hook = Hook("participant_joined", room, who, sid);
+            Assert.Equal(HttpStatusCode.OK, await PostHookAsync(hook, Sign(hook)));
+            Assert.NotNull(Meet.Person(room, who));
+        }
+        // Attendance counts only who was let in: Max's first stay, the instructor, and Lia.
+        var stays = await _factory.WithDbAsync(db => db.MeetingAttendance.OrderBy(a => a.Id).Select(a => a.SessionId).ToListAsync());
+        Assert.Equal(["PA_max1", "PA_teacher", "PA_lia1"], stays);
+    }
+
+    [Fact]
+    public async Task Raising_and_lowering_a_hand_is_limited_per_person()
+    {
+        await SeedAsync();
+        var (id, room) = await StartAsync();
+        Meet.Join(room, Lia, MeetingRights.ForStudent(new OnlineMeeting()));
+        Meet.Join(room, Max, MeetingRights.ForStudent(new OnlineMeeting()));
+        var lia = Student();
+        for (var i = 0; i < 20; i++)
+            Assert.Equal(HttpStatusCode.NoContent, (await lia.PostAsJsonAsync($"{Base}/{id}/hand", new { raised = i % 2 == 0 })).StatusCode);
+        var tooMany = await lia.PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true });
+        Assert.Equal(HttpStatusCode.TooManyRequests, tooMany.StatusCode);
+        Assert.Equal("Too many hand changes. Wait a minute and try again.", (await Json(tooMany)).GetProperty("title").GetString());
+        // Someone else's limit is their own.
+        Assert.Equal(HttpStatusCode.NoContent, (await Student(Max).PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true })).StatusCode);
     }
 
     [Fact]

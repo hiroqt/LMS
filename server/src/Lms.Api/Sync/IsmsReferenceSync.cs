@@ -2,6 +2,7 @@ using System.Text.Json;
 using Lms.Api.Classes;
 using Lms.Api.Data;
 using Lms.Api.Isms;
+using Lms.Api.Meetings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lms.Api.Sync;
@@ -13,8 +14,11 @@ public sealed record SyncResult(DateTimeOffset At, string? TermName, int Classes
 /// ISMS rows are upserted, never deleted: a class or student ISMS stops listing is marked
 /// inactive and everything the LMS holds for it is kept.
 /// </summary>
-public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, TimeProvider time, ILogger<IsmsReferenceSync> logger)
+public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, TimeProvider time, IMeetingServer meetings, ILogger<IsmsReferenceSync> logger)
 {
+    /// <summary>Students this sync took off a class list; they leave that class's live meetings once it commits.</summary>
+    private readonly List<(string ClassId, string StudentId)> _dropped = [];
+
     /// <summary>Classes of the current ISMS term (all classes when ISMS flags none), then their class lists.</summary>
     public async Task<SyncResult> SyncAsync(CancellationToken ct)
     {
@@ -85,6 +89,8 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
         var students = await db.IsmsClassStudents.CountAsync(s => s.IsActive &&
             db.IsmsClasses.Any(c => c.Id == s.ClassId && c.IsActive), ct);
         await transaction.CommitAsync(ct);
+        // A student taken off a class list leaves its live meeting now, not when their join pass would have run out (D-072).
+        await MeetingPresence.RemoveDroppedAsync(db, meetings, _dropped, logger, ct);
 
         var activeClasses = await db.IsmsClasses.CountAsync(c => c.IsActive, ct);
         return new SyncResult(now, termName, offered.Count, activeClasses, students, null);
@@ -135,7 +141,10 @@ public sealed class IsmsReferenceSync(IIsmsCatalog catalog, LmsDbContext db, Tim
             logger.LogWarning("ISMS returned an empty class list; keeping the previous active students");
         else
             foreach (var row in rows.Values.Where(r => r.IsActive && !listedIds.Contains(r.StudentId)))
+            {
                 row.IsActive = false;
+                _dropped.Add((classId, row.StudentId));
+            }
 
         await db.SaveChangesAsync(ct);
         return rows.Values.Count(r => r.IsActive);

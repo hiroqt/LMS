@@ -156,7 +156,7 @@ LiveKit media server ───┘                  our own server; open source (
 - **The LMS API decides who gets in.** `server/src/Lms.Api/Meetings/` stores meetings, settings,
   attendance, and saved chat (endpoints: "Class meetings" in `server/README.md`).
   `POST /api/classes/{classId}/meetings/{id}/join` checks the class, as `ClassAccess` does today: the class's instructor, or a student active on the class list. Anyone else gets a
-  404. The API returns a pass that lasts 10 minutes and is signed with the media server's secret.
+  404. The API returns a pass that lasts 2 minutes and is signed with the media server's secret.
   The pass carries the person's LMS id and name, and their rights from the meeting settings.
 - **Settings are enforced by the media server.** When the instructor changes a setting, the LMS
   API updates every student's rights in the meeting. For example, with "may turn on their own
@@ -185,7 +185,10 @@ LiveKit media server ───┘                  our own server; open source (
 - Camera and mic need HTTPS. `localhost` works for development.
 - There are no guest links. Only the class's instructor and its students can join (decision 3).
 - Join passes are personal, short-lived, and tied to one meeting. A pass that has leaked stops
-  working after 10 minutes, and the host can remove anyone.
+  working after 2 minutes, and the host can remove anyone. The media server can't take a pass back,
+  so the API also checks each arrival (the `participant_joined` webhook): someone removed from the
+  meeting or no longer on the active class list is disconnected at once, and the ISMS sync
+  disconnects a student it takes off a class list from that class's live meeting.
 - Saving the chat and recording are always visible: everyone sees "This chat is being saved" and
   the REC sign while they are on. Saved chat and recordings are open only to the class.
 - Today identity is the demo header (no real sign-in), so meetings are safe for demos only. Real
