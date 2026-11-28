@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarEntries, courseModules, dueSoon, dueThisWeek, greeting, inMonth, materialSequence, materialsByModule, monthGrid, needsWork, newestFirst, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
+import { calendarEntries, courseModules, courseTopic, dueSoon, dueThisWeek, greeting, inMonth, materialSequence, materialsByModule, monthGrid, needsWork, newestFirst, scoreAttempt, searchWorkspace, taskGroups, weekBounds } from "./selectors";
 import type { Assessment, Material } from "./types";
 
 const NOW = new Date("2026-10-23T09:00:00").getTime(); // Friday
@@ -124,3 +124,42 @@ describe("materials by module (D-067)", () => {
   });
 });
 
+describe("courseTopic", () => {
+  const work = (id: string, type: string, moduleId: string, kind?: "activity"): Assessment => ({ ...item(id, "", type), title: id, moduleId, ...(kind ? { kind } : {}) });
+  const catalog = {
+    modules: [
+      { id: "2", courseId: "c", parentId: "1", title: "1.1 Joins", order: 1 },
+      { id: "1", courseId: "c", title: "Unit 1", order: 1 },
+      { id: "3", courseId: "c", title: "Unit 2", order: 2 },
+      { id: "9", courseId: "other", title: "Elsewhere", order: 1 },
+    ],
+    materials: [
+      material("m1", "2", "Join notes"),
+      material("m2", "3", "Unit 2 notes"),
+    ],
+    assessments: [
+      work("essay", "Assignment", "1", "activity"),
+      work("lab", "Lab activity", "2", "activity"),
+      work("quiz", "Quiz", "1"),
+      work("exam", "Exam", "2"),
+      work("later", "Quiz", "3"),
+    ],
+  };
+  const titles = (topicId: string) => Object.fromEntries(courseTopic(catalog, "c", topicId)?.groups.map((group) => [group.category, group.entries.map((entry) => entry.title)]) ?? []);
+
+  it("groups a topic's own and its submodules' content by category, and nothing from other topics", () => {
+    expect(titles("1")).toEqual({ Assignments: ["essay"], Activities: ["lab"], Assessments: ["quiz", "exam"], Materials: ["Join notes"] });
+    expect(titles("3")).toEqual({ Assignments: [], Activities: [], Assessments: ["later"], Materials: ["Unit 2 notes"] });
+  });
+
+  it("names the submodule an item sits in", () => {
+    const materials = courseTopic(catalog, "c", "1")?.groups.find((group) => group.category === "Materials")?.entries;
+    expect(materials?.map((entry) => entry.submodule)).toEqual(["1.1 Joins"]);
+  });
+
+  it("is undefined for a submodule, another class's module, or an unknown id", () => {
+    expect(courseTopic(catalog, "c", "2")).toBeUndefined();
+    expect(courseTopic(catalog, "c", "9")).toBeUndefined();
+    expect(courseTopic(catalog, "c", "nope")).toBeUndefined();
+  });
+});

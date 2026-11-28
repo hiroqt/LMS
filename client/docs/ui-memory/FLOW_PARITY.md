@@ -35,7 +35,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | PEOPLE | Roster search | ✖ (tab reachable only) | ✅ |
 | CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
 | CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
-| MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
+| MODS | Modules tab: one button per topic (module); a topic lists its and its submodules' content as Assignments, Activities, Assessments, Materials; item opens; Back returns (D-070) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |
