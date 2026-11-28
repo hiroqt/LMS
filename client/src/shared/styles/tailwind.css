@@ -100,6 +100,7 @@
 
   /* Accent: the original gold, for fills only. Use accent-700 for text. */
   --color-accent-100: #fdf1db;
+  --color-accent-200: #f9dca6;
   --color-accent-400: #f4b94f;
   --color-accent-700: #8a5a0b;
 
@@ -115,6 +116,7 @@
   /* Status: each passes 4.5:1 as text on surface. */
   --color-success: #2f6f4a;
   --color-success-soft: #e6f4ec;
+  --color-success-200: #c8e8d2;
   --color-warning: #8f4f05;
   --color-warning-soft: #fdf1db;
   --color-danger: #b42318;

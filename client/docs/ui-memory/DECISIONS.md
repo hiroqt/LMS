@@ -993,3 +993,31 @@ for faculty, courses, and users. The Student "Due this week" cell's phone label 
 "Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
 no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
 
+### D-071 · Student dashboard: announcements beside Next due, status buttons in Tasks, classes in one row
+`2026-11-27` · saheejuu2 (user request) · scope: student, shared · confidence: high
+Amends D-066 for the Student dashboard only; the heading, the Next due tile, panels, and rows
+are still the shared pieces. Announcements are what a student must see first, and the
+dashboard had no count of missing work.
+- **Layout:** Next due 5 | Announcements 7, then Tasks & Assessments 7 | Academic Calendar 5,
+  then My Classes across. One column on a phone, in that order. The Student no longer has a
+  `SummaryStrip` (Instructor and Admin keep theirs); the Active classes count is dropped.
+- **Announcements:** always stacked, two lines each (the title and who posted it), so three
+  fit beside the Next due tile. The message is in News & Announcements.
+- **Status buttons:** Tasks & Assessments opens with three buttons, a number and the status
+  name: Due this week (yellow), Missing (red), Done (green) (`STATUS_BUTTONS` in
+  `TodayPage.tsx`, in a group named "Work by status"). Each opens Tasks on that status, and
+  its number is the size of that Tasks group (`taskGroups`). They share the tile's width; with
+  fewer than three tasks listed they grow into the tile's height instead of leaving it blank.
+  The name stays ink and is always written, so color is never the only signal (C-004); numbers
+  are at least 4.5:1 on their tint and its hover tint (`tokens.test.ts`).
+- **Wording:** "Assessments done" is "Done", since the count covers assignments and activities
+  too. The Done group reads "Work you have submitted: assessments, activities, and assignments".
+- **Short tiles:** Calendar (under three dates) and Announcements (under two) are sized to
+  their content with `@4xl:self-start`; a full tile still stretches to its row.
+- **Calendar:** it skips the deadlines Next due and Tasks already list and shows what comes
+  after them and the school's dates.
+- **Classes:** the dashboard has no cards-or-table switch; its classes are a `CardRow`, one
+  row of tiles that scrolls sideways instead of wrapping (L-107). My classes keeps the switch.
+Journeys changed: `student-flow` TD and `shell` P look for "Done"; `shell` TM is new;
+`class-view` moved the cards-or-table check to My classes and covers the layout, the status
+buttons, the calendar, and the class row.

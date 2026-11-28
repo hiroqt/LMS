@@ -35,7 +35,7 @@ export default function TasksPage() {
 
   return (
     <>
-      <PageHeader title="Tasks" description="See due dates, missing work, and completed assessments." />
+      <PageHeader title="Tasks" description="See due dates, missing work, and the work you have done." />
 
       {/* Visible filter instead of the classic dropdown: one tap, counts always shown. */}
       <FilterChipGroup label="Filter by status">
