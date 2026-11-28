@@ -35,3 +35,6 @@ export const notAllowedText: Record<PublishSource, string> = {
 
 /** The role the LMS API put in the join pass (D-070). */
 export const isHost = (participant: Pick<Participant, "attributes">) => participant.attributes["lms.role"] === "instructor";
+
+/** When the person raised their hand (the API sets it, D-070), or null. */
+export const handRaisedAt = (participant: Pick<Participant, "attributes">): string | null => participant.attributes["lms.hand"] || null;

@@ -30,7 +30,16 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
   const [camera, setCamera] = useState<LocalVideoTrack | null>(null);
   const [mic, setMic] = useState<LocalAudioTrack | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  /** A camera or mic still starting: Join waits for it, so it isn't left behind (and left on). */
+  const [starting, setStarting] = useState(false);
   const handedOver = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const live = useRef<{ camera: LocalVideoTrack | null; mic: LocalAudioTrack | null }>({ camera: null, mic: null });
   useEffect(() => {
     live.current = { camera, mic };
@@ -68,10 +77,16 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
       setCamera(null);
       return;
     }
+    setStarting(true);
     try {
-      setCamera(await createLocalVideoTrack({ resolution: VideoPresets.h540.resolution }));
+      const track = await createLocalVideoTrack({ resolution: VideoPresets.h540.resolution });
+      // The screen went away while the camera started: turn it off again.
+      if (!alive.current) track.stop();
+      else setCamera(track);
     } catch {
-      setProblem(blocked.camera);
+      if (alive.current) setProblem(blocked.camera);
+    } finally {
+      if (alive.current) setStarting(false);
     }
   };
 
@@ -83,10 +98,15 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
       setMic(null);
       return;
     }
+    setStarting(true);
     try {
-      setMic(await createLocalAudioTrack());
+      const track = await createLocalAudioTrack();
+      if (!alive.current) track.stop();
+      else setMic(track);
     } catch {
-      setProblem(blocked.microphone);
+      if (alive.current) setProblem(blocked.microphone);
+    } finally {
+      if (alive.current) setStarting(false);
     }
   };
 
@@ -122,7 +142,7 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
             <WifiOff aria-hidden className="mt-0.5 size-4 shrink-0" />A meeting needs a connection. Reconnect, then join.
           </p>
         )}
-        <Button onClick={join} loading={busy} loadingLabel={startsIt ? "Starting the meeting" : "Joining"} disabled={!network.online} className="self-start">
+        <Button onClick={join} loading={busy || starting} loadingLabel={starting ? "Getting your devices ready" : startsIt ? "Starting the meeting" : "Joining"} disabled={!network.online} className="self-start">
           {startsIt ? "Start meeting" : "Join now"}
         </Button>
       </div>

@@ -1,10 +1,24 @@
 import { Track, type Participant, type RemoteAudioTrack } from "livekit-client";
-import { ArrowLeft, Hourglass, Volume2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { ArrowLeft, Hourglass, Volume2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Viewer } from "../../../shared/api/viewer";
+import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
+import { useNetworkStatus } from "../../../shared/hooks/useNetworkStatus";
 import { Button } from "../../../shared/ui/Button";
-import { ControlBar } from "./ControlBar";
-import { ParticipantTile } from "./ParticipantTile";
+import { Dialog, DialogContent } from "../../../shared/ui/Dialog";
+import { IconButton } from "../../../shared/ui/IconButton";
+import { cn } from "../../../shared/lib/cn";
+import { describeMeetingError, setHand } from "../api/meetings";
+import { ChatPanel } from "./ChatPanel";
+import { ControlBar, type Panel } from "./ControlBar";
+import { parseRoomInfo } from "./metadata";
+import { PeoplePanel } from "./PeoplePanel";
+import { handRaisedAt } from "./rights";
+import { Stage, type Layout } from "./Stage";
+import { useAnnouncements } from "./useAnnouncements";
+import { useChat } from "./useChat";
+import { useDataSaver } from "./useDataSaver";
+import { useReactions } from "./useReactions";
 import { PreJoin } from "./PreJoin";
 import { useMeetingRoom, type MeetingPhase } from "./useMeetingRoom";
 import { useRoomVersion } from "./useRoomVersion";
@@ -84,7 +98,7 @@ function Body({ phase, meet, viewer, viewerName, onExit }: { phase: MeetingPhase
         </main>
       );
     case "connected":
-      return meet.room ? <InMeeting meet={meet} /> : null;
+      return meet.room ? <InMeeting meet={meet} viewer={viewer} classId={phase.meeting.classId} meetingId={phase.meeting.id} /> : null;
     case "closed":
       return (
         <main className="flex flex-1 items-center justify-center p-6">
@@ -101,31 +115,106 @@ function Body({ phase, meet, viewer, viewerName, onExit }: { phase: MeetingPhase
   }
 }
 
-function InMeeting({ meet }: { meet: ReturnType<typeof useMeetingRoom> }) {
+function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<typeof useMeetingRoom>; viewer: Viewer; classId: string; meetingId: number }) {
   const room = meet.room!;
-  useRoomVersion(room);
-  const people: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
-  const sounds = [...room.remoteParticipants.values()].flatMap((person) => {
-    const track = person.getTrackPublication(Track.Source.Microphone)?.track;
-    return track ? [{ key: `${person.identity}:${track.sid}`, track: track as RemoteAudioTrack }] : [];
-  });
+  const version = useRoomVersion(room);
+  const network = useNetworkStatus();
+  const [notice, setNotice] = useState<{ text: string; tone: "warning" | "danger"; at: number } | null>(null);
+  const say = useCallback((text: string, tone: "warning" | "danger" = "warning") => setNotice({ text, tone, at: Date.now() }), []);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice((current) => (current?.at === notice.at ? null : current)), 8_000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  const wide = useMediaQuery("(min-width: 64rem)");
+  const compact = !useMediaQuery("(min-width: 48rem)");
+  const [panel, setPanel] = useState<Panel | null>(null);
+  const [layout, setLayout] = useState<Layout>("grid");
+  const [pinned, setPinned] = useState<string | null>(null);
+  const [dataSaver, setDataSaver] = useState(false);
+  const [saverHint, setSaverHint] = useState(true);
+  const info = parseRoomInfo(room.metadata);
+  const chat = useChat({ room, viewer, classId, meetingId, saveChat: info.saveChat, open: panel === "chat" });
+  const reactions = useReactions(room);
+  const announcement = useAnnouncements(room, reactions.latest);
+  useDataSaver(room, dataSaver, version);
+
+  const local = room.localParticipant;
+  const people: Participant[] = [local, ...room.remoteParticipants.values()];
+  const pinnedHere = pinned && people.some((person) => person.identity === pinned) ? pinned : null;
+  const handRaised = handRaisedAt(local) !== null;
+  const sounds = [...room.remoteParticipants.values()].flatMap((person) =>
+    [Track.Source.Microphone, Track.Source.ScreenShareAudio].flatMap((source) => {
+      const track = person.getTrackPublication(source)?.track;
+      return track ? [{ key: `${person.identity}:${track.sid}`, track: track as RemoteAudioTrack }] : [];
+    }),
+  );
+  const failed = (error: unknown) => {
+    const problem = describeMeetingError(error);
+    say([problem.title, problem.detail].filter(Boolean).join(" "), "danger");
+  };
+  const panelTitle = panel === "chat" ? "Chat" : "People";
+  const panelBody =
+    panel === "chat" ? (
+      <ChatPanel messages={chat.messages} onSend={chat.send} saving={info.saveChat} canWrite={viewer.role === "instructor" || info.students.mayChat} viewerId={viewer.id} />
+    ) : (
+      <PeoplePanel people={people} localIdentity={local.identity} />
+    );
+
   return (
     <>
-      <main className="flex flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
-        {!room.canPlaybackAudio && (
-          <div role="status" className="flex flex-wrap items-center justify-center gap-3 rounded-control bg-warning-soft p-3 text-body text-warning">
-            Your browser paused the meeting's sound.
-            <Button variant="secondary" onClick={() => void room.startAudio()} icon={<Volume2 aria-hidden className="size-4" />}>Turn on sound</Button>
-          </div>
+      <div className="flex min-h-0 flex-1">
+        <main className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+          <p role="status" className={notice ? cn("m-0 rounded-control p-3 text-body", notice.tone === "danger" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning") : "sr-only"}>
+            {notice?.text}
+          </p>
+          {!room.canPlaybackAudio && (
+            <div role="status" className="flex flex-wrap items-center justify-center gap-3 rounded-control bg-warning-soft p-3 text-body text-warning">
+              Your browser paused the meeting's sound.
+              <Button variant="secondary" onClick={() => void room.startAudio()} icon={<Volume2 aria-hidden className="size-4" />}>Turn on sound</Button>
+            </div>
+          )}
+          {network.slow && !dataSaver && saverHint && (
+            <div role="status" className="flex flex-wrap items-center gap-3 rounded-control bg-info-soft p-3 text-body text-info">
+              <span className="min-w-0 flex-1">Your connection is slow. Data saver stops other people's video and keeps their sound and shared screens.</span>
+              <Button variant="secondary" onClick={() => setDataSaver(true)}>Turn on Data saver</Button>
+              <Button variant="ghost" onClick={() => setSaverHint(false)}>Not now</Button>
+            </div>
+          )}
+          <Stage room={room} version={version} layout={layout} pinned={pinnedHere} onPin={setPinned} reactions={reactions.shown} dataSaver={dataSaver} onStopSharing={() => void local.setScreenShareEnabled(false)} />
+          {sounds.map((sound) => <AudioView key={sound.key} track={sound.track} />)}
+          <p role="status" className="sr-only">{announcement}</p>
+        </main>
+        {wide && panel && (
+          <aside aria-labelledby="meeting-panel-title" className="flex w-88 shrink-0 flex-col gap-3 border-l border-line bg-surface p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 id="meeting-panel-title" className="m-0 text-section font-semibold">{panelTitle}</h2>
+              <IconButton label={`Close ${panelTitle.toLowerCase()}`} onClick={() => setPanel(null)}><X /></IconButton>
+            </div>
+            {panelBody}
+          </aside>
         )}
-        <h2 className="sr-only">{people.length === 1 ? "Only you are here" : `${people.length} people in the meeting`}</h2>
-        <ul aria-label="People in the meeting" className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 p-0">
-          {people.map((person) => <ParticipantTile key={person.identity} participant={person} isLocal={person === room.localParticipant} />)}
-        </ul>
-        {people.length === 1 && <p className="m-0 text-center text-body text-muted">Only you are here so far.</p>}
-        {sounds.map((sound) => <AudioView key={sound.key} track={sound.track} />)}
-      </main>
-      <ControlBar room={room} onLeave={meet.leave} />
+      </div>
+      {/* On narrow screens the panel is a sheet; it exists only there (C-010). */}
+      <Dialog open={!wide && panel !== null} onOpenChange={(open) => !open && setPanel(null)}>
+        <DialogContent title={panelTitle} className="flex max-h-[85dvh] flex-col">{panelBody}</DialogContent>
+      </Dialog>
+      <ControlBar
+        room={room}
+        compact={compact}
+        panel={panel}
+        onPanel={setPanel}
+        unread={chat.unread}
+        handRaised={handRaised}
+        onHand={() => setHand(viewer, classId, meetingId, !handRaised).catch(failed)}
+        onReact={(reaction) => void reactions.send(reaction).catch(failed)}
+        dataSaver={dataSaver}
+        onDataSaver={setDataSaver}
+        layout={layout}
+        onLayout={setLayout}
+        onLeave={meet.leave}
+        onNotice={say}
+      />
     </>
   );
 }

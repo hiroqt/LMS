@@ -518,6 +518,7 @@ join. Everyone else gets 404.
 | POST | `/{id}/people/{personId}/ask-unmute` | instructor | Sends them `lms.ask-unmute` |
 | POST | `/{id}/people/{personId}/stop-share` | instructor | Stops their screen share. They can share again |
 | POST | `/{id}/people/{personId}/remove` | instructor | Disconnects them. They can't rejoin this meeting |
+| POST | `/{id}/hand` | class, in the meeting | `{ raised }`. Sets or clears the `lms.hand` attribute (the API's time), which everyone sees, late joiners too |
 | POST | `/{id}/chat` | class, in the meeting | `{ text }` (1000 characters). Saved only while `saveChat` is on |
 | GET | `/{id}/chat` | class | The saved chat |
 | DELETE | `/{id}/chat` | instructor | Deletes the saved chat |

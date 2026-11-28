@@ -20,8 +20,8 @@ const LIVEKIT: Record<string, string> = process.env.E2E_LIVEKIT_URL
       Lms__Meet__ApiSecret: process.env.E2E_LIVEKIT_SECRET ?? "dev_only_livekit_secret_change_me_0123",
     }
   : {};
-/** Chromium's stand-in camera (a test pattern) and microphone (a beep), with no permission prompt. */
-const fakeMedia = { launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] } };
+/** Chromium's stand-in camera (a test pattern), microphone (a beep), and screen to share, with no prompts. */
+const fakeMedia = { launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", "--auto-select-desktop-capture-source=Entire screen"] } };
 
 /**
  * Flow-parity suite. The flow specs encode the journeys in

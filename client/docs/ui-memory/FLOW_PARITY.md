@@ -34,6 +34,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | PEOPLE | Roster search | ✖ (tab reachable only) | ✅ |
 | CL-AT | Attendance tab: own % per month; empty state (D-035) | ✔ `attendance` AT → CL-AT | ✅ |
 | CL-MT | Live now banner → Join meeting → pre-join (mic off to start; a right the instructor hasn't given says why) → in the meeting with the instructor → Leave → Back to class; waiting until the instructor starts; Meetings tab read-only; 320px and axe (D-070) | ✔ `meetings` MT → CL-MT | ✅ |
+| CL-MT: in the meeting | Chat both ways (links, unread count, "being saved"), a raised hand first in People, a reaction on the tile and announced, a shared screen filling the stage, pin, Speaker view, Data saver pausing video, chat as a sheet on a phone at 320px; axe (D-070) | ✔ `meetings` | ✅ |
 | CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
 | MODS | Modules tab: modules with submodules nested, content under its submodule, item opens (D-033) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |

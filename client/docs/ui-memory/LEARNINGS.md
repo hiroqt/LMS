@@ -821,3 +821,16 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
 - **WebKit:** Playwright's WebKit has no stand-in camera or mic, so specs that join a meeting
   run on the Chromium projects and skip on iPhone WebKit.
 
+### L-109 · role="log" on a list, sheets hiding the page, and toasts over a control bar
+`2026-11-26` · hiro (D-070, Phase 2b) · scope: shared, a11y, tests, meetings · confidence: high
+- **role="log" on a list:** `role="log"` on an `<ol>` replaces its list role, so axe reports
+  every `<li>` as outside a list (`listitem`). Put the role on a wrapper `div` and keep the `ol`.
+- **Sheets:** on phones the chat and people panels are Radix sheets, which hide the rest of the
+  page from assistive technology. A spec must close the sheet before it reads anything behind it
+  (a status line, the controls).
+- **Toasts:** on a phone, toasts sit at the bottom, over a page's own bottom controls. The
+  meeting page writes its messages into a line above the stage instead.
+- **Starting devices:** `createLocalVideoTrack` takes a moment. A Join pressed meanwhile left
+  without the camera, and the camera started afterwards stayed on. Make Join wait for devices
+  and stop a device that starts after the screen has gone.
+

@@ -16,6 +16,8 @@ public static class MeetingRights
     /// <summary>Participant attributes the page reads: who is the host, and who the host let speak.</summary>
     public const string RoleAttribute = "lms.role";
     public const string LetSpeakAttribute = "lms.letSpeak";
+    /// <summary>When the person raised their hand (the API's clock, ISO 8601), or absent. Late joiners see it; the order is one clock's.</summary>
+    public const string HandAttribute = "lms.hand";
 
     public static readonly IReadOnlyList<string> AllSources =
         [MeetingSource.Camera, MeetingSource.Microphone, MeetingSource.ScreenShare, MeetingSource.ScreenShareAudio];

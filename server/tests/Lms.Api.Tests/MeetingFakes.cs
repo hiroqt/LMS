@@ -90,6 +90,19 @@ public sealed class FakeMeetingServer : IMeetingServer
         return Task.CompletedTask;
     }
 
+    public Task SetAttributesAsync(string room, string identity, IReadOnlyDictionary<string, string> attributes, CancellationToken ct)
+    {
+        Record(nameof(SetAttributesAsync), room, identity, attributes);
+        if (People(room).TryGetValue(identity, out var p))
+        {
+            var merged = new Dictionary<string, string>(p.Attributes);
+            foreach (var (key, value) in attributes)
+                if (value.Length == 0) merged.Remove(key); else merged[key] = value;
+            People(room)[identity] = p with { Attributes = merged };
+        }
+        return Task.CompletedTask;
+    }
+
     public Task MuteTrackAsync(string room, string identity, string trackSid, CancellationToken ct)
     {
         Record(nameof(MuteTrackAsync), room, identity, trackSid);
