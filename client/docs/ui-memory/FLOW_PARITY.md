@@ -54,6 +54,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Q (types) | Every question type answered; section directions; spelling notice; typed answers autosave and survive reload; unanswered list on submit (D-040, D-043) | ✔ `quiz-types` | ✅ |
 | R (review modes) | Score only / which were right / correct answers after submit or due; Waiting for grading; keys only once no attempt is left (D-040, D-042) | ✔ `quiz-types` | ✅ |
 | MD1 | Open a material: its file's preview and Download; back (D-067; was "mark reviewed") | ✔ `student-flow` | ✅ |
+| MD2 | Class comments under a material's preview and an assessment's content; private comments in the side column; delete your own (D-075, D-076) | ✔ `discussion` | ✅ |
 | Activity | Hand in an assignment: written answer, upload a file, Turn in with confirmation (D-060) | ✔ `instructor-flow` E → I → F → J | ✅ |
 | Your work | Draft autosaves; uploads with progress, refusals in the server's words; receipt with file codes after reload; Take back; new versions; honor statement; past due shows the reason; offline (D-060) | ✔ `assignment-work` | ✅ |
 | Own due date | An extension shows "Your due date: … (your instructor gave you more time)" in the rules and details; Turn in after the class's date, not late; Tasks lists it under Due soon with the student's date, not Missing (D-065) | ✔ `assignment-work-more` | ✅ |
@@ -89,6 +90,7 @@ Student: every ✔ row passed unchanged on the rebuilt UI before cutover (Phase 
 | K | Classes come from ISMS: no Create class; ISMS class opens with its class list and accepts LMS work (D-031) | ✔ `instructor-flow` K, `instructor-isms` (API mocked) | ✅ |
 | E: material | Material form → Materials list | ✔ `instructor-more` | ✅ |
 | C | Archive and restore a material | ✔ `instructor-more` | ✅ |
+| COMMENTS | Read class and private comments on a material (its page) or coursework (Classwork's Comments); reply privately to one student (D-075) | ✔ `discussion` | ✅ |
 | E: material file | Material form with a file → upload with progress → Materials list with the real type and size; a file the server refuses keeps the form and shows why; an Office file with no converter is saved without a preview (D-067) | ✔ `materials` | ✅ |
 | MAT-I | A material's page: the same preview students get (PDF pages, image, text, an Office file's PDF copy), page or slide count, Download; Replace file and Remove file (confirmed by name); axe and 320px (D-067) | ✔ `materials` | ✅ |
 | E: assignment | Create → assignment builder → Publish → Classwork (D-059; was the inline form) | ✔ `instructor-flow` E → I → F → J, `student-new` | ✅ |
@@ -200,6 +202,7 @@ Specs written against the classic Admin first, then run unchanged against the re
 | Gradebook saves once the weights add up to 100 | ✔ `instructor-more` SETTINGS, `instructor-new` |
 | An exam's grade shows on the exam page and the result (D-015) | ✔ `student-new` |
 | Overview mapping: completed work, best exam attempt, archived content, review queue | ✔ `catalog.test.ts`, `store.test.ts` |
+| A student never receives another student's private comments; only the class reads and writes its comments (D-075) | ✔ `DiscussionTests` (server), `discussion` |
 | Submodules: instructor builds them, student sees them nested; Modules tabs pass axe and fit 320px (D-033) | ✔ `submodules` (`@all` for axe and 320px); tree rules in `moduleTree.test.ts` |
 | Question sets: copy is deep and owner-only; an exam uses only the instructor's own set for its class's subject (D-034) | ✔ `CourseworkTests` (server), `questionSets.test.ts` |
 | Question sets pages: zero axe violations, text ≥14px, no sideways scroll at 320px, reachable from the drawer | ✔ `question-sets` `@all`, `@mobile` |

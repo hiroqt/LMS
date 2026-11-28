@@ -519,6 +519,41 @@ public sealed class AttendanceEntry : Audited
     public int DaysPresent { get; set; }
 }
 
+public static class CommentTarget
+{
+    public const string Material = "material";
+    public const string Coursework = "coursework";
+}
+
+public static class CommentVisibility
+{
+    /// <summary>Everyone on the class list and the class's instructor.</summary>
+    public const string Class = "class";
+    /// <summary>One student and the class's instructor only.</summary>
+    public const string Private = "private";
+}
+
+/// <summary>
+/// A comment on a material or a piece of coursework. Class comments are the public discussion;
+/// private comments are a thread between one student (<see cref="StudentId"/>) and the instructor.
+/// </summary>
+public sealed class Comment : Audited
+{
+    public long Id { get; set; }
+    public string ClassId { get; set; } = "";
+    /// <summary>See <see cref="CommentTarget"/>.</summary>
+    public string TargetType { get; set; } = CommentTarget.Material;
+    public long TargetId { get; set; }
+    /// <summary>See <see cref="CommentVisibility"/>.</summary>
+    public string Visibility { get; set; } = CommentVisibility.Class;
+    /// <summary>Private comments: the student whose thread this is. Null for class comments.</summary>
+    public string? StudentId { get; set; }
+    public string AuthorId { get; set; } = "";
+    public string AuthorRole { get; set; } = "";
+    /// <summary>Plain text, never HTML.</summary>
+    public string Body { get; set; } = "";
+}
+
 /// <summary>Metadata only: never answers, submission text, comments, or feedback.</summary>
 public sealed class AuditLogEntry
 {

@@ -154,6 +154,8 @@ public static class ContentEndpoints
             {
                 if (!await MaterialFileEndpoints.LockAsync(db, row, time, ct)) return MaterialFileEndpoints.Conflict();
                 unused = await MaterialFileEndpoints.ReleaseAsync(db, row, time, ct);
+                // Its discussion goes with it: comments have no foreign key to their target.
+                db.Comments.RemoveRange(db.Comments.Where(c => c.ClassId == classId && c.TargetType == CommentTarget.Material && c.TargetId == id));
                 db.Materials.Remove(row);
                 await db.SaveChangesAsync(ct);
                 MaterialFileEndpoints.Audit(db, user, "deleted", id);

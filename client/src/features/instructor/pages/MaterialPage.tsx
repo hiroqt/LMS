@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from "react-router";
 import { fetchMaterialFile, MATERIAL_ACCEPT, materialFileRefusal, pageCountLabel } from "../../../shared/api/materials";
 import type { Viewer } from "../../../shared/api/viewer";
 import { BackLink } from "../../../shared/components/BackLink";
+import { ClassDiscussion, PrivateThreadsPanel } from "../../../shared/components/discussion/Comments";
 import { AttachedFile } from "../../../shared/components/files/AttachedFile";
 import { UploadProgress } from "../../../shared/components/files/UploadProgress";
 import { MaterialLayout } from "../../../shared/components/materials/MaterialLayout";
@@ -47,6 +48,8 @@ export default function MaterialPage() {
   const subject = subjectOf(store, room);
   const archived = material.status === "archived";
   const file = material.file ?? null;
+  const commentTarget = { classId: room.id, kind: "material" as const, id: material.id };
+  const roster = content.students.map((student) => ({ id: student.id, name: `${student.firstName} ${student.lastName}`.trim() }));
   const backToMaterials = () => navigate(instructorPaths.classPage(room.id, "Materials"));
 
   const send = async (picked: File) => {
@@ -148,6 +151,8 @@ export default function MaterialPage() {
         preview={preview}
         file={fileSection}
         description={material.description}
+        discussion={<ClassDiscussion viewer={viewer} target={commentTarget} />}
+        aside={<PrivateThreadsPanel viewer={viewer} target={commentTarget} roster={roster} />}
       />
 
       <Dialog open={confirm !== null} onOpenChange={(open) => !open && !busy && setConfirm(null)}>

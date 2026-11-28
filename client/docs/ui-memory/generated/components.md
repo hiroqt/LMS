@@ -64,6 +64,7 @@
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
 | `src/shared/components/assignment/RubricView.tsx` | `RubricView` |
+| `src/shared/components/discussion/Comments.tsx` | `ClassDiscussion`, `PrivateComments`, `InstructorPrivateThreads`, `PrivateThreadsPanel`, `InstructorClassThread` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/files/FileTypeIcon.tsx` | `FileTypeIcon` |
 | `src/shared/components/files/UploadProgress.tsx` | `UploadProgress` |
@@ -124,6 +125,7 @@
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/instructor/components/AnswerBesideKey.tsx` | `QuestionPrompt`, `AnswerBesideKey` |
 | `src/features/instructor/components/AnswerKeyDialog.tsx` | `AnswerKeyDialog` |
+| `src/features/instructor/components/CommentsDialog.tsx` | `CommentsButton` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
