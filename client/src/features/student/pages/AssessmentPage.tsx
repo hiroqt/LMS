@@ -7,9 +7,11 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
 import { BackLink } from "../../../shared/components/BackLink";
+import { ClassDiscussion, PrivateComments } from "../../../shared/components/discussion/Comments";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
 import { AssignmentWork } from "../components/work/AssignmentWork";
+import { useStudentViewer } from "../hooks/useStudentCatalog";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -46,6 +48,7 @@ export default function AssessmentPage() {
   const { assessmentId = "" } = useParams();
   const navigate = useNavigate();
   const { catalog, completed } = useWorkspace();
+  const viewer = useStudentViewer();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
   if (!assessment) return <Navigate to={studentPaths.tasks()} replace />;
 
@@ -61,6 +64,7 @@ export default function AssessmentPage() {
   const isClosed = Boolean(assessment.closed);
   const notHandedIn = Boolean(submission?.notHandedIn || grade?.notHandedIn);
   const canStart = !isClosed && !notHandedIn && (Boolean(attempts?.openId) || attemptsLeft > 0);
+  const commentTarget = { classId: assessment.courseId, kind: "coursework" as const, id: assessment.id };
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
   const excused = Boolean(assessment.excused);
@@ -131,9 +135,11 @@ export default function AssessmentPage() {
             {closedNote}
             </>
           )}
+
+          <ClassDiscussion viewer={viewer} target={commentTarget} />
         </article>
 
-        <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+        <aside aria-labelledby="assessment-details" className="flex flex-col gap-4 lg:self-start">
           <Card className="flex flex-col gap-4 p-5">
             <div className="flex items-center justify-between">
               <h2 id="assessment-details" className="m-0 font-sans text-card-title font-semibold text-ink">Assessment details</h2>
@@ -165,6 +171,7 @@ export default function AssessmentPage() {
             )}
             <p className="m-0 flex items-center gap-2 text-body text-muted"><ShieldCheck aria-hidden className="size-4" />Your answers save to your class as you go.</p>
           </Card>
+          <PrivateComments viewer={viewer} target={commentTarget} />
         </aside>
       </div>
     </>

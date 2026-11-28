@@ -14,6 +14,7 @@ import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { Field, Select } from "../../../../shared/ui/Field";
 import { useToast } from "../../../../shared/ui/toast/useToast";
 import { useInstructorActions } from "../../api/actions";
+import { CommentsButton } from "../../components/CommentsDialog";
 import type { Material } from "../../api/types";
 import { useInstructorSession } from "../../hooks/useInstructorSession";
 import { instructorPaths } from "../../paths";
@@ -40,6 +41,7 @@ export function MaterialsTab({ room, content, goTab }: ClassTabProps) {
   );
   const moduleTitle = (id: string) => modulePath(content.modules, id) ?? "Unit";
   const filtered = Boolean(q) || moduleId !== "all" || kind !== "all";
+  const roster = content.students.map((student) => ({ id: student.id, name: `${student.firstName} ${student.lastName}`.trim() }));
 
   const actions = useInstructorActions();
   const download = async (item: Material) => {
@@ -108,6 +110,7 @@ export function MaterialsTab({ room, content, goTab }: ClassTabProps) {
                   <Button variant="ghost" icon={archived ? <ArchiveRestore aria-hidden className="size-4" /> : <Archive aria-hidden className="size-4" />} aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => archive(item)}>
                     {archived ? "Restore" : "Archive"}
                   </Button>
+                  <CommentsButton title={item.title} target={{ classId: room.id, kind: "material", id: item.id }} roster={roster} />
                   <Button variant="ghost" icon={<Trash2 aria-hidden className="size-4" />} aria-label={`Delete ${item.title}`} onClick={() => setRemoving(item)}>Delete</Button>
                 </div>
               </li>

@@ -44,6 +44,7 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<GradebookSetting> GradebookSettings => Set<GradebookSetting>();
     public DbSet<AttendanceMonth> AttendanceMonths => Set<AttendanceMonth>();
     public DbSet<AttendanceEntry> AttendanceEntries => Set<AttendanceEntry>();
+    public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<OnlineMeeting> Meetings => Set<OnlineMeeting>();
     public DbSet<MeetingAttendance> MeetingAttendance => Set<MeetingAttendance>();
@@ -335,6 +336,19 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.StudentId).HasMaxLength(IdLength).IsRequired();
             e.HasIndex(x => new { x.AttendanceMonthId, x.StudentId }).IsUnique();
             e.HasIndex(x => x.StudentId);
+        });
+
+        b.Entity<Comment>(e =>
+        {
+            e.ToTable("comments");
+            ClassOwned(e, x => x.ClassId);
+            e.Property(x => x.TargetType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Visibility).HasMaxLength(20).IsRequired();
+            e.Property(x => x.StudentId).HasMaxLength(IdLength);
+            e.Property(x => x.AuthorId).HasMaxLength(IdLength).IsRequired();
+            e.Property(x => x.AuthorRole).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Body).HasMaxLength(2000).IsRequired();
+            e.HasIndex(x => new { x.TargetType, x.TargetId, x.Visibility, x.StudentId });
         });
 
         b.Entity<AuditLogEntry>(e =>
