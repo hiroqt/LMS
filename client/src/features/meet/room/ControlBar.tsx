@@ -1,5 +1,5 @@
 import type { Room } from "livekit-client";
-import { Ellipsis, Hand, LayoutGrid, MessageSquare, Mic, MicOff, MonitorUp, PhoneOff, ShieldCheck, UserRound, UsersRound, Video, VideoOff, WifiLow } from "lucide-react";
+import { Ellipsis, Hand, LayoutGrid, MessageSquare, Mic, MicOff, MonitorUp, PhoneOff, ShieldCheck, Sparkles, UserRound, UsersRound, Video, VideoOff, WifiLow } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "../../../shared/ui/Menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../shared/ui/Popover";
@@ -23,10 +23,12 @@ const canShareScreen = () => typeof navigator !== "undefined" && typeof navigato
 export type Panel = "chat" | "people" | "host";
 
 /** The meeting's controls along the bottom. */
-export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, onHand, onReact, dataSaver, onDataSaver, layout, onLayout, onLeave, onNotice, onEnd }: {
+export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, onHand, onReact, dataSaver, onDataSaver, layout, onLayout, onLeave, onNotice, onEnd, blur }: {
   room: Room;
   /** The instructor only: ends the meeting for everyone (after the page confirms). */
   onEnd?: () => void;
+  /** Background blur, where this browser can do it and the camera is on. */
+  blur?: { on: boolean; busy: boolean; toggle: () => void };
   /** Says something above the meeting; a toast would cover these controls on a phone. */
   onNotice: (text: string, tone?: "warning" | "danger") => void;
   /** Narrow screens: icons, with the names read and shown as tooltips. */
@@ -89,6 +91,12 @@ export function ControlBar({ room, compact, panel, onPanel, unread, handRaised, 
           </button>
         </PopoverTrigger>
         <PopoverContent side="top" aria-label="More meeting options" className="flex w-72 max-w-[calc(100vw-1rem)] flex-col gap-4">
+          {blur && cameraOn && (
+            <div className="flex flex-col gap-2">
+              <MediaToggle label="Blur background" tone="plain" on={blur.on} allowed={!blur.busy} onIcon={<Sparkles />} onPress={blur.toggle} />
+              {blur.busy && <p role="status" className="m-0 text-body text-muted">Starting blur…</p>}
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <MediaToggle label="Data saver" tone="plain" on={dataSaver} onIcon={<WifiLow />} onPress={() => onDataSaver(!dataSaver)} />
             <p className="m-0 text-body text-muted">Stops other people's video. You still hear everyone and see shared screens.</p>

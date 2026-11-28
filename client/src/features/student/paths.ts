@@ -14,6 +14,8 @@ export const studentPaths = {
   material: (id: string) => `/student/materials/${encodeURIComponent(id)}`,
   /** A class meeting's full-screen page (D-070), in the same tab: the demo identity is per tab. */
   meeting: (classId: string, id: number | string) => `/student/meet/${encodeURIComponent(classId)}/${encodeURIComponent(String(id))}`,
+  /** A meeting's own page in the class: its saved chat (D-070, Phase 3). */
+  meetingDetails: (classId: string, id: number | string) => `/student/classes/${encodeURIComponent(classId)}/meetings/${encodeURIComponent(String(id))}`,
 };
 
 export const CLASS_TABS = ["Stream", "Classwork", "Modules", "Materials", "People", "Attendance", "Meetings"] as const;

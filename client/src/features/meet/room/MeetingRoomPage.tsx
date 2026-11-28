@@ -1,14 +1,16 @@
-import { Track, type Participant, type RemoteAudioTrack } from "livekit-client";
+import { Track, type LocalVideoTrack, type Participant, type RemoteAudioTrack } from "livekit-client";
 import { ArrowLeft, Hourglass, Volume2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Viewer } from "../../../shared/api/viewer";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { useNetworkStatus } from "../../../shared/hooks/useNetworkStatus";
+import { usePersistentState } from "../../../shared/hooks/usePersistentState";
 import { Button } from "../../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "../../../shared/ui/Dialog";
 import { IconButton } from "../../../shared/ui/IconButton";
 import { cn } from "../../../shared/lib/cn";
 import { describeMeetingError, hostAction, letSpeak as letSpeakApi, muteEveryone, setHand, updateMeeting } from "../api/meetings";
+import { BLUR_KEY, canBlur, setBlur } from "./blur";
 import { ChatPanel } from "./ChatPanel";
 import { ControlBar, type Panel } from "./ControlBar";
 import { parseRoomInfo } from "./metadata";
@@ -161,6 +163,28 @@ function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<type
   const [ending, setEnding] = useState(false);
   useRightsNotices(room, info, viewer.role, version, say);
 
+  // Background blur follows the person's choice whenever their camera is on (it was set on the pre-join screen).
+  const [blurAvailable] = useState(canBlur);
+  const [blurChoice, setBlurChoice] = usePersistentState<boolean>(BLUR_KEY, false);
+  const [blurBusy, setBlurBusy] = useState(false);
+  const cameraTrack = local.getTrackPublication(Track.Source.Camera)?.track as LocalVideoTrack | undefined;
+  useEffect(() => {
+    if (!blurAvailable || !blurChoice || !cameraTrack || cameraTrack.getProcessor()) return;
+    setBlur(cameraTrack, true).catch(() => say("Background blur couldn't start in this browser. Your camera still works without it."));
+  }, [blurAvailable, blurChoice, cameraTrack, say]);
+  const toggleBlur = async () => {
+    if (!cameraTrack) return;
+    setBlurBusy(true);
+    try {
+      await setBlur(cameraTrack, !blurChoice);
+      setBlurChoice(!blurChoice);
+    } catch {
+      say("Background blur couldn't start in this browser. Your camera still works without it.");
+    } finally {
+      setBlurBusy(false);
+    }
+  };
+
   // The instructor's controls, each saying what went wrong in the line above the stage.
   const run = async (work: Promise<unknown>): Promise<void> => {
     try {
@@ -256,6 +280,7 @@ function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<type
         onLeave={meet.leave}
         onNotice={say}
         onEnd={isHostHere ? () => setEnding(true) : undefined}
+        blur={blurAvailable ? { on: blurChoice, busy: blurBusy, toggle: () => void toggleBlur() } : undefined}
       />
       {isHostHere && (
         <Dialog open={ending} onOpenChange={setEnding}>

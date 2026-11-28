@@ -197,6 +197,7 @@
 | `src/features/isms-link/components/StatusPanel.tsx` | `StatusPanel` |
 | `src/features/isms-link/components/SubjectsPanel.tsx` | `SubjectsPanel` |
 | `src/features/meet/components/ClassMeetings.tsx` | `LiveMeetingBanner`, `StartMeetingButton`, `MeetingsTab` |
+| `src/features/meet/components/MeetingDetailsPage.tsx` | `MeetingDetailsPage` |
 | `src/features/meet/components/MyMeetingsPanel.tsx` | `MyMeetingsPanel` |
 | `src/features/meet/room/ChatPanel.tsx` | `ChatPanel` |
 | `src/features/meet/room/ControlBar.tsx` | `ControlBar` |

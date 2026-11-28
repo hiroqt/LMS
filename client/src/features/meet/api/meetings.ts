@@ -125,6 +125,34 @@ export interface MyMeeting {
 
 export const fetchMyMeetings = (viewer: Viewer, signal?: AbortSignal) => getJson<MyMeeting[]>("/api/me/meetings", { identity: true, viewer, signal });
 
+/** One person's attendance in a meeting (the instructor's report; D-035's monthly attendance is separate). */
+export interface AttendancePerson {
+  personId: string;
+  name: string;
+  role: "instructor" | "student";
+  /** False for someone who joined but is no longer on the active class list. */
+  onClassList: boolean;
+  joined: boolean;
+  firstJoinedAt: string | null;
+  lastLeftAt: string | null;
+  /** How many times they joined. */
+  stays: number;
+  minutesIn: number;
+}
+
+export interface MeetingAttendance {
+  meetingId: number;
+  studentsJoined: number;
+  studentsOnClassList: number;
+  people: AttendancePerson[];
+}
+
+export const fetchAttendance = (viewer: Viewer, classId: string, id: number, signal?: AbortSignal) =>
+  getJson<MeetingAttendance>(`${base(classId)}/${id}/attendance`, { identity: true, viewer, signal });
+
+export const deleteSavedChat = (viewer: Viewer, classId: string, id: number) =>
+  sendJson<void>("DELETE", `${base(classId)}/${id}/chat`, undefined, { viewer });
+
 /** The meeting that is on now, if any. */
 export const liveMeeting = (meetings: readonly Meeting[] | undefined) => meetings?.find((m) => m.status === "live");
 

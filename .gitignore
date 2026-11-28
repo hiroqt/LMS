@@ -18,3 +18,4 @@ client/test-results/
 client/playwright-report/
 client/blob-report/
 client/coverage/
+meet-server/load-results/

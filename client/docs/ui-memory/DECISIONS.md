@@ -1083,5 +1083,23 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     (`GET /api/me/meetings`, every 20 s): live meetings join from their row, coming ones open the
     class's Meetings tab. There is no panel when there are none, so dashboards without meetings
     are unchanged.
+- **Phase 3 (after a meeting, blur, sizing; 2026-11-26).**
+  - **A meeting's own page:** `/instructor|student/classes/{classId}/meetings/{id}`, inside the
+    shell, opened from a past meeting in the Meetings tab.
+    - The instructor sees **Attendance**: everyone on the class list, joined or not, with first
+      join, last leave, times joined, and minutes. It has **Download CSV** and is not counted in
+      monthly attendance.
+    - The class sees the **Saved chat**; only the instructor can delete it (confirmed).
+    - A live meeting's page offers Join.
+  - **CSV:** UTF-8 with a byte-order mark, local times, and any cell starting with `= + - @` given
+    a leading apostrophe so a spreadsheet can't run it.
+  - **Background blur:** LiveKit's processor with Google's MediaPipe, offered on computers whose
+    browser can run it (WebGL2, OffscreenCanvas, VideoFrame); not on phones.
+    - Its code is the `meetingBlur-*` chunk, with its own 60 KB budget. The WebAssembly (about
+      2.9 MB gzipped) and the selfie-segmentation model are served from the LMS's own
+      `/meeting-blur/`, never a CDN, and none of it is in the install cache.
+    - The choice is remembered (`tmcc-meeting-blur`), and Join waits while blur loads.
+  - **Sizing:** a local load test on an Apple M5, rough numbers, in MEETINGS_PLAN's "Going live".
+    A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 

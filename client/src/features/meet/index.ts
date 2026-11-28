@@ -9,4 +9,7 @@ export { LiveMeetingBanner, MeetingsTab, StartMeetingButton } from "./components
 export { MyMeetingsPanel } from "./components/MyMeetingsPanel";
 export type { Meeting, MyMeeting } from "./api/meetings";
 export type { MeetingRoomPageProps } from "./room/MeetingRoomPage";
+export type { MeetingDetailsPageProps } from "./components/MeetingDetailsPage";
+/** One meeting's page in the class: attendance (instructor), the saved chat (class). */
+export const MeetingDetailsPage = lazy(() => import("./components/MeetingDetailsPage"));
 export const MeetingRoomPage = lazy(() => import("./room/MeetingRoomPage"));

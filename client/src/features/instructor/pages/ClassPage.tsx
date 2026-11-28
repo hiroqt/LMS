@@ -127,7 +127,7 @@ export default function ClassPage() {
         <TabsContent value={slug("People")}><PeopleTab {...props} /></TabsContent>
         <TabsContent value={slug("Attendance")}><AttendanceTab {...props} /></TabsContent>
         <TabsContent value={slug("Meetings")}>
-          <MeetingsTab viewer={viewer} classId={room.id} onOpen={openMeeting} canManage className={subject?.title ?? "Class"} />
+          <MeetingsTab viewer={viewer} classId={room.id} onOpen={openMeeting} onDetails={(meeting) => navigate(instructorPaths.meetingDetails(room.id, meeting.id))} canManage className={subject?.title ?? "Class"} />
         </TabsContent>
         <TabsContent value={slug("Submissions")}>
           <SubmissionsTab

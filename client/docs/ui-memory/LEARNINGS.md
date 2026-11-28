@@ -834,3 +834,16 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   without the camera, and the camera started afterwards stayed on. Make Join wait for devices
   and stop a device that starts after the screen has gone.
 
+### L-110 · Vite reloads a page the first time a lazily imported package is used; date tests and the machine's zone
+`2026-11-26` · hiro (D-070, Phase 3) · scope: tests, build, meetings · confidence: high
+- **Vite reloads on new packages:** a package first reached through a dynamic `import()` (here
+  `@livekit/track-processors`, when blur is turned on) is discovered by the dev server only then.
+  It optimizes it and reloads the page, which ended the pre-join screen's camera and choices.
+  The production build is unaffected. List such packages in `optimizeDeps.include`.
+- **Time zones:** a unit test that expects "09:05" from a UTC timestamp passes only in Manila.
+  Vitest uses the machine's zone, unlike Playwright, which pins Asia/Manila. Build the moment
+  from local parts (`new Date(2026, 9, 23, 9, 5)`) and check the test under `TZ=UTC` too.
+- **Third-party defaults:** LiveKit's blur fetches MediaPipe from jsdelivr and Google Storage
+  unless given `assetPaths`. Check a new browser dependency's default URLs, and test for
+  requests outside the LMS.
+

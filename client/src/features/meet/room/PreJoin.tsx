@@ -1,10 +1,12 @@
 import { createLocalAudioTrack, createLocalVideoTrack, VideoPresets, type LocalAudioTrack, type LocalTrack, type LocalVideoTrack } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, WifiOff } from "lucide-react";
+import { Mic, MicOff, Sparkles, Video, VideoOff, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNetworkStatus } from "../../../shared/hooks/useNetworkStatus";
+import { usePersistentState } from "../../../shared/hooks/usePersistentState";
 import { Button } from "../../../shared/ui/Button";
 import type { Meeting } from "../api/meetings";
 import { MediaToggle } from "./MediaToggle";
+import { BLUR_KEY, canBlur, setBlur } from "./blur";
 import { notAllowedText, rightsBeforeJoin } from "./rights";
 import { VideoView } from "./VideoView";
 
@@ -32,6 +34,9 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
   const [problem, setProblem] = useState<string | null>(null);
   /** A camera or mic still starting: Join waits for it, so it isn't left behind (and left on). */
   const [starting, setStarting] = useState(false);
+  const [blurAvailable] = useState(canBlur);
+  const [blur, setBlurChoice] = usePersistentState<boolean>(BLUR_KEY, false);
+  const [blurring, setBlurring] = useState(false);
   const handedOver = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -82,11 +87,27 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
       const track = await createLocalVideoTrack({ resolution: VideoPresets.h540.resolution });
       // The screen went away while the camera started: turn it off again.
       if (!alive.current) track.stop();
-      else setCamera(track);
+      else {
+        setCamera(track);
+        if (blur && blurAvailable) await turnBlur(track, true);
+      }
     } catch {
       if (alive.current) setProblem(blocked.camera);
     } finally {
       if (alive.current) setStarting(false);
+    }
+  };
+
+  /** Blur needs its code and model the first time (about 3 MB); Join waits for it. */
+  const turnBlur = async (track: LocalVideoTrack, on: boolean) => {
+    setBlurring(true);
+    try {
+      await setBlur(track, on);
+      setBlurChoice(on);
+    } catch {
+      if (alive.current) setProblem("Background blur couldn't start in this browser. Your camera still works without it.");
+    } finally {
+      if (alive.current) setBlurring(false);
     }
   };
 
@@ -127,6 +148,9 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
         <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 p-3">
           <MediaToggle label="Microphone" on={mic !== null} allowed={rights.microphone} onIcon={<Mic />} offIcon={<MicOff />} onPress={() => void toggleMic()} />
           <MediaToggle label="Camera" on={camera !== null} allowed={rights.camera} onIcon={<Video />} offIcon={<VideoOff />} onPress={() => void toggleCamera()} />
+          {blurAvailable && camera && (
+            <MediaToggle label="Blur background" tone="plain" on={blur} onIcon={<Sparkles />} onPress={() => void turnBlur(camera, !blur)} />
+          )}
         </div>
       </div>
 
@@ -142,7 +166,7 @@ export function PreJoin({ meeting, role, name, busy, onJoin }: {
             <WifiOff aria-hidden className="mt-0.5 size-4 shrink-0" />A meeting needs a connection. Reconnect, then join.
           </p>
         )}
-        <Button onClick={join} loading={busy || starting} loadingLabel={starting ? "Getting your devices ready" : startsIt ? "Starting the meeting" : "Joining"} disabled={!network.online} className="self-start">
+        <Button onClick={join} loading={busy || starting || blurring} loadingLabel={starting || blurring ? "Getting your devices ready" : startsIt ? "Starting the meeting" : "Joining"} disabled={!network.online} className="self-start">
           {startsIt ? "Start meeting" : "Join now"}
         </Button>
       </div>
