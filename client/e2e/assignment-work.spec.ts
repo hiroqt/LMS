@@ -24,6 +24,15 @@ async function openWork(page: Page, courseworkId: string, title = "ER diagram") 
   return card;
 }
 
+const INSTRUCTIONS = "Draw the diagram for the enrollment system.";
+
+/** D-073: the instructions and the rules (and the header line that repeats them) show only while there is work to do. */
+async function expectBrief(page: Page, shown: boolean) {
+  await expect(page.getByRole("region", { name: "Instructions" })).toHaveCount(shown ? 1 : 0);
+  await expect(page.getByRole("region", { name: "How to hand in" })).toHaveCount(shown ? 1 : 0);
+  await expect(page.getByText(INSTRUCTIONS)).toHaveCount(shown ? 2 : 0);
+}
+
 async function confirmTurnIn(page: Page) {
   await page.getByRole("button", { name: /^Turn in( new version)?$/ }).click();
   const dialog = page.getByRole("dialog");
@@ -36,7 +45,7 @@ test.describe("Student · Your work on an assignment", () => {
     const { courseworkId } = await seedAssignment(page, sandbox);
     const card = await openWork(page, courseworkId);
     await expect(card.getByText("Assigned", { exact: true })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Instructions" })).toContainText("Draw the diagram for the enrollment system.");
+    await expect(page.getByRole("region", { name: "Instructions" })).toContainText(INSTRUCTIONS);
     await expect(page.getByRole("region", { name: "How to hand in" })).toContainText("You can hand in a written answer and up to 5 files.");
     expect(await mine(page, sandbox, courseworkId)).toEqual([]);
 
@@ -95,6 +104,7 @@ test.describe("Student · Your work on an assignment", () => {
   test("turn in gives a receipt with codes that stays after a reload; take back, then new versions", async ({ page, sandbox }) => {
     const { courseworkId } = await seedAssignment(page, sandbox, { settings: { submissionKinds: ["text", "file", "link"], allowResubmission: true, dueAt: NEXT_WEEK } });
     const card = await openWork(page, courseworkId);
+    await expectBrief(page, true);
     await card.getByRole("textbox", { name: "Written answer" }).fill("See the attached diagram.");
     await card.getByRole("textbox", { name: "Link" }).fill("https://docs.example.com/er");
     await card.getByLabel("Choose files").setInputFiles(pdfFile());
@@ -111,11 +121,14 @@ test.describe("Student · Your work on an assignment", () => {
     await expect(receipt).toContainText("Version 1");
     await expect(receipt.getByRole("heading", { name: "Receipt" })).toBeFocused();
     await expect(card.getByText("Turned in", { exact: true })).toBeVisible();
+    // Handed in: the instructions step aside (D-073), also after a reload.
+    await expectBrief(page, false);
     const [turnedIn] = await mine(page, sandbox, courseworkId);
     const code = turnedIn!.files[0]!.code;
     await expect(receipt).toContainText(`Code ${code}`);
     await page.reload();
     await expect(page.getByRole("region", { name: "Receipt" })).toContainText(`Code ${code}`);
+    await expectBrief(page, false);
 
     // The instructor now sees exactly this work.
     const list = await instructorList(page, sandbox, courseworkId);
@@ -127,16 +140,19 @@ test.describe("Student · Your work on an assignment", () => {
     await expect(page.getByRole("heading", { name: "Your draft" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Written answer" })).toHaveValue("See the attached diagram.");
     await expect(page.getByRole("region", { name: "Your work" }).getByText("Draft", { exact: true })).toBeVisible();
+    await expectBrief(page, true);
     expect((await instructorList(page, sandbox, courseworkId)).items).toEqual([]);
 
     // Turn in again: version 2, with version 1 listed as taken back.
     await (await confirmTurnIn(page)).getByRole("button", { name: "Turn in" }).click();
     await expect(page.getByRole("region", { name: "Receipt" })).toContainText("Version 2");
     await expect(page.getByRole("region", { name: "Earlier versions" })).toContainText("Version 1 · Taken back");
+    await expectBrief(page, false);
 
-    // A new version starts as a copy of the last one.
+    // A new version starts as a copy of the last one, and brings the instructions back.
     await page.getByRole("button", { name: "Turn in a new version" }).click();
     await expect(page.getByRole("heading", { name: "New version" })).toBeVisible();
+    await expectBrief(page, true);
     await expect(page.getByRole("textbox", { name: "Written answer" })).toHaveValue("See the attached diagram.");
     await page.getByRole("textbox", { name: "Written answer" }).fill("See the corrected diagram.");
     await expect(page.getByRole("region", { name: "Your work" }).getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
@@ -145,6 +161,7 @@ test.describe("Student · Your work on an assignment", () => {
     await again.getByRole("button", { name: "Turn in" }).click();
     await expect(page.getByRole("region", { name: "Receipt" })).toContainText("Version 3");
     await expect(page.getByRole("region", { name: "Earlier versions" })).toContainText("Version 2 · Turned in");
+    await expectBrief(page, false);
     expect((await instructorList(page, sandbox, courseworkId)).items.map((row) => [row.attemptNumber, row.text])).toEqual([[2, "See the attached diagram."], [3, "See the corrected diagram."]]);
   });
 

@@ -1147,3 +1147,24 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
+
+### D-073 · Handed-in work hides the instructions until a new version is started
+`2026-11-28` · user request · scope: student · confidence: high
+The user asked that, once a student has handed in an assignment, the page stop repeating
+everything they already worked through, and show it again only when they hand in again.
+- **What hides:** while the latest version is handed in and no draft is under way
+  (`workIsHandedIn` in `features/student/api/work.ts`), the brief keeps only its rubric. The
+  Instructions and How to hand in sections are gone, and so is the header line when it is the
+  instructions repeated (the catalog falls back from the description to the instructions; L-113).
+  Without a rubric the brief card is not shown at all. The editor was already closed then (D-060).
+- **What brings it back:** a draft. **Turn in a new version** and **Take back** both start one,
+  and the brief returns with the editor. Focus still moves to the editor, as before.
+- **Where no new version is possible** (one turn-in only, past the last day, closed), the
+  instructions stay hidden too; the user chose this. The receipt, grade, and details card remain.
+- **The rubric stays** while the work waits for a grade, including a grade held until returned
+  (D-065), because the work is still graded on it. It moves to the grade once one is visible.
+- **Not hidden:** a "Not handed in" grade (nothing was handed in), excused work with nothing
+  handed in, exams, and the instructor's Preview as student (`AssignmentBrief` without `handedIn`).
+- Until the student's rows load, the server's `turnIn.state` decides, so the page does not jump.
+- Journey change: `e2e/assignment-work.spec.ts` "turn in gives a receipt…" now checks the brief
+  is hidden after each turn-in (and after a reload) and back after Take back and a new version.

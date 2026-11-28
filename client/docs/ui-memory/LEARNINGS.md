@@ -871,3 +871,13 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   API re-checks each `participant_joined` webhook (`MeetingPresence`) and removes anyone the
   instructor removed or the class list dropped; the ISMS sync removes dropped students from live
   meetings at once.
+
+### L-113 · Hiding the instructions also means the header's description line
+`2026-11-28` · D-073 · scope: student · confidence: high
+- The student catalog sets `description` to the instructions when the instructor gave no
+  description (`catalog.ts`), so the page header repeats them. Anything that hides the
+  instructions must hide that line too, but only when the two are the same text; a real
+  description stays.
+- The page and the Your work card read the same `useMyWork` query (one cache entry), so both
+  agree on "handed in" the moment a write answers. `useMyWork` takes `enabled` so the page can call
+  it before its early return without fetching for exams.

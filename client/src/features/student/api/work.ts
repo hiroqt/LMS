@@ -56,6 +56,20 @@ export function splitWork(rows: Submission[]): WorkRows {
   return { draft, current, earlier };
 }
 
+/**
+ * The work is handed in and no new version is under way, so the page keeps the instructions and
+ * the hand-in rules out of the way (D-073). They come back with a draft: "Turn in a new version"
+ * or Take back. Until the rows load (or when they fail), the server's state decides, so the page
+ * does not jump.
+ */
+export function workIsHandedIn(rows: Submission[] | undefined, turnIn: TurnIn | undefined): boolean {
+  if (rows) {
+    const { draft, current } = splitWork(rows);
+    return Boolean(current) && !draft;
+  }
+  return turnIn?.state === "turned_in" || turnIn?.state === "graded" || turnIn?.state === "returned";
+}
+
 /** Replaces (or adds) one row after a write answered it, keeping the list in version order. */
 export function withRow(rows: Submission[] | undefined, row: Submission): Submission[] {
   const others = (rows ?? []).filter((item) => item.id !== row.id);

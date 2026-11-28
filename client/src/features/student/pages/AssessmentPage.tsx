@@ -9,7 +9,9 @@ import type { ActivitySubmission, Assessment, ExamGrade } from "../api/types";
 import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
+import { workIsHandedIn } from "../api/work";
 import { AssignmentWork } from "../components/work/AssignmentWork";
+import { useMyWork } from "../hooks/useMyWork";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -47,6 +49,9 @@ export default function AssessmentPage() {
   const navigate = useNavigate();
   const { catalog, completed } = useWorkspace();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
+  // The same rows as the work card (one cached query), so the header and the brief agree on "handed in".
+  const assignment = assessment?.kind === "activity" && assessment.handIn ? assessment : undefined;
+  const work = useMyWork(assignment?.courseId ?? "", assessmentId, Boolean(assignment));
   if (!assessment) return <Navigate to={studentPaths.tasks()} replace />;
 
   const courseIndex = catalog.courses.findIndex((item) => item.id === assessment.courseId);
@@ -63,6 +68,10 @@ export default function AssessmentPage() {
   const canStart = !isClosed && !notHandedIn && (Boolean(attempts?.openId) || attemptsLeft > 0);
   const toClasswork = () => navigate(course ? studentPaths.classPage(course.id, "Classwork") : studentPaths.tasks());
 
+  // Handed in: the instructions step aside until a new version is started (D-073).
+  const handedIn = Boolean(assignment) && workIsHandedIn(work.data, assessment.turnIn);
+  // Without a description of its own, the header repeats the instructions (catalog), so it steps aside with them.
+  const description = handedIn && assessment.description === assessment.instructions ? "" : assessment.description;
   const excused = Boolean(assessment.excused);
   // The student's own due date when the instructor gave them more time (contract §11).
   const ownDueDate = Boolean(assessment.turnIn?.extended);
@@ -93,7 +102,7 @@ export default function AssessmentPage() {
               {assessment.type}
             </p>
             <h1 tabIndex={-1} className="m-0 font-sans text-page-mobile font-semibold text-ink outline-none sm:text-page">{assessment.title}</h1>
-            {assessment.description && <p className="m-0 text-body-lg text-muted">{assessment.description}</p>}
+            {description && <p className="m-0 text-body-lg text-muted">{description}</p>}
             {course && <p className="m-0 text-body text-muted">{course.teacher} · {course.section}</p>}
           </header>
 
@@ -106,7 +115,7 @@ export default function AssessmentPage() {
           )}
 
           {isActivity && assessment.handIn ? (
-            <AssignmentWork classId={assessment.courseId} assessmentId={assessment.id} instructions={assessment.instructions} settings={assessment.handIn} turnIn={assessment.turnIn} rubricId={assessment.rubricId}>
+            <AssignmentWork classId={assessment.courseId} assessmentId={assessment.id} instructions={assessment.instructions} settings={assessment.handIn} turnIn={assessment.turnIn} rubricId={assessment.rubricId} handedIn={handedIn}>
               {closedNote}
             </AssignmentWork>
           ) : (
