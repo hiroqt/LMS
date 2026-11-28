@@ -16,6 +16,8 @@ export interface AssignmentWorkProps {
   settings: HandInSettings;
   turnIn: TurnIn | undefined;
   rubricId: number | undefined;
+  /** The work is handed in with no new version under way (`workIsHandedIn`): the brief keeps only the rubric (D-073). */
+  handedIn: boolean;
   /** Shown between the brief and the work card (the "Closed" note). */
   children?: ReactNode;
 }
@@ -23,9 +25,10 @@ export interface AssignmentWorkProps {
 /**
  * An assignment on the student's page: the brief (instructions, rules, rubric) and the Your work
  * card. The rubric is read once for both: read-only in the brief, and with the chosen levels on a
- * visible grade, where the brief then leaves it out so it is not shown twice.
+ * visible grade, where the brief then leaves it out so it is not shown twice. Once the work is
+ * handed in, the instructions and rules step aside until a new version is started (D-073).
  */
-export function AssignmentWork({ classId, assessmentId, instructions, settings, turnIn, rubricId, children }: AssignmentWorkProps) {
+export function AssignmentWork({ classId, assessmentId, instructions, settings, turnIn, rubricId, handedIn, children }: AssignmentWorkProps) {
   const rubric = useAssignmentRubric(classId, assessmentId, rubricId);
   const work = useMyWork(classId, assessmentId);
   const { current } = splitWork(work.data ?? []);
@@ -42,7 +45,7 @@ export function AssignmentWork({ classId, assessmentId, instructions, settings, 
 
   return (
     <>
-      <AssignmentBrief instructions={instructions} settings={settings} ownDueDate={turnIn?.extended} rubric={briefRubric} />
+      <AssignmentBrief instructions={instructions} settings={settings} ownDueDate={turnIn?.extended} rubric={briefRubric} handedIn={handedIn} />
       {children}
       {turnIn && <YourWork classId={classId} assessmentId={assessmentId} settings={settings} turnIn={turnIn} rubric={rubric.data} />}
     </>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../../shared/api/http";
 import type { Submission, TurnIn } from "../../../shared/api/overview";
-import { afterUnsubmit, canRetry, daysLate, filesLeftLabel, formatPoints, gradeSum, hasWork, isWebAddress, latePenaltyNow, REFUSALS, shouldRetrySave, splitWork, turnInContents, withRow, workBadges } from "./work";
+import { afterUnsubmit, canRetry, daysLate, filesLeftLabel, formatPoints, gradeSum, hasWork, isWebAddress, latePenaltyNow, REFUSALS, shouldRetrySave, splitWork, turnInContents, withRow, workBadges, workIsHandedIn } from "./work";
 
 const file = (id: number, name: string) => ({ id, name, contentType: "application/pdf", size: 1000, code: `CODE-${id}`, sameAsAnotherStudent: null });
 const row = (attemptNumber: number, status: Submission["status"], extra: Partial<Submission> = {}): Submission => ({
@@ -47,6 +47,29 @@ describe("splitWork", () => {
     expect(withRow(rows, row(2, "in_progress")).map((item) => item.status)).toEqual(["submitted", "in_progress"]);
     expect(withRow(rows, { ...row(1, "submitted"), text: "new" })[0]?.text).toBe("new");
     expect(afterUnsubmit(rows, row(2, "in_progress")).map((item) => item.status)).toEqual(["withdrawn", "in_progress"]);
+  });
+});
+
+describe("workIsHandedIn (D-073)", () => {
+  it("is true for a handed-in version with no draft, and false once a new version or a take-back starts one", () => {
+    expect(workIsHandedIn([row(1, "submitted")], verdict("turned_in"))).toBe(true);
+    expect(workIsHandedIn([row(1, "graded")], verdict("graded"))).toBe(true);
+    expect(workIsHandedIn([row(1, "submitted"), row(2, "in_progress")], verdict("draft"))).toBe(false);
+    expect(workIsHandedIn(afterUnsubmit([row(1, "submitted")], row(2, "in_progress")), verdict("draft"))).toBe(false);
+  });
+
+  it("is false with nothing handed in, a draft only, or a not-handed-in grade", () => {
+    expect(workIsHandedIn([], verdict("assigned"))).toBe(false);
+    expect(workIsHandedIn([row(1, "in_progress")], verdict("draft"))).toBe(false);
+    expect(workIsHandedIn([row(1, "graded", { notHandedIn: true, submittedAt: null })], verdict("not_handed_in"))).toBe(false);
+  });
+
+  it("follows the server's state until the rows load", () => {
+    expect(workIsHandedIn(undefined, verdict("turned_in"))).toBe(true);
+    expect(workIsHandedIn(undefined, verdict("returned"))).toBe(true);
+    expect(workIsHandedIn(undefined, verdict("draft"))).toBe(false);
+    expect(workIsHandedIn(undefined, verdict("not_handed_in"))).toBe(false);
+    expect(workIsHandedIn(undefined, undefined)).toBe(false);
   });
 });
 

@@ -25,6 +25,11 @@ export interface AssignmentBriefProps {
   ownDueDate?: boolean;
   /** What the work is graded on, read-only (contract §12). Omit when the assignment has no rubric. */
   rubric?: BriefRubric;
+  /**
+   * The student's work is handed in (D-073): the instructions and the rules step aside, and only
+   * the rubric stays, since the work is still graded on it. Nothing shows without a rubric.
+   */
+  handedIn?: boolean;
 }
 
 /** The rules, with the due-date sentence reworded when the date is the student's own. */
@@ -36,24 +41,30 @@ function briefRules(settings: HandInSettings, ownDueDate = false): string[] {
 }
 
 /**
- * An assignment's instructions, its rules in plain words, and its rubric, as a student reads them.
+ * An assignment's instructions, its rules in plain words, and its rubric, as a student reads them
+ * (only the rubric once the work is handed in).
  * Purely presentational, so the student's assignment page and the instructor's "Preview as
  * student" show the same thing; the server enforces every rule listed.
  */
-export function AssignmentBrief({ instructions, settings, ownDueDate, rubric }: AssignmentBriefProps) {
+export function AssignmentBrief({ instructions, settings, ownDueDate, rubric, handedIn = false }: AssignmentBriefProps) {
   const text = instructions.trim();
+  if (handedIn && !rubric) return null;
   return (
     <Card className="flex flex-col gap-4 p-5">
-      <section aria-labelledby="assignment-instructions" className="flex flex-col gap-2">
-        <h2 id="assignment-instructions" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
-        <p className="m-0 max-w-prose text-body whitespace-pre-line">{text || "Your instructor did not add instructions."}</p>
-      </section>
-      <section aria-labelledby="assignment-rules" className="flex flex-col gap-2">
-        <h2 id="assignment-rules" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><ListChecks aria-hidden className="size-4 text-primary-700" />How to hand in</h2>
-        <ul className="m-0 flex max-w-prose list-disc flex-col gap-1 pl-5 text-body">
-          {briefRules(settings, ownDueDate).map((rule) => <li key={rule}>{rule}</li>)}
-        </ul>
-      </section>
+      {!handedIn && (
+        <>
+          <section aria-labelledby="assignment-instructions" className="flex flex-col gap-2">
+            <h2 id="assignment-instructions" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><FileText aria-hidden className="size-4 text-primary-700" />Instructions</h2>
+            <p className="m-0 max-w-prose text-body whitespace-pre-line">{text || "Your instructor did not add instructions."}</p>
+          </section>
+          <section aria-labelledby="assignment-rules" className="flex flex-col gap-2">
+            <h2 id="assignment-rules" className="m-0 flex items-center gap-2 font-sans text-card-title font-semibold"><ListChecks aria-hidden className="size-4 text-primary-700" />How to hand in</h2>
+            <ul className="m-0 flex max-w-prose list-disc flex-col gap-1 pl-5 text-body">
+              {briefRules(settings, ownDueDate).map((rule) => <li key={rule}>{rule}</li>)}
+            </ul>
+          </section>
+        </>
+      )}
       {rubric && (
         <section aria-labelledby="assignment-rubric" className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">

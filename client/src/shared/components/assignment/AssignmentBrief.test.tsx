@@ -57,4 +57,17 @@ describe("AssignmentBrief", () => {
     render(<AssignmentBrief instructions="  " settings={settings} />);
     expect(screen.getByText("Your instructor did not add instructions.")).toBeVisible();
   });
+
+  it("keeps only the rubric once the work is handed in, and nothing without one (D-073)", async () => {
+    const rubric = { totalPoints: 5, criteria: [{ id: 8, title: "Presentation", description: null, levels: [{ id: 24, title: "Clear", description: null, points: 5 }] }] };
+    const { container, rerender } = render(<AssignmentBrief instructions="Draw the diagram." settings={settings} rubric={{ rubric }} handedIn />);
+    expect(screen.queryByRole("region", { name: "Instructions" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "How to hand in" })).toBeNull();
+    expect(screen.queryByText("Draw the diagram.")).toBeNull();
+    expect(screen.getByRole("region", { name: "Rubric" })).toHaveTextContent("5 points in all");
+    expect(await axeViolations()).toEqual([]);
+
+    rerender(<AssignmentBrief instructions="Draw the diagram." settings={settings} handedIn />);
+    expect(container).toBeEmptyDOMElement();
+  });
 });
