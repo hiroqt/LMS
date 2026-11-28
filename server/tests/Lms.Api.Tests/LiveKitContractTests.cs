@@ -70,20 +70,52 @@ public sealed class LiveKitContractTests
     [LiveKitFact]
     public async Task The_server_accepts_our_join_passes_and_refuses_a_forged_one()
     {
-        var (_, tokens, http) = Connect(Options());
+        var (server, tokens, http) = Connect(Options());
         using var _ = http;
+        var room = $"lms-contract-{Guid.NewGuid():N}";
+        // The media server opens no room by itself (auto_create: false), so the meeting's room comes first.
+        await server.CreateRoomAsync(room, "{}", TimeSpan.FromMinutes(1), CancellationToken.None);
         var student = MeetingRights.ForStudent(new Data.OnlineMeeting { StudentsMayUnmute = false });
-        var (pass, _) = tokens.JoinPass("STU-1", "Lia Abad", MeetingRights.Grant("lms-contract-validate", student),
+        var (pass, _) = tokens.JoinPass("STU-1", "Lia Abad", MeetingRights.Grant(room, student),
             new Dictionary<string, string> { [MeetingRights.RoleAttribute] = "student" });
         Assert.Equal(HttpStatusCode.OK, (await http.GetAsync($"rtc/validate?access_token={pass}")).StatusCode);
 
         var (forger, forgerTokens, forgerHttp) = Connect(Options(secret: "not_the_servers_secret_not_the_servers_secret"));
         using var __ = forgerHttp;
-        var (forged, _) = forgerTokens.JoinPass("STU-1", "Lia Abad", MeetingRights.Grant("lms-contract-validate", student), new Dictionary<string, string>());
+        var (forged, _) = forgerTokens.JoinPass("STU-1", "Lia Abad", MeetingRights.Grant(room, student), new Dictionary<string, string>());
         Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync($"rtc/validate?access_token={forged}")).StatusCode);
 
         // A call signed with the wrong secret is refused, not mistaken for an outage.
-        var wrong = await Assert.ThrowsAsync<MeetingServerException>(() => forger.ListParticipantsAsync("lms-contract-validate", CancellationToken.None));
+        var wrong = await Assert.ThrowsAsync<MeetingServerException>(() => forger.ListParticipantsAsync(room, CancellationToken.None));
         Assert.Equal("unauthenticated", wrong.Code);
+        await server.DeleteRoomAsync(room, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// LiveKit can't take back a join pass. So the media server must open no room by itself
+    /// (meet-server/livekit.yaml, room.auto_create: false): otherwise a pass that hasn't expired
+    /// opens a new, empty room after the instructor ended the meeting, and its holders meet there
+    /// without the instructor.
+    /// </summary>
+    [LiveKitFact]
+    public async Task A_join_pass_that_has_not_expired_does_not_reopen_an_ended_meeting()
+    {
+        var (server, tokens, http) = Connect(Options());
+        using var _ = http;
+        var room = $"lms-contract-{Guid.NewGuid():N}";
+        var ct = CancellationToken.None;
+        var (pass, _) = tokens.JoinPass("STU-1", "Lia Abad", MeetingRights.Grant(room, MeetingRights.ForStudent(new Data.OnlineMeeting())),
+            new Dictionary<string, string> { [MeetingRights.RoleAttribute] = "student" });
+        async Task<HttpStatusCode> Validate() => (await http.GetAsync($"rtc/validate?access_token={pass}", ct)).StatusCode;
+
+        // Not started yet: there is no room to join.
+        Assert.Equal(HttpStatusCode.NotFound, await Validate());
+        // Started: the pass joins.
+        await server.CreateRoomAsync(room, "{}", TimeSpan.FromMinutes(1), ct);
+        Assert.Equal(HttpStatusCode.OK, await Validate());
+        // Ended: the same pass, still within its 10 minutes, opens nothing.
+        await server.DeleteRoomAsync(room, ct);
+        Assert.Equal(HttpStatusCode.NotFound, await Validate());
+        Assert.Empty(await server.ListParticipantsAsync(room, ct));
     }
 }

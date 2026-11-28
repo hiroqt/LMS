@@ -9,6 +9,15 @@ set -eu
 cd "$(dirname "$0")"
 [ -f .env ] && set -a && . ./.env && set +a
 
+# The server opens no room by itself (livekit.yaml, auto_create: false), so make the test room first.
+docker run --rm --network container:lms-meet-dev livekit/livekit-cli:v2.20.1 \
+  room create \
+  --url ws://127.0.0.1:7880 \
+  --api-key "${LIVEKIT_API_KEY:-lms-dev}" \
+  --api-secret "${LIVEKIT_API_SECRET:-dev_only_livekit_secret_change_me_0123}" \
+  --empty-timeout 60 \
+  lms-check >/dev/null
+
 docker run --rm --network container:lms-meet-dev livekit/livekit-cli:v2.20.1 \
   load-test \
   --url ws://127.0.0.1:7880 \

@@ -56,6 +56,8 @@ jobs:
               tcp_port: 7881
               udp_port: 7882
               use_external_ip: false
+            room:
+              auto_create: false
         ports:
           - 7880:7880
           - 7881:7881

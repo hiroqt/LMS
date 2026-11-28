@@ -206,6 +206,9 @@ LiveKit media server ───┘                  our own server; open source (
 
 **Going live needs a server from the school:** a Linux machine with a public IP near the users,
 a domain with TLS, and these ports open: 443 TCP, 3478 UDP, 7881 TCP, and 50000–60000 UDP.
+Its LiveKit settings keep `room.auto_create: false` and `enable_remote_unmute: false`, as
+`meet-server/livekit.yaml` does: only the LMS API opens a room, so a join pass that hasn't expired
+can't reopen a meeting the instructor ended.
 Recording (Phase 4) needs extra CPU and disk on top of what follows.
 
 **Sizing, from the local load test (2026-11-26, rough).** This used LiveKit's `lk load-test`

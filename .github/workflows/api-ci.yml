@@ -24,6 +24,10 @@ jobs:
         image: livekit/livekit-server:v1.13.11
         env:
           LIVEKIT_KEYS: "lms-ci: ci_only_livekit_secret_0123456789abcdef"
+          # As meet-server/livekit.yaml: only the LMS API opens rooms (a contract test checks it).
+          LIVEKIT_CONFIG: |
+            room:
+              auto_create: false
         ports:
           - 7880:7880
     steps:

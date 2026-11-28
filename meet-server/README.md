@@ -68,6 +68,9 @@ real secret.
   instructor whose connection drops can come back to the same meeting.
 - `enable_remote_unmute: false`: nobody can switch on someone else's mic or camera (decision 7).
   The instructor can mute people, and can ask them to unmute.
+- `auto_create: false`: only the LMS API opens a room, when the instructor starts a meeting. LiveKit
+  can't take back a join pass, so without this, someone whose pass hasn't expired could open a new,
+  empty room after the instructor ended the meeting. The production server needs it too.
 - Webhooks go to the LMS API at `http://host.docker.internal:5200/api/meetings/livekit-webhook`
   (joined, left, and room closed, for meeting attendance). They are signed with the API key, so
   the LMS API reads only ours. If the API isn't running, LiveKit logs that the webhook failed, and
