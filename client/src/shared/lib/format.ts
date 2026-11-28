@@ -23,6 +23,9 @@ export const formatLongDay = (value: Date) => longDayFormat.format(value);
 export const formatFullDate = (value: number | Date) => fullDateFormat.format(toDate(value));
 /** "11:59 PM" */
 export const formatTime = (value: Date) => timeFormat.format(value);
+
+/** "Nov 28, 2026, 9:15 AM": when something was written. */
+export const formatDateTime = (value: string | number | Date) => dueFormat.format(toDate(value));
 /** "01:00" */
 export const formatCountdown = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 /** "01" */

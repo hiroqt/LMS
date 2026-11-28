@@ -12,6 +12,7 @@ import { useInstructorActions, type UngradedStudent } from "../../api/actions";
 import { useSpellingReview, waitingCount } from "../../api/grading";
 import { classWork, gradedLabel, type WorkItem } from "../../api/selectors";
 import { instructorPaths } from "../../paths";
+import { CommentsButton } from "../../components/CommentsDialog";
 import { dueLabel } from "./classUtils";
 import { ListSearch, type ClassTabProps } from "./shared";
 
@@ -62,6 +63,7 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
   };
   const [type, setType] = useState<(typeof FILTERS)[number]["id"]>("All");
   const work = classWork(content);
+  const roster = content.students.map((student) => ({ id: student.id, name: `${student.firstName} ${student.lastName}`.trim() }));
   const shown = work.filter((item) => (type === "All" || item.kind === type) && `${item.title} ${item.kind}`.toLowerCase().includes(query.toLowerCase()));
 
   return (
@@ -129,6 +131,7 @@ export function ClassworkTab({ room, content, goTab }: ClassTabProps) {
                 >
                   {item.closed ? "Reopen" : "Close"}
                 </Button>
+                <CommentsButton title={item.title} target={{ classId: room.id, kind: "coursework", id: item.id }} roster={roster} />
                 </>
                 )}
               </div>

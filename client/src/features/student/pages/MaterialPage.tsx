@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { fetchMaterialFile, pageCountLabel } from "../../../shared/api/materials";
 import { BackLink } from "../../../shared/components/BackLink";
+import { ClassDiscussion, PrivateComments } from "../../../shared/components/discussion/Comments";
 import { AttachedFile } from "../../../shared/components/files/AttachedFile";
 import { MaterialLayout } from "../../../shared/components/materials/MaterialLayout";
 import { MaterialPreview, PreviewNotice } from "../../../shared/components/materials/MaterialPreview";
@@ -33,6 +34,7 @@ export default function MaterialPage() {
   const previous = at > 0 ? sequence[at - 1] : undefined;
   const next = at >= 0 ? sequence[at + 1] : undefined;
   const file = material.file;
+  const commentTarget = { classId: material.courseId, kind: "material" as const, id: material.id };
 
   return (
     <>
@@ -62,6 +64,8 @@ export default function MaterialPage() {
           )
         }
         description={material.summary}
+        discussion={<ClassDiscussion viewer={viewer} target={commentTarget} />}
+        aside={<PrivateComments viewer={viewer} target={commentTarget} />}
         nav={(previous || next) && <SiblingLinks previous={previous} next={next} onOpen={(item) => navigate(studentPaths.material(item.id))} />}
       />
     </>
