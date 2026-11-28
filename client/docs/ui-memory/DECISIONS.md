@@ -993,3 +993,28 @@ for faculty, courses, and users. The Student "Due this week" cell's phone label 
 "Due soon", a word of its full label. `admin-flow`'s OVERVIEW spec selects `/^\d+ Total Students/`;
 no journey changed. Found when jsdom gained a canvas (L-105). D-068 is held by the offline plan.
 
+### D-070 · Class meetings: live video in the LMS on our own LiveKit server
+`2026-11-26` · hiro (user request, approved plan) · scope: student, instructor, shared, server · confidence: high
+The user asked for a separate video-meeting page like Google Meet, used inside the LMS, with no
+time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS_PLAN.md`.
+- **Media:** a self-hosted LiveKit SFU (`meet-server/`). No vendor and no code sets a time limit.
+  Simulcast, adaptive streams, and a Data saver mode serve weak phones. The meeting page is a
+  lazy, full-screen route, `/meet/{meetingId}`, outside `AppShell`. `livekit-client` (about 140
+  KB gzipped) is a recorded budget exception there only, like pdf.js (D-067).
+- **Who:** only the class's instructor starts a meeting. Only that instructor and students on
+  the class list can join, and there are no guest links. The LMS API checks this and issues a
+  10-minute join pass. Host actions go through the LMS API.
+- **Mic:** students join with the mic off by default. The instructor's meeting settings decide
+  whether students may turn on their mic and camera, share their screen, and chat, and the media
+  server enforces them. The instructor can mute, let speak, and ask to unmute. Nobody can switch
+  on someone else's mic (`enable_remote_unmute: false`).
+- **Chat** goes through the LMS API. It is saved only while the instructor's "Save the chat" is
+  on, and everyone sees that it is on.
+- **Recording** isn't in v1. It is designed now and built in Phase 4. It is optional and only the
+  instructor controls it. It records the whole meeting until the instructor pauses or stops it, or
+  the meeting ends, and a meeting can be set to record from its start. Paused stretches are never
+  captured, and the stretches become one video per meeting. Everyone sees a notice and a REC sign.
+- **Attendance** from the media server's webhooks is a report for the instructor. It doesn't
+  change monthly attendance (D-035).
+- Safe for demos only until real sign-in exists, like the rest of the LMS.
+

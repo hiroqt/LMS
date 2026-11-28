@@ -772,3 +772,16 @@ visible text. pdfjs-dist installs `@napi-rs/canvas`, and two real problems appea
 (D-069). Unit-level axe results depend on what is installed: a passing axe test without a canvas
 proves less than it seems, and the browser specs remain the reference.
 
+### L-106 · Fake-media WebRTC checks: count tracks and measure sound with an analyser
+`2026-11-26` · hiro (D-070, Phase 0) · scope: tests, meetings · confidence: medium
+Two headless Chromium browsers with `--use-fake-device-for-media-stream` joined the local
+LiveKit server. The page that joined first always reported `totalAudioEnergy: 0` for the sound
+it received, though its packets arrived and an `AnalyserNode` on the same track measured the fake
+beep at a peak of about 1.0. That page also held stale, paused media elements from an earlier
+subscription. Swapping who joined first moved the 0 to the other person, so the stat followed the
+page, not the sender. For "can they hear each other", measure the received track with Web Audio
+(`createMediaStreamSource` → `AnalyserNode`), not the inbound-rtp energy stat. In Docker,
+`meet-server/` uses one UDP port (7882) instead of LiveKit's 10,000-port range, and advertises
+`NODE_IP=127.0.0.1`. So the `lk` CLI runs inside the server's network
+(`--network container:lms-meet-dev`), where `127.0.0.1` reaches the server.
+
