@@ -1016,5 +1016,15 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
   captured, and the stretches become one video per meeting. Everyone sees a notice and a REC sign.
 - **Attendance** from the media server's webhooks is a report for the instructor. It doesn't
   change monthly attendance (D-035).
+- **Phase 1 (API, 2026-11-26).** The endpoints are in "Class meetings" in `server/README.md`.
+  - A student with no source to publish gets `canPublish: false`, never an empty source list,
+    which LiveKit reads as "everything".
+  - The page trusts `lms.chat` and `lms.ask-unmute` only as server messages, with no sender.
+  - A locked meeting still lets back in anyone who was in it before. A removed student can't
+    rejoin that meeting.
+  - "Let speak" lasts until the student leaves.
+  - Ending works even when the media server can't be reached.
+  - One class has one live meeting at a time.
+  - The entity is `OnlineMeeting`, because `Classes.ClassMeeting` is an ISMS timetable slot.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 

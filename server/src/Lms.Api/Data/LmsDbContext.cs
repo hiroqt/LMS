@@ -45,6 +45,9 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
     public DbSet<AttendanceMonth> AttendanceMonths => Set<AttendanceMonth>();
     public DbSet<AttendanceEntry> AttendanceEntries => Set<AttendanceEntry>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
+    public DbSet<OnlineMeeting> Meetings => Set<OnlineMeeting>();
+    public DbSet<MeetingAttendance> MeetingAttendance => Set<MeetingAttendance>();
+    public DbSet<MeetingChatMessage> MeetingChatMessages => Set<MeetingChatMessage>();
 
     private const int IdLength = 64;       // ISMS reference ids (students, employees, schedules)
     private const int ClassIdLength = 200;  // LMS class ids
@@ -346,6 +349,41 @@ public sealed class LmsDbContext(DbContextOptions<LmsDbContext> options, TimePro
             e.Property(x => x.TargetId).HasMaxLength(ClassIdLength);
             e.Property(x => x.Summary).HasMaxLength(300).IsRequired();
             e.HasIndex(x => x.CreatedAt);
+        });
+
+        b.Entity<OnlineMeeting>(e =>
+        {
+            e.ToTable("meetings");
+            ClassOwned(e, x => x.ClassId);
+            e.Property(x => x.Title).HasMaxLength(TitleLength).IsRequired();
+            e.Property(x => x.EndReason).HasMaxLength(20);
+            e.Property(x => x.RoomName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RemovedJson).IsRequired();
+            e.HasIndex(x => x.RoomName).IsUnique();
+        });
+
+        b.Entity<MeetingAttendance>(e =>
+        {
+            e.ToTable("meeting_attendance");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.PersonId).HasMaxLength(IdLength).IsRequired();
+            e.Property(x => x.Role).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SessionId).HasMaxLength(IdLength).IsRequired();
+            e.HasOne<OnlineMeeting>().WithMany().HasForeignKey(x => x.MeetingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SessionId).IsUnique();
+            e.HasIndex(x => new { x.MeetingId, x.PersonId });
+        });
+
+        b.Entity<MeetingChatMessage>(e =>
+        {
+            e.ToTable("meeting_chat_messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.SenderId).HasMaxLength(IdLength).IsRequired();
+            e.Property(x => x.SenderRole).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SenderName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Text).HasMaxLength(global::Lms.Api.Meetings.MeetingLimits.ChatLength).IsRequired();
+            e.HasOne<OnlineMeeting>().WithMany().HasForeignKey(x => x.MeetingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.MeetingId);
         });
 
         var utc = new ValueConverter<DateTime, DateTime>(value => value,

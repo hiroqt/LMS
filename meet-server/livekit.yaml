@@ -15,5 +15,10 @@ room:
   departure_timeout: 300
   # Nobody can switch on someone else's mic or camera (D-070, decision 7).
   enable_remote_unmute: false
+webhook:
+  # Joined, left, and meeting ended events, for meeting attendance (D-070). Signed with the API
+  # key set in docker-compose.yml (LIVEKIT_WEBHOOK_API_KEY). The LMS API runs on the host at 5200.
+  urls:
+    - http://host.docker.internal:5200/api/meetings/livekit-webhook
 logging:
   level: info

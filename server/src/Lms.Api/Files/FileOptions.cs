@@ -112,7 +112,8 @@ public static class FileServices
             limiter.OnRejected = async (context, ct) =>
             {
                 context.HttpContext.Response.Headers.RetryAfter = "60";
-                await TypedResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: "Too many uploads. Wait a minute and try again.").ExecuteAsync(context.HttpContext);
+                var title = context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<RateLimitTitle>()?.Title ?? "Too many uploads. Wait a minute and try again.";
+                await TypedResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: title).ExecuteAsync(context.HttpContext);
             };
             // One window per person (and per sandbox in Demo mode); without an identity, per address.
             limiter.AddPolicy(FileOptions.UploadPolicy, http =>
@@ -127,6 +128,9 @@ public static class FileServices
         });
     }
 }
+
+/// <summary>What a rate-limited endpoint says when someone goes over its limit. Without it: "Too many uploads".</summary>
+public sealed record RateLimitTitle(string Title);
 
 /// <summary>What the server uses for Office previews, said once at start-up.</summary>
 public sealed record ConverterNotice(string Message);

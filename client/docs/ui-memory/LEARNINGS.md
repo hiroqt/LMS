@@ -785,3 +785,25 @@ page, not the sender. For "can they hear each other", measure the received track
 `NODE_IP=127.0.0.1`. So the `lk` CLI runs inside the server's network
 (`--network container:lms-meet-dev`), where `127.0.0.1` reaches the server.
 
+### L-107 · LiveKit's room API and webhooks, as they really behave (1.13.11)
+`2026-11-26` · hiro (D-070, Phase 1) · scope: server, meetings · confidence: high
+Checked against a running server, and kept true by `LiveKitContractTests` in API CI.
+- **Sources:** an empty `canPublishSources` means every source is allowed. A pass without
+  `microphone` makes the client's publish fail with "insufficient permissions". Taking a source
+  away with `UpdateParticipant` unpublishes that track at once, and the client gets
+  `LocalTrackUnpublished`.
+- **Muting:** `MutePublishedTrack` mutes. Unmuting someone else answers 412 `failed_precondition`
+  while `enable_remote_unmute` is off.
+- **Server messages:** `SendData` arrives with no participant, so the page can trust it.
+  `destination_identities` reaches only those people.
+- **Errors:** Twirp requests use snake_case field names (enums as names, e.g. `MICROPHONE`), and
+  errors come back as `{code, msg}`. A pass with a bad signature gets 401 as plain text, not
+  Twirp JSON, so a wrong secret has to be told apart from an outage by its status code.
+  `GET /rtc/validate?access_token=` checks a join pass over plain HTTP: 200 or 401.
+- **Webhooks:** `application/webhook+json` in camelCase, with Unix times as strings (`createdAt`,
+  `joinedAtMs`). The `Authorization` header holds a JWT (no `Bearer`) whose `sha256` claim is the
+  standard base64 SHA-256 of the body. "Room finished" arrives after the room's
+  `departure_timeout`, and the value given to `CreateRoom` overrides `livekit.yaml`.
+- **Testing sound:** Chrome feeds a received track to Web Audio only while it is attached to a
+  media element (L-106).
+

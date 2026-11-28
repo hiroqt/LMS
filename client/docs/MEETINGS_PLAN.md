@@ -154,8 +154,8 @@ LiveKit media server ───┘                  our own server; open source (
   a recording service for Phase 4. It runs as its own service (`meet-server/`, a Docker Compose
   file like the ISMS API's). It holds no LMS data.
 - **The LMS API decides who gets in.** `server/src/Lms.Api/Meetings/` stores meetings, settings,
-  attendance, and saved chat. `POST /api/meetings/{id}/join` checks the class, as `ClassAccess`
-  does today: the class's instructor, or a student active on the class list. Anyone else gets a
+  attendance, and saved chat (endpoints: "Class meetings" in `server/README.md`).
+  `POST /api/classes/{classId}/meetings/{id}/join` checks the class, as `ClassAccess` does today: the class's instructor, or a student active on the class list. Anyone else gets a
   404. The API returns a pass that lasts 10 minutes and is signed with the media server's secret.
   The pass carries the person's LMS id and name, and their rights from the meeting settings.
 - **Settings are enforced by the media server.** When the instructor changes a setting, the LMS
