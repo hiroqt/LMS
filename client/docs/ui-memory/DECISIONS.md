@@ -1147,3 +1147,29 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
+### D-075 · Materials and coursework have class comments and private comments
+`2026-11-28` · saheejuu2 (user request) · scope: student, instructor, server · confidence: high
+Every material and every piece of coursework (assignments, quizzes, exams) has two discussions,
+stored in the LMS API's `comments` table (`server/src/Lms.Api/Discussion/CommentEndpoints.cs`).
+**Class comments** are read and written by the class's instructor and every student on its active
+class list; **private comments** are a thread between one student and the instructor, and the API
+never sends a student anyone else's thread. Students comment only on what they can open (active
+materials, published or closed coursework); comments are read-only once ISMS stops offering the
+class; authors delete their own and the instructor may delete any; deleting a material deletes its
+comments; the audit log records only "posted" or "deleted", never the text. On the Student
+assessment page the class comments sit under the content and the private comments under the
+Assessment details card (no longer sticky, so they stay reachable). Material pages, for both
+roles, put the class comments under the preview and the private comments last in the side column
+(`MaterialLayout` `discussion` and `aside`); the instructor's private panel lists students who
+wrote first and can start a thread with anyone on the class list. For coursework the instructor
+uses a **Comments** button on each Classwork row (`CommentsDialog`). New checks: `discussion`
+(e2e), `Comments.test.tsx`, `comments.test.ts`, `DiscussionTests` (server).
+
+### D-076 · The discussion panels are secondary to the item's content
+`2026-11-28` · saheejuu2 (user request) · scope: student, instructor · confidence: high
+Class and private comments (`DiscussionPanel` in `shared/components/discussion/Comments.tsx`) are
+flat `bg-canvas` panels with `p-4` and a 14px (`text-body`) semibold heading, while the content
+they discuss stays on white cards with larger headings. Keep any new discussion surface below the
+content in weight: no white card, no heading larger than the content's own card titles. On the
+Student assessment page the per-question timer reminder is the last line of the Instructions card,
+in `text-accent-700`, instead of its own tinted box, to cut the number of blocks on the page.

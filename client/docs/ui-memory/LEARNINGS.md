@@ -871,3 +871,11 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   API re-checks each `participant_joined` webhook (`MeetingPresence`) and removes anyone the
   instructor removed or the class list dropped; the ISMS sync removes dropped students from live
   meetings at once.
+
+### L-113 · Two Playwright runs in one checkout delete each other's results; a running API locks the Debug build
+`2026-11-28` · saheejuu2 · scope: e2e, server · confidence: high
+Playwright empties `test-results/` when a run starts, so a second run in the same checkout (another
+terminal or agent) makes the first fail at random with `ENOENT … .playwright-artifacts-0` and
+missing traces; pass `--output=<another folder>` to keep them apart. An `Lms.Api.exe` left running
+from `bin/Debug` makes `dotnet build`, `dotnet run`, and `dotnet ef migrations add` fail to copy the
+exe; build with `-c Release` (or `-o <folder>`) instead of stopping someone else's server.

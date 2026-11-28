@@ -64,6 +64,7 @@
 | `src/shared/components/ViewToggle.tsx` | `ViewToggle` |
 | `src/shared/components/assignment/AssignmentBrief.tsx` | `AssignmentBrief` |
 | `src/shared/components/assignment/RubricView.tsx` | `RubricView` |
+| `src/shared/components/discussion/Comments.tsx` | `ClassDiscussion`, `PrivateComments`, `InstructorPrivateThreads`, `PrivateThreadsPanel`, `InstructorClassThread` |
 | `src/shared/components/files/AttachedFile.tsx` | `AttachedFile` |
 | `src/shared/components/files/FileTypeIcon.tsx` | `FileTypeIcon` |
 | `src/shared/components/files/UploadProgress.tsx` | `UploadProgress` |
@@ -124,6 +125,7 @@
 | `src/features/instructor/InstructorApp.tsx` | `InstructorApp` |
 | `src/features/instructor/components/AnswerBesideKey.tsx` | `QuestionPrompt`, `AnswerBesideKey` |
 | `src/features/instructor/components/AnswerKeyDialog.tsx` | `AnswerKeyDialog` |
+| `src/features/instructor/components/CommentsDialog.tsx` | `CommentsButton` |
 | `src/features/instructor/components/InstructorClassCard.tsx` | `InstructorClassCard` |
 | `src/features/instructor/components/InstructorClassList.tsx` | `InstructorClassList` |
 | `src/features/instructor/components/IsmsSourceNote.tsx` | `IsmsSourceNote` |
@@ -157,12 +159,6 @@
 | `src/features/instructor/pages/assessment/QuestionsSection.tsx` | `QuestionsSection` |
 | `src/features/instructor/pages/assessment/SettingsSection.tsx` | `SettingsSection` |
 | `src/features/instructor/pages/assessment/SummaryPanel.tsx` | `SummaryPanel` |
-| `src/features/instructor/pages/assignment/AssignmentSummary.tsx` | `AssignmentSummary` |
-| `src/features/instructor/pages/assignment/DatesTab.tsx` | `DatesTab` |
-| `src/features/instructor/pages/assignment/DetailsTab.tsx` | `DetailsTab` |
-| `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
-| `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
-| `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
 | `src/features/instructor/pages/assignmentGrading/ConfirmDialog.tsx` | `ConfirmDialog` |
 | `src/features/instructor/pages/assignmentGrading/FeedbackField.tsx` | `FeedbackField` |
 | `src/features/instructor/pages/assignmentGrading/FileViewer.tsx` | `FileViewer` |
@@ -175,6 +171,12 @@
 | `src/features/instructor/pages/assignmentGrading/StudentTerms.tsx` | `StudentTerms` |
 | `src/features/instructor/pages/assignmentGrading/StudentWork.tsx` | `StudentWork` |
 | `src/features/instructor/pages/assignmentGrading/WorkFiles.tsx` | `WorkFiles` |
+| `src/features/instructor/pages/assignment/AssignmentSummary.tsx` | `AssignmentSummary` |
+| `src/features/instructor/pages/assignment/DatesTab.tsx` | `DatesTab` |
+| `src/features/instructor/pages/assignment/DetailsTab.tsx` | `DetailsTab` |
+| `src/features/instructor/pages/assignment/HandInTab.tsx` | `HandInTab` |
+| `src/features/instructor/pages/assignment/PresetsRow.tsx` | `PresetsRow` |
+| `src/features/instructor/pages/assignment/parts.tsx` | `Group`, `Check`, `CheckGroup`, `RadioGroup` |
 | `src/features/instructor/pages/class/AnnouncementsTab.tsx` | `AnnouncementsTab` |
 | `src/features/instructor/pages/class/AttendanceTab.tsx` | `AttendanceTab` |
 | `src/features/instructor/pages/class/ClassworkTab.tsx` | `ClassworkTab` |
