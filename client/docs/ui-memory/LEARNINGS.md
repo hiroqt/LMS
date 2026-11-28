@@ -871,3 +871,10 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   API re-checks each `participant_joined` webhook (`MeetingPresence`) and removes anyone the
   instructor removed or the class list dropped; the ISMS sync removes dropped students from live
   meetings at once.
+
+### L-113 · `page.goto(page.url())` is a reload and keeps the router state
+`2026-11-28` · saheejuu2 · scope: e2e · confidence: high
+Chromium treats a navigation to the current URL as a reload, which keeps `history.state`, so
+React Router's `location.state` survives it. D-073's "opened by URL" check for **Back to modules**
+passed only because both branches lead to the Modules tab. To test a page with no state, go to
+another page first (`/student`), then to the URL.

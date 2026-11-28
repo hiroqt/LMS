@@ -41,7 +41,7 @@ Spec: ✔ covered · ✖ not yet covered (add before rebuilding)
 | Dashboards: meetings | Student and instructor dashboards list live and coming meetings only when there are any; a live row joins, a coming one opens the class's Meetings tab (D-072) | ✔ `meetings` | ✅ |
 | CL-MT: in the meeting | Chat both ways (links, unread count, "being saved"), a raised hand first in People, a reaction on the tile and announced, a shared screen filling the stage, pin, Speaker view, Data saver pausing video, chat as a sheet on a phone at 320px; axe (D-072) | ✔ `meetings` | ✅ |
 | CLOSED | Closed activity: Closed, no hand-in or start; Not handed in grade (D-036) | ✔ `close-activities` CLOSE → CLOSED | ✅ |
-| MODS | Modules tab: one button per topic (module); a topic lists its and its submodules' content as Assignments, Activities, Assessments, Materials; item opens; Back returns (D-070) | ✔ `submodules` | ✅ |
+| MODS | Modules tab: one button per module; each opens the module's own page (`/student/classes/:id/modules/:moduleId`) with four columns, Assessments, Activities, Assignments, Materials, each grouped by submodule, and a Submodules panel of closed submodules that show their items when clicked, empty submodules included (D-074–D-076); item opens, and its Back returns to the module page (D-077); **Back to modules** returns to the Modules tab (D-073) | ✔ `submodules` | ✅ |
 | CW | Classwork filter | ✖ | ✅ |
 | AD | Assessment details | ✔ `student-flow` | ✅ |
 | Q, Q1 | Answer, navigator, answers save | ✔ `student-flow` | ✅ |

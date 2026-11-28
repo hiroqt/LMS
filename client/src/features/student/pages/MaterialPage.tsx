@@ -9,6 +9,7 @@ import { MaterialPreview, PreviewNotice } from "../../../shared/components/mater
 import { modulePath } from "../../../shared/lib/moduleTree";
 import { materialSequence } from "../api/selectors";
 import type { Material } from "../api/types";
+import { useModuleOrigin } from "../hooks/useModuleOrigin";
 import { useStudentCatalog, useStudentViewer } from "../hooks/useStudentCatalog";
 import { studentPaths } from "../paths";
 
@@ -21,6 +22,8 @@ export default function MaterialPage() {
   const navigate = useNavigate();
   const catalog = useStudentCatalog();
   const viewer = useStudentViewer();
+  // Opened from a module page: Back steps back to it instead of to the Materials tab (D-077).
+  const fromModule = useModuleOrigin();
   // Kept with the file it was counted from: Previous and Next reuse this page for another material.
   const [pages, setPages] = useState<{ file: number; count: number }>();
   const material = catalog.materials.find((item) => item.id === materialId);
@@ -36,7 +39,10 @@ export default function MaterialPage() {
 
   return (
     <>
-      <BackLink label={`Back to ${course?.name ?? "class"}`} onBack={() => navigate(course ? studentPaths.classPage(course.id, "Materials") : studentPaths.classes)} />
+      <BackLink
+        label={`Back to ${fromModule ?? course?.name ?? "class"}`}
+        onBack={() => (fromModule ? navigate(-1) : navigate(course ? studentPaths.classPage(course.id, "Materials") : studentPaths.classes))}
+      />
       <MaterialLayout
         title={material.title}
         path={[course?.name, material.moduleId ? modulePath(modules, material.moduleId) : undefined].filter(Boolean).join(" › ")}
