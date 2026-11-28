@@ -5,17 +5,20 @@ import type { Viewer } from "../../../shared/api/viewer";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { useNetworkStatus } from "../../../shared/hooks/useNetworkStatus";
 import { Button } from "../../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../../shared/ui/Dialog";
+import { Dialog, DialogClose, DialogContent } from "../../../shared/ui/Dialog";
 import { IconButton } from "../../../shared/ui/IconButton";
 import { cn } from "../../../shared/lib/cn";
-import { describeMeetingError, setHand } from "../api/meetings";
+import { describeMeetingError, hostAction, letSpeak as letSpeakApi, muteEveryone, setHand, updateMeeting } from "../api/meetings";
 import { ChatPanel } from "./ChatPanel";
 import { ControlBar, type Panel } from "./ControlBar";
 import { parseRoomInfo } from "./metadata";
-import { PeoplePanel } from "./PeoplePanel";
+import { HostPanel } from "./HostPanel";
+import { PeoplePanel, type HostTools } from "./PeoplePanel";
 import { handRaisedAt } from "./rights";
 import { Stage, type Layout } from "./Stage";
 import { useAnnouncements } from "./useAnnouncements";
+import { useAskUnmute } from "./useAskUnmute";
+import { useRightsNotices } from "./useRightsNotices";
 import { useChat } from "./useChat";
 import { useDataSaver } from "./useDataSaver";
 import { useReactions } from "./useReactions";
@@ -153,12 +156,35 @@ function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<type
     const problem = describeMeetingError(error);
     say([problem.title, problem.detail].filter(Boolean).join(" "), "danger");
   };
-  const panelTitle = panel === "chat" ? "Chat" : "People";
+  const isHostHere = viewer.role === "instructor";
+  const ask = useAskUnmute(room);
+  const [ending, setEnding] = useState(false);
+  useRightsNotices(room, info, viewer.role, version, say);
+
+  // The instructor's controls, each saying what went wrong in the line above the stage.
+  const run = async (work: Promise<unknown>): Promise<void> => {
+    try {
+      await work;
+    } catch (error) {
+      failed(error);
+    }
+  };
+  const host: HostTools | undefined = isHostHere
+    ? {
+        studentsMayUnmute: info.students.mayUnmute,
+        act: (personId, action) => run(hostAction(viewer, classId, meetingId, personId, action)),
+        letSpeak: (personId, allowed) => run(letSpeakApi(viewer, classId, meetingId, personId, allowed)),
+        muteAll: () => run(muteEveryone(viewer, classId, meetingId).then(({ muted }) => say(muted === 1 ? "1 microphone muted." : `${muted} microphones muted.`))),
+      }
+    : undefined;
+  const panelTitle = panel === "chat" ? "Chat" : panel === "host" ? "Host controls" : "People";
   const panelBody =
     panel === "chat" ? (
-      <ChatPanel messages={chat.messages} onSend={chat.send} saving={info.saveChat} canWrite={viewer.role === "instructor" || info.students.mayChat} viewerId={viewer.id} />
+      <ChatPanel messages={chat.messages} onSend={chat.send} saving={info.saveChat} canWrite={isHostHere || info.students.mayChat} viewerId={viewer.id} />
+    ) : panel === "host" && isHostHere ? (
+      <HostPanel info={info} onChange={(change) => run(updateMeeting(viewer, classId, meetingId, change))} />
     ) : (
-      <PeoplePanel people={people} localIdentity={local.identity} />
+      <PeoplePanel people={people} localIdentity={local.identity} host={host} />
     );
 
   return (
@@ -168,6 +194,21 @@ function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<type
           <p role="status" className={notice ? cn("m-0 rounded-control p-3 text-body", notice.tone === "danger" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning") : "sr-only"}>
             {notice?.text}
           </p>
+          {ask.from && !local.isMicrophoneEnabled && (
+            <section aria-label="Asked to unmute" className="flex flex-wrap items-center gap-3 rounded-control bg-info-soft p-3 text-body text-info">
+              <span className="min-w-0 flex-1">{ask.from} asks you to turn on your mic.</span>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  ask.dismiss();
+                  local.setMicrophoneEnabled(true).catch(() => say("Your microphone couldn't be turned on. Check that the browser may use it.", "danger"));
+                }}
+              >
+                Turn on mic
+              </Button>
+              <Button variant="ghost" onClick={ask.dismiss}>Not now</Button>
+            </section>
+          )}
           {!room.canPlaybackAudio && (
             <div role="status" className="flex flex-wrap items-center justify-center gap-3 rounded-control bg-warning-soft p-3 text-body text-warning">
               Your browser paused the meeting's sound.
@@ -214,7 +255,22 @@ function InMeeting({ meet, viewer, classId, meetingId }: { meet: ReturnType<type
         onLayout={setLayout}
         onLeave={meet.leave}
         onNotice={say}
+        onEnd={isHostHere ? () => setEnding(true) : undefined}
       />
+      {isHostHere && (
+        <Dialog open={ending} onOpenChange={setEnding}>
+          <DialogContent
+            title="End the meeting for everyone?"
+            description="Everyone leaves now, and the meeting can't be joined again. You can start a new one from the class page."
+            footer={
+              <>
+                <DialogClose asChild><Button variant="secondary">Keep it going</Button></DialogClose>
+                <Button variant="danger" onClick={() => { setEnding(false); void meet.end().catch(failed); }}>End the meeting</Button>
+              </>
+            }
+          />
+        </Dialog>
+      )}
     </>
   );
 }

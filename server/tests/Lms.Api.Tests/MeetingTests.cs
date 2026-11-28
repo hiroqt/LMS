@@ -486,6 +486,44 @@ public sealed class MeetingTests : IDisposable
     }
 
     [Fact]
+    public async Task The_instructor_lowers_a_hand_and_only_the_instructor_can()
+    {
+        await SeedAsync();
+        var (id, room) = await StartAsync();
+        Meet.Join(room, Lia, new MeetingPermission(true, true, true, ["camera", "microphone"]));
+        Assert.Equal(HttpStatusCode.NoContent, (await Student().PostAsJsonAsync($"{Base}/{id}/hand", new { raised = true })).StatusCode);
+        Assert.True(Meet.Person(room, Lia)!.Attributes.ContainsKey(MeetingRights.HandAttribute));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await Student(Max).PostAsync($"{Base}/{id}/people/{Lia}/lower-hand", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await Instructor.PostAsync($"{Base}/{id}/people/{Lia}/lower-hand", null)).StatusCode);
+        Assert.False(Meet.Person(room, Lia)!.Attributes.ContainsKey(MeetingRights.HandAttribute));
+        Assert.Equal(HttpStatusCode.NotFound, (await Instructor.PostAsync($"{Base}/{id}/people/{Max}/lower-hand", null)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Each_person_gets_their_own_live_and_coming_meetings_for_the_dashboard()
+    {
+        await SeedAsync();
+        var (live, _) = await StartAsync();
+        var soon = (await Json(await Instructor.PostAsJsonAsync(Base, new { title = "Review", scheduledStart = _factory.Time.Now.AddDays(2) }))).GetProperty("id").GetInt64();
+        await Instructor.PostAsJsonAsync(Base, new { title = "Far off", scheduledStart = _factory.Time.Now.AddDays(30) });
+        var other = await As(OtherTeacher, CurrentUser.Instructor).PostAsJsonAsync("/api/classes/class-b/meetings", new { title = "Not Lia's", startNow = true });
+        Assert.Equal(HttpStatusCode.Created, other.StatusCode);
+
+        var mine = await Json(await Student().GetAsync("/api/me/meetings"));
+        Assert.Equal([(live, "live", "Database Systems 1"), (soon, "scheduled", "Database Systems 1")],
+            mine.EnumerateArray().Select(m => (m.GetProperty("meeting").GetProperty("id").GetInt64(), m.GetProperty("meeting").GetProperty("status").GetString()!, m.GetProperty("className").GetString()!)).ToArray());
+        // Not on the class list: nothing. The other instructor sees only their own class's meeting.
+        Assert.Empty((await Json(await Student(Dropped).GetAsync("/api/me/meetings"))).EnumerateArray());
+        Assert.Equal(["Not Lia's"], (await Json(await As(OtherTeacher, CurrentUser.Instructor).GetAsync("/api/me/meetings"))).EnumerateArray()
+            .Select(m => m.GetProperty("meeting").GetProperty("title").GetString()!).ToArray());
+
+        // An ended meeting leaves the list.
+        await Instructor.PostAsync($"{Base}/{live}/end", null);
+        Assert.Equal([soon], (await Json(await Student().GetAsync("/api/me/meetings"))).EnumerateArray().Select(m => m.GetProperty("meeting").GetProperty("id").GetInt64()).ToArray());
+    }
+
+    [Fact]
     public async Task Ending_closes_the_room_and_open_stays_even_when_the_media_server_is_down()
     {
         await SeedAsync();

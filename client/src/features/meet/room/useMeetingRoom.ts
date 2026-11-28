@@ -1,7 +1,7 @@
 import { DisconnectReason, Room, RoomEvent, type LocalTrack } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Viewer } from "../../../shared/api/viewer";
-import { describeMeetingError, fetchMeeting, joinMeeting, meetingErrorCode, startMeeting, type Meeting, type MeetingJoin } from "../api/meetings";
+import { describeMeetingError, endMeeting, fetchMeeting, joinMeeting, meetingErrorCode, startMeeting, type Meeting, type MeetingJoin } from "../api/meetings";
 
 /** Why the page is no longer in the meeting; each has its own screen. */
 export type ClosedReason = "left" | "ended" | "removed" | "locked" | "elsewhere" | "lost" | "off" | "missing" | "error";
@@ -84,7 +84,7 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
       setReconnecting(false);
       stopTracks();
       if (leavingRef.current) return;
-      if (reason === DisconnectReason.ROOM_DELETED) close("ended", "The instructor ended the meeting");
+      if (reason === DisconnectReason.ROOM_DELETED) close("ended", viewer.role === "instructor" ? "The meeting has ended" : "The instructor ended the meeting");
       else if (reason === DisconnectReason.PARTICIPANT_REMOVED) close("removed", "The instructor removed you from this meeting");
       else if (reason === DisconnectReason.DUPLICATE_IDENTITY) close("elsewhere", "You joined this meeting from another tab or device", "This tab left the meeting.");
       else close("lost", "The connection to the meeting was lost", "Check your connection, then join again.");
@@ -101,7 +101,7 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     }
     setRoom(next);
     setPhase({ kind: "connected", meeting: join.meeting, join });
-  }, [close, stopTracks]);
+  }, [close, stopTracks, viewer.role]);
 
   /** Joins with the tracks the pre-join screen made (camera and mic left off are not in the list). */
   const join = useCallback(async (tracks: LocalTrack[], options: { start?: boolean } = {}) => {
@@ -149,6 +149,19 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     close("left", "You left the meeting");
   }, [close, stopTracks]);
 
+  /** The instructor ends the meeting for everyone; it can't be joined again. */
+  const end = useCallback(async () => {
+    const meeting = meetingRef.current;
+    if (!meeting) return;
+    await endMeeting(viewer, classId, meeting.id);
+    leavingRef.current = true;
+    void roomRef.current?.disconnect();
+    roomRef.current = null;
+    setRoom(null);
+    stopTracks();
+    close("ended", "You ended the meeting for everyone");
+  }, [viewer, classId, close, stopTracks]);
+
   /** From a closed screen: back to the pre-join screen with a fresh read of the meeting. */
   const rejoin = useCallback(async () => {
     roomRef.current = null;
@@ -165,5 +178,5 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     }
   }, [viewer, classId, meetingId, close]);
 
-  return { phase, room, reconnecting, join, leave, rejoin, cancelWaiting };
+  return { phase, room, reconnecting, join, leave, end, rejoin, cancelWaiting };
 }

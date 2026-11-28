@@ -62,7 +62,7 @@ async function together(page: Page, browser: Browser, info: TestInfo, sandbox: s
 const controls = (page: Page) => page.getByRole("navigation", { name: "Meeting controls" });
 
 /** Closes the chat or people panel: a column on wide screens, a sheet on phones (which hides the rest of the page). */
-async function closePanel(page: Page, name: "Chat" | "People") {
+async function closePanel(page: Page, name: "Chat" | "People" | "Host controls") {
   const sheet = page.getByRole("dialog", { name });
   if (await sheet.isVisible()) await sheet.getByRole("button", { name: "Close" }).click();
   else await page.getByRole("button", { name: `Close ${name.toLowerCase()}` }).click();
@@ -321,5 +321,123 @@ test.describe("Class meetings @all", () => {
     expect(await student.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     await expectNoAxeViolations(student);
     await done();
+  });
+
+  test("MT: the instructor runs the meeting from People and Host controls, and the student sees each change", async ({ page, browser, browserName, sandbox }, info) => {
+    test.skip(needsMedia(browserName), skipReason);
+    const { student, done } = await together(page, browser, info, sandbox);
+    const studentMic = controls(student).getByRole("button", { name: "Microphone" });
+    const actions = async (item: string) => {
+      const people = page.getByRole("list", { name: "People", exact: true });
+      if (!(await people.isVisible())) await controls(page).getByRole("button", { name: "People" }).click();
+      await page.getByRole("button", { name: "Actions for Alex Rivera" }).click();
+      await page.getByRole("menuitem", { name: item }).click();
+    };
+    const noticeFor = (p: Page, text: string) => p.getByRole("status").filter({ hasText: text });
+
+    // Mute, then ask to unmute: the student answers the prompt.
+    await studentMic.click();
+    await expect(studentMic).toHaveAttribute("aria-pressed", "true");
+    await actions("Mute");
+    await expect(studentMic).toHaveAttribute("aria-pressed", "false");
+    await actions("Ask to unmute");
+    const asked = student.getByRole("region", { name: "Asked to unmute" });
+    await expect(asked).toContainText("Angela Reyes asks you to turn on your mic.");
+    await asked.getByRole("button", { name: "Turn on mic" }).click();
+    await expect(studentMic).toHaveAttribute("aria-pressed", "true");
+
+    // Host controls: students may not turn on their mic. Hers goes off and says so; then she is let speak.
+    await closePanel(page, "People");
+    await controls(page).getByRole("button", { name: "Host controls" }).click();
+    await page.getByRole("checkbox", { name: "Students may turn on their mic" }).uncheck();
+    await expect(noticeFor(student, "The instructor turned off your mic.")).toBeAttached();
+    await expect(studentMic).toHaveAttribute("aria-disabled", "true");
+    await page.getByRole("checkbox", { name: "Students may chat" }).uncheck();
+    await page.getByRole("checkbox", { name: "Lock the meeting" }).check();
+    await expect(noticeFor(student, "The meeting is locked.")).toBeAttached();
+    await closePanel(page, "Host controls");
+    await actions("Let speak");
+    await expect(noticeFor(student, "You can turn on your mic now.")).toBeAttached();
+    await expect(studentMic).not.toHaveAttribute("aria-disabled", "true");
+
+    // Chat is off for students.
+    await controls(student).getByRole("button", { name: "Chat" }).click();
+    await expect(student.getByText("The instructor has turned off chat for students.")).toBeVisible();
+    await closePanel(student, "Chat");
+
+    // A raised hand is lowered by the instructor. (On a phone, People is a sheet over the tiles: close it to see them.)
+    if (await page.getByRole("dialog", { name: "People" }).isVisible()) await closePanel(page, "People");
+    await controls(student).getByRole("button", { name: "Raise hand" }).click();
+    await expect(people(page).filter({ hasText: "Hand raised" })).toHaveCount(1);
+    await actions("Lower hand");
+    await expect(controls(student).getByRole("button", { name: "Raise hand" })).toHaveAttribute("aria-pressed", "false");
+
+    // Removed: out, and can't come back.
+    await actions("Remove from the meeting");
+    await page.getByRole("dialog", { name: "Remove from the meeting?" }).getByRole("button", { name: "Remove" }).click();
+    await expect(student.getByRole("heading", { name: "The instructor removed you from this meeting" })).toBeVisible();
+    if (await page.getByRole("dialog", { name: "People" }).isVisible()) await closePanel(page, "People");
+    await expect(people(page)).toHaveCount(1);
+    await done();
+  });
+
+  test("MT: the instructor stops a student's screen share", async ({ page, browser, browserName, sandbox, isMobile }, info) => {
+    test.skip(needsMedia(browserName) || isMobile, "Sharing a screen needs a computer's browser.");
+    const { student, done } = await together(page, browser, info, sandbox, { studentsMayShareScreen: true });
+    await controls(student).getByRole("button", { name: "Share screen" }).click();
+    await expect(page.getByRole("region", { name: "Alex Rivera's shared screen" })).toBeVisible();
+    await controls(page).getByRole("button", { name: "People" }).click();
+    await page.getByRole("button", { name: "Actions for Alex Rivera" }).click();
+    await page.getByRole("menuitem", { name: "Stop their screen share" }).click();
+    await expect(page.getByRole("region", { name: "Alex Rivera's shared screen" })).toHaveCount(0);
+    // She can share again.
+    await expect(controls(student).getByRole("button", { name: "Share screen" })).not.toHaveAttribute("aria-disabled", "true");
+    await done();
+  });
+
+  test("MT → CL-MT: the instructor ends the meeting for everyone", async ({ page, browser, browserName, sandbox }, info) => {
+    test.skip(needsMedia(browserName), skipReason);
+    const { student, done } = await together(page, browser, info, sandbox);
+    await controls(page).getByRole("button", { name: "Leave" }).click();
+    await page.getByRole("menuitem", { name: "End the meeting for everyone" }).click();
+    await page.getByRole("dialog", { name: "End the meeting for everyone?" }).getByRole("button", { name: "End the meeting" }).click();
+    await expect(page.getByRole("heading", { name: "You ended the meeting for everyone" })).toBeVisible();
+    await expect(student.getByRole("heading", { name: "The instructor ended the meeting" })).toBeVisible();
+    await expect(student.getByRole("button", { name: "Join again" })).toHaveCount(0);
+    await done();
+  });
+
+  test("Dashboards list live and coming meetings, and a live one joins", async ({ page, sandbox, browserName }) => {
+    test.skip(needsMedia(browserName), skipReason);
+    await openRole(page, "student");
+    // No meetings: the dashboard is as it was.
+    await expect(page.getByRole("heading", { name: "Meetings" })).toHaveCount(0);
+    const live = await apiMeeting(page, sandbox, { title: "Lecture 7", startNow: true });
+    await apiMeeting(page, sandbox, { title: "Loops review", scheduledStart: "2026-10-26T10:00:00+08:00" });
+    await page.reload();
+    const panel = page.getByRole("region", { name: "Meetings" });
+    await expect(panel.getByRole("button", { name: /Loops review/ })).toContainText("Introduction to Programming · Mon, Oct 26 · 10:00 AM");
+    await panel.getByRole("button", { name: /Lecture 7/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/student/meet/biology/${live}$`));
+    await expect(page.getByRole("button", { name: "Join now" })).toBeVisible();
+
+    await openRole(page, "instructor");
+    await page.getByRole("region", { name: "Meetings" }).getByRole("button", { name: /Loops review/ }).click();
+    await expect(page.getByRole("tab", { name: /^Meetings/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("MT: settings chosen when scheduling are the meeting's", async ({ page, sandbox }) => {
+    await openRole(page, "instructor");
+    await page.goto("/instructor/classes/biology?tab=Meetings");
+    await page.getByRole("button", { name: "Schedule a meeting" }).click();
+    const dialog = page.getByRole("dialog", { name: "Schedule a meeting" });
+    await dialog.getByLabel("Starts").fill("2026-10-26T10:00");
+    await dialog.getByRole("checkbox", { name: "Students may chat" }).uncheck();
+    await dialog.getByRole("checkbox", { name: "Save the chat" }).check();
+    await dialog.getByRole("button", { name: "Schedule" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Meeting scheduled" })).toBeVisible();
+    const list = await page.request.get(`${API}/api/classes/biology/meetings`, { headers: headers(sandbox, "instructor-1", "instructor") });
+    const [meeting] = (await list.json()) as { settings: Record<string, boolean> }[];
+    expect(meeting?.settings).toMatchObject({ studentsMayChat: false, saveChat: true, studentsMayUnmute: true, studentsJoinMuted: true });
   });
 });

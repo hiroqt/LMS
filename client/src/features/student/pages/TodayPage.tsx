@@ -24,6 +24,7 @@ import { useStudentPeople } from "../hooks/useStudentCatalog";
 import { useStudentSession } from "../hooks/useStudentSession";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
+import { MyMeetingsPanel } from "../../meet";
 
 const courseIndex = (catalog: StudentCatalog, id: string) => Math.max(catalog.courses.findIndex((entry) => entry.id === id), 0);
 const courseName = (catalog: StudentCatalog, id: string) => catalog.courses.find((entry) => entry.id === id)?.name ?? "Class";
@@ -180,6 +181,7 @@ function ViewingAs() {
 export default function TodayPage() {
   const navigate = useNavigate();
   const { catalog, completed, now } = useWorkspace();
+  const { studentId } = useStudentSession();
   const term = termStatus(catalog.academicEvents, now);
   const { courses, assessments } = catalog;
   const [classView, setClassView] = useClassView();
@@ -207,6 +209,13 @@ export default function TodayPage() {
             { icon: <AlarmClock />, tone: classTones[1], value: thisWeek.length, label: "Due this week", shortLabel: "Due", note: `${withinThreeDays} in the next 3 days`, onOpen: () => navigate(studentPaths.tasks("Due this week")) },
             { icon: <ClipboardCheck />, tone: classTones[3], value: completed.length, label: "Assessments done", shortLabel: "Done", note: `of ${assessments.length} assessments`, onOpen: () => navigate(studentPaths.tasks("Done")) },
           ]}
+        />
+
+        <MyMeetingsPanel
+          className="@4xl:col-span-12"
+          viewer={{ id: studentId, role: "student" }}
+          onJoin={(item) => navigate(studentPaths.meeting(item.meeting.classId, item.meeting.id))}
+          onOpenClass={(item) => navigate(studentPaths.classPage(item.meeting.classId, "Meetings"))}
         />
 
         {/* Reading order: tasks, calendar, classes, announcements.
