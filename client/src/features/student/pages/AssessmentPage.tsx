@@ -10,6 +10,7 @@ import { BackLink } from "../../../shared/components/BackLink";
 import { toneFor } from "../../../shared/lib/tones";
 import { AssessmentTypeIcon } from "../components/visuals";
 import { AssignmentWork } from "../components/work/AssignmentWork";
+import { useModuleOrigin } from "../hooks/useModuleOrigin";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -45,6 +46,8 @@ const handInWords = (assessment: Assessment) => (assessment.handIn?.submissionKi
 export default function AssessmentPage() {
   const { assessmentId = "" } = useParams();
   const navigate = useNavigate();
+  // Opened from a module page: Back steps back to it instead of to the Classwork tab (D-077).
+  const fromModule = useModuleOrigin();
   const { catalog, completed } = useWorkspace();
   const assessment = catalog.assessments.find((item) => item.id === assessmentId);
   if (!assessment) return <Navigate to={studentPaths.tasks()} replace />;
@@ -82,7 +85,7 @@ export default function AssessmentPage() {
 
   return (
     <>
-      <BackLink label="Back to classwork" onBack={toClasswork} />
+      <BackLink label={fromModule ? `Back to ${fromModule}` : "Back to classwork"} onBack={fromModule ? () => navigate(-1) : toClasswork} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article className="flex flex-col gap-5">
           <header className="flex flex-col gap-2">

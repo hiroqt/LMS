@@ -6,6 +6,7 @@ import { PageHeader } from "../../../shared/layout/PageHeader";
 import { Card } from "../../../shared/ui/Card";
 import { courseCode } from "../api/catalog";
 import { courseTopic, type Topic, type TopicCategory, type TopicEntry, type TopicSection } from "../api/selectors";
+import { moduleOrigin } from "../hooks/useModuleOrigin";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { studentPaths } from "../paths";
 
@@ -13,7 +14,7 @@ const ICONS: Record<TopicCategory, typeof FileText> = { Assessments: GraduationC
 
 const itemPath = (entry: TopicEntry) => (entry.kind === "material" ? studentPaths.material(entry.id) : studentPaths.assessment(entry.id));
 
-function EntryList({ label, entries }: { label: string; entries: TopicEntry[] }) {
+function EntryList({ label, entries, moduleTitle }: { label: string; entries: TopicEntry[]; moduleTitle: string }) {
   const navigate = useNavigate();
   return (
     <ul aria-label={label} className="m-0 flex list-none flex-col gap-2 p-0">
@@ -21,7 +22,7 @@ function EntryList({ label, entries }: { label: string; entries: TopicEntry[] })
         <li key={`${entry.kind}-${entry.id}`}>
           <button
             type="button"
-            onClick={() => navigate(itemPath(entry))}
+            onClick={() => navigate(itemPath(entry), { state: moduleOrigin(moduleTitle) })}
             className="flex min-h-touch w-full flex-col items-start justify-center rounded-control border border-line bg-surface p-3 text-left font-sans text-ink hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
           >
             <strong className="text-body font-semibold">{entry.title}</strong>
@@ -34,7 +35,7 @@ function EntryList({ label, entries }: { label: string; entries: TopicEntry[] })
 }
 
 /** A column: the module's own items first, then one headed group per submodule that has some (D-074). */
-function Column({ category, entries, sections }: { category: TopicCategory; entries: TopicEntry[]; sections: TopicSection[] }) {
+function Column({ category, entries, sections, moduleTitle }: { category: TopicCategory; entries: TopicEntry[]; sections: TopicSection[]; moduleTitle: string }) {
   const Icon = ICONS[category];
   const headingId = `module-${category.toLowerCase()}`;
   return (
@@ -52,10 +53,10 @@ function Column({ category, entries, sections }: { category: TopicCategory; entr
                   <FolderTree aria-hidden className="size-4 shrink-0 text-primary-700" />
                   {submodule.title}
                 </h3>
-                <EntryList label={`${category} in ${submodule.title}`} entries={placed} />
+                <EntryList label={`${category} in ${submodule.title}`} entries={placed} moduleTitle={moduleTitle} />
               </div>
             ) : (
-              <EntryList key="module" label={category} entries={placed} />
+              <EntryList key="module" label={category} entries={placed} moduleTitle={moduleTitle} />
             ),
           )
         ) : (
@@ -67,7 +68,7 @@ function Column({ category, entries, sections }: { category: TopicCategory; entr
 }
 
 /** One submodule: only its title until opened, then what it holds (D-076). */
-function SubmoduleTile({ module, entries }: Topic["submodules"][number]) {
+function SubmoduleTile({ module, entries, moduleTitle }: Topic["submodules"][number] & { moduleTitle: string }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -94,7 +95,7 @@ function SubmoduleTile({ module, entries }: Topic["submodules"][number]) {
                 <li key={`${entry.kind}-${entry.id}`}>
                   <button
                     type="button"
-                    onClick={() => navigate(itemPath(entry))}
+                    onClick={() => navigate(itemPath(entry), { state: moduleOrigin(moduleTitle) })}
                     className="flex min-h-touch w-full items-center gap-2.5 rounded-control px-2 py-1.5 text-left font-sans text-ink hover:bg-primary-50 focus-visible:outline-3 focus-visible:outline-focus"
                   >
                     <Icon aria-hidden className="size-4 shrink-0 text-primary-700" />
@@ -119,7 +120,7 @@ function SubmoduleTile({ module, entries }: Topic["submodules"][number]) {
  * Every submodule, empty ones included, so a new one shows before anything is posted in it
  * (D-074). Each is a disclosure that shows its items when opened (D-075, D-076).
  */
-function Submodules({ submodules }: { submodules: Topic["submodules"] }) {
+function Submodules({ submodules, moduleTitle }: { submodules: Topic["submodules"]; moduleTitle: string }) {
   return (
     <Card className="flex flex-col gap-3 p-4">
       <section aria-labelledby="module-submodules" className="flex flex-col gap-3">
@@ -130,7 +131,7 @@ function Submodules({ submodules }: { submodules: Topic["submodules"] }) {
         {/* items-start: opening one tile must not stretch its closed neighbours in the row. */}
         <ul aria-label="Submodules" className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-start gap-2 p-0">
           {submodules.map((sub) => (
-            <SubmoduleTile key={sub.module.id} {...sub} />
+            <SubmoduleTile key={sub.module.id} {...sub} moduleTitle={moduleTitle} />
           ))}
         </ul>
       </section>
@@ -158,10 +159,10 @@ export default function ModulePage() {
     <div className="flex flex-col gap-4">
       <BackLink label="Back to modules" onBack={() => (fromModules ? navigate(-1) : navigate(studentPaths.classPage(course.id, "Modules")))} />
       <PageHeader title={topic.module.title} description={`${courseCode(course)} · ${course.name} · ${total} ${total === 1 ? "item" : "items"}`} />
-      {topic.submodules.length > 0 && <Submodules submodules={topic.submodules} />}
+      {topic.submodules.length > 0 && <Submodules submodules={topic.submodules} moduleTitle={topic.module.title} />}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 @xl:grid-cols-2 @4xl:grid-cols-4">
         {topic.groups.map(({ category, entries, sections }) => (
-          <Column key={category} category={category} entries={entries} sections={sections} />
+          <Column key={category} category={category} entries={entries} sections={sections} moduleTitle={topic.module.title} />
         ))}
       </div>
     </div>

@@ -1186,3 +1186,13 @@ shows only its title, inside its `h3`, as a button with `aria-expanded`, `aria-c
 <submodule>", unchanged from D-075) or "Nothing posted yet"; clicking again hides them. All start
 closed, each opens on its own, and the open state is not remembered. The tile grid uses
 `items-start` so opening one tile does not stretch its closed neighbours. Check: `submodules`.
+
+### D-077 · An item opened from a module page goes Back to that module
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Builds on D-073. Before, a material opened from a student's module page went Back to the class's
+Materials tab and an assessment, activity, or assignment to the Classwork tab. Now `ModulePage`
+opens every item with router state `moduleOrigin(<module title>)` (`hooks/useModuleOrigin.ts`);
+`MaterialPage` and `AssessmentPage` then label Back **Back to <module title>** and step back in
+history, so Back/Forward do not pile up. Opened any other way (a link, search, Tasks, the class
+tabs) Back is unchanged, and so is a material reached with Previous or Next, where one step back is not the module. The `submodules` spec's "opened by URL" checks now leave the page before
+reopening it (see L-113). Check: `submodules` (material and assessment from a module page).

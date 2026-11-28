@@ -114,11 +114,45 @@ test.describe("Submodules", () => {
     await page.goForward();
     await expect(page.getByRole("heading", { level: 1, name: UNIT })).toBeVisible();
 
-    // Opened by URL (no Modules tab behind it), Back still lands on the Modules tab.
-    await page.goto(page.url());
+    // Opened by URL (no Modules tab behind it), Back still lands on the Modules tab. Going to the
+    // same URL would be a reload, which keeps the router state, so leave the page first.
+    const moduleUrl = page.url();
+    await page.goto("/student");
+    await page.goto(moduleUrl);
     await page.getByRole("button", { name: "Back to modules" }).click();
     await expect(page.getByRole("tab", { name: "Modules" })).toHaveAttribute("aria-selected", "true");
     await expect(moduleList(page).getByRole("button", { name: UNIT })).toBeVisible();
+  });
+
+  test("student opens a material and an assessment from a module page, and Back returns to that module @all", async ({ page }) => {
+    await page.goto("/student/classes/biology?tab=Modules");
+    await openModulePage(page);
+    const modulePage = page.url();
+
+    // A material opened from the module page goes back to the module, not the Materials tab (D-077).
+    await page.getByRole("list", { name: "Materials", exact: true }).getByRole("button").first().click();
+    await expect(page).toHaveURL(/\/student\/materials\/[^/?]+$/);
+    await page.getByRole("button", { name: `Back to ${UNIT}` }).click();
+    await expect(page).toHaveURL(modulePage);
+    await expect(page.getByRole("heading", { level: 1, name: UNIT })).toBeVisible();
+    // Back stepped back in history instead of adding an entry.
+    await page.goForward();
+    await expect(page).toHaveURL(/\/student\/materials\/[^/?]+$/);
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: UNIT })).toBeVisible();
+
+    // So does an assessment, instead of the Classwork tab.
+    await page.getByRole("list", { name: "Assessments", exact: true }).getByRole("button").first().click();
+    await expect(page).toHaveURL(/\/student\/assessments\/[^/?]+$/);
+    await page.getByRole("button", { name: `Back to ${UNIT}` }).click();
+    await expect(page).toHaveURL(modulePage);
+
+    // Opened by URL (no module page behind it), Back keeps going to the class tab.
+    await page.goForward();
+    const assessmentUrl = page.url();
+    await page.goto("/student");
+    await page.goto(assessmentUrl);
+    await expect(page.getByRole("button", { name: "Back to classwork" })).toBeVisible();
   });
 
   test("the Modules tabs have no accessibility violations and no sideways scroll at 320px @all", async ({ page, sandbox }) => {
