@@ -1026,5 +1026,25 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
   - Ending works even when the media server can't be reached.
   - One class has one live meeting at a time.
   - The entity is `OnlineMeeting`, because `Classes.ClassMeeting` is an ISMS timetable slot.
+  - Join passes and webhook checks use the real clock, which LiveKit checks them by. Webhook
+    times are moved onto the API's clock, so Demo mode's shifted clock still lines up.
+- **Phase 2a (the page, 2026-11-26).**
+  - **The meeting page opens in the same tab, not a new one.** The demo identity is kept in
+    `sessionStorage`, which a new tab doesn't inherit (checked in Chromium and WebKit), so a new
+    tab would join as the wrong person. Leave goes back to the class's Meetings tab. With real
+    sign-in a new tab would work.
+  - **Routes:** `/instructor/meet/{classId}/{id}` and `/student/meet/{classId}/{id}`. Each role
+    app renders them full screen, outside `AppShell`: an exception to C-010. The page focuses its
+    own h1 and has one control per action: Back to class before joining, Leave in the controls,
+    and its own way back after.
+  - **Entry points:** the instructor's **Start meeting** sits in the class header and is hidden
+    while a meeting is on. A **Live now** banner above both roles' tabs holds the one Join. The
+    **Meetings** tab lists upcoming and past meetings. The student class page's Discord link is
+    gone.
+  - **Budget:** `MeetingRoomPage-*` (about 145 KB gzipped, mostly LiveKit's client) has its own
+    175 KB limit, leaving room for 2b and 2c. It is kept out of the install cache, like pdf.js.
+  - **Mic and camera:** a control the person may not use is `aria-disabled`, not `disabled`, so
+    pressing it says why. Students start with the mic off unless the meeting says otherwise. The
+    tracks made on the pre-join screen are the ones published.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 

@@ -9,6 +9,19 @@ export const API_PORT = Number(process.env.E2E_API_PORT ?? 5299);
 const API_URL = `http://localhost:${API_PORT}`;
 /** The fixtures pin the browser clock to this moment; the API's clock starts at the same instant. */
 const DEMO_NOW = "2026-10-23T09:00:00+08:00";
+/**
+ * Class meetings (D-070) need a LiveKit media server: `meet-server/` locally (ws://127.0.0.1:7880),
+ * a service container in CI. Without E2E_LIVEKIT_URL the meeting specs that join skip.
+ */
+const LIVEKIT: Record<string, string> = process.env.E2E_LIVEKIT_URL
+  ? {
+      Lms__Meet__Url: process.env.E2E_LIVEKIT_URL,
+      Lms__Meet__ApiKey: process.env.E2E_LIVEKIT_KEY ?? "lms-dev",
+      Lms__Meet__ApiSecret: process.env.E2E_LIVEKIT_SECRET ?? "dev_only_livekit_secret_change_me_0123",
+    }
+  : {};
+/** Chromium's stand-in camera (a test pattern) and microphone (a beep), with no permission prompt. */
+const fakeMedia = { launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] } };
 
 /**
  * Flow-parity suite. The flow specs encode the journeys in
@@ -32,10 +45,10 @@ export default defineConfig({
     timezoneId: "Asia/Manila",
   },
   projects: [
-    { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@mobile/ },
+    { name: "desktop-chromium", use: { ...devices["Desktop Chrome"], ...fakeMedia }, grepInvert: /@mobile/ },
     // Phone projects run the @mobile journeys (layout-specific navigation) and @all checks.
     { name: "iphone-webkit", use: { ...devices["iPhone 15"] }, grep: /@mobile|@all/ },
-    { name: "android-chromium", use: { ...devices["Pixel 7"] }, grep: /@mobile|@all/ },
+    { name: "android-chromium", use: { ...devices["Pixel 7"], ...fakeMedia }, grep: /@mobile|@all/ },
   ],
   // E2E_PREVIEW=1 runs against the production build (vite preview), which is
   // where the generated 404.html and role.html fallbacks are exercised.
@@ -55,6 +68,7 @@ export default defineConfig({
         // Office uploads get no preview, whether or not this machine has LibreOffice (D-067). The
         // seeded Office materials carry ready-made previews, so previews are still tested.
         Lms__Files__Converter: "none",
+        ...LIVEKIT,
       },
     },
     {

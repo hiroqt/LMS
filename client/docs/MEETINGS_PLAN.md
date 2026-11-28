@@ -61,7 +61,7 @@ No call has zero delay. "No delay" here means a delay people don't notice in a c
 
 **Student**
 1. A **"Live now · Join"** banner on the class page and on the dashboard while a meeting is on.
-   Upcoming meetings are listed with their times.
+   It replaces the class page's Discord link. Upcoming meetings are listed with their times.
 2. Before the instructor arrives, a "Waiting for the instructor" screen that joins by itself when
    the meeting starts.
 3. Saved chats and, from Phase 4, recordings of the class's past meetings.
@@ -73,7 +73,7 @@ Class page (instructor)                       Class page (student)
 [▶ Start meeting] [Schedule]                  ● Live now: Programming 1 lecture  [Join]
 Meetings: upcoming · live · past              Upcoming: Fri 27 Nov, 9:00
 
-            both open ↓ in a new tab
+            both open ↓ in the same tab (the demo identity is per tab, D-070)
 /meet/{meetingId}   full screen, outside the sidebar shell
 ┌────────────────────────────────────────────┬────────────┐
 │  video grid / shared screen                │ Chat │People│
@@ -197,7 +197,9 @@ LiveKit media server ───┘                  our own server; open source (
 |---|---|---|
 | 0 | This plan and D-070. `meet-server/` Compose file running LiveKit in dev mode | Two browsers on one computer see and hear each other |
 | 1 | API: the `Meetings` migration, start, schedule, end, settings, join pass, host actions, chat relay and saving, webhook → attendance. Unit and API tests | Someone who isn't on the class list is refused. A student without mic rights can't publish sound. Chat is saved only while saving is on. The attendance rows are right |
-| 2 | The meeting page: pre-join, grid and speaker views, mic and camera, screen share, chat, people list, hand, reactions, data saver, reconnect, host controls and settings. Entry points on both roles' class pages and the dashboard. Playwright with fake camera and mic, and the axe checks | The core features of a Meet call work at desktop and 320 px widths |
+| 2a | Entry points on both class pages (Start meeting, the Live now banner, a Meetings tab with schedule and delete), the full-screen page, pre-join, join and wait, the grid, mic and camera, Leave and the ways back. Playwright with a real LiveKit and fake camera and mic, axe, 320 px | An instructor and a student meet, at desktop and 320 px widths |
+| 2b | Chat, people list, raise hand, reactions, screen share, speaker view and pinning, data saver | The core features of a Meet call work at desktop and 320 px widths |
+| 2c | The instructor's controls and settings in the meeting (mute, let speak, ask to unmute, stop share, remove, lock, end, the six settings), the dashboard's live meetings | The host controls work from the page |
 | 3 | The past meeting page (attendance and CSV, saved chat), pinning, background blur, and a load test (`lk load-test`) to size the server | One class of 50 holds a 2-hour meeting with the server under 60% CPU |
 | 4 | Recording, as designed above: Record, Pause, Resume, Stop, the "Record the whole meeting" setting, the Egress service, the notice and REC sign, joining the stretches, and the player on the past meeting page. First settle storage and how long recordings are kept | A 1-hour recording with a pause in it plays in the LMS as one video, on a phone and a computer, and the paused part isn't in it |
 | Later | Live captions, breakout rooms | Separate plans |
