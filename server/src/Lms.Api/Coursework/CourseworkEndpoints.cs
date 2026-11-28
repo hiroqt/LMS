@@ -182,7 +182,7 @@ public static class CourseworkEndpoints
         user.IsInstructor ? await GradingRules.ProgressAsync(db, rows, ct) : null;
 
     /// <summary>Students see published and closed work whose availability date has passed.</summary>
-    private static IQueryable<CourseworkRow> VisibleTo(CurrentUser user, IQueryable<CourseworkRow> query, TimeProvider time)
+    internal static IQueryable<CourseworkRow> VisibleTo(CurrentUser user, IQueryable<CourseworkRow> query, TimeProvider time)
     {
         if (user.IsInstructor) return query;
         var now = time.GetUtcNow().UtcDateTime;

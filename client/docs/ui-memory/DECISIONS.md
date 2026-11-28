@@ -1147,3 +1147,30 @@ time limit and real-time delay, plus screen share and chat. Plan: `docs/MEETINGS
     A real server needs its own test.
 - Safe for demos only until real sign-in exists, like the rest of the LMS.
 
+### D-073 · Materials and coursework have class comments and private comments
+`2026-11-28` · saheejuu2 (user request) · scope: student, instructor, server · confidence: high
+Every material and every piece of coursework (assignments, quizzes, exams) has two discussions,
+stored in the LMS API's `comments` table (`server/src/Lms.Api/Discussion/CommentEndpoints.cs`).
+**Class comments** are read and written by the class's instructor and every student on its active
+class list; **private comments** are a thread between one student and the instructor, and the API
+never sends a student anyone else's thread. Students comment only on what they can open (active
+materials, published or closed coursework); comments are read-only once ISMS stops offering the
+class; authors delete their own and the instructor may delete any; the audit log records only
+"posted" or "deleted", never the text. On the Student assessment page the class comments sit under
+the content and the private comments under the details card, which is no longer sticky so the
+comments under it stay reachable. On the material page (D-067) `MaterialLayout` gained two
+optional slots: `discussion` under the preview for the class comments and `aside` at the end of
+the side column for the private comments. Instructors open both from a **Comments** button on each
+Materials and Classwork row, in a dialog wider than the default (`sm:max-w-2xl`) so threads and
+the student picker have room; the private tab lists students who wrote first and lets the
+instructor start a thread with anyone on the class list. New checks: `discussion` (e2e),
+`Comments.test.tsx`, `comments.test.ts`, `DiscussionTests` (server).
+
+### D-074 · The discussion panels are secondary to the item's content
+`2026-11-28` · saheejuu2 (user request) · scope: student · confidence: high
+Class comments and private comments (`DiscussionPanel` in
+`shared/components/discussion/Comments.tsx`) are flat `bg-canvas` panels with `p-4` and a 14px
+(`text-body`) semibold heading, while the content they discuss (a material's preview and file, an
+assessment's Instructions and details) stays on white cards with larger headings. Keep any new
+discussion surface below the content in weight: no white card, no heading larger than the
+content's own card titles.
