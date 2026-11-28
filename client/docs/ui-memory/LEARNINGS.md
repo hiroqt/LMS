@@ -847,3 +847,13 @@ Checked against a running server, and kept true by `LiveKitContractTests` in API
   unless given `assetPaths`. Check a new browser dependency's default URLs, and test for
   requests outside the LMS.
 
+
+### L-111 · A LiveKit join pass can't be taken back; a join that finishes after the page is gone
+`2026-11-28` · review of D-070 (integration PR) · scope: meetings, server, tests · confidence: high
+- **Rooms:** LiveKit opens a room for any valid join pass unless `room.auto_create` is false. With
+  it on, a 10-minute pass reopened a meeting the instructor had ended, as a new, empty room. Only
+  the LMS API opens rooms now (`meet-server/livekit.yaml`, both CI services, and
+  `LiveKitContractTests`, where `rtc/validate` answers 404 for a room that doesn't exist).
+- **Joins in flight:** a join is several awaits (pass, then connect). Leaving the page or pressing
+  Stop waiting in between must make that attempt stale, or it connects with no page left to show
+  it. `useMeetingRoom` counts attempts; `useMeetingRoom.test.tsx` checks both ways out.

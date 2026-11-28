@@ -36,6 +36,8 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leavingRef = useRef(false);
   const meetingRef = useRef<Meeting | null>(null);
+  /** Counts join attempts: leaving the page, Stop waiting, or a new attempt makes an older one stale, so it never connects. */
+  const attemptRef = useRef(0);
 
   const stopTracks = useCallback(() => {
     for (const track of tracksRef.current) track.stop();
@@ -69,6 +71,7 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
   useEffect(
     () => () => {
       if (retryRef.current) clearTimeout(retryRef.current);
+      attemptRef.current += 1;
       leavingRef.current = true;
       void roomRef.current?.disconnect();
       stopTracks();
@@ -76,14 +79,15 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     [stopTracks],
   );
 
-  const connect = useCallback(async (join: MeetingJoin) => {
+  const connect = useCallback(async (join: MeetingJoin, stale: () => boolean) => {
     const next = new Room({ adaptiveStream: true, dynacast: true, disconnectOnPageLeave: true });
+    let abandoned = false;
     next.on(RoomEvent.Reconnecting, () => setReconnecting(true));
     next.on(RoomEvent.Reconnected, () => setReconnecting(false));
     next.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
       setReconnecting(false);
       stopTracks();
-      if (leavingRef.current) return;
+      if (leavingRef.current || abandoned) return;
       if (reason === DisconnectReason.ROOM_DELETED) close("ended", viewer.role === "instructor" ? "The meeting has ended" : "The instructor ended the meeting");
       else if (reason === DisconnectReason.PARTICIPANT_REMOVED) close("removed", "The instructor removed you from this meeting");
       else if (reason === DisconnectReason.DUPLICATE_IDENTITY) close("elsewhere", "You joined this meeting from another tab or device", "This tab left the meeting.");
@@ -91,6 +95,12 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     });
     roomRef.current = next;
     await next.connect(join.serverUrl, join.token);
+    // The person left the page or stopped waiting while this was connecting: leave again at once.
+    if (stale()) {
+      abandoned = true;
+      void next.disconnect();
+      return;
+    }
     for (const track of tracksRef.current) {
       try {
         await next.localParticipant.publishTrack(track);
@@ -109,14 +119,19 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
     if (!meeting) return;
     tracksRef.current = tracks;
     leavingRef.current = false;
+    const run = ++attemptRef.current;
+    const stale = () => run !== attemptRef.current;
     setPhase({ kind: "joining", meeting });
     const attempt = async (): Promise<void> => {
       try {
         if (options.start && meeting.status === "scheduled") meetingRef.current = await startMeeting(viewer, classId, meeting.id);
+        if (stale()) return;
         const pass = await joinMeeting(viewer, classId, meeting.id);
+        if (stale()) return;
         meetingRef.current = pass.meeting;
-        await connect(pass);
+        await connect(pass, stale);
       } catch (error) {
+        if (stale()) return;
         const code = meetingErrorCode(error);
         if (code === "not_started") {
           setPhase({ kind: "waiting", meeting: meetingRef.current ?? meeting });
@@ -136,11 +151,13 @@ export function useMeetingRoom({ viewer, classId, meetingId }: { viewer: Viewer;
   /** Stops waiting for the instructor and goes back to the pre-join screen. */
   const cancelWaiting = useCallback(() => {
     if (retryRef.current) clearTimeout(retryRef.current);
+    attemptRef.current += 1;
     stopTracks();
     if (meetingRef.current) setPhase({ kind: "prejoin", meeting: meetingRef.current });
   }, [stopTracks]);
 
   const leave = useCallback(() => {
+    attemptRef.current += 1;
     leavingRef.current = true;
     void roomRef.current?.disconnect();
     roomRef.current = null;
