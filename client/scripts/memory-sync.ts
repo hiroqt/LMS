@@ -51,7 +51,7 @@ function componentsDoc(): string {
         return existsSync(path) && statSync(path).isFile() ? [path] : walk(path);
       })
       .filter(isComponentFile)
-      .sort();
+      .sort((a, b) => (rel(a) < rel(b) ? -1 : rel(a) > rel(b) ? 1 : 0));
     const rows = files.map((file) => [rel(file), exportedComponents(file)] as const).filter(([, names]) => names.length);
     out += `\n## ${title}\n\n${note}\n\n`;
     out += rows.length
